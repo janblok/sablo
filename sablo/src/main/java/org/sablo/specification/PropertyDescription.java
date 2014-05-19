@@ -158,7 +158,10 @@ public class PropertyDescription
 		else if (!name.equals(other.name)) return false;
 		if (type != other.type) return false;
 		if (array != other.array) return false;
-		if (!Utils.equalObjects(defaultValue, other.defaultValue)) return false;
+		
+		//TODO Laurian, how to fix this Utils reference???
+		//if (!Utils.equalObjects(defaultValue, other.defaultValue)) return false;
+		
 		return true;
 	}
 

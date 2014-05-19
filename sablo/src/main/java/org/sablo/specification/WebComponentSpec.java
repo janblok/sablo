@@ -194,8 +194,10 @@ public class WebComponentSpec extends PropertyDescription
 		if (json.has("api"))
 		{
 			JSONObject api = json.getJSONObject("api");
-			for (String func : Utils.iterate((Iterator<String>)api.keys()))
+			Iterator<String> itk = api.keys();
+			while (itk.hasNext()) 
 			{
+				String func = (String) itk.next();
 				JSONObject jsonDef = api.getJSONObject(func);
 				WebComponentApiDefinition def = new WebComponentApiDefinition(func);
 
@@ -325,8 +327,10 @@ public class WebComponentSpec extends PropertyDescription
 		if (json.has(propKey))
 		{
 			JSONObject jsonProps = json.getJSONObject(propKey);
-			for (String key : Utils.iterate((Iterator<String>)jsonProps.keys()))
+			Iterator<String> itk = jsonProps.keys();
+			while (itk.hasNext()) 
 			{
+				String key = (String) itk.next();
 				Object value = jsonProps.get(key);
 				IPropertyType type = null;
 				boolean isArray = false;

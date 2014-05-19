@@ -19,6 +19,7 @@ package org.sablo.specification.property;
 
 import org.json.JSONException;
 import org.json.JSONWriter;
+import org.sablo.IChangeListener;
 import org.sablo.WebComponent;
 import org.sablo.websocket.utils.DataConversion;
 

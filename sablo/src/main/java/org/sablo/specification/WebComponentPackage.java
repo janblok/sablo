@@ -36,6 +36,8 @@ import java.util.jar.Manifest;
 
 import javax.servlet.ServletContext;
 
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.json.JSONObject;
 import org.sablo.specification.property.IPropertyType;
 import org.slf4j.Logger;
@@ -269,7 +271,7 @@ public class WebComponentPackage
 				if (entry != null)
 				{
 					InputStream is = jar.getInputStream(entry);
-					return Utils.getTXTFileContent(is, charset);
+					return IOUtils.toString(is, charset);
 				}
 			}
 			finally
@@ -365,7 +367,7 @@ public class WebComponentPackage
 			try
 			{
 				is = new BufferedInputStream(new FileInputStream(new File(dir, path)));
-				return Utils.getTXTFileContent(is, charset);
+				return IOUtils.toString(is, charset);
 			}
 			finally
 			{
@@ -463,7 +465,7 @@ public class WebComponentPackage
 			try
 			{
 				is = url.openStream();
-				return Utils.getTXTFileContent(is, charset);
+				return IOUtils.toString(is, charset);
 			}
 			finally
 			{

@@ -4,11 +4,43 @@
 
   <groupId>org.sablo</groupId>
   <version>0.0.1-SNAPSHOT</version>
-  <packaging>jar</packaging>
+  <packaging>bundle</packaging>
 
   <name>sablo</name>
   <url>http://maven.apache.org</url>
 
+  <build>
+      <plugins>
+          <plugin>
+              <groupId>org.apache.felix</groupId>
+              <artifactId>maven-bundle-plugin</artifactId>
+              <version>1.4.0</version>
+              <extensions>true</extensions>
+              <configuration>
+                  <instructions>
+                      <Bundle-SymbolicName>${pom.groupId}</Bundle-SymbolicName>
+                      <Bundle-Name>${pom.name}</Bundle-Name>
+                      <Bundle-Version>${pom.version}</Bundle-Version>
+                      <Export-Package>org.sablo, org.sablo.eventthread, org.sablo.specification, org.sablo.specification.property, org.sablo.websocket</Export-Package>
+                  </instructions>
+              </configuration>
+          </plugin>
+      </plugins>
+      <pluginManagement>
+   		<plugins>
+          <plugin>
+		     <groupId>org.apache.maven.plugins</groupId>
+		     <artifactId>maven-eclipse-plugin</artifactId>
+		     <version>2.9</version>
+		     <configuration>
+		       <pde>true</pde>
+		       <downloadSources>true</downloadSources>
+		     </configuration>
+		  </plugin>
+   		</plugins>
+      </pluginManagement>
+  </build>
+  
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -20,7 +52,6 @@
 		<groupId>javax.servlet</groupId>
 		<artifactId>javax.servlet-api</artifactId>
 		<version>3.0.1</version>
-		<scope>provided</scope>
 	</dependency>
 	<dependency>
 	  <groupId>javax.websocket</groupId>
@@ -38,6 +69,7 @@
 		<version>1.7.7</version>
 	</dependency>
   </dependencies>
+  
   <artifactId>sablo</artifactId>
   <organization>
   	<name>Servoy</name>

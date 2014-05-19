@@ -22,8 +22,6 @@ import org.json.JSONWriter;
 import org.sablo.WebComponent;
 import org.sablo.websocket.utils.DataConversion;
 
-import com.servoy.j2db.server.ngclient.IChangeListener;
-
 /**
  * The representation of a property value for a complex type property - server side.
  * It can be used to generate a JSON value (to be sent client-side) representing the property when there is a change in the server-side Java Object of this property.<br>
@@ -37,7 +35,6 @@ import com.servoy.j2db.server.ngclient.IChangeListener;
  */
 public interface IComplexPropertyValue
 {
-
 	public static final Object NOT_AVAILABLE = new Object();
 
 	/**

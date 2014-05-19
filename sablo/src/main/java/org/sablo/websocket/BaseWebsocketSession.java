@@ -27,9 +27,8 @@ import org.json.JSONObject;
 import org.sablo.eventthread.Event;
 import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
-
-import com.servoy.j2db.util.Debug;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Base class for handling a websocket session.
@@ -37,6 +36,8 @@ import com.servoy.j2db.util.Debug;
  */
 public abstract class BaseWebsocketSession implements IWebsocketSession
 {
+	private static final Logger log = LoggerFactory.getLogger(BaseWebsocketSession.class.getCanonicalName());
+
 	private final Map<String, IService> services = new HashMap<>();
 	private final List<IWebsocketEndpoint> registeredEnpoints = Collections.synchronizedList(new ArrayList<IWebsocketEndpoint>());
 
@@ -133,7 +134,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 		}
 		else
 		{
-			Debug.warn("Unknown service called: " + serviceName);
+			log.warn("Unknown service called: " + serviceName);
 		}
 	}
 
@@ -153,8 +154,8 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 		}
 		catch (Exception e)
 		{
-			Debug.error(e);
 			error = "Error: " + e.getMessage();
+			log.error(error,e);
 		}
 
 		if (msgId != null) // client wants response
@@ -165,7 +166,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 			}
 			catch (IOException e)
 			{
-				Debug.error(e);
+				log.error(e.getMessage(),e);
 			}
 		}
 	}

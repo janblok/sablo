@@ -36,21 +36,18 @@ import java.util.jar.Manifest;
 
 import javax.servlet.ServletContext;
 
-import org.apache.commons.io.FilenameUtils;
 import org.json.JSONObject;
 import org.sablo.specification.property.IPropertyType;
-
-import com.servoy.j2db.util.Debug;
-import com.servoy.j2db.util.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An abstraction of package that contains Servoy web-components.
  * @author acostescu
  */
-@SuppressWarnings("nls")
 public class WebComponentPackage
 {
-
+	private static final Logger log = LoggerFactory.getLogger(WebComponentPackage.class.getCanonicalName());
 	private static final String GLOBAL_TYPES_MANIFEST_ATTR = "Global-Types";
 
 	public interface IPackageReader
@@ -113,7 +110,7 @@ public class WebComponentPackage
 					}
 					catch (Exception e)
 					{
-						Debug.error("Cannot parse global spec file '" + globalTypesSpecPath + "' from package '" + reader.toString() + "'. ", e);
+						log.error("Cannot parse global spec file '" + globalTypesSpecPath + "' from package '" + reader.toString() + "'. ", e);
 					}
 				}
 			}
@@ -148,7 +145,7 @@ public class WebComponentPackage
 						}
 						catch (Exception e)
 						{
-							Debug.error("Cannot parse spec file '" + specpath + "' from package '" + reader.toString() + "'. ", e);
+							log.error("Cannot parse spec file '" + specpath + "' from package '" + reader.toString() + "'. ", e);
 						}
 					}
 				}
@@ -246,7 +243,7 @@ public class WebComponentPackage
 			}
 			catch (IOException e)
 			{
-				Debug.error(e);
+				log.error("Exception in getUrlForPath",e);
 			}
 			finally
 			{
@@ -355,7 +352,7 @@ public class WebComponentPackage
 				}
 				catch (MalformedURLException e)
 				{
-					Debug.error(e);
+					log.error("MalformedURLException",e);
 				}
 			}
 			return null;
@@ -452,12 +449,11 @@ public class WebComponentPackage
 			}
 			catch (MalformedURLException e)
 			{
-				Debug.error(e);
+				log.error("MalformedURLException",e);
 				return null;
 			}
 		}
 
-		@SuppressWarnings("nls")
 		@Override
 		public String readTextFile(String path, Charset charset) throws IOException
 		{

@@ -30,10 +30,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.sablo.specification.property.IComplexPropertyValue;
+import org.sablo.websocket.ConversionLocation;
 import org.sablo.websocket.IForJsonConverter;
-
-import com.servoy.j2db.server.ngclient.NGClientForJsonConverter.ConversionLocation;
-import com.servoy.j2db.util.Debug;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -44,6 +44,8 @@ import com.servoy.j2db.util.Debug;
 @SuppressWarnings("nls")
 public class JSONUtils
 {
+	private static final Logger log = LoggerFactory.getLogger(JSONUtils.class.getCanonicalName());
+	
 	/**
 	 * Writes the given object into the JSONWriter. (it is meant to be used for transforming the basic types that can be sent by beans/components)
 	 * @param writer the JSONWriter.
@@ -76,7 +78,7 @@ public class JSONUtils
 			if (toDestinationType == ConversionLocation.BROWSER_UPDATE) return ((IComplexPropertyValue)value).changesToJSON(writer, clientConversion);
 			else if (toDestinationType == ConversionLocation.BROWSER) return ((IComplexPropertyValue)value).toJSON(writer, clientConversion);
 			else if (toDestinationType == ConversionLocation.DESIGN) return ((IComplexPropertyValue)value).toDesignJSON(writer); // less frequent or never
-			else Debug.error(new RuntimeException("Trying to conver a java object to JSON value of unknown/unsupported destination type."));
+			else log.error("Trying to conver a java object to JSON value of unknown/unsupported destination type.",new RuntimeException());
 		}
 
 		JSONWriter w = writer;

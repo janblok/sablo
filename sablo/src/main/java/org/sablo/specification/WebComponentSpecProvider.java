@@ -32,16 +32,16 @@ import org.json.JSONObject;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.property.IComplexTypeImpl;
 import org.sablo.specification.property.IPropertyType;
-
-import com.servoy.j2db.util.Debug;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Class responsible for loading a set of web component packages and specs.
  * @author acostescu
  */
-@SuppressWarnings("nls")
 public class WebComponentSpecProvider
 {
+	private static final Logger log = LoggerFactory.getLogger(WebComponentSpecProvider.class.getCanonicalName());
 
 	private final Map<String, WebComponentSpec> cachedDescriptions = new HashMap<>();
 	private final Map<String, IPropertyType> globalTypes = new HashMap<>();
@@ -86,7 +86,7 @@ public class WebComponentSpecProvider
 			}
 			catch (IOException e)
 			{
-				Debug.error("Cannot read web component specs from package: " + p.getName(), e); //$NON-NLS-1$
+				log.error("Cannot read web component specs from package: " + p.getName(), e); //$NON-NLS-1$
 			}
 		}
 	}
@@ -114,7 +114,7 @@ public class WebComponentSpecProvider
 				}
 				catch (IOException e)
 				{
-					Debug.error("Cannot read globally defined types from package: " + p.getName(), e); //$NON-NLS-1$
+					log.error("Cannot read globally defined types from package: " + p.getName(), e); //$NON-NLS-1$
 				}
 			}
 
@@ -126,13 +126,13 @@ public class WebComponentSpecProvider
 			}
 			catch (Exception e)
 			{
-				Debug.error("Cannot parse flattened global types - from all web component packages.", e);
+				log.error("Cannot parse flattened global types - from all web component packages.", e);
 			}
 		}
 		catch (JSONException e)
 		{
 			// should never happen
-			Debug.error("Error Creating a simple JSON object hierarchy while reading globally defined types...");
+			log.error("Error Creating a simple JSON object hierarchy while reading globally defined types...");
 		}
 	}
 
@@ -148,7 +148,7 @@ public class WebComponentSpecProvider
 			}
 			else
 			{
-				Debug.error("A web component package location does not exist: " + f.getAbsolutePath()); //$NON-NLS-1$
+				log.error("A web component package location does not exist: " + f.getAbsolutePath()); //$NON-NLS-1$
 			}
 		}
 		return readers.toArray(new IPackageReader[readers.size()]);
@@ -159,7 +159,7 @@ public class WebComponentSpecProvider
 		for (WebComponentSpec desc : webComponentDescriptions)
 		{
 			WebComponentSpec old = cachedDescriptions.put(desc.getName(), desc);
-			if (old != null) Debug.error("Conflict found! Duplicate web component definition name: " + old.getName());
+			if (old != null) log.error("Conflict found! Duplicate web component definition name: " + old.getName());
 		}
 	}
 
@@ -218,7 +218,7 @@ public class WebComponentSpecProvider
 					}
 					catch (Exception e)
 					{
-						Debug.error(e);
+						log.error("Exception during init",e);
 					}
 				}
 			}

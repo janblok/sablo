@@ -23,8 +23,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.sablo.websocket.IWebsocketSession;
-
-import com.servoy.j2db.util.Debug;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Runnable of the ScriptThread that executes {@link Event} objects.
@@ -34,6 +34,8 @@ import com.servoy.j2db.util.Debug;
  */
 public class EventDispatcher<E extends Event> implements Runnable, IEventDispatcher<E>
 {
+	private static final Logger log = LoggerFactory.getLogger(EventDispatcher.class.getCanonicalName());
+	
 	private final ConcurrentMap<Object, Event> suspendedEvents = new ConcurrentHashMap<Object, Event>();
 
 	private final List<Event> events = new ArrayList<Event>();
@@ -92,7 +94,7 @@ public class EventDispatcher<E extends Event> implements Runnable, IEventDispatc
 		}
 		catch (Throwable t)
 		{
-			Debug.error(t);
+			log.error("Exception in dispatch",t);
 		}
 	}
 
@@ -141,7 +143,7 @@ public class EventDispatcher<E extends Event> implements Runnable, IEventDispatc
 		// TODO should this one be called in the execute event thread, should an check be done??
 		if (!isEventDispatchThread())
 		{
-			Debug.error("suspend called in another thread then the script thread: " + Thread.currentThread(), new RuntimeException());
+			log.error("suspend called in another thread then the script thread: " + Thread.currentThread(), new RuntimeException());
 			return;
 		}
 		Event event = stack.getLast();

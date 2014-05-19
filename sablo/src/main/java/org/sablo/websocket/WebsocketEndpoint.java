@@ -39,9 +39,8 @@ import org.json.JSONStringer;
 import org.json.JSONWriter;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
-
-import com.servoy.j2db.server.ngclient.NGClientForJsonConverter.ConversionLocation;
-import com.servoy.j2db.util.Debug;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The websocket endpoint for communication between the WebSocketSession instance on the server and the browser.
@@ -55,10 +54,10 @@ import com.servoy.j2db.util.Debug;
  *
  * @author jcompagner, rgansevles
  */
-@SuppressWarnings("nls")
 @ServerEndpoint(value = "/websocket/{endpointType}/{id}/{argument}")
 public class WebsocketEndpoint implements IWebsocketEndpoint
 {
+	private static final Logger log = LoggerFactory.getLogger(WebsocketEndpoint.class.getCanonicalName());
 	private static ThreadLocal<IWebsocketEndpoint> currentInstance = new ThreadLocal<>();
 
 	public static IWebsocketEndpoint get()
@@ -128,8 +127,14 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 	@OnError
 	public void onError(Throwable t)
 	{
-		if (t instanceof IOException) Debug.error(t.getMessage());
-		else Debug.error(t);
+		if (t instanceof IOException) 
+		{
+			log.error("IOException happend",t.getMessage());
+		}
+		else 
+		{
+			log.error("Exception happend",t);
+		}
 	}
 
 	@Override
@@ -225,7 +230,7 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 		}
 		catch (JSONException e)
 		{
-			Debug.error(e);
+			log.error("JSONException",e);
 			return;
 		}
 		finally

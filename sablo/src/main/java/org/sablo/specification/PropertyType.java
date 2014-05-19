@@ -29,10 +29,8 @@ import org.sablo.specification.property.IServerObjToJavaPropertyConverter;
  * @author rgansevles
  * @author acostescu
  */
-@SuppressWarnings("nls")
 public class PropertyType implements IPropertyType
 {
-
 	private final String typeName;
 	private final Default defaultEnumValue;
 

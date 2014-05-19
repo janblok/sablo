@@ -19,8 +19,8 @@ package org.sablo.eventthread;
 import org.sablo.websocket.IWebsocketEndpoint;
 import org.sablo.websocket.IWebsocketSession;
 import org.sablo.websocket.WebsocketEndpoint;
-
-import com.servoy.j2db.util.Debug;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -31,6 +31,8 @@ import com.servoy.j2db.util.Debug;
  */
 public class Event
 {
+	private static final Logger log = LoggerFactory.getLogger(Event.class.getCanonicalName());
+
 	private volatile boolean runInBackground;
 	private volatile boolean suspended;
 
@@ -81,7 +83,7 @@ public class Event
 		}
 		catch (Exception e)
 		{
-			Debug.error(e);
+			log.error("Exception in execute",e);
 			exception = e;
 		}
 		finally

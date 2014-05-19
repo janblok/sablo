@@ -27,9 +27,6 @@ import java.util.Set;
 
 import org.sablo.specification.property.IPropertyType;
 
-import com.servoy.j2db.util.Utils;
-
-
 /**
  * Property description as parsed from web component spec file.
  * @author rgansevles

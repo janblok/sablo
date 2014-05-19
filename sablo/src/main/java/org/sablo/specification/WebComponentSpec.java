@@ -31,18 +31,17 @@ import org.sablo.specification.property.CustomPropertyTypeResolver;
 import org.sablo.specification.property.DataproviderConfig;
 import org.sablo.specification.property.IPropertyConfigurationParser;
 import org.sablo.specification.property.IPropertyType;
-
-import com.servoy.j2db.util.Debug;
-import com.servoy.j2db.util.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Parse .spec files for components.
  * 
  * @author rgansevles
  */
-@SuppressWarnings("nls")
 public class WebComponentSpec extends PropertyDescription
 {
+	private static final Logger log = LoggerFactory.getLogger(WebComponentSpec.class.getCanonicalName());
 
 	public static final String TYPES_KEY = "types";
 
@@ -166,7 +165,7 @@ public class WebComponentSpec extends PropertyDescription
 			{
 				sb.append(type).append(' ');
 			}
-			Debug.error(sb.toString());
+			log.error(sb.toString());
 			return null;
 		}
 		return new ParsedProperty(t, isArray);
@@ -515,7 +514,7 @@ public class WebComponentSpec extends PropertyDescription
 			}
 			catch (JSONException e)
 			{
-				Debug.error(e);
+				log.error("JSONException",e);
 			}
 		}
 		return "";
@@ -531,7 +530,7 @@ public class WebComponentSpec extends PropertyDescription
 			}
 			catch (JSONException e)
 			{
-				Debug.error(e);
+				log.error("JSONException",e);
 			}
 		}
 		return "";

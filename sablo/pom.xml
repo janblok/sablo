@@ -9,7 +9,6 @@
   <name>sablo</name>
   <url>http://maven.apache.org</url>
 
-
   <dependencies>
     <dependency>
       <groupId>junit</groupId>
@@ -17,6 +16,27 @@
       <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
+	<dependency>
+		<groupId>javax.servlet</groupId>
+		<artifactId>javax.servlet-api</artifactId>
+		<version>3.0.1</version>
+		<scope>provided</scope>
+	</dependency>
+	<dependency>
+	  <groupId>javax.websocket</groupId>
+	  <artifactId>javax.websocket-api</artifactId>
+	  <version>1.0</version>
+	</dependency>
+	<dependency>
+		<groupId>org.json</groupId>
+		<artifactId>json</artifactId>
+		<version>20140107</version>
+	</dependency>
+	<dependency>
+		<groupId>org.slf4j</groupId>
+		<artifactId>slf4j-api</artifactId>
+		<version>1.7.7</version>
+	</dependency>
   </dependencies>
   <artifactId>sablo</artifactId>
   <organization>

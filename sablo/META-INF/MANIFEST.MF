@@ -12,8 +12,8 @@ Require-Bundle: org.junit,
  javax.servlet;bundle-version="3.0.0",
  javax.websocket;bundle-version="1.0.0",
  slf4j.api;bundle-version="1.6.1",
- de.twentyeleven.skysail.org.json-osgi;bundle-version="20080701.0.0",
  org.apache.commons.io;bundle-version="2.4.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ClassPath: .
 Bundle-Vendor: Servoy
+Import-Package: org.json

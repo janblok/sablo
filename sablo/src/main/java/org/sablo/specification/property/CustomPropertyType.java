@@ -58,7 +58,7 @@ public class CustomPropertyType extends PropertyType
 	@Override
 	public String toString()
 	{
-		return super.toString() + "\nDefinition JSON:\n" + (definition == null ? "null" : definition.toStringWholeTree()); //$NON-NLS-1$//$NON-NLS-2$
+		return super.toString() + "\nDefinition JSON:\n  " + (definition == null ? "null" : definition.toStringWholeTree()); //$NON-NLS-1$//$NON-NLS-2$
 	}
 
 }

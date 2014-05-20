@@ -219,33 +219,39 @@ public class PropertyDescription
 	@Override
 	public String toString()
 	{
-		return "PropertyDescription[name:" + name + ",type:" + type + ",array:" + array + ",config:" + config + ",default value:" + defaultValue + "]";
+		return toString(true);
+	}
+
+	public String toString(boolean showFullType)
+	{
+		return "PropertyDescription[name: " + name + ", type: " + (showFullType ? type : "'" + type.getName() + "' type") + ", array: " + array + ", config: " +
+			config + ", default value: " + defaultValue + "]";
 	}
 
 	public String toStringWholeTree()
 	{
-		return toStringWholeTree(new StringBuffer(100), 1).toString();
+		StringBuffer b = new StringBuffer(100);
+		toStringWholeTree(b, 2);
+		return b.toString();
 	}
 
-	public StringBuffer toStringWholeTree(StringBuffer b, int level)
+	public void toStringWholeTree(StringBuffer b, int level)
 	{
-		b.append(toString());
+		b.append(toString(false));
 		if (properties != null)
 		{
 			for (Entry<String, PropertyDescription> p : properties.entrySet())
 			{
 				b.append('\n');
-				addSpaces(b, level);
-				b.append(p.getKey()).append(": ").append(p.getValue().toStringWholeTree(b, level + 1)); //$NON-NLS-1$
+				addSpaces(b, level + 1);
+				b.append(p.getKey()).append(": ");
+				p.getValue().toStringWholeTree(b, level + 1);
 			}
 		}
 		else
 		{
-			b.append('\n');
-			addSpaces(b, level);
-			b.append("(no nested child properties)");
+			b.append(" (no nested child properties)");
 		}
-		return b;
 	}
 
 	protected void addSpaces(StringBuffer b, int level)

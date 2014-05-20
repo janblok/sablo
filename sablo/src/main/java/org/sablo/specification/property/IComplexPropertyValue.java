@@ -20,6 +20,7 @@ package org.sablo.specification.property;
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.IChangeListener;
+import org.sablo.IWebComponentInitializer;
 import org.sablo.WebComponent;
 import org.sablo.websocket.utils.DataConversion;
 
@@ -36,6 +37,7 @@ import org.sablo.websocket.utils.DataConversion;
  */
 public interface IComplexPropertyValue
 {
+
 	public static final Object NOT_AVAILABLE = new Object();
 
 	/**
@@ -46,7 +48,17 @@ public interface IComplexPropertyValue
 	 * @param component the component to which the complex property belongs.
 	 * @param propertyName the name of the property that this value was assigned to. (can be nested with '.' if the value is inside a custom JSON property leaf)
 	 */
-	void init(IChangeListener changeMonitor, WebComponent component, String propertyName);
+	void attachToComponent(IChangeListener changeMonitor, WebComponent component);
+
+	/**
+	 * Initialize this property value - this is the first method called.
+	 * After this method is called the property value should be ready to provide initial property JSON value.
+	 * 
+	 * @param fe the 'blueprint' of the component this property belongs to.
+	 * @param propertyName the name of the property this value is assigned to.
+	 * @param defaultValue the default value of this property as defined in the .spec file. Can be a primitive, a JSONArray or JSONObject.
+	 */
+	void initialize(IWebComponentInitializer fe, String propertyName, Object defaultValue);
 
 	/**
 	 * Transforms this property value object into a JSON to be sent to the client<br>

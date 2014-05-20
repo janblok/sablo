@@ -29,8 +29,10 @@ import org.sablo.specification.property.IServerObjToJavaPropertyConverter;
  * @author rgansevles
  * @author acostescu
  */
+@SuppressWarnings("nls")
 public class PropertyType implements IPropertyType
 {
+
 	private final String typeName;
 	private final Default defaultEnumValue;
 
@@ -60,7 +62,7 @@ public class PropertyType implements IPropertyType
 	@Override
 	public String toString()
 	{
-		return typeName + " - Property type";
+		return "'" + typeName + "' type";
 	}
 
 	@Override
@@ -70,25 +72,25 @@ public class PropertyType implements IPropertyType
 	}
 
 	@Override
-	public IPropertyConfigurationParser<?> getPropertyConfigurationParser()
+	public IPropertyConfigurationParser< ? > getPropertyConfigurationParser()
 	{
 		return null;
 	}
 
 	@Override
-	public IJSONToJavaPropertyConverter<?, ?> getJSONToJavaPropertyConverter(boolean isArray)
+	public IJSONToJavaPropertyConverter< ? , ? > getJSONToJavaPropertyConverter(boolean isArray)
 	{
 		return null;
 	}
 
 	@Override
-	public IDesignJSONToJavaPropertyConverter<?, ?> getDesignJSONToJavaPropertyConverter(boolean isArray)
+	public IDesignJSONToJavaPropertyConverter< ? , ? > getDesignJSONToJavaPropertyConverter(boolean isArray)
 	{
 		return null;
 	}
 
 	@Override
-	public IServerObjToJavaPropertyConverter<?, ?> getServerObjectToJavaPropertyConverter(boolean isArray)
+	public IServerObjToJavaPropertyConverter< ? , ? > getServerObjectToJavaPropertyConverter(boolean isArray)
 	{
 		return null;
 	}

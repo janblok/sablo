@@ -77,7 +77,7 @@ public class ComplexCustomPropertyType extends CustomPropertyType
 	@Override
 	public String toString()
 	{
-		return "COMPLEX Type: " + super.toString(); //$NON-NLS-1$
+		return "(COMPLEX Type) " + super.toString(); //$NON-NLS-1$
 	}
 
 }

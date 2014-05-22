@@ -86,4 +86,17 @@ public interface IWebsocketEndpoint
 	 * @throws IOException
 	 */
 	Object executeServiceCall(String serviceName, String functionName, Object[] arguments) throws IOException;
+	
+	/**
+	 * Gets the window id belonging to this endpoint (a tab or window in the browser)
+	 * 
+	 * @return a window id
+	 */
+	public String getWindowId();
+	
+	/**
+	 * Sets the window id for this endpoint.
+	 * @param windowId
+	 */
+	public void setWindowId(String windowId);
 }

@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author jcompagner, rgansevles
  */
-@ServerEndpoint(value = "/websocket/{endpointType}/{id}/{argument}")
+@ServerEndpoint(value = "/websocket/{endpointType}/{sessionid}/{windowid}/{argument}")
 public class WebsocketEndpoint implements IWebsocketEndpoint
 {
 	private static final Logger log = LoggerFactory.getLogger(WebsocketEndpoint.class.getCanonicalName());
@@ -86,6 +86,8 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 	 * connection with browser
 	 */
 	private Session session;
+	
+	private String windowId;
 
 	/*
 	 * user session alike http session space
@@ -102,25 +104,50 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 
 	@OnOpen
 	public void start(Session newSession, @PathParam("endpointType")
-	final String endpointType, @PathParam("id")
-	String id, @PathParam("argument")
+	final String endpointType, @PathParam("sessionid")
+	String sessionid, @PathParam("windowid")
+	final String windowid, @PathParam("argument")
 	final String arg) throws Exception
 	{
 		session = newSession;
 
-		String uuid = "NULL".equals(id) ? null : id;
+		String uuid = "NULL".equals(sessionid) ? null : sessionid;
+		windowId = "NULL".equals(windowid) ? null : windowid;
 		String argument = "NULL".equals(arg) ? null : arg;
 
-		wsSession = WebsocketSessionManager.getOrCreateSession(endpointType, uuid, true);
+		currentInstance.set(this);
 		try
 		{
-			currentInstance.set(this);
+			wsSession = WebsocketSessionManager.getOrCreateSession(endpointType, uuid, true);
+			
+			if (!wsSession.getUuid().equals(uuid))
+				sendMessage(new JSONStringer().object().key("sessionid").value(wsSession.getUuid()).endObject().toString());
 			wsSession.registerEndpoint(this);
 			wsSession.onOpen(argument);
 		}
 		finally
 		{
 			currentInstance.remove();
+		}
+	}
+	
+	/**
+	 * @return the windowId
+	 */
+	@Override
+	public String getWindowId() {
+		return windowId;
+	}
+	
+	/**
+	 * @param windowId the windowId to set
+	 */
+	public void setWindowId(String windowId) {
+		this.windowId = windowId;
+		try {
+			sendMessage(new JSONStringer().object().key("windowid").value(windowId).endObject().toString());
+		} catch (Exception e) {
+			log.error("error sending the window id to the client", e);
 		}
 	}
 
@@ -200,7 +227,7 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 			incomingPartialMessage.setLength(0);
 		}
 
-		JSONObject obj;
+		final JSONObject obj;
 		try
 		{
 			currentInstance.set(this);
@@ -220,10 +247,41 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 			if (obj.has("service"))
 			{
 				// service call
-				String serviceName = obj.optString("service");
-				String methodName = obj.optString("methodname");
-
-				wsSession.callService(serviceName, methodName, obj.optJSONObject("args"), obj.opt("cmsgid"));
+				final String serviceName = obj.optString("service");
+				final IService service = wsSession.getService(serviceName);
+				
+				if (service != null) {
+					wsSession.getEventDispatcher().addEvent(new Runnable() {
+						
+						@Override
+						public void run() {
+							Object result = null;
+							String error = null;
+							try {
+								result = service.executeMethod(obj.optString("methodname"),
+										obj.optJSONObject("args"));
+							} catch (Exception e) {
+								error = "Error: " + e.getMessage();
+								log.error(error, e);
+							}
+							
+							final Object msgId =  obj.opt("cmsgid");
+							if (msgId != null) // client wants response
+							{
+								try {
+									WebsocketEndpoint.get().sendResponse(msgId,
+											error == null ? result : error,
+													error == null,
+													wsSession.getForJsonConverter());
+								} catch (IOException e) {
+									log.error(e.getMessage(), e);
+								}
+							}
+						}
+					});
+				} else {
+					log.info("unknown service called from the client: " + serviceName);
+				}
 				return;
 			}
 			wsSession.handleMessage(obj);

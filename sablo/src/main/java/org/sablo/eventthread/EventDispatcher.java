@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * @author rgansevles
  *
  */
-public class EventDispatcher<E extends Event> implements Runnable, IEventDispatcher<E>
+public class EventDispatcher implements Runnable, IEventDispatcher
 {
 	private static final Logger log = LoggerFactory.getLogger(EventDispatcher.class.getCanonicalName());
 	
@@ -107,17 +107,19 @@ public class EventDispatcher<E extends Event> implements Runnable, IEventDispatc
 	/**
 	 * @param event
 	 */
-	public void addEvent(Event event)
+	@Override
+	public void addEvent(Runnable event)
 	{
+		
 		if (isEventDispatchThread())
 		{
-			event.execute();
+			createEvent(event).execute();
 		}
 		else
 		{
 			synchronized (events)
 			{
-				events.add(event);
+				events.add(createEvent(event));
 				events.notifyAll();
 				// non-blocking
 //				while (!(event.isExecuted() || event.isSuspended() || event.isExecutingInBackground()))
@@ -133,6 +135,14 @@ public class EventDispatcher<E extends Event> implements Runnable, IEventDispatc
 //				}
 			}
 		}
+	}
+
+	/**
+	 * @param event
+	 * @return
+	 */
+	protected Event createEvent(Runnable event) {
+		return new Event(session,event);
 	}
 
 	/**

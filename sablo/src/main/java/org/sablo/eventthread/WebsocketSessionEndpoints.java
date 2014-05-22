@@ -41,6 +41,23 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 	{
 		this.session = session;
 	}
+	
+	/* (non-Javadoc)
+	 * @see org.sablo.websocket.IWebsocketEndpoint#getWindowId()
+	 */
+	@Override
+	public String getWindowId() {
+		// just ignore, this is a special class, not really an endpoint
+		return null;
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.sablo.websocket.IWebsocketEndpoint#setWindowId(java.lang.String)
+	 */
+	@Override
+	public void setWindowId(String windowId) {
+		// just ignore, this is a special class, not really an endpoint
+	}
 
 	@Override
 	public boolean hasSession()

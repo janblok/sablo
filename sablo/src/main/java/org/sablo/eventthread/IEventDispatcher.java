@@ -26,7 +26,7 @@ import org.sablo.websocket.IWebsocketSession;
  * @author jcompagner
  *
  */
-public interface IEventDispatcher<E extends Event> extends Runnable
+public interface IEventDispatcher extends Runnable
 {
 	/**
 	 * @param object The Object that is the suspend 'lock'
@@ -43,7 +43,7 @@ public interface IEventDispatcher<E extends Event> extends Runnable
 	/**
 	 * @param event
 	 */
-	void addEvent(E event);
+	void addEvent(Runnable event);
 
 	/**
 	 * destroys this event dispatcher thread.

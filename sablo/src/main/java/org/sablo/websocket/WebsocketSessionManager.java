@@ -43,12 +43,11 @@ public class WebsocketSessionManager
 		return endpointType + ':' + uuid;
 	}
 
-	public static void addSession(String endpointType, String uuid, IWebsocketSession wsSession)
+	public static void addSession(String endpointType, IWebsocketSession wsSession)
 	{
 		synchronized (wsSessions)
 		{
-			wsSessions.put(getSessionKey(endpointType, uuid), wsSession);
-			wsSession.setUuid(uuid);
+			wsSessions.put(getSessionKey(endpointType, wsSession.getUuid()), wsSession);
 		}
 	}
 
@@ -91,12 +90,11 @@ public class WebsocketSessionManager
 				wsSession = null;
 				if (create && websocketSessionFactory != null)
 				{
-					wsSession = websocketSessionFactory.createSession(endpointType);
+					wsSession = websocketSessionFactory.createSession(endpointType,uuid);
 				}
 				if (wsSession != null)
 				{
 					wsSessions.put(key, wsSession);
-					wsSession.setUuid(uuid);
 				}
 			}
 		}

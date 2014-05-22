@@ -23,12 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.json.JSONObject;
-import org.sablo.eventthread.Event;
 import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Base class for handling a websocket session.
@@ -36,16 +32,15 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BaseWebsocketSession implements IWebsocketSession
 {
-	private static final Logger log = LoggerFactory.getLogger(BaseWebsocketSession.class.getCanonicalName());
-
 	private final Map<String, IService> services = new HashMap<>();
 	private final List<IWebsocketEndpoint> registeredEnpoints = Collections.synchronizedList(new ArrayList<IWebsocketEndpoint>());
 
-	private String uuid;
-	private IEventDispatcher<Event> executor;
+	private final String uuid;
+	private volatile IEventDispatcher executor;
 
-	public BaseWebsocketSession()
+	public BaseWebsocketSession(String uuid)
 	{
+		this.uuid = uuid;
 	}
 
 	public void registerEndpoint(IWebsocketEndpoint endpoint)
@@ -66,13 +61,17 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 		return Collections.unmodifiableList(registeredEnpoints);
 	}
 
-	public final synchronized IEventDispatcher<Event> getEventDispatcher()
+	public final IEventDispatcher getEventDispatcher()
 	{
-		if (executor == null)
-		{
-			Thread thread = new Thread(executor = createDispatcher(), "Executor,uuid:" + getUuid());
-			thread.setDaemon(true);
-			thread.start();
+		if (executor == null) {
+			synchronized (this) {
+				if (executor == null) {
+					Thread thread = new Thread(executor = createDispatcher(),
+							"Executor,uuid:" + uuid);
+					thread.setDaemon(true);
+					thread.start();
+				}
+			}
 		}
 		return executor;
 	}
@@ -80,9 +79,9 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 	/**
 	 * Method to create the {@link IEventDispatcher} runnable
 	 */
-	protected IEventDispatcher<Event> createDispatcher()
+	protected IEventDispatcher createDispatcher()
 	{
-		return new EventDispatcher<Event>(this);
+		return new EventDispatcher(this);
 	}
 
 	public void onOpen(String argument)
@@ -107,14 +106,6 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 		return uuid;
 	}
 
-	/**
-	 * @param uuid the uuid to set
-	 */
-	public void setUuid(String uuid)
-	{
-		this.uuid = uuid;
-	}
-
 	public void registerService(String name, IService service)
 	{
 		services.put(name, service);
@@ -123,52 +114,6 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 	public IService getService(String name)
 	{
 		return services.get(name);
-	}
-
-	public void callService(String serviceName, final String methodName, final JSONObject args, final Object msgId)
-	{
-		final IService service = getService(serviceName);
-		if (service != null)
-		{
-			doCallService(service, methodName, args, msgId);
-		}
-		else
-		{
-			log.warn("Unknown service called: " + serviceName);
-		}
-	}
-
-	/**
-	 * @param service
-	 * @param methodName
-	 * @param args
-	 * @param msgId
-	 */
-	protected void doCallService(IService service, String methodName, JSONObject args, Object msgId)
-	{
-		Object result = null;
-		String error = null;
-		try
-		{
-			result = service.executeMethod(methodName, args);
-		}
-		catch (Exception e)
-		{
-			error = "Error: " + e.getMessage();
-			log.error(error,e);
-		}
-
-		if (msgId != null) // client wants response
-		{
-			try
-			{
-				WebsocketEndpoint.get().sendResponse(msgId, error == null ? result : error, error == null, getForJsonConverter());
-			}
-			catch (IOException e)
-			{
-				log.error(e.getMessage(),e);
-			}
-		}
 	}
 
 	@Override

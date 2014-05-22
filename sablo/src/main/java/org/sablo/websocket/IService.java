@@ -29,5 +29,5 @@ public interface IService
 	 * @param args
 	 * @return
 	 */
-	public Object executeMethod(String methodName, JSONObject args);
+	public Object executeMethod(String methodName, JSONObject args) throws Exception;
 }

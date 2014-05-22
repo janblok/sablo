@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.List;
 
 import org.json.JSONObject;
-import org.sablo.eventthread.Event;
 import org.sablo.eventthread.IEventDispatcher;
 
 /**
@@ -53,7 +52,7 @@ public interface IWebsocketSession
 	 *
 	 * @return
 	 */
-	public IEventDispatcher<Event> getEventDispatcher();
+	public IEventDispatcher getEventDispatcher();
 
 	/**
 	 * Can it still be used?
@@ -65,12 +64,6 @@ public interface IWebsocketSession
 	 * @param argument
 	 */
 	void onOpen(String argument);
-
-	/**
-	 * Set the uuid
-	 * @param uuid
-	 */
-	void setUuid(String uuid);
 
 	String getUuid();
 
@@ -91,15 +84,13 @@ public interface IWebsocketSession
 	 * @param service handler
 	 */
 	void registerService(String name, IService service);
-
+	
 	/**
-	 * Call a named service from the browser.
-	 * @param serviceName
-	 * @param methodName
-	 * @param args
-	 * @param msgId
+	 * Returns a services for that name.
+	 * @param name
+	 * @return
 	 */
-	void callService(String serviceName, String methodName, JSONObject args, Object msgId);
+	public IService getService(String name);
 
 	/** Execute a service call asynchronously.
 	 *

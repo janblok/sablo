@@ -16,11 +16,12 @@
 
 package org.sablo;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Container object is a component that can contain other AWT components.
+ * Container object is a component that can contain other components.
  * @author jblok
  */
 public abstract class Container extends WebComponent
@@ -35,15 +36,22 @@ public abstract class Container extends WebComponent
 	public void add(WebComponent component)
 	{
 		components.put(component.getName(), component);
+		component.parent = this;
 	}
 
-	public WebComponent getWebComponent(String name)
+	public void remove(WebComponent component)
+	{
+		components.remove(component.getName());
+		component.parent = null;
+	}
+
+	public WebComponent getComponent(String name)
 	{
 		return components.get(name);
 	}
 
-	public Map<String, WebComponent> getWebComponents()
+	public Collection<WebComponent> getComponents()
 	{
-		return components;
+		return components.values();
 	}
 }

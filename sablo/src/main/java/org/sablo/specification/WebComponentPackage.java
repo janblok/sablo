@@ -67,7 +67,7 @@ public class WebComponentPackage
 	}
 
 	private IPackageReader reader;
-	private List<WebComponentSpec> cachedDescriptions; // probably useful for developer inthe future
+	private List<WebComponentSpecification> cachedDescriptions; // probably useful for developer inthe future
 
 	public WebComponentPackage(IPackageReader reader)
 	{
@@ -98,7 +98,7 @@ public class WebComponentPackage
 						if (specfileContent != null)
 						{
 							JSONObject json = new JSONObject('{' + specfileContent + '}');
-							Object types = json.get(WebComponentSpec.TYPES_KEY);
+							Object types = json.get(WebComponentSpecification.TYPES_KEY);
 							if (types instanceof JSONObject)
 							{
 								Iterator<String> typesIt = ((JSONObject)types).keys();
@@ -119,11 +119,11 @@ public class WebComponentPackage
 		}
 	}
 
-	public List<WebComponentSpec> getWebComponentDescriptions(Map<String, IPropertyType> globalTypes) throws IOException
+	public List<WebComponentSpecification> getWebComponentDescriptions(Map<String, IPropertyType> globalTypes) throws IOException
 	{
 		if (cachedDescriptions == null)
 		{
-			ArrayList<WebComponentSpec> descriptions = new ArrayList<>();
+			ArrayList<WebComponentSpecification> descriptions = new ArrayList<>();
 			Manifest mf = reader.getManifest();
 
 			if (mf != null)
@@ -135,7 +135,7 @@ public class WebComponentPackage
 					{
 						try
 						{
-							WebComponentSpec parsed = WebComponentSpec.parseSpec(specfileContent, reader.getPackageName(), globalTypes, specpath);
+							WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), globalTypes, specpath);
 							// add properties defined by us
 							if (parsed.getProperty("size") == null) parsed.putProperty("size", new PropertyDescription("size",
 								IPropertyType.Default.dimension.getType()));

@@ -20,7 +20,9 @@ import java.io.IOException;
 import java.util.List;
 
 import org.json.JSONObject;
+import org.sablo.WebComponent;
 import org.sablo.eventthread.IEventDispatcher;
+import org.sablo.specification.WebComponentApiDefinition;
 
 /**
  * Interface for classes handling a websocket user session.
@@ -57,33 +59,33 @@ public interface IWebsocketSession
 	/**
 	 * Can it still be used?
 	 */
-	boolean isValid();
+	public boolean isValid();
 
 	/**
 	 * Called when a new connection is started (also on reconnect)
 	 * @param argument
 	 */
-	void onOpen(String argument);
+	public void onOpen(String argument);
 
-	String getUuid();
+	public String getUuid();
 
 	/**
 	 * Request to close the websocket session.
 	 */
-	void closeSession();
+	public void closeSession();
 
 	/**
 	 * Handle an incoming message.
 	 * @param obj
 	 */
-	void handleMessage(JSONObject obj);
+	public void handleMessage(JSONObject obj);
 
 	/**
 	 * Register a handler for a named service.
 	 * @param name
 	 * @param service handler
 	 */
-	void registerService(String name, IService service);
+	public void registerService(String name, IService service);
 	
 	/**
 	 * Returns a services for that name.
@@ -92,27 +94,35 @@ public interface IWebsocketSession
 	 */
 	public IService getService(String name);
 
-	/** Execute a service call asynchronously.
-	 *
+	/** 
+	 * Execute a service call asynchronously.
 	 * @param serviceName
 	 * @param functionName
 	 * @param arguments
 	 */
-	void executeAsyncServiceCall(String serviceName, String functionName, Object[] arguments);
+	public void executeAsyncServiceCall(String serviceName, String functionName, Object[] arguments);
 
-	/** Execute a service call synchronously.
-	 *
+	/** 
+	 * Execute a service call synchronously.
 	 * @param serviceName
 	 * @param functionName
 	 * @param arguments
 	 * @return remote result
 	 * @throws IOException
 	 */
-	Object executeServiceCall(String serviceName, String functionName, Object[] arguments) throws IOException;
+	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments) throws IOException;
 
 	/**
 	 * Get the converter for converting domain objects to supported objects for json messages.
 	 * Return null for no specific conversion.
 	 */
 	IForJsonConverter getForJsonConverter();
+
+	/**
+	 * Invoke an function on the webcomponent
+	 * @param receiver the webcomponent to invoke on
+	 * @param apiFunction the function to invoke
+	 * @param arguments
+	 */
+	public Object invokeApi(WebComponent receiver, WebComponentApiDefinition apiFunction, Object[] arguments);
 }

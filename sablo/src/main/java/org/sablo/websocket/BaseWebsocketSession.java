@@ -19,12 +19,18 @@ package org.sablo.websocket;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.sablo.WebComponent;
 import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
+import org.sablo.specification.WebComponentApiDefinition;
+import org.sablo.specification.property.IPropertyType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Base class for handling a websocket session.
@@ -32,6 +38,7 @@ import org.sablo.eventthread.IEventDispatcher;
  */
 public abstract class BaseWebsocketSession implements IWebsocketSession
 {
+	private static final Logger log = LoggerFactory.getLogger(WebsocketEndpoint.class.getCanonicalName());
 	private final Map<String, IService> services = new HashMap<>();
 	private final List<IWebsocketEndpoint> registeredEnpoints = Collections.synchronizedList(new ArrayList<IWebsocketEndpoint>());
 
@@ -128,11 +135,51 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 		WebsocketEndpoint.get().executeAsyncServiceCall(serviceName, functionName, arguments);
 	}
 
+	public Object invokeApi(WebComponent receiver, WebComponentApiDefinition apiFunction, Object[] arguments)
+	{
+		return invokeApi(receiver, apiFunction, arguments, null);
+	}
+	
+	protected Object invokeApi(WebComponent receiver, WebComponentApiDefinition apiFunction, Object[] arguments, Map<String, Object> callContributions)
+	{
+		// {"call":{"form":"product","bean":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}}
+		try
+		{
+			Map<String, Map<String, Map<String, Object>>> changes = WebsocketEndpoint.get().getAllComponentsChanges();
+			Map<String, Object> data = new HashMap<>();
+			data.put("forms", changes);
+
+			Map<String, Object> call = new HashMap<>();
+			if (callContributions != null) call.putAll(callContributions);
+			call.put("form", receiver.getParent().getName());
+			call.put("bean", receiver.getName());
+			call.put("api", apiFunction.getName());
+			if (arguments != null && arguments.length > 0)
+			{
+				call.put("args", arguments);
+			}
+			data.put("call", call);
+
+			Object ret = WebsocketEndpoint.get().sendMessage(data, false, getForJsonConverter());
+			// convert dates back
+			if (ret instanceof Long && apiFunction.getReturnType().getType() == IPropertyType.Default.date.getType())
+			{
+				return new Date(((Long)ret).longValue());
+			}
+			return ret;
+		}
+		catch (IOException e)
+		{
+			log.error("IOException occurred",e);
+		}
+
+		return null;
+	}
+
 	@Override
 	public IForJsonConverter getForJsonConverter()
 	{
 		// by default no conversion, only support basic types
 		return null;
 	}
-
 }

@@ -39,9 +39,9 @@ import org.slf4j.LoggerFactory;
  * 
  * @author rgansevles
  */
-public class WebComponentSpec extends PropertyDescription
+public class WebComponentSpecification extends PropertyDescription
 {
-	private static final Logger log = LoggerFactory.getLogger(WebComponentSpec.class.getCanonicalName());
+	private static final Logger log = LoggerFactory.getLogger(WebComponentSpecification.class.getCanonicalName());
 
 	public static final String TYPES_KEY = "types";
 
@@ -53,7 +53,7 @@ public class WebComponentSpec extends PropertyDescription
 	private final String displayName;
 	private final String packageName;
 
-	public WebComponentSpec(String name, String packageName, String displayName, String definition, JSONArray libs)
+	public WebComponentSpecification(String name, String packageName, String displayName, String definition, JSONArray libs)
 	{
 		super(name, null);
 		this.packageName = packageName;
@@ -172,12 +172,12 @@ public class WebComponentSpec extends PropertyDescription
 	}
 
 	@SuppressWarnings("unchecked")
-	public static WebComponentSpec parseSpec(String specfileContent, String packageName, Map<String, IPropertyType> globalTypes, String specpath)
+	public static WebComponentSpecification parseSpec(String specfileContent, String packageName, Map<String, IPropertyType> globalTypes, String specpath)
 		throws JSONException
 	{
 		JSONObject json = new JSONObject('{' + specfileContent + '}');
 
-		WebComponentSpec spec = new WebComponentSpec(json.getString("name"), packageName, json.optString("displayName", null), json.getString("definition"),
+		WebComponentSpecification spec = new WebComponentSpecification(json.getString("name"), packageName, json.optString("displayName", null), json.getString("definition"),
 			json.optJSONArray("libraries"));
 
 		// first types, can be used in properties
@@ -288,9 +288,9 @@ public class WebComponentSpec extends PropertyDescription
 				}
 				// TODO this is currently never true? See 5 lines above this, types are always just PropertyDescription?
 				// is this really supported? or should we add it just to the properties? But how are these handlers then added and used
-				if (type instanceof WebComponentSpec)
+				if (type instanceof WebComponentSpecification)
 				{
-					((WebComponentSpec)type).putAllHandlers(parseProperties("handlers", jsonObject.getJSONObject(typeName), allAvailableTypes, specpath));
+					((WebComponentSpecification)type).putAllHandlers(parseProperties("handlers", jsonObject.getJSONObject(typeName), allAvailableTypes, specpath));
 				}
 			}
 		}

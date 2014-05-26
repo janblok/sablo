@@ -17,8 +17,10 @@
 package org.sablo.eventthread;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
+import org.sablo.Container;
 import org.sablo.websocket.IForJsonConverter;
 import org.sablo.websocket.IWebsocketEndpoint;
 import org.sablo.websocket.IWebsocketSession;
@@ -139,4 +141,29 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 		return retValue;
 	}
 
+	@Override
+	public void regisiterContainer(Container container) 
+	{
+		for (IWebsocketEndpoint endpoint : session.getRegisteredEnpoints())
+		{
+			endpoint.regisiterContainer(container);
+		}
+	}
+
+	@Override
+	public Map<String, Map<String, Map<String, Object>>> getAllComponentsChanges() 
+	{
+		Map<String, Map<String, Map<String, Object>>> changes = new HashMap<>(8);
+		for (IWebsocketEndpoint endpoint : session.getRegisteredEnpoints())
+		{
+			changes.putAll(endpoint.getAllComponentsChanges());
+		}
+		return changes;
+	}
+
+	@Override
+	public IWebsocketSession getWebsocketSession() 
+	{
+		return session;
+	}
 }

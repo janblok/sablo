@@ -43,7 +43,7 @@ public class WebComponentSpecProvider
 {
 	private static final Logger log = LoggerFactory.getLogger(WebComponentSpecProvider.class.getCanonicalName());
 
-	private final Map<String, WebComponentSpec> cachedDescriptions = new HashMap<>();
+	private final Map<String, WebComponentSpecification> cachedDescriptions = new HashMap<>();
 	private final Map<String, IPropertyType> globalTypes = new HashMap<>();
 
 	private final IPackageReader[] packageReaders;
@@ -104,7 +104,7 @@ public class WebComponentSpecProvider
 		{
 			JSONObject typeContainer = new JSONObject();
 			JSONObject allGlobalTypesFromAllPackages = new JSONObject();
-			typeContainer.put(WebComponentSpec.TYPES_KEY, allGlobalTypesFromAllPackages);
+			typeContainer.put(WebComponentSpecification.TYPES_KEY, allGlobalTypesFromAllPackages);
 
 			for (WebComponentPackage p : packages)
 			{
@@ -120,7 +120,7 @@ public class WebComponentSpecProvider
 
 			try
 			{
-				Map<String, IPropertyType> parsedTypes = WebComponentSpec.parseTypes(typeContainer, globalTypes,
+				Map<String, IPropertyType> parsedTypes = WebComponentSpecification.parseTypes(typeContainer, globalTypes,
 					"flattened global types - from all web component packages");
 				globalTypes.putAll(parsedTypes);
 			}
@@ -154,11 +154,11 @@ public class WebComponentSpecProvider
 		return readers.toArray(new IPackageReader[readers.size()]);
 	}
 
-	private void cache(List<WebComponentSpec> webComponentDescriptions)
+	private void cache(List<WebComponentSpecification> webComponentDescriptions)
 	{
-		for (WebComponentSpec desc : webComponentDescriptions)
+		for (WebComponentSpecification desc : webComponentDescriptions)
 		{
-			WebComponentSpec old = cachedDescriptions.put(desc.getName(), desc);
+			WebComponentSpecification old = cachedDescriptions.put(desc.getName(), desc);
 			if (old != null) log.error("Conflict found! Duplicate web component definition name: " + old.getName());
 		}
 	}
@@ -168,14 +168,14 @@ public class WebComponentSpecProvider
 		return globalTypes.get(typeName);
 	}
 
-	public WebComponentSpec getWebComponentDescription(String componentTypeName)
+	public WebComponentSpecification getWebComponentSpecification(String componentTypeName)
 	{
 		return cachedDescriptions.get(componentTypeName);
 	}
 
-	public WebComponentSpec[] getWebComponentDescriptions()
+	public WebComponentSpecification[] getWebComponentSpecifications()
 	{
-		return cachedDescriptions.values().toArray(new WebComponentSpec[cachedDescriptions.size()]);
+		return cachedDescriptions.values().toArray(new WebComponentSpecification[cachedDescriptions.size()]);
 	}
 
 	private static volatile WebComponentSpecProvider instance;
@@ -196,6 +196,28 @@ public class WebComponentSpecProvider
 
 	public static WebComponentSpecProvider init(ServletContext servletContext)
 	{
+		try
+		{
+			InputStream is = servletContext.getResourceAsStream("/WEB-INF/components.properties");
+			Properties properties = new Properties();
+			properties.load(is);
+			String[] locations = properties.getProperty("locations").split(";");
+			return init(servletContext, locations);
+		}
+		catch (Exception e)
+		{
+			log.error("Exception during init components.properties reading",e);
+		}
+		return instance;
+	}
+
+	/**
+	 * @param servletContext
+	 * @param webComponentBundleNames
+	 * @return the provider
+	 */
+	public static WebComponentSpecProvider init(ServletContext servletContext, String[] webComponentBundleNames) 
+	{
 		if (instance == null)
 		{
 			synchronized (WebComponentSpecProvider.class)
@@ -204,16 +226,11 @@ public class WebComponentSpecProvider
 				{
 					try
 					{
-						ArrayList<IPackageReader> readers = new ArrayList<IPackageReader>();
-						InputStream is = servletContext.getResourceAsStream("/WEB-INF/components.properties");
-						Properties properties = new Properties();
-						properties.load(is);
-						String[] locations = properties.getProperty("locations").split(";");
-						for (String location : locations)
+						List<IPackageReader> readers = new ArrayList<IPackageReader>();
+						for (String location : webComponentBundleNames)
 						{
 							readers.add(new WebComponentPackage.WarURLPackageReader(servletContext, location));
 						}
-
 						instance = new WebComponentSpecProvider(readers.toArray(new IPackageReader[readers.size()]));
 					}
 					catch (Exception e)
@@ -233,5 +250,4 @@ public class WebComponentSpecProvider
 			instance = new WebComponentSpecProvider(instance.packageReaders);
 		}
 	}
-
 }

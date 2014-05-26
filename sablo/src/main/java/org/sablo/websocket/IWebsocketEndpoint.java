@@ -19,6 +19,8 @@ package org.sablo.websocket;
 import java.io.IOException;
 import java.util.Map;
 
+import org.sablo.Container;
+
 
 /**
  * The websocket endpoint interface.
@@ -99,4 +101,22 @@ public interface IWebsocketEndpoint
 	 * @param windowId
 	 */
 	public void setWindowId(String windowId);
+
+	/**
+	 * Register a container at the websocket for traversal of changes
+	 * @param container
+	 */
+	void regisiterContainer(Container container);
+
+	/**
+	 * Get the component changes
+	 * @return the changes for all registered Containers. 
+	 */
+	Map<String, Map<String, Map<String, Object>>> getAllComponentsChanges();
+
+	/**
+	 * Get the websocket session
+	 * @return
+	 */
+	public IWebsocketSession getWebsocketSession();
 }

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -37,6 +38,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
 import org.json.JSONWriter;
+import org.sablo.Container;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 import org.slf4j.Logger;
@@ -59,6 +61,8 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 {
 	private static final Logger log = LoggerFactory.getLogger(WebsocketEndpoint.class.getCanonicalName());
 	private static ThreadLocal<IWebsocketEndpoint> currentInstance = new ThreadLocal<>();
+
+	private WeakHashMap<Container, Object> usedContainers = new WeakHashMap<>(3); // set of used container in order to collect all changes  
 
 	public static IWebsocketEndpoint get()
 	{
@@ -456,4 +460,33 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 		return session != null;
 	}
 
+	@Override
+	public void regisiterContainer(Container container) 
+	{
+		usedContainers.put(container, new Object());
+	}
+
+	@Override
+	public synchronized Map<String, Map<String, Map<String, Object>>> getAllComponentsChanges()
+	{
+		Map<String, Map<String, Map<String, Object>>> changes = new HashMap<>(8);
+		for (Container fc: usedContainers.keySet())
+		{
+			if (fc.isVisible())
+			{
+				Map<String, Map<String, Object>> formChanges = fc.getAllComponentsChanges();
+				if (formChanges.size() > 0)
+				{
+					changes.put(fc.getName(), formChanges);
+				}
+			}
+		}
+		return changes;
+	}
+
+	@Override
+	public IWebsocketSession getWebsocketSession() 
+	{
+		return wsSession;
+	}
 }

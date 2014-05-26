@@ -16,9 +16,12 @@
 
 package org.sablo;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.sablo.websocket.WebsocketEndpoint;
 
 /**
  * Container object is a component that can contain other components.
@@ -53,5 +56,42 @@ public abstract class Container extends WebComponent
 	public Collection<WebComponent> getComponents()
 	{
 		return components.values();
+	}
+	
+	public Map<String, Map<String, Object>> getAllComponentsChanges()
+	{
+		Map<String, Map<String, Object>> props = new HashMap<String, Map<String, Object>>(8);
+
+		ArrayList<WebComponent> allComponents = new ArrayList<WebComponent>();
+		allComponents.add(this); // add the container itself
+		allComponents.addAll(getComponents());
+
+		for (WebComponent wc : allComponents)
+		{
+			Map<String, Object> changes = wc.getChanges();
+			if (changes.size() > 0)
+			{
+				props.put(wc == this ? "" : wc.getName(), changes); //$NON-NLS-1$
+			}
+		}
+		return props;
+	}
+
+	public Map<String, Map<String, Object>> getAllComponentsProperties()
+	{
+		WebsocketEndpoint.get().regisiterContainer(this);
+		Map<String, Map<String, Object>> props = new HashMap<String, Map<String, Object>>();
+
+		ArrayList<WebComponent> allComponents = new ArrayList<WebComponent>();
+		allComponents.add(this); // add the form itself
+		allComponents.addAll(getComponents());
+
+		for (WebComponent wc : allComponents)
+		{
+			Map<String, Object> changes = wc.getProperties();
+			wc.clearChanges();
+			props.put(wc == this ? "" : wc.getName(), changes); //$NON-NLS-1$
+		}
+		return props;
 	}
 }

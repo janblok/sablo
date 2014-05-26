@@ -26,8 +26,8 @@ import java.util.Set;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.sablo.specification.WebComponentApiDefinition;
-import org.sablo.specification.property.IComplexPropertyValue;
 import org.sablo.websocket.ConversionLocation;
+import org.sablo.websocket.WebsocketEndpoint;
 
 /**
  * Server side representation of an angular webcomponent in the browser.
@@ -81,7 +81,10 @@ public abstract class WebComponent
 	 */
 	public abstract Object executeEvent(String eventType, Object[] args);
 
-	public abstract Object invokeApi(WebComponentApiDefinition apiDefinition, Object[] args);
+	public Object invokeApi(WebComponentApiDefinition apiFunction, Object[] args)
+	{
+		return WebsocketEndpoint.get().getWebsocketSession().invokeApi(this, apiFunction, args);
+	}
 	
 	/**
 	 * Get a property
@@ -206,9 +209,9 @@ public abstract class WebComponent
 
 	/**
 	 * Allow for subclasses to act on property changes
-	 * @param propertyName
-	 * @param oldValue
-	 * @param newValue
+	 * @param propertyName the property name
+	 * @param oldValue the old val
+	 * @param newValue the new val
 	 */
 	protected void onPropertyChange(String propertyName, Object oldValue, Object newValue) 
 	{
@@ -223,10 +226,28 @@ public abstract class WebComponent
 	}
 	
 	/**
-	 * Allow for conversion
-	 * @param propertyName
-	 * @param oldValue
-	 * @param newValue
+	 * @return
+	 */
+	public boolean isVisible() 
+	{
+		Boolean v = (Boolean) properties.get("visible");
+		return (v == null ? false : v.booleanValue());
+	}
+
+	/**
+	 * Register as visible
+	 * @return
+	 */
+	public void setVisible(boolean v) 
+	{
+		properties.put("visible",v);
+	}
+	
+	/**
+	 * Allow for subclasses to do conversions
+	 * @param propertyName the property name
+	 * @param oldValue the old val
+	 * @param newValue the new val
 	 * @param sourceOfValue
 	 * @return the converted value
 	 * @throws JSONException

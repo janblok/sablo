@@ -26,6 +26,8 @@ import java.util.Set;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.sablo.specification.WebComponentApiDefinition;
+import org.sablo.specification.WebComponentSpecProvider;
+import org.sablo.specification.WebComponentSpecification;
 import org.sablo.websocket.ConversionLocation;
 import org.sablo.websocket.WebsocketEndpoint;
 
@@ -36,6 +38,8 @@ import org.sablo.websocket.WebsocketEndpoint;
  */
 public abstract class WebComponent
 {
+	private final WebComponentSpecification specification;
+	
 	/**
 	 * model properties to interact with webcomponent values, maps name to value
 	 */
@@ -49,10 +53,24 @@ public abstract class WebComponent
 	private final String name;
 	Container parent;
 
-	public WebComponent(String name)
+	public WebComponent(String componentType,String name)
 	{
+		if (componentType != null)
+		{
+			specification = WebComponentSpecProvider.getInstance().getWebComponentSpecification(componentType);
+			if (specification == null) throw new IllegalStateException("Cannot work without specification");
+		}
+		else
+		{
+			specification = null;
+		}
 		this.name = name;
 		properties.put("name", name);
+	}
+	
+	protected WebComponent(String name)
+	{
+		this(null,name);
 	}
 
 	/**
@@ -81,6 +99,28 @@ public abstract class WebComponent
 	 */
 	public abstract Object executeEvent(String eventType, Object[] args);
 
+	/**
+	 * Invoke apiFunction by name, fails silently if not found
+	 * @param apiFunctionName the function name
+	 * @param args the args 
+	 * @return the value if any
+	 */
+	public Object invokeApi(String apiFunctionName, Object[] args)
+	{
+		WebComponentApiDefinition apiFunction = specification.getApiFunction(apiFunctionName);
+		if (apiFunction != null) 
+		{
+			return invokeApi(apiFunction, args);
+		}
+		return null;
+	}
+
+	/**
+	 * Invoke apiFunction
+	 * @param apiFunction the function
+	 * @param args the args 
+	 * @return the value if any
+	 */
 	public Object invokeApi(WebComponentApiDefinition apiFunction, Object[] args)
 	{
 		return WebsocketEndpoint.get().getWebsocketSession().invokeApi(this, apiFunction, args);

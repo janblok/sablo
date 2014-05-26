@@ -33,7 +33,7 @@ public class WebComponentApiDefinition
 	private PropertyDescription returnType;
 	private JSONObject customConfigOptions;
 
-	public WebComponentApiDefinition(String name)
+	WebComponentApiDefinition(String name)
 	{
 		this.name = name;
 	}

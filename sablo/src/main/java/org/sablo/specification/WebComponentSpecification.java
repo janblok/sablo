@@ -102,15 +102,17 @@ public class WebComponentSpecification extends PropertyDescription
 		return Collections.unmodifiableMap(handlers);
 	}
 
-	void addApi(WebComponentApiDefinition api)
+	void addApiFunction(WebComponentApiDefinition apiFunction)
 	{
-		apis.put(api.getName(), api);
+		apis.put(apiFunction.getName(), apiFunction);
 	}
 
-	/**
-	 * You are not allowed to modify this map!
-	 */
-	public Map<String, WebComponentApiDefinition> getApis()
+	public WebComponentApiDefinition getApiFunction(String apiFunctionName)
+	{
+		return apis.get(apiFunctionName);
+	}
+	
+	public Map<String, WebComponentApiDefinition> getApiFunctions()
 	{
 		return Collections.unmodifiableMap(apis);
 	}
@@ -236,7 +238,7 @@ public class WebComponentSpecification extends PropertyDescription
 				}
 				if (customConfiguration != null) def.setCustomConfigOptions(customConfiguration);
 
-				spec.addApi(def);
+				spec.addApiFunction(def);
 			}
 		}
 		return spec;

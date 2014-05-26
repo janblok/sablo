@@ -19,10 +19,12 @@ package org.sablo;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.property.IComplexPropertyValue;
 import org.sablo.websocket.ConversionLocation;
@@ -179,6 +181,29 @@ public abstract class WebComponent
 		return false;
 	}
 	
+	/**
+	 * put property from the outside world, not recording changes.
+	 * converting to the right type.
+	 * @param propertyName
+	 * @param propertyValue can be a JSONObject or array or primitive.
+	 */
+	public void putBrowserProperty(String propertyName, Object propertyValue) throws JSONException
+	{
+		// currently we keep Java objects in here; we could switch to having only json objects in here is it make things quicker
+		// (then whenever a server-side value is put in the map, convert it via JSONUtils.toJSONValue())
+		//TODO remove this when hierarchical tree structure comes into play (only needed for )
+		if (propertyValue instanceof JSONObject)
+		{
+			Iterator<String> it = ((JSONObject)propertyValue).keys();
+			while (it.hasNext())
+			{
+				String key = it.next();
+				properties.put(propertyName + '.' + key, ((JSONObject)propertyValue).get(key));
+			}
+		}// end TODO REMOVE
+		properties.put(propertyName, convertPropertyValue(propertyName, properties.get(propertyName), propertyValue, ConversionLocation.BROWSER_UPDATE));
+	}
+
 	/**
 	 * Allow for subclasses to act on property changes
 	 * @param propertyName

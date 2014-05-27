@@ -90,16 +90,29 @@ public class WebComponentSpecProvider
 			}
 		}
 	}
+	
+	public static Map<String, IPropertyType> readDefaultTypes()
+	{
+		Map<String, IPropertyType> map = new HashMap<>();
+		populateDefaultTypes(map);
+		return map;
+	}
+
+	public static void populateDefaultTypes(Map<String, IPropertyType> map)
+	{
+		
+		for (IPropertyType.Default e : IPropertyType.Default.values())
+		{
+			IPropertyType type = e.getType();
+			map.put(type.getName(), type);
+		}
+	}
 
 	protected void readGloballyDefinedTypes(List<WebComponentPackage> packages)
 	{
 		// populate default types
-		for (IPropertyType.Default e : IPropertyType.Default.values())
-		{
-			IPropertyType type = e.getType();
-			globalTypes.put(type.getName(), type);
-		}
-
+		populateDefaultTypes(globalTypes);
+		
 		try
 		{
 			JSONObject typeContainer = new JSONObject();

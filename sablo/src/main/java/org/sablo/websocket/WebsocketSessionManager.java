@@ -22,12 +22,17 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Websocket user session management
  * @author jblok, rgansevles
  */
 public class WebsocketSessionManager
 {
+	private static final Logger log = LoggerFactory.getLogger(WebsocketSessionManager.class.getCanonicalName());
+	
 	private static IWebsocketSessionFactory websocketSessionFactory;
 
 	//maps form uuid to session
@@ -63,10 +68,24 @@ public class WebsocketSessionManager
 
 	public static IWebsocketSession getSession(String endpointType, String prevUuid)
 	{
-		return getOrCreateSession(endpointType, prevUuid, false);
+		try {
+			return getOrCreateSession(endpointType, prevUuid, false);
+		} catch (Exception e) {
+			log.error("exception calling getSession (not create) should not happen",e);
+		}
+		return null;
 	}
 
-	static IWebsocketSession getOrCreateSession(String endpointType, String prevUuid, boolean create)
+	/**
+	 * This method only throws an exception if the creation of the client fails (so the create boolean is true)
+	 * 
+	 * @param endpointType
+	 * @param prevUuid
+	 * @param create
+	 * @return
+	 * @throws Exception
+	 */
+	static IWebsocketSession getOrCreateSession(String endpointType, String prevUuid, boolean create) throws Exception
 	{
 		String uuid = prevUuid;
 		IWebsocketSession wsSession = null;

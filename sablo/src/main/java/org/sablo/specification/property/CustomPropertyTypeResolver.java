@@ -67,7 +67,7 @@ public class CustomPropertyTypeResolver
 	 * @return the appropriate property type (handler).
 	 */
 	// TODO should this name be a more specific ID - to avoid clashes between component packages, or is the typeName enough?
-	public CustomPropertyType resolveCustomPropertyType(String typeName)
+	public ICustomType<?> resolveCustomPropertyType(String typeName)
 	{
 		CustomPropertyType propertyType = cache.get(typeName);
 		if (propertyType == null)

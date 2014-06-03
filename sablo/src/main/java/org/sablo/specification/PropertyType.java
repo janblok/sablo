@@ -16,10 +16,10 @@
 
 package org.sablo.specification;
 
+import org.json.JSONObject;
+import org.sablo.specification.property.IComplexTypeImpl;
 import org.sablo.specification.property.IDesignJSONToJavaPropertyConverter;
 import org.sablo.specification.property.IJSONToJavaPropertyConverter;
-import org.sablo.specification.property.IPropertyConfigurationParser;
-import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.IServerObjToJavaPropertyConverter;
 
 
@@ -30,27 +30,14 @@ import org.sablo.specification.property.IServerObjToJavaPropertyConverter;
  * @author acostescu
  */
 @SuppressWarnings("nls")
-public class PropertyType implements IPropertyType
+public class PropertyType implements IComplexTypeImpl
 {
 
 	private final String typeName;
-	private final Default defaultEnumValue;
 
 	public PropertyType(String typeName)
 	{
-		this(typeName, Default.customDoNotTreatThisInSwitches);
-	}
-
-	public PropertyType(String typeName, Default defaultEnumValue)
-	{
 		this.typeName = typeName;
-		this.defaultEnumValue = defaultEnumValue;
-	}
-
-	@Override
-	public Default getDefaultEnumValue()
-	{
-		return defaultEnumValue;
 	}
 
 	@Override
@@ -63,18 +50,6 @@ public class PropertyType implements IPropertyType
 	public String toString()
 	{
 		return "'" + typeName + "' type";
-	}
-
-	@Override
-	public PropertyDescription getCustomJSONTypeDefinition()
-	{
-		return null;
-	}
-
-	@Override
-	public IPropertyConfigurationParser< ? > getPropertyConfigurationParser()
-	{
-		return null;
 	}
 
 	@Override
@@ -92,6 +67,21 @@ public class PropertyType implements IPropertyType
 	@Override
 	public IServerObjToJavaPropertyConverter< ? , ? > getServerObjectToJavaPropertyConverter(boolean isArray)
 	{
+		return null;
+	}
+
+	public Object toJava(Object newValue, Object previousValue) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object parseConfig(JSONObject config) {
+		return config;
+	}
+	
+	@Override
+	public Object defaultValue() {
 		return null;
 	}
 

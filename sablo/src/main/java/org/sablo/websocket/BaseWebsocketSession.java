@@ -29,6 +29,7 @@ import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
 import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.property.IPropertyType;
+import org.sablo.specification.property.types.DatePropertyType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -162,7 +163,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 
 			Object ret = WebsocketEndpoint.get().sendMessage(data, false, getForJsonConverter());
 			// convert dates back
-			if (ret instanceof Long && apiFunction.getReturnType().getType() == IPropertyType.Default.date.getType())
+			if (ret instanceof Long && apiFunction.getReturnType().getType() instanceof DatePropertyType)
 			{
 				return new Date(((Long)ret).longValue());
 			}

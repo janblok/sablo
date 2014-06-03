@@ -17,17 +17,18 @@
 
 package org.sablo.specification.property;
 
+import org.json.JSONObject;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.PropertyType;
 
 /**
  * Property types that are defined in JSON spec files.
  * @author acostescu
  */
-public class CustomPropertyType extends PropertyType
+public class CustomPropertyType<T> implements ICustomType<T>
 {
 
 	private PropertyDescription definition;
+	private String name;
 
 	/**
 	 * Creates a new property types that is defined in JSON spec files.
@@ -36,8 +37,13 @@ public class CustomPropertyType extends PropertyType
 	 */
 	public CustomPropertyType(String typeName, PropertyDescription definition)
 	{
-		super(typeName);
+		this.name = typeName;
 		setDefinition(definition);
+	}
+	
+	@Override
+	public String getName() {
+		return name;
 	}
 
 	void setDefinition(PropertyDescription definition)
@@ -59,6 +65,19 @@ public class CustomPropertyType extends PropertyType
 	public String toString()
 	{
 		return super.toString() + "\nDefinition JSON:\n  " + (definition == null ? "null" : definition.toStringWholeTree()); //$NON-NLS-1$//$NON-NLS-2$
+	}
+
+	@Override
+	public Object parseConfig(JSONObject config) {
+		return config;
+	}
+	
+	/* (non-Javadoc)
+	 * @see org.sablo.specification.property.IPropertyType#defaultValue()
+	 */
+	@Override
+	public T defaultValue() {
+		return null;
 	}
 
 }

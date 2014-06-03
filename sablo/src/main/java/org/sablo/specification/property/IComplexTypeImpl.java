@@ -17,7 +17,6 @@
 
 package org.sablo.specification.property;
 
-import org.sablo.specification.PropertyDescription;
 
 
 /**
@@ -25,16 +24,8 @@ import org.sablo.specification.PropertyDescription;
  * 
  * @author acostescu
  */
-public interface IComplexTypeImpl<CT, T extends IComplexPropertyValue>
+public interface IComplexTypeImpl<CT, T extends IComplexPropertyValue> extends IPropertyType<T>
 {
-
-	/**
-	 * Parser used to parse the JSON property configuration object into something that is easily usable later on (through {@link PropertyDescription#getConfig()}) by the property type implementation.<BR>
-	 * Example of JSON: "myComponentProperty: { type: 'myCustomType', myCustomTypeConfig1: true, myCustomTypeConfig2: [2, 4 ,6] }"<BR><BR>
-	 * 
-	 * If this is null but the property declaration contains configuration information, {@link PropertyDescription#getConfig()} will contain the actual JSON object. 
-	 */
-	IPropertyConfigurationParser<CT> getPropertyConfigurationParser();
 
 	// TODO ac document this
 	IJSONToJavaPropertyConverter<CT, T> getJSONToJavaPropertyConverter(boolean isArray);

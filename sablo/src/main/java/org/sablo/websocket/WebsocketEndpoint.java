@@ -325,46 +325,6 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 		return sendMessage(null, false, wsSession.getForJsonConverter()); // will return response from last service call
 	}
 
-	@SuppressWarnings("unchecked")
-	private void writeConversions(JSONWriter object, Map<String, Object> map) throws JSONException
-	{
-		for (Entry<String, Object> entry : map.entrySet())
-		{
-			if (entry.getValue() instanceof Map)
-			{
-				writeConversions(object.key(entry.getKey()).object(), (Map<String, Object>)entry.getValue());
-				object.endObject();
-			}
-			else
-			{
-				object.key(entry.getKey()).value(entry.getValue());
-			}
-		}
-	}
-
-	public String writeDataWithConversions(Map<String, ? > data, IForJsonConverter forJsonConverter) throws JSONException
-	{
-		JSONWriter writer = new JSONStringer().object();
-		DataConversion dataConversion = new DataConversion();
-		for (Entry<String, ? > entry : data.entrySet())
-		{
-			dataConversion.pushNode(entry.getKey());
-			writer.key(entry.getKey());
-			JSONUtils.toJSONValue(writer, entry.getValue(), dataConversion, forJsonConverter, ConversionLocation.BROWSER_UPDATE);
-			dataConversion.popNode();
-		}
-
-		if (dataConversion.getConversions().size() > 0)
-		{
-			writer.key("conversions").object();
-			writeConversions(writer, dataConversion.getConversions());
-			writer.endObject();
-		}
-
-		return writer.endObject().toString();
-	}
-
-
 	public Object sendMessage(Map<String, ? > data, boolean async, IForJsonConverter forJsonConverter) throws IOException
 	{
 		if ((data == null || data.size() == 0) && serviceCalls.size() == 0) return null;
@@ -387,7 +347,7 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 
 		try
 		{
-			sendText(writeDataWithConversions(message, forJsonConverter));
+			sendText(JSONUtils.writeDataWithConversions(message, forJsonConverter));
 		}
 		catch (JSONException e)
 		{
@@ -412,7 +372,7 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 		data.put(success ? "ret" : "exception", object);
 		try
 		{
-			sendText(writeDataWithConversions(data, forJsonConverter));
+			sendText(JSONUtils.writeDataWithConversions(data, forJsonConverter));
 		}
 		catch (JSONException e)
 		{

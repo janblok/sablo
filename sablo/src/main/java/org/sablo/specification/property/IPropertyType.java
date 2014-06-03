@@ -17,8 +17,9 @@
 
 package org.sablo.specification.property;
 
+import org.json.JSONObject;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.PropertyType;
+
 
 
 /**
@@ -27,7 +28,7 @@ import org.sablo.specification.PropertyType;
  * 
  * @author acostescu
  */
-public interface IPropertyType extends IComplexTypeImpl
+public interface IPropertyType<T>
 {
 
 	/**
@@ -37,86 +38,17 @@ public interface IPropertyType extends IComplexTypeImpl
 	String getName();
 
 	/**
-	 * Can be null; if it's not null then this type was defined as a custom type in JSON. It could also have special handling attached to it,
-	 * depending on what other method return.
-	 * @return the corresponding (JSON based) representation of this type's definition.
+	 * Parse the JSON property configuration object into something that is easily usable later on (through {@link PropertyDescription#getConfig()}) by the property type implementation.<BR>
+	 * Example of JSON: "myComponentProperty: { type: 'myCustomType', myCustomTypeConfig1: true, myCustomTypeConfig2: [2, 4 ,6] }"<BR><BR>
+	 * 
+	 * If this is null but the property declaration contains configuration information, {@link PropertyDescription#getConfig()} will contain the actual JSON object. 
+	 * 
+	 * it should return the config object itself if it doesn't do anything.
+	 * 
+	 * @return a custom object generated from the json or the json object itself.
 	 */
-	PropertyDescription getCustomJSONTypeDefinition();
-
-	// TODO I think this method and following enum can be removed if we manage to move all default Types to special
-	// implementations of this interface and avoid switch statements. 
-	/**
-	 * Gets the default type enum value if present.
-	 * @return for defaults that use switch statements, have an enum value returned here. Otherwise return null.
-	 */
-	Default getDefaultEnumValue();
-
-	// declare default types for switch statements:
-	public enum Default
-	{
-		// @formatter:off
-		color,
-		string,
-		tagstring,
-		point,
-		dimension,
-		insets,
-		font,
-		border,
-		bool("boolean"),
-		scrollbars,
-		bytenumber("byte"),
-		doublenumber("double"),
-		floatnumber("float"),
-		intnumber("int"),
-		longnumber("long"),
-		shortnumber("short"),
-		values,
-		dataprovider,
-		valuelist,
-		function,
-		form,
-		formscope,
-		format,
-		relation,
-		tabseq,
-		media,
-		mediaoptions,
-		styleclass,
-		object,
-		bean,
-		componentDef,
-		customDoNotTreatThisInSwitches,
-		date; // can be used in api calls
-		// @formatter:on
-
-		private final String alias;
-		private IPropertyType type = null;
-
-		private Default(String alias)
-		{
-			this.alias = alias;
-		}
-
-		private Default()
-		{
-			this(null);
-		}
-
-		public String getAlias()
-		{
-			return alias != null ? alias : name();
-		}
-
-		public IPropertyType getType()
-		{
-			if (type == null)
-			{
-				type = new PropertyType(getAlias(), this);
-			}
-			return type;
-		}
-
-	}
+	public Object parseConfig(JSONObject config);
+	
+	public T defaultValue();
 
 }

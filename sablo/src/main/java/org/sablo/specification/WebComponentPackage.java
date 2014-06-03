@@ -40,6 +40,10 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONObject;
 import org.sablo.specification.property.IPropertyType;
+import org.sablo.specification.property.types.DimensionPropertyType;
+import org.sablo.specification.property.types.IntPropertyType;
+import org.sablo.specification.property.types.PointPropertyType;
+import org.sablo.specification.property.types.TypesRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,7 +123,7 @@ public class WebComponentPackage
 		}
 	}
 
-	public List<WebComponentSpecification> getWebComponentDescriptions(Map<String, IPropertyType> globalTypes) throws IOException
+	public List<WebComponentSpecification> getWebComponentDescriptions() throws IOException
 	{
 		if (cachedDescriptions == null)
 		{
@@ -135,14 +139,12 @@ public class WebComponentPackage
 					{
 						try
 						{
-							WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), globalTypes, specpath);
+							WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName());
 							// add properties defined by us
-							if (parsed.getProperty("size") == null) parsed.putProperty("size", new PropertyDescription("size",
-								IPropertyType.Default.dimension.getType()));
-							if (parsed.getProperty("location") == null) parsed.putProperty("location", new PropertyDescription("location",
-								IPropertyType.Default.point.getType()));
-							if (parsed.getProperty("anchors") == null) parsed.putProperty("anchors", new PropertyDescription("anchors",
-								IPropertyType.Default.intnumber.getType()));
+							// TODO this is servoy specific so remove?
+							if (parsed.getProperty("size") == null) parsed.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
+							if (parsed.getProperty("location") == null) parsed.putProperty("location", new PropertyDescription("location",PointPropertyType.INSTANCE));
+							if (parsed.getProperty("anchors") == null) parsed.putProperty("anchors", new PropertyDescription("anchors",IntPropertyType.INSTANCE));
 							descriptions.add(parsed);
 						}
 						catch (Exception e)

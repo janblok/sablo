@@ -30,8 +30,7 @@ import javax.servlet.ServletContext;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
-import org.sablo.specification.property.IComplexTypeImpl;
-import org.sablo.specification.property.IPropertyType;
+import org.sablo.specification.property.types.TypesRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +43,6 @@ public class WebComponentSpecProvider
 	private static final Logger log = LoggerFactory.getLogger(WebComponentSpecProvider.class.getCanonicalName());
 
 	private final Map<String, WebComponentSpecification> cachedDescriptions = new HashMap<>();
-	private final Map<String, IPropertyType> globalTypes = new HashMap<>();
 
 	private final IPackageReader[] packageReaders;
 
@@ -82,7 +80,7 @@ public class WebComponentSpecProvider
 		{
 			try
 			{
-				cache(p.getWebComponentDescriptions(globalTypes));
+				cache(p.getWebComponentDescriptions());
 			}
 			catch (IOException e)
 			{
@@ -90,29 +88,9 @@ public class WebComponentSpecProvider
 			}
 		}
 	}
-	
-	public static Map<String, IPropertyType> readDefaultTypes()
-	{
-		Map<String, IPropertyType> map = new HashMap<>();
-		populateDefaultTypes(map);
-		return map;
-	}
-
-	public static void populateDefaultTypes(Map<String, IPropertyType> map)
-	{
-		
-		for (IPropertyType.Default e : IPropertyType.Default.values())
-		{
-			IPropertyType type = e.getType();
-			map.put(type.getName(), type);
-		}
-	}
 
 	protected void readGloballyDefinedTypes(List<WebComponentPackage> packages)
 	{
-		// populate default types
-		populateDefaultTypes(globalTypes);
-		
 		try
 		{
 			JSONObject typeContainer = new JSONObject();
@@ -133,9 +111,7 @@ public class WebComponentSpecProvider
 
 			try
 			{
-				Map<String, IPropertyType> parsedTypes = WebComponentSpecification.parseTypes(typeContainer, globalTypes,
-					"flattened global types - from all web component packages");
-				globalTypes.putAll(parsedTypes);
+				TypesRegistry.addTypes(WebComponentSpecification.getTypes(typeContainer).values());
 			}
 			catch (Exception e)
 			{
@@ -174,11 +150,6 @@ public class WebComponentSpecProvider
 			WebComponentSpecification old = cachedDescriptions.put(desc.getName(), desc);
 			if (old != null) log.error("Conflict found! Duplicate web component definition name: " + old.getName());
 		}
-	}
-
-	public IComplexTypeImpl getGlobalType(String typeName)
-	{
-		return globalTypes.get(typeName);
 	}
 
 	public WebComponentSpecification getWebComponentSpecification(String componentTypeName)

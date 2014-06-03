@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
 
 /**
@@ -34,7 +35,7 @@ import org.sablo.specification.property.IPropertyType;
 public class PropertyDescription
 {
 	private final String name;
-	private final IPropertyType type;
+	private final IPropertyType<?> type;
 	private final Object config;
 	private final boolean array;
 	private boolean optional = false; // currently only used in the context of an api function parameter
@@ -45,22 +46,22 @@ public class PropertyDescription
 	private Map<String, PropertyDescription> properties = null;
 
 
-	public PropertyDescription(String name, IPropertyType type)
+	public PropertyDescription(String name, IPropertyType<?> type)
 	{
 		this(name, type, false, null, null);
 	}
 
-	public PropertyDescription(String name, IPropertyType type, Object config)
+	public PropertyDescription(String name, IPropertyType<?> type, Object config)
 	{
 		this(name, type, false, config, null);
 	}
 
-	public PropertyDescription(String name, IPropertyType type, boolean array, Object config, Object defaultValue)
+	public PropertyDescription(String name, IPropertyType<?> type, boolean array, Object config, Object defaultValue)
 	{
 		this(name, type, array, config, defaultValue, null);
 	}
 
-	public PropertyDescription(String name, IPropertyType type, boolean array, Object config, Object defaultValue, List<Object> values)
+	public PropertyDescription(String name, IPropertyType<?> type, boolean array, Object config, Object defaultValue, List<Object> values)
 	{
 		this.name = name;
 		this.type = type;
@@ -103,7 +104,7 @@ public class PropertyDescription
 		return name;
 	}
 
-	public IPropertyType getType()
+	public IPropertyType<?> getType()
 	{
 		return type;
 	}
@@ -193,7 +194,7 @@ public class PropertyDescription
 		{
 			// this must be a custom type then
 			PropertyDescription propertyDescription = properties.get(name.substring(0, indexOfDot));
-			PropertyDescription typeSpec = propertyDescription.getType().getCustomJSONTypeDefinition();
+			PropertyDescription typeSpec = ((ICustomType<?>)propertyDescription.getType()).getCustomJSONTypeDefinition();
 			return typeSpec.getProperty(name.substring(indexOfDot + 1));
 		}
 

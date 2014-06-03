@@ -5,8 +5,10 @@ Bundle-SymbolicName: sablo;singleton:=true
 Bundle-Version: 8.0.0.3001
 Export-Package: org.sablo,
  org.sablo.eventthread,
+ org.sablo.property.types,
  org.sablo.specification,
  org.sablo.specification.property,
+ org.sablo.specification.property.types,
  org.sablo.websocket,
  org.sablo.websocket.utils
 Require-Bundle: org.junit,

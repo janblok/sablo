@@ -16,10 +16,6 @@
 
 package org.sablo.websocket.utils;
 
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Insets;
-import java.awt.Point;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +24,11 @@ import java.util.Map.Entry;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONStringer;
 import org.json.JSONWriter;
+import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IComplexPropertyValue;
+import org.sablo.specification.property.types.TypesRegistry;
 import org.sablo.websocket.ConversionLocation;
 import org.sablo.websocket.IForJsonConverter;
 import org.slf4j.Logger;
@@ -45,6 +44,47 @@ import org.slf4j.LoggerFactory;
 public class JSONUtils
 {
 	private static final Logger log = LoggerFactory.getLogger(JSONUtils.class.getCanonicalName());
+	
+	
+	@SuppressWarnings("unchecked")
+	private static void writeConversions(JSONWriter object, Map<String, Object> map) throws JSONException
+	{
+		for (Entry<String, Object> entry : map.entrySet())
+		{
+			if (entry.getValue() instanceof Map)
+			{
+				writeConversions(object.key(entry.getKey()).object(), (Map<String, Object>)entry.getValue());
+				object.endObject();
+			}
+			else
+			{
+				object.key(entry.getKey()).value(entry.getValue());
+			}
+		}
+	}
+
+	public static String writeDataWithConversions(Map<String, ? > data, IForJsonConverter forJsonConverter) throws JSONException
+	{
+		JSONWriter writer = new JSONStringer().object();
+		DataConversion dataConversion = new DataConversion();
+		for (Entry<String, ? > entry : data.entrySet())
+		{
+			dataConversion.pushNode(entry.getKey());
+			writer.key(entry.getKey());
+			JSONUtils.toJSONValue(writer, entry.getValue(), dataConversion, forJsonConverter, ConversionLocation.BROWSER_UPDATE);
+			dataConversion.popNode();
+		}
+
+		if (dataConversion.getConversions().size() > 0)
+		{
+			writer.key("conversions").object();
+			writeConversions(writer, dataConversion.getConversions());
+			writer.endObject();
+		}
+
+		return writer.endObject().toString();
+	}
+
 	
 	/**
 	 * Writes the given object into the JSONWriter. (it is meant to be used for transforming the basic types that can be sent by beans/components)
@@ -82,10 +122,14 @@ public class JSONUtils
 		}
 
 		JSONWriter w = writer;
-
+		
 		final Object converted = forJsonConverter == null ? value : forJsonConverter.convertForJson(value);
-
-		if (converted == null || converted == JSONObject.NULL)
+		
+		IClassPropertyType<Object> type = (IClassPropertyType<Object>) (converted == null?null:TypesRegistry.getType(converted.getClass()));
+		if (type != null) {
+			type.toJSON(writer, converted);
+		}
+		else if (converted == null || converted == JSONObject.NULL)
 		{
 			w = w.value(null); // null is allowed
 		}
@@ -109,50 +153,10 @@ public class JSONUtils
 		{
 			w = w.value(converted.toString());
 		}
-		else if (converted instanceof Point)
-		{
-			w = w.object();
-			w = w.key("x").value(((Point)converted).getX());
-			w = w.key("y").value(((Point)converted).getY());
-			w = w.endObject();
-		}
-		else if (converted instanceof Dimension)
-		{
-			w = w.object();
-			w = w.key("width").value(((Dimension)converted).getWidth());
-			w = w.key("height").value(((Dimension)converted).getHeight());
-			w = w.endObject();
-		}
 		else if (converted instanceof Date)
 		{
 			if (clientConversion != null) clientConversion.convert("Date");
 			w = w.value(((Date)converted).getTime());
-		}
-		else if (converted instanceof Insets)
-		{
-			Insets i = (Insets)converted;
-			w.object();
-			w.key("paddingTop").value(i.top + "px");
-			w.key("paddingBottom").value(i.bottom + "px");
-			w.key("paddingLeft").value(i.left + "px");
-			w.key("paddingRight").value(i.right + "px");
-			w.endObject();
-		}
-		else if (converted instanceof Font)
-		{
-			Font font = (Font)converted;
-			w.object();
-			if (font.isBold())
-			{
-				w.key("fontWeight").value("bold");
-			}
-			if (font.isItalic())
-			{
-				w.key("italic").value("italic"); //$NON-NLS-1$
-			}
-			w.key("fontSize").value(font.getSize() + "px");
-			w.key("fontFamily").value(font.getFamily() + ", Verdana, Arial");
-			w.endObject();
 		}
 		else if (converted instanceof JSONArray) // TODO are we using JSON object or Map and Lists? ( as internal representation of properties)
 		{

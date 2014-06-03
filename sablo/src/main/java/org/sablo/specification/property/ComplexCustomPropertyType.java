@@ -17,6 +17,7 @@
 
 package org.sablo.specification.property;
 
+import org.json.JSONObject;
 import org.sablo.specification.PropertyDescription;
 
 /**
@@ -24,16 +25,16 @@ import org.sablo.specification.PropertyDescription;
  * 
  * @author acostescu
  */
-public class ComplexCustomPropertyType extends CustomPropertyType
+public class ComplexCustomPropertyType extends CustomPropertyType implements IComplexTypeImpl
 {
 
 	protected final IComplexTypeImpl< ? , ? > handlers;
 
 	// just caches
-	protected IPropertyConfigurationParser< ? > pcp;
 	protected IJSONToJavaPropertyConverter< ? , ? >[] js2j = new IJSONToJavaPropertyConverter< ? , ? >[2];
 	protected IDesignJSONToJavaPropertyConverter< ? , ? >[] d2j = new IDesignJSONToJavaPropertyConverter< ? , ? >[2];
 	protected IServerObjToJavaPropertyConverter< ? , ? >[] s2j = new IServerObjToJavaPropertyConverter< ? , ? >[2];
+
 
 	/**
 	 * Creates a new property type the is both defined in JSON spec file and has special server-side/client-side handling.
@@ -45,14 +46,7 @@ public class ComplexCustomPropertyType extends CustomPropertyType
 		super(typeName, definition);
 		this.handlers = handlers;
 	}
-
-	// TODO does it help to add generics here as well or to drop existing ones?
-	@Override
-	public IPropertyConfigurationParser< ? > getPropertyConfigurationParser()
-	{
-		return pcp != null ? pcp : (pcp = handlers.getPropertyConfigurationParser());
-	}
-
+	
 	@Override
 	public IJSONToJavaPropertyConverter< ? , ? > getJSONToJavaPropertyConverter(boolean isArray)
 	{
@@ -79,5 +73,12 @@ public class ComplexCustomPropertyType extends CustomPropertyType
 	{
 		return "(COMPLEX Type) " + super.toString(); //$NON-NLS-1$
 	}
-
+	
+	/* (non-Javadoc)
+	 * @see org.sablo.specification.property.CustomPropertyType#parseConfig(org.json.JSONObject)
+	 */
+	@Override
+	public Object parseConfig(JSONObject config) {
+		return handlers.parseConfig(config);
+	}
 }

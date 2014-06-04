@@ -80,6 +80,8 @@ public class TypesRegistry {
 	
 	public static IClassPropertyType<?> getType(Class<?> clz) {
 		IClassPropertyType<?> type = typesByClass.get(clz);
+		//TODO if this is still null should we do a isAssignableFrom/instanceof check?
+		// clz could be a concrete type, but the registered type is a interface class type.
 //		if (type == null) throw new RuntimeException("Type for class: '" + clz + "' not found in " + printTypes());
 		return type;
 	}

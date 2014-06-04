@@ -78,7 +78,7 @@ public class WebComponent {
 		properties.put("name", name);
 	}
 
-	protected WebComponent(String name) {
+	WebComponent(String name) {
 		this(null, name);
 	}
 

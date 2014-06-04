@@ -18,6 +18,7 @@ package org.sablo;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -55,7 +56,7 @@ public abstract class Container extends WebComponent
 
 	public Collection<WebComponent> getComponents()
 	{
-		return components.values();
+		return Collections.unmodifiableCollection(components.values());
 	}
 	
 	public Map<String, Map<String, Object>> getAllComponentsChanges()

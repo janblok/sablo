@@ -65,7 +65,7 @@ public class WrapperTypeTest {
 		}
 
 		@Override
-		public MyWrapper wrap(String value, MyWrapper previousValue) {
+		public MyWrapper wrap(String value, MyWrapper previousValue, Object converterContext) {
 			if (previousValue == null) previousValue = new MyWrapper();
 			previousValue.string = value;
 			previousValue.counter++;

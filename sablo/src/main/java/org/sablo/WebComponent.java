@@ -322,7 +322,7 @@ public class WebComponent {
 		IPropertyType<Object> type = propertyDesc != null ? (IPropertyType<Object>) propertyDesc
 				.getType() : null;
 		Object object = (type instanceof IWrapperType) ? ((IWrapperType) type)
-				.wrap(newValue, oldValue) : newValue;
+				.wrap(newValue, oldValue, getConverterContext()) : newValue;
 		if (type instanceof IClassPropertyType && object != null) {
 			if (((IClassPropertyType<?>) type).getTypeClass() != object
 					.getClass()) {
@@ -452,5 +452,9 @@ public class WebComponent {
 			Object newValue, ConversionLocation sourceOfValue)
 			throws JSONException {
 		return newValue;
+	}
+	
+	protected Object getConverterContext() {
+		return null;
 	}
 }

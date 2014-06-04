@@ -324,8 +324,8 @@ public class WebComponent {
 		Object object = (type instanceof IWrapperType) ? ((IWrapperType) type)
 				.wrap(newValue, oldValue, getConverterContext()) : newValue;
 		if (type instanceof IClassPropertyType && object != null) {
-			if (((IClassPropertyType<?>) type).getTypeClass() != object
-					.getClass()) {
+			if (((IClassPropertyType<?>) type).getTypeClass().isAssignableFrom(object
+					.getClass())) {
 				log.info("property: " + propertyName + " of component "
 						+ getName() + " set with value: " + newValue
 						+ " which is not of type: "

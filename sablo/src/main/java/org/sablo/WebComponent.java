@@ -30,6 +30,7 @@ import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebComponentSpecification;
+import org.sablo.specification.property.DataConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IWrapperType;
@@ -322,9 +323,9 @@ public class WebComponent {
 		IPropertyType<Object> type = propertyDesc != null ? (IPropertyType<Object>) propertyDesc
 				.getType() : null;
 		Object object = (type instanceof IWrapperType) ? ((IWrapperType) type)
-				.wrap(newValue, oldValue, getConverterContext()) : newValue;
+				.wrap(newValue, oldValue, new DataConverterContext(propertyDesc, this)) : newValue;
 		if (type instanceof IClassPropertyType && object != null) {
-			if (((IClassPropertyType<?>) type).getTypeClass().isAssignableFrom(object
+			if (!((IClassPropertyType<?>) type).getTypeClass().isAssignableFrom(object
 					.getClass())) {
 				log.info("property: " + propertyName + " of component "
 						+ getName() + " set with value: " + newValue
@@ -452,9 +453,5 @@ public class WebComponent {
 			Object newValue, ConversionLocation sourceOfValue)
 			throws JSONException {
 		return newValue;
-	}
-	
-	protected Object getConverterContext() {
-		return null;
 	}
 }

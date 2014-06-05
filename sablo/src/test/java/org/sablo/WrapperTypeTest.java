@@ -27,7 +27,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
-import org.sablo.specification.property.IPropertyType;
+import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.types.TypesRegistry;
 import org.sablo.websocket.utils.JSONUtils;
@@ -65,7 +65,7 @@ public class WrapperTypeTest {
 		}
 
 		@Override
-		public MyWrapper wrap(String value, MyWrapper previousValue, Object converterContext) {
+		public MyWrapper wrap(String value, MyWrapper previousValue, IDataConverterContext dataConverterContext) {
 			if (previousValue == null) previousValue = new MyWrapper();
 			previousValue.string = value;
 			previousValue.counter++;

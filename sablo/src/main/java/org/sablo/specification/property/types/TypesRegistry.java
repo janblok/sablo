@@ -46,7 +46,6 @@ public class TypesRegistry {
 		types.put("string", StringPropertyType.INSTANCE);
 		types.put("border", BorderPropertyType.INSTANCE);
 		types.put("insets", InsetsPropertyType.INSTANCE);
-		types.put("dataprovider", DataproviderPropertyType.INSTANCE);
 		types.put("date", DatePropertyType.INSTANCE);
 		types.put("dimension", DimensionPropertyType.INSTANCE);
 		types.put("font", FontPropertyType.INSTANCE);
@@ -55,7 +54,6 @@ public class TypesRegistry {
 		types.put("point", PointPropertyType.INSTANCE);
 		types.put("styleclass", StyleClassPropertyType.INSTANCE);
 		types.put("tabseq", TabSeqPropertyType.INSTANCE);
-		types.put("tagstring", TagStringPropertyType.INSTANCE);
 		types.put("values", ValuesPropertyType.INSTANCE);
 		types.put("componentDef", ComponentDefPropertyType.INSTANCE);
 		types.put("byte", BytePropertyType.INSTANCE);

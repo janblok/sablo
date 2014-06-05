@@ -28,7 +28,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.sablo.specification.property.CustomPropertyTypeResolver;
-import org.sablo.specification.property.IComplexTypeImpl;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.types.TypesRegistry;
@@ -37,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Parse .spec files for components.
- * 
  * @author rgansevles
  */
 public class WebComponentSpecification extends PropertyDescription

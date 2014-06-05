@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.sablo.specification.property;
 
 import org.json.JSONException;
@@ -20,7 +21,6 @@ import org.json.JSONWriter;
 
 /**
  * @author jcompagner
- *
  */
 public interface IClassPropertyType<C> extends IPropertyType<C> {
 	

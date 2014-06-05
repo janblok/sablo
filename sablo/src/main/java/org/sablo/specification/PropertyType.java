@@ -22,7 +22,6 @@ import org.sablo.specification.property.IDesignJSONToJavaPropertyConverter;
 import org.sablo.specification.property.IJSONToJavaPropertyConverter;
 import org.sablo.specification.property.IServerObjToJavaPropertyConverter;
 
-
 /**
  * Base class for property types in web component spec files.
  * 

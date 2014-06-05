@@ -17,7 +17,6 @@
 
 package org.sablo.specification.property;
 
-
 /**
  * Used to transform a server side set java object (coming from custom server side logic) into a server-side Java Object representing the property value.<br>
  * The Java Object can be used later to sync this property with the browser component as needed (see linked interfaces).<br><br>

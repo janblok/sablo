@@ -10,6 +10,7 @@ Export-Package: org.sablo,
  org.sablo.specification.property,
  org.sablo.specification.property.types,
  org.sablo.websocket,
+ org.sablo.websocket.impl,
  org.sablo.websocket.utils
 Require-Bundle: org.junit,
  javax.servlet;bundle-version="3.0.0",

@@ -252,7 +252,7 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 			{
 				// service call
 				final String serviceName = obj.optString("service");
-				final IService service = wsSession.getService(serviceName);
+				final IServerService service = wsSession.getServerService(serviceName);
 				
 				if (service != null) {
 					wsSession.getEventDispatcher().addEvent(new Runnable() {
@@ -319,10 +319,10 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 	}
 
 	@Override
-	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments) throws IOException
+	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, Map<String, ?> changes) throws IOException
 	{
 		addServiceCall(serviceName, functionName, arguments);
-		return sendMessage(null, false, wsSession.getForJsonConverter()); // will return response from last service call
+		return sendMessage(changes, false, wsSession.getForJsonConverter()); // will return response from last service call
 	}
 
 	public Object sendMessage(Map<String, ? > data, boolean async, IForJsonConverter forJsonConverter) throws IOException

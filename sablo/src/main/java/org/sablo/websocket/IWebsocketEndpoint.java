@@ -84,10 +84,11 @@ public interface IWebsocketEndpoint
 	 * @param serviceName
 	 * @param functionName
 	 * @param arguments
+	 * @param changes TODO
 	 * @return remote result
 	 * @throws IOException
 	 */
-	Object executeServiceCall(String serviceName, String functionName, Object[] arguments) throws IOException;
+	Object executeServiceCall(String serviceName, String functionName, Object[] arguments, Map<String, ?> changes) throws IOException;
 	
 	/**
 	 * Gets the window id belonging to this endpoint (a tab or window in the browser)

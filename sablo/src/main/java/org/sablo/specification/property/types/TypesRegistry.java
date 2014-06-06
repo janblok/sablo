@@ -33,7 +33,7 @@ public class TypesRegistry {
 	private static final Logger log = LoggerFactory.getLogger(TypesRegistry.class.getCanonicalName());
 	
 	private static Map<String,IPropertyType<?>> types = new HashMap<>();
-	private static Map<Class<?>,IClassPropertyType<?>> typesByClass = new HashMap<>();
+	private static Map<Class<?>,IClassPropertyType<?,?>> typesByClass = new HashMap<>();
 	
 	static
 	{
@@ -60,9 +60,9 @@ public class TypesRegistry {
 		
 		for (IPropertyType<?> type : types.values()) {
 			if (type instanceof IClassPropertyType) {
-				IClassPropertyType<?> previous = typesByClass.put( ((IClassPropertyType<?>)type).getTypeClass(), (IClassPropertyType<?>) type);
+				IClassPropertyType<?,?> previous = typesByClass.put( ((IClassPropertyType<?,?>)type).getTypeClass(), (IClassPropertyType<?,?>) type);
 				if (previous != null) {
-					throw new RuntimeException("duplicate type found for class: " + ((IClassPropertyType<?>)type).getTypeClass() + " of type: " + type.getName() + " replaced: " + ((IPropertyType<?>)previous).getName());
+					throw new RuntimeException("duplicate type found for class: " + ((IClassPropertyType<?,?>)type).getTypeClass() + " of type: " + type.getName() + " replaced: " + ((IPropertyType<?>)previous).getName());
 				}
 			}
 		}
@@ -76,8 +76,8 @@ public class TypesRegistry {
 		return type;
 	}
 	
-	public static IClassPropertyType<?> getType(Class<?> clz) {
-		IClassPropertyType<?> type = typesByClass.get(clz);
+	public static IClassPropertyType<?,?> getType(Class<?> clz) {
+		IClassPropertyType<?,?> type = typesByClass.get(clz);
 		//TODO if this is still null should we do a isAssignableFrom/instanceof check?
 		// clz could be a concrete type, but the registered type is a interface class type.
 //		if (type == null) throw new RuntimeException("Type for class: '" + clz + "' not found in " + printTypes());
@@ -91,7 +91,7 @@ public class TypesRegistry {
 			sb.append(type.getName());
 			if (type instanceof IClassPropertyType) {
 				sb.append("[");
-				sb.append(((IClassPropertyType<?>) type).getTypeClass());
+				sb.append(((IClassPropertyType<?,?>) type).getTypeClass());
 				sb.append("]");
 			}
 			sb.append(",");
@@ -117,9 +117,9 @@ public class TypesRegistry {
 			log.info("there was already a type for typename " + type.getName() + ": " + previous + " replaced by: " + type);
 		}
 		if (type instanceof IClassPropertyType) {
-			previous = typesByClass.put( ((IClassPropertyType<?>)type).getTypeClass(), (IClassPropertyType<?>) type);
+			previous = typesByClass.put( ((IClassPropertyType<?,?>)type).getTypeClass(), (IClassPropertyType<?,?>) type);
 			if (previous != null) {
-				log.info("there was already a type for type class " + ((IClassPropertyType<?>)type).getTypeClass() + ": " + previous + " replaced by: " + type);
+				log.info("there was already a type for type class " + ((IClassPropertyType<?,?>)type).getTypeClass() + ": " + previous + " replaced by: " + type);
 			}
 		}
 	}

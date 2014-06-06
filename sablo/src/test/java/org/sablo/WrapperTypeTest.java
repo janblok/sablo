@@ -30,6 +30,8 @@ import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.types.TypesRegistry;
+import org.sablo.websocket.IForJsonConverter;
+import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 
 /**
@@ -78,19 +80,18 @@ public class WrapperTypeTest {
 		}
 
 		@Override
-		public MyWrapper toJava(Object newValue, MyWrapper previousValue) {
-			if (previousValue == null) previousValue = new MyWrapper();
+		public String fromJSON(Object newValue, MyWrapper previousValue) {
 			if (newValue instanceof JSONObject) {
-				previousValue.string = ((JSONObject) newValue).optString("string"); 
+				return ((JSONObject) newValue).optString("string"); 
 			}
 			else if (newValue instanceof String){
-				previousValue.string = (String) newValue;
+				return (String) newValue;
 			}
-			return previousValue;
+			return null;
 		}
 
 		@Override
-		public void toJSON(JSONWriter writer, MyWrapper object)
+		public void toJSON(JSONWriter writer, MyWrapper object, DataConversion clientConversion, IForJsonConverter forJsonConverter)
 				throws JSONException {
 			writer.object();
 			writer.key("string").value(object.string);

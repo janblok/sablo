@@ -20,7 +20,7 @@ package org.sablo.specification.property;
  * Property types that are wrapped into a custom class.
  * @author gboros
  */
-public interface IWrapperType<T,W> extends IClassPropertyType<W>
+public interface IWrapperType<T,W> extends IClassPropertyType<W,T>
 {
 	T unwrap(W value);
 	

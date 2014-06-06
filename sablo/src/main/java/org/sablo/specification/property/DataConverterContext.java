@@ -15,7 +15,7 @@
  */
 package org.sablo.specification.property;
 
-import org.sablo.WebComponent;
+import org.sablo.BaseWebObject;
 import org.sablo.specification.PropertyDescription;
 
 /**
@@ -25,26 +25,20 @@ import org.sablo.specification.PropertyDescription;
 public class DataConverterContext implements IDataConverterContext {
 
 	private PropertyDescription propertyDescription;
-	private WebComponent webComponent;
+	private BaseWebObject webObject;
 	
-	public DataConverterContext(PropertyDescription propertyDescription, WebComponent webComponent) {
+	public DataConverterContext(PropertyDescription propertyDescription, BaseWebObject webObject) {
 		this.propertyDescription = propertyDescription;
-		this.webComponent = webComponent;
+		this.webObject = webObject;
 	}
 	
-	/*
-	 * @see org.sablo.specification.property.IDataConverterContext#getPropertyDescription()
-	 */
 	@Override
 	public PropertyDescription getPropertyDescription() {
 		return propertyDescription;
 	}
 
-	/*
-	 * @see org.sablo.specification.property.IDataConverterContext#getWebComponent()
-	 */
 	@Override
-	public WebComponent getWebComponent() {
-		return webComponent;
+	public BaseWebObject getWebObject() {
+		return webObject;
 	}
 }

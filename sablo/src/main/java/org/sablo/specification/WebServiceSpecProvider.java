@@ -28,16 +28,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Class responsible for loading a set of web component packages and specs.
- * @author acostescu
+ * Class responsible for loading the service spec files.
+ * 
+ * @author jcompagner
  */
-public class WebComponentSpecProvider
+public class WebServiceSpecProvider
 {
-	private static final Logger log = LoggerFactory.getLogger(WebComponentSpecProvider.class.getCanonicalName());
+	private static final Logger log = LoggerFactory.getLogger(WebServiceSpecProvider.class.getCanonicalName());
+	
+	private static volatile WebServiceSpecProvider instance;
 
-	private static volatile WebComponentSpecProvider instance;
-
-	public static WebComponentSpecProvider getInstance()
+	public static WebServiceSpecProvider getInstance()
 	{
 		return instance;
 	}
@@ -47,15 +48,15 @@ public class WebComponentSpecProvider
 	 */
 	public static synchronized void init(IPackageReader[] locations)
 	{
-		instance = new WebComponentSpecProvider(new WebSpecReader(locations));
+		instance = new WebServiceSpecProvider(new WebSpecReader(locations));
 	}
 
 
-	public static WebComponentSpecProvider init(ServletContext servletContext)
+	public static WebServiceSpecProvider init(ServletContext servletContext)
 	{
 		try
 		{
-			InputStream is = servletContext.getResourceAsStream("/WEB-INF/components.properties");
+			InputStream is = servletContext.getResourceAsStream("/WEB-INF/services.properties");
 			Properties properties = new Properties();
 			properties.load(is);
 			String[] locations = properties.getProperty("locations").split(";");
@@ -63,7 +64,7 @@ public class WebComponentSpecProvider
 		}
 		catch (Exception e)
 		{
-			log.error("Exception during init components.properties reading",e);
+			log.error("Exception during init services.properties reading",e);
 		}
 		return instance;
 	}
@@ -73,11 +74,11 @@ public class WebComponentSpecProvider
 	 * @param webComponentBundleNames
 	 * @return the provider
 	 */
-	public static WebComponentSpecProvider init(ServletContext servletContext, String[] webComponentBundleNames) 
+	public static WebServiceSpecProvider init(ServletContext servletContext, String[] webComponentBundleNames) 
 	{
 		if (instance == null)
 		{
-			synchronized (WebComponentSpecProvider.class)
+			synchronized (WebServiceSpecProvider.class)
 			{
 				if (instance == null)
 				{
@@ -88,7 +89,7 @@ public class WebComponentSpecProvider
 						{
 							readers.add(new WebComponentPackage.WarURLPackageReader(servletContext, location));
 						}
-						instance = new WebComponentSpecProvider(new WebSpecReader(readers.toArray(new IPackageReader[readers.size()])));
+						instance = new WebServiceSpecProvider(new WebSpecReader(readers.toArray(new IPackageReader[readers.size()])));
 					}
 					catch (Exception e)
 					{
@@ -102,35 +103,35 @@ public class WebComponentSpecProvider
 
 	public static void reload()
 	{
-		synchronized (WebComponentSpecProvider.class)
+		synchronized (WebServiceSpecProvider.class)
 		{
 			instance.reader.load();
 		}
 	}
 	
-	private final WebSpecReader reader;
+	private WebSpecReader reader;
 
-	private WebComponentSpecProvider(WebSpecReader reader) {
+	private WebServiceSpecProvider(WebSpecReader reader) {
 		this.reader = reader;
 	}
 
 	/**
-	 * Get the specification for the given component type.
-	 * 
-	 * @param componentType
-	 * @return the components specification, null if not found.
-	 */
-	public WebComponentSpecification getWebComponentSpecification(
-			String componentType) {
-		return reader.getWebComponentSpecification(componentType);
-	}
-
-	/**
-	 * get all registered web component specifications.
+	 * get all registered web service specifications.
 	 * 
 	 * @return an array of all the specifications
 	 */
-	public WebComponentSpecification[] getWebComponentSpecifications() {
+	public WebComponentSpecification[] getWebServiceSpecifications() {
 		return reader.getWebComponentSpecifications();
 	}
+
+	/**
+	 * get a specification for a specific service.
+	 * 
+	 * @param serviceName
+	 */
+	public WebComponentSpecification getWebServiceSpecification(String serviceName) {
+		return reader.getWebComponentSpecification(serviceName);
+	}
+
 }
+

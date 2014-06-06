@@ -21,12 +21,14 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.sablo.specification.property.IClassPropertyType;
+import org.sablo.websocket.IForJsonConverter;
+import org.sablo.websocket.utils.DataConversion;
 
 /**
  * @author jcompagner
  *
  */
-public class DimensionPropertyType extends DefaultPropertyType<Dimension> implements IClassPropertyType<Dimension> {
+public class DimensionPropertyType extends DefaultPropertyType<Dimension> implements IClassPropertyType<Dimension,Dimension> {
 
 	public static final DimensionPropertyType INSTANCE = new DimensionPropertyType();
 	
@@ -39,7 +41,7 @@ public class DimensionPropertyType extends DefaultPropertyType<Dimension> implem
 	}
 
 	@Override
-	public Dimension toJava(Object newValue, Dimension previousValue) {
+	public Dimension fromJSON(Object newValue, Dimension previousValue) {
 		if (newValue instanceof JSONObject) {
 			JSONObject json = (JSONObject) newValue;
 			return new Dimension(json.optInt("width"), json.optInt("height"));
@@ -48,7 +50,7 @@ public class DimensionPropertyType extends DefaultPropertyType<Dimension> implem
 	}
 	
 	@Override
-	public void toJSON(JSONWriter writer, Dimension object) throws JSONException {
+	public void toJSON(JSONWriter writer, Dimension object, DataConversion clientConversion, IForJsonConverter forJsonConverter) throws JSONException {
 		writer.object().key("width").value(object.getWidth()).key("height").value(object.getHeight()).endObject();
 	}
 	

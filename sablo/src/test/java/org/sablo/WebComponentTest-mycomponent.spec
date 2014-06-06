@@ -14,7 +14,7 @@ model:
 types: {
   mytype: {
 	name: 'string',
-	text: 'tagstring',
+	text: 'string',
 	active: 'boolean',
 	foreground: 'color',
 	size: 'dimension',

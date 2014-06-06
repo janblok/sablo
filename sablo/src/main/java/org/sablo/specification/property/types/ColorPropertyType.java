@@ -23,12 +23,14 @@ import java.util.Map;
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.property.IClassPropertyType;
+import org.sablo.websocket.IForJsonConverter;
+import org.sablo.websocket.utils.DataConversion;
 
 /**
  * @author jcompagner
  *
  */
-public class ColorPropertyType extends DefaultPropertyType<Color> implements IClassPropertyType<Color>{
+public class ColorPropertyType extends DefaultPropertyType<Color> implements IClassPropertyType<Color,Color>{
 	
 	private static final Map<String, String> basicCssColors = new HashMap<String, String>();
 
@@ -67,7 +69,7 @@ public class ColorPropertyType extends DefaultPropertyType<Color> implements ICl
 	}
 	
 	@Override
-	public Color toJava(Object newValue, Color previousValue) {
+	public Color fromJSON(Object newValue, Color previousValue) {
 		Color retval = null;
 
 		String ss = (String) newValue;
@@ -100,14 +102,14 @@ public class ColorPropertyType extends DefaultPropertyType<Color> implements ICl
 			catch (Exception e)
 			{
 				// ignore
-				if (basicCssColors.containsKey(ss.toLowerCase())) return toJava(basicCssColors.get(ss.toLowerCase()), null);
+				if (basicCssColors.containsKey(ss.toLowerCase())) return fromJSON(basicCssColors.get(ss.toLowerCase()), null);
 			}
 		}
 		return retval;
 	}
 	
 	@Override
-	public void toJSON(JSONWriter writer, Color c) throws JSONException {
+	public void toJSON(JSONWriter writer, Color c, DataConversion clientConversion, IForJsonConverter forJsonConverter) throws JSONException {
 			int alpha = c.getAlpha();
 			if (alpha == 255)
 			{

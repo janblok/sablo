@@ -129,7 +129,7 @@ public class WebComponentPackage
 
 			if (mf != null)
 			{
-				for (String specpath : getWebComponentSpecNames(mf))
+				for (String specpath : getWebEntrySpecNames(mf, "Web-Component"))
 				{
 					String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
 					if (specfileContent != null)
@@ -150,6 +150,23 @@ public class WebComponentPackage
 						}
 					}
 				}
+				
+				for (String specpath : getWebEntrySpecNames(mf,"Web-Service"))
+				{
+					String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
+					if (specfileContent != null)
+					{
+						try
+						{
+							WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName());
+							descriptions.add(parsed);
+						}
+						catch (Exception e)
+						{
+							log.error("Cannot parse spec file '" + specpath + "' from package '" + reader.toString() + "'. ", e);
+						}
+					}
+				}
 			}
 			cachedDescriptions = descriptions;
 			reader = null;
@@ -157,12 +174,12 @@ public class WebComponentPackage
 		return cachedDescriptions;
 	}
 
-	private static List<String> getWebComponentSpecNames(Manifest mf)
+	private static List<String> getWebEntrySpecNames(Manifest mf, String attributeName)
 	{
 		List<String> names = new ArrayList<String>();
 		for (Entry<String, Attributes> entry : mf.getEntries().entrySet())
 		{
-			if ("true".equalsIgnoreCase((String)entry.getValue().get(new Attributes.Name("Web-Component"))))
+			if ("true".equalsIgnoreCase((String)entry.getValue().get(new Attributes.Name(attributeName))))
 			{
 				names.add(entry.getKey());
 			}

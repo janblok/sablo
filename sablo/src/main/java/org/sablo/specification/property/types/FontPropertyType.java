@@ -21,12 +21,14 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.sablo.specification.property.IClassPropertyType;
+import org.sablo.websocket.IForJsonConverter;
+import org.sablo.websocket.utils.DataConversion;
 
 /**
  * @author jcompagner
  *
  */
-public class FontPropertyType extends DefaultPropertyType<Font>  implements IClassPropertyType<Font>{
+public class FontPropertyType extends DefaultPropertyType<Font>  implements IClassPropertyType<Font,Font>{
 
 	public static final FontPropertyType INSTANCE = new FontPropertyType();
 	
@@ -39,7 +41,7 @@ public class FontPropertyType extends DefaultPropertyType<Font>  implements ICla
 	}
 
 	@Override
-	public Font toJava(Object newValue, Font previousValue) {
+	public Font fromJSON(Object newValue, Font previousValue) {
 		String fontFamily = previousValue != null?previousValue.getFamily():null;
 		int size = previousValue != null?previousValue.getSize():12;
 		int style = 0;
@@ -65,7 +67,7 @@ public class FontPropertyType extends DefaultPropertyType<Font>  implements ICla
 	}
 
 	@Override
-	public void toJSON(JSONWriter w, Font font) throws JSONException {
+	public void toJSON(JSONWriter w, Font font, DataConversion clientConversion, IForJsonConverter forJsonConverter) throws JSONException {
 		w.object();
 		if (font.isBold())
 		{

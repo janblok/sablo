@@ -15,7 +15,7 @@
  */
 package org.sablo.specification.property;
 
-import org.sablo.WebComponent;
+import org.sablo.BaseWebObject;
 import org.sablo.specification.PropertyDescription;
 
 /**
@@ -26,5 +26,5 @@ public interface IDataConverterContext {
 	
 	PropertyDescription getPropertyDescription();
 	
-	WebComponent getWebComponent();
+	BaseWebObject getWebObject();
 }

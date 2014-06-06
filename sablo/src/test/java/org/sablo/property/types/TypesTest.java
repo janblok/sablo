@@ -47,7 +47,7 @@ public class TypesTest {
 		dim.width = 10;
 		
 		JSONStringer writer = new JSONStringer();
-		type.toJSON(writer, dim);
+		type.toJSON(writer, dim, null, null);
 		
 		String json = writer.toString();
 		
@@ -55,7 +55,7 @@ public class TypesTest {
 		
 		JSONObject object = new JSONObject(json);
 		
-		Dimension result = type.toJava(object, dim);
+		Dimension result = type.fromJSON(object, dim);
 		
 		assertEquals(dim, result);
 	}
@@ -75,7 +75,7 @@ public class TypesTest {
 		point.y = 10;
 		
 		JSONStringer writer = new JSONStringer();
-		type.toJSON(writer, point);
+		type.toJSON(writer, point, null, null);
 		
 		String json = writer.toString();
 		
@@ -83,7 +83,7 @@ public class TypesTest {
 		
 		JSONObject object = new JSONObject(json);
 		
-		Point result = type.toJava(object, point);
+		Point result = type.fromJSON(object, point);
 		
 		assertEquals(point, result);
 	}

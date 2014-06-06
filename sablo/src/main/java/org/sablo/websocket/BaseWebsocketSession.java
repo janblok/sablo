@@ -28,8 +28,8 @@ import org.sablo.WebComponent;
 import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
 import org.sablo.specification.WebComponentApiDefinition;
-import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.types.DatePropertyType;
+import org.sablo.websocket.impl.ClientService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +40,8 @@ import org.slf4j.LoggerFactory;
 public abstract class BaseWebsocketSession implements IWebsocketSession
 {
 	private static final Logger log = LoggerFactory.getLogger(WebsocketEndpoint.class.getCanonicalName());
-	private final Map<String, IService> services = new HashMap<>();
+	private final Map<String, IServerService> serverServices = new HashMap<>();
+	private final Map<String, IClientService> services = new HashMap<>();
 	private final List<IWebsocketEndpoint> registeredEnpoints = Collections.synchronizedList(new ArrayList<IWebsocketEndpoint>());
 
 	private final String uuid;
@@ -114,28 +115,44 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 		return uuid;
 	}
 
-	public void registerService(String name, IService service)
+	public void registerServerService(String name, IServerService service)
 	{
-		services.put(name, service);
+		serverServices.put(name, service);
 	}
 
-	public IService getService(String name)
+	public IServerService getServerService(String name)
 	{
-		return services.get(name);
+		return serverServices.get(name);
 	}
-
+	
 	@Override
-	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments) throws IOException
-	{
-		return WebsocketEndpoint.get().executeServiceCall(serviceName, functionName, arguments);
+	public IClientService getService(String name) {
+		
+		IClientService clientService = services.get(name);
+		if (clientService == null) {
+			clientService = createClientService(name);
+			services.put(name, clientService);
+		}
+		return clientService;
 	}
 
-	@Override
-	public void executeAsyncServiceCall(String serviceName, String functionName, Object[] arguments)
-	{
-		WebsocketEndpoint.get().executeAsyncServiceCall(serviceName, functionName, arguments);
+	/**
+	 * @param name
+	 * @return
+	 */
+	protected IClientService createClientService(String name) {
+		return new ClientService(name);
 	}
-
+	
+	public Map<String,Map<String,Object>> getServiceChanges() {
+		Map<String,Map<String,Object>> changes = new HashMap<>();
+		for (IClientService service : services.values()) {
+			Map<String, Object> serviceChanges = service.getChanges();
+			if (!serviceChanges.isEmpty()) changes.put(service.getName(), serviceChanges);
+		}
+		return changes;
+	}
+	
 	public Object invokeApi(WebComponent receiver, WebComponentApiDefinition apiFunction, Object[] arguments)
 	{
 		return invokeApi(receiver, apiFunction, arguments, null);

@@ -21,12 +21,14 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.sablo.specification.property.IClassPropertyType;
+import org.sablo.websocket.IForJsonConverter;
+import org.sablo.websocket.utils.DataConversion;
 
 /**
  * @author jcompagner
  *
  */
-public class BorderPropertyType extends DefaultPropertyType<Border> implements IClassPropertyType<Border> {
+public class BorderPropertyType extends DefaultPropertyType<Border> implements IClassPropertyType<Border,Border> {
 
 	public static final BorderPropertyType INSTANCE = new BorderPropertyType();
 	
@@ -39,12 +41,12 @@ public class BorderPropertyType extends DefaultPropertyType<Border> implements I
 	}
 
 	@Override
-	public Border toJava(Object newValue, Border previousValue) {
+	public Border fromJSON(Object newValue, Border previousValue) {
 		return null;
 	}
 
 	@Override
-	public void toJSON(JSONWriter writer, Border object) throws JSONException {
+	public void toJSON(JSONWriter writer, Border object, DataConversion clientConversion, IForJsonConverter forJsonConverter) throws JSONException {
 		writer.object();
 		// TODO impl our border type has special suppor for specific servoy borders.
 		

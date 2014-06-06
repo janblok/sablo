@@ -21,12 +21,14 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.sablo.specification.property.IClassPropertyType;
+import org.sablo.websocket.IForJsonConverter;
+import org.sablo.websocket.utils.DataConversion;
 
 /**
  * @author jcompagner
  *
  */
-public class PointPropertyType extends DefaultPropertyType<Point> implements IClassPropertyType<Point> {
+public class PointPropertyType extends DefaultPropertyType<Point> implements IClassPropertyType<Point,Point> {
 
 	public static final PointPropertyType INSTANCE = new PointPropertyType();
 	
@@ -39,7 +41,7 @@ public class PointPropertyType extends DefaultPropertyType<Point> implements ICl
 	}
 
 	@Override
-	public Point toJava(Object newValue, Point previousValue) {
+	public Point fromJSON(Object newValue, Point previousValue) {
 		if (newValue instanceof JSONObject) {
 			JSONObject json = (JSONObject) newValue;
 			return new Point(json.optInt("x"), json.optInt("y"));
@@ -48,7 +50,7 @@ public class PointPropertyType extends DefaultPropertyType<Point> implements ICl
 	}
 	
 	@Override
-	public void toJSON(JSONWriter writer, Point object) throws JSONException {
+	public void toJSON(JSONWriter writer, Point object, DataConversion clientConversion, IForJsonConverter forJsonConverter) throws JSONException {
 		writer.object().key("x").value(object.getX()).key("y").value(object.getY()).endObject();
 	}
 	

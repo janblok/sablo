@@ -81,36 +81,21 @@ public interface IWebsocketSession
 	public void handleMessage(JSONObject obj);
 
 	/**
-	 * Register a handler for a named service.
+	 * Register server side service
 	 * @param name
 	 * @param service handler
 	 */
-	public void registerService(String name, IService service);
+	public void registerServerService(String name, IServerService service);
 	
 	/**
-	 * Returns a services for that name.
+	 * Returns a server side service for that name.
 	 * @param name
 	 * @return
 	 */
-	public IService getService(String name);
+	public IServerService getServerService(String name);
+	
+	public IClientService getService(String name);
 
-	/** 
-	 * Execute a service call asynchronously.
-	 * @param serviceName
-	 * @param functionName
-	 * @param arguments
-	 */
-	public void executeAsyncServiceCall(String serviceName, String functionName, Object[] arguments);
-
-	/** 
-	 * Execute a service call synchronously.
-	 * @param serviceName
-	 * @param functionName
-	 * @param arguments
-	 * @return remote result
-	 * @throws IOException
-	 */
-	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments) throws IOException;
 
 	/**
 	 * Get the converter for converting domain objects to supported objects for json messages.

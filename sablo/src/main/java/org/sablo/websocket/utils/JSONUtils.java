@@ -125,9 +125,9 @@ public class JSONUtils
 		
 		final Object converted = forJsonConverter == null ? value : forJsonConverter.convertForJson(value);
 		
-		IClassPropertyType<Object> type = (IClassPropertyType<Object>) (converted == null?null:TypesRegistry.getType(converted.getClass()));
+		IClassPropertyType<Object,Object> type = (IClassPropertyType<Object,Object>) (converted == null?null:TypesRegistry.getType(converted.getClass()));
 		if (type != null) {
-			type.toJSON(writer, converted);
+			type.toJSON(writer, converted, clientConversion, forJsonConverter);
 		}
 		else if (converted == null || converted == JSONObject.NULL)
 		{

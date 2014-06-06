@@ -18,18 +18,20 @@ package org.sablo.specification.property;
 
 import org.json.JSONException;
 import org.json.JSONWriter;
+import org.sablo.websocket.IForJsonConverter;
+import org.sablo.websocket.utils.DataConversion;
 
 /**
  * @author jcompagner
  */
-public interface IClassPropertyType<C> extends IPropertyType<C> {
+public interface IClassPropertyType<C,C1> extends IPropertyType<C> {
 	
 	/**
 	 * @return
 	 */
 	Class<C> getTypeClass();
 	
-	public C toJava(Object newValue, C previousValue);
+	public C1 fromJSON(Object newValue, C previousValue);
 	
-	public void toJSON(JSONWriter writer, C object) throws JSONException;
+	public void toJSON(JSONWriter writer, C object, DataConversion clientConversion, IForJsonConverter forJsonConverter) throws JSONException;
 }

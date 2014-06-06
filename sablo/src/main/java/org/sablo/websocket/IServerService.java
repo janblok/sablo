@@ -21,7 +21,7 @@ import org.json.JSONObject;
 /**
  * @author jcompagner
  */
-public interface IService
+public interface IServerService
 {
 	/**
 	 * Execute a method requested from the browser client.

@@ -20,12 +20,14 @@ import java.awt.Insets;
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.property.IClassPropertyType;
+import org.sablo.websocket.IForJsonConverter;
+import org.sablo.websocket.utils.DataConversion;
 
 /**
  * @author jcompagner
  *
  */
-public class InsetsPropertyType extends DefaultPropertyType<Insets> implements IClassPropertyType<Insets>{
+public class InsetsPropertyType extends DefaultPropertyType<Insets> implements IClassPropertyType<Insets,Insets>{
 
 	public static final InsetsPropertyType INSTANCE = new InsetsPropertyType();
 	
@@ -38,14 +40,14 @@ public class InsetsPropertyType extends DefaultPropertyType<Insets> implements I
 	}
 	
 	@Override
-	public Insets toJava(Object newValue, Insets previousValue) {
+	public Insets fromJSON(Object newValue, Insets previousValue) {
 		// TODO
 		return null;
 	}
 	
 	
 	@Override
-	public void toJSON(JSONWriter writer, Insets i) throws JSONException {
+	public void toJSON(JSONWriter writer, Insets i, DataConversion clientConversion, IForJsonConverter forJsonConverter) throws JSONException {
 		writer.object();
 		writer.key("paddingTop").value(i.top + "px");
 		writer.key("paddingBottom").value(i.bottom + "px");

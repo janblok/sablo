@@ -128,14 +128,14 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 	}
 
 	@Override
-	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments) throws IOException
+	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, Map<String, ?> changes) throws IOException
 	{
 		// TODO should this throw an illegal call exception? Because this kind of call shouildn't be used in this class?
 		// returns the first none null value.
 		Object retValue = null;
 		for (IWebsocketEndpoint endpoint : session.getRegisteredEnpoints())
 		{
-			Object reply = endpoint.executeServiceCall(serviceName, functionName, arguments);
+			Object reply = endpoint.executeServiceCall(serviceName, functionName, arguments, changes);
 			retValue = retValue == null ? reply : retValue;
 		}
 		return retValue;

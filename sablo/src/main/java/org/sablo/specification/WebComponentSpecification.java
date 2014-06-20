@@ -228,8 +228,16 @@ public class WebComponentSpecification extends PropertyDescription
 		return spec;
 	}
 
+	/**
+	 * Parses json spec object for declared custom types; custom type will be stored prefixed by spec name (if available)
+	 * 
+	 * @param json JSON to parse for custom types;
+	 * 
+	 * @throws JSONException
+	 */
 	void parseTypes(JSONObject json) throws JSONException
 	{
+		String specName = json.optString("name",null);
 		foundTypes = new HashMap<>();
 		if (json.has("types"))
 		{
@@ -239,7 +247,7 @@ public class WebComponentSpecification extends PropertyDescription
 			while (types.hasNext())
 			{
 				String name = types.next();
-				ICustomType<?> wct = CustomPropertyTypeResolver.getInstance().resolveCustomPropertyType(name);
+				ICustomType<?> wct = CustomPropertyTypeResolver.getInstance().resolveCustomPropertyType(specName != null ? (specName + "."+ name) : name);
 				foundTypes.put(name, wct);
 			}
 

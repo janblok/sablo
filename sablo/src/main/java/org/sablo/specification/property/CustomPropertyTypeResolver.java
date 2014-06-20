@@ -62,10 +62,9 @@ public class CustomPropertyTypeResolver
 	/**
 	 * This method resolves based on typeName the defined custom types - be it pure JSON defined types or complex types, allowing
 	 * complex and custom types to be contributed to the system.
-	 * @param typeName the type name as used in .spec files
+	 * @param typeName the type name as used in .spec files; if spec name is available type name will be prefixed by spec name to avoid conflicts
 	 * @return the appropriate property type (handler).
 	 */
-	// TODO should this name be a more specific ID - to avoid clashes between component packages, or is the typeName enough?
 	public ICustomType<?> resolveCustomPropertyType(String typeName)
 	{
 		CustomPropertyType propertyType = cache.get(typeName);

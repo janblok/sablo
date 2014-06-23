@@ -58,7 +58,7 @@ public class DataConversion
 	}
 
 	/**
-	 * Recors the given converterType of the current tree path.
+	 * Records the given converterType of the current tree path.
 	 * 
 	 * @param converterType
 	 */

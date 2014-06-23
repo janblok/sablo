@@ -41,7 +41,7 @@ public interface IComplexPropertyValue
 
 	/**
 	 * Method that will get called when this property value is attached to a component.<br>
-	 * NOTE: other methods of this interface might get called prior to init - for initial values to be sent to browser in form templates.
+	 * NOTE: other methods of this interface might get called prior to attachToComponent - for initial values to be sent to browser in form templates.
 	 * 
 	 * @param changeMonitor an object that can be used to notify the system that something in this property has changed.
 	 * @param component the component to which the complex property belongs.
@@ -89,5 +89,10 @@ public interface IComplexPropertyValue
 	 * @return either the implementation specific object or {@link #NOT_AVAILABLE}, if this property doesn't provide such an object.
 	 */
 	Object toServerObj();
+
+	/**
+	 * Called when a property is detached from a component; cleanup can happen here.
+	 */
+	void detach();
 
 }

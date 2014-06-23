@@ -31,6 +31,7 @@ import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebComponentSpecification;
 import org.sablo.specification.property.DataConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
+import org.sablo.specification.property.IComplexTypeImpl;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.IWrapperType;
@@ -303,6 +304,10 @@ public abstract class BaseWebObject
 			PropertyDescription propDesc) throws JSONException {
 
 		if (propDesc.isArray()) {
+			if (propDesc.getType() instanceof IComplexTypeImpl && ((IComplexTypeImpl)propDesc.getType()).getJSONToJavaPropertyConverter(true) != null) {
+				return newValue; // this is currently handled elsewhere (when setting property in component)
+			}
+			
 			if (newValue instanceof JSONArray) {
 				JSONArray array = (JSONArray) newValue;
 				Object[] objectArray = new Object[array.length()];
@@ -338,6 +343,8 @@ public abstract class BaseWebObject
 				return ((IWrapperType) type).wrap(fromJSON, oldValue, new DataConverterContext(desc, this));
 			}
 			return fromJSON;
+		} else if (type instanceof IComplexTypeImpl) {
+			return newValue; // this is currently handled elsewhere (when setting property in component)
 		} else if (type instanceof ICustomType) {
 			// custom type, convert json to map with values.
 			if (newValue instanceof JSONObject) {

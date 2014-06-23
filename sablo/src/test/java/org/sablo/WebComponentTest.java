@@ -32,6 +32,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
+import org.sablo.websocket.ConversionLocation;
 import org.sablo.websocket.utils.JSONUtils;
 
 /**
@@ -96,7 +97,7 @@ public class WebComponentTest {
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 		
-		String msg = JSONUtils.writeDataWithConversions(data, null);
+		String msg = JSONUtils.writeDataWithConversions(data, null, ConversionLocation.BROWSER_UPDATE);
 		assertEquals("{\"msg\":{\"name\":\"test\",\"size\":{\"width\":10,\"height\":10}}}", msg);
 		
 		component.putBrowserProperty("size", new JSONObject("{\"width\":20,\"height\":20}"));
@@ -127,7 +128,7 @@ public class WebComponentTest {
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 		
-		String msg = JSONUtils.writeDataWithConversions(data, null);
+		String msg = JSONUtils.writeDataWithConversions(data, null, ConversionLocation.BROWSER_UPDATE);
 		assertEquals("{\"msg\":{\"background\":\"#000000\",\"name\":\"test\"}}", msg);
 		
 		component.putBrowserProperty("background", "#ff0000");
@@ -158,7 +159,7 @@ public class WebComponentTest {
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 		
-		String msg = JSONUtils.writeDataWithConversions(data, null);
+		String msg = JSONUtils.writeDataWithConversions(data, null, ConversionLocation.BROWSER_UPDATE);
 		assertEquals("{\"msg\":{\"font\":{\"fontWeight\":\"bold\",\"fontSize\":\"12px\",\"fontFamily\":\"Arial, Verdana, Arial\"},\"name\":\"test\"}}", msg);
 		
 		component.putBrowserProperty("font", new JSONObject("{\"italic\":\"italic\",\"fontSize\":\"10px\",\"fontFamily\":\"Arial, Verdana, Arial\"}"));
@@ -193,7 +194,7 @@ public class WebComponentTest {
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 		
-		String msg = JSONUtils.writeDataWithConversions(data, null);
+		String msg = JSONUtils.writeDataWithConversions(data, null, ConversionLocation.BROWSER_UPDATE);
 		assertEquals("{\"msg\":{\"location\":{\"x\":10,\"y\":10},\"name\":\"test\"}}", msg);
 		
 		component.putBrowserProperty("location", new JSONObject("{\"x\":20,\"y\":20}"));
@@ -227,7 +228,7 @@ public class WebComponentTest {
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 		
-		String msg = JSONUtils.writeDataWithConversions(data, null);
+		String msg = JSONUtils.writeDataWithConversions(data, null, ConversionLocation.BROWSER_UPDATE);
 		assertEquals("{\"msg\":{\"atype\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"},\"name\":\"test\"}}", msg);
 		
 		component.putBrowserProperty("atype", new JSONObject("{\"name\":\"myname\",\"active\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}"));
@@ -283,7 +284,7 @@ public class WebComponentTest {
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", component.getProperties());
 		
-		String msg = JSONUtils.writeDataWithConversions(data, null);
+		String msg = JSONUtils.writeDataWithConversions(data, null, ConversionLocation.BROWSER_UPDATE);
 		assertEquals("{\"msg\":{\"name\":\"test\",\"types\":[{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"},{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}]}}", msg);
 		
 		component.putBrowserProperty("types", new JSONArray("[{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"},{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"},{\"name\":\"myname3\",\"active\":true,\"foreground\":null}]"));

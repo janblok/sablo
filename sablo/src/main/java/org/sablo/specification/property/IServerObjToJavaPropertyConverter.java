@@ -42,9 +42,9 @@ public interface IServerObjToJavaPropertyConverter<CT, T extends IComplexPropert
 	 * This method is only called if {@link #usesServerObjRepresentation()} returned true.
 	 * 
 	 * For example "MyCustomPoint" instance to a Java Point object.
-	 * @param jsonValue can be a JSONObject, JSONArray or primitive type.
+	 * @param serverObject can be any implementation specific Java object type.
 	 * @return the Java object representing this property's value.
 	 */
-	T serverObjToJava(Object jsonValue, CT config, T oldJavaObject);
+	T serverObjToJava(Object serverObject, CT config, T oldJavaObject);
 
 }

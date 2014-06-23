@@ -23,6 +23,8 @@ package org.sablo.specification.property;
  */
 public interface IComplexTypeImpl<CT, T extends IComplexPropertyValue> extends IPropertyType<T>
 {
+	
+	public static final String ARRAY = "[]"; 
 
 	// TODO ac document this
 	IJSONToJavaPropertyConverter<CT, T> getJSONToJavaPropertyConverter(boolean isArray);

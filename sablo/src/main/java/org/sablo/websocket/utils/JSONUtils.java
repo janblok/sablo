@@ -43,9 +43,9 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("nls")
 public class JSONUtils
 {
+
 	private static final Logger log = LoggerFactory.getLogger(JSONUtils.class.getCanonicalName());
-	
-	
+
 	@SuppressWarnings("unchecked")
 	private static void writeConversions(JSONWriter object, Map<String, Object> map) throws JSONException
 	{
@@ -63,15 +63,14 @@ public class JSONUtils
 		}
 	}
 
-	public static String writeDataWithConversions(Map<String, ? > data, IForJsonConverter forJsonConverter) throws JSONException
+	public static JSONWriter writeDataWithConversions(JSONWriter writer, Map<String, ? > data, IForJsonConverter forJsonConverter, ConversionLocation conversionLocation) throws JSONException
 	{
-		JSONWriter writer = new JSONStringer().object();
 		DataConversion dataConversion = new DataConversion();
 		for (Entry<String, ? > entry : data.entrySet())
 		{
 			dataConversion.pushNode(entry.getKey());
 			writer.key(entry.getKey());
-			JSONUtils.toJSONValue(writer, entry.getValue(), dataConversion, forJsonConverter, ConversionLocation.BROWSER_UPDATE);
+			JSONUtils.toJSONValue(writer, entry.getValue(), dataConversion, forJsonConverter, conversionLocation);
 			dataConversion.popNode();
 		}
 
@@ -81,23 +80,29 @@ public class JSONUtils
 			writeConversions(writer, dataConversion.getConversions());
 			writer.endObject();
 		}
-
+		
+		return writer;
+	}
+	
+	public static String writeDataWithConversions(Map<String, ? > data, IForJsonConverter forJsonConverter, ConversionLocation conversionLocation) throws JSONException
+	{
+		JSONWriter writer = new JSONStringer().object();
+		writeDataWithConversions(writer, data, forJsonConverter, conversionLocation);
 		return writer.endObject().toString();
 	}
 
-	
 	/**
-	 * Writes the given object into the JSONWriter. (it is meant to be used for transforming the basic types that can be sent by beans/components)
+	 * Writes the given object as design-time JSON into the JSONWriter.
 	 * @param writer the JSONWriter.
 	 * @param value the value to be written to the writer.
 	 * @return the writer object to continue writing JSON.
 	 * @throws JSONException
 	 * @throws IllegalArgumentException if the given object could not be written to JSON for some reason.
 	 */
-	public static JSONWriter toJSONValue(JSONWriter writer, Object value, IForJsonConverter forJsonConverter, ConversionLocation toDestinationType)
+	public static JSONWriter toDesignJSONValue(JSONWriter writer, Object value, IForJsonConverter forJsonConverter)
 		throws JSONException, IllegalArgumentException
 	{
-		return toJSONValue(writer, value, null, forJsonConverter, toDestinationType);
+		return toJSONValue(writer, value, null, forJsonConverter, ConversionLocation.DESIGN);
 	}
 
 	/**
@@ -118,7 +123,11 @@ public class JSONUtils
 			if (toDestinationType == ConversionLocation.BROWSER_UPDATE) return ((IComplexPropertyValue)value).changesToJSON(writer, clientConversion);
 			else if (toDestinationType == ConversionLocation.BROWSER) return ((IComplexPropertyValue)value).toJSON(writer, clientConversion);
 			else if (toDestinationType == ConversionLocation.DESIGN) return ((IComplexPropertyValue)value).toDesignJSON(writer); // less frequent or never
-			else log.error("Trying to conver a java object to JSON value of unknown/unsupported destination type.",new RuntimeException());
+			else 
+			{
+				writer.value(null);
+				log.error("Trying to convert a java object to JSON value of unknown/unsupported destination type.",new RuntimeException());
+			}
 		}
 
 		JSONWriter w = writer;
@@ -262,18 +271,9 @@ public class JSONUtils
 //		}
 //	}
 
-	public static JSONWriter addObjectPropertiesToWriter(JSONWriter jsonWriter, Map<String, Object> properties, IForJsonConverter forJsonConverter)
-		throws JSONException, IllegalArgumentException
-	{
-		for (Entry<String, Object> entry : properties.entrySet())
-		{
-			toJSONValue(jsonWriter.key(entry.getKey()), entry.getValue(), forJsonConverter, ConversionLocation.BROWSER);
-		}
-		return jsonWriter;
-	}
-
 	public static interface JSONWritable
 	{
 		Map<String, Object> toMap();
 	}
+
 }

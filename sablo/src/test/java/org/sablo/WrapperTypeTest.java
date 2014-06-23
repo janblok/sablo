@@ -30,6 +30,7 @@ import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.types.TypesRegistry;
+import org.sablo.websocket.ConversionLocation;
 import org.sablo.websocket.IForJsonConverter;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
@@ -140,7 +141,7 @@ public class WrapperTypeTest {
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", component.getProperties());
 		
-		String msg = JSONUtils.writeDataWithConversions(data, null);
+		String msg = JSONUtils.writeDataWithConversions(data, null, ConversionLocation.BROWSER_UPDATE);
 		assertEquals("{\"msg\":{\"somepropp\":{\"string\":\"test\",\"counter\":1},\"name\":\"test\"}}", msg);
 		
 		component.putBrowserProperty("somepropp", "tester");

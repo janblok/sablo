@@ -347,7 +347,7 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 
 		try
 		{
-			sendText(JSONUtils.writeDataWithConversions(message, forJsonConverter));
+			sendText(JSONUtils.writeDataWithConversions(message, forJsonConverter, ConversionLocation.BROWSER_UPDATE));
 		}
 		catch (JSONException e)
 		{
@@ -372,7 +372,7 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 		data.put(success ? "ret" : "exception", object);
 		try
 		{
-			sendText(JSONUtils.writeDataWithConversions(data, forJsonConverter));
+			sendText(JSONUtils.writeDataWithConversions(data, forJsonConverter, ConversionLocation.BROWSER_UPDATE));
 		}
 		catch (JSONException e)
 		{

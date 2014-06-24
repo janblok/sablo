@@ -50,24 +50,6 @@ public class WebComponentSpecProvider
 		instance = new WebComponentSpecProvider(new WebSpecReader(locations));
 	}
 
-
-	public static WebComponentSpecProvider init(ServletContext servletContext)
-	{
-		try
-		{
-			InputStream is = servletContext.getResourceAsStream("/WEB-INF/components.properties");
-			Properties properties = new Properties();
-			properties.load(is);
-			String[] locations = properties.getProperty("locations").split(";");
-			return init(servletContext, locations);
-		}
-		catch (Exception e)
-		{
-			log.error("Exception during init components.properties reading",e);
-		}
-		return instance;
-	}
-
 	/**
 	 * @param servletContext
 	 * @param webComponentBundleNames

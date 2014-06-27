@@ -393,4 +393,13 @@ public abstract class BaseWebObject
 			throws JSONException {
 		return newValue;
 	}
+	
+	/**
+	 * Called when this object will not longer be used - to release any held resources/remove listeners.
+	 */
+	public void dispose()
+	{
+		
+	}
+
 }

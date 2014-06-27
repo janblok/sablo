@@ -102,6 +102,5 @@ public class WebComponent extends BaseWebObject
 		return WebsocketEndpoint.get().getWebsocketSession()
 				.invokeApi(this, apiFunction, args);
 	}
-
-
+	
 }

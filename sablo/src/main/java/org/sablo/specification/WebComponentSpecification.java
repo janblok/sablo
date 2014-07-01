@@ -312,6 +312,7 @@ public class WebComponentSpecification extends PropertyDescription
 				boolean isArray = false;
 				JSONObject configObject = null;
 				Object defaultValue = null;
+				String scope = null;
 				List<Object> values = null;
 				if (value instanceof String)
 				{
@@ -329,6 +330,10 @@ public class WebComponentSpecification extends PropertyDescription
 					{
 						defaultValue = ((JSONObject)value).get("default");
 					}
+					if (((JSONObject)value).has("scope"))
+					{
+						scope = ((JSONObject)value).getString("scope");
+					}
 					if (((JSONObject)value).has("values"))
 					{
 						JSONArray valuesArray = ((JSONObject)value).getJSONArray("values");
@@ -343,7 +348,7 @@ public class WebComponentSpecification extends PropertyDescription
 				if (type != null)
 				{
 					Object config = type.parseConfig(configObject);
-					pds.put(key, new PropertyDescription(key, type, isArray, config, defaultValue, values));
+					pds.put(key, new PropertyDescription(key, type, scope, isArray, config, defaultValue, values));
 				}
 			}
 		}

@@ -41,7 +41,8 @@ public class PropertyDescription
 	private boolean optional = false; // currently only used in the context of an api function parameter
 	private final Object defaultValue;
 	private final List<Object> values;
-
+	private String scope = null;
+	
 	//case of nested type
 	private Map<String, PropertyDescription> properties = null;
 
@@ -58,10 +59,10 @@ public class PropertyDescription
 
 	public PropertyDescription(String name, IPropertyType<?> type, boolean array, Object config, Object defaultValue)
 	{
-		this(name, type, array, config, defaultValue, null);
+		this(name, type, null, array, config, defaultValue, null);
 	}
 
-	public PropertyDescription(String name, IPropertyType<?> type, boolean array, Object config, Object defaultValue, List<Object> values)
+	public PropertyDescription(String name, IPropertyType<?> type, String scope, boolean array, Object config, Object defaultValue, List<Object> values)
 	{
 		this.name = name;
 		this.type = type;
@@ -69,6 +70,7 @@ public class PropertyDescription
 		this.config = config;
 		this.defaultValue = defaultValue;
 		this.values = values;
+		this.scope = scope;
 	}
 
 	public Map<String, PropertyDescription> getProperties(IPropertyType pt)
@@ -109,6 +111,11 @@ public class PropertyDescription
 		return type;
 	}
 
+	public String getScope()
+	{
+		return scope;
+	}
+	
 	public Object getConfig()
 	{
 		return config;
@@ -268,7 +275,7 @@ public class PropertyDescription
 	{
 		if (!isArray()) return this;
 
-		PropertyDescription clone = new PropertyDescription(name, type, false, config, defaultValue, values);
+		PropertyDescription clone = new PropertyDescription(name, type,scope, false, config, defaultValue, values);
 		clone.setOptional(optional);
 		clone.properties = properties;
 		return clone;

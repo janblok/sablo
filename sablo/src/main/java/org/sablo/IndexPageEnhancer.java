@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 
 import javax.security.auth.login.Configuration;
 
@@ -35,12 +36,15 @@ import org.sablo.specification.WebComponentSpecification;
 import org.sablo.specification.WebServiceSpecProvider;
 
 /**
- * Take an index page and enhance it with required libs/csses
+ * Take an index page, enhance it with required libs/csses and replace variables
  * @author jblok
  */
 @SuppressWarnings("nls")
 public class IndexPageEnhancer
 {
+	private static String VAR_START = "##";
+	private static String VAR_END = "##";
+	
 	private IndexPageEnhancer()
 	{
 	}
@@ -51,10 +55,11 @@ public class IndexPageEnhancer
 	 * @param contextPath the path to express in base tag
 	 * @param cssContributions possible css contributions
 	 * @param jsContributions possible js contributions
+	 * @param variableSubstitution replace variables
 	 * @param writer the writer to write to
 	 * @throws IOException
 	 */
-	public static void enhance(URL resource, String contextPath, Collection<String> cssContributions, Collection<String> jsContributions, Writer writer) throws IOException
+	public static void enhance(URL resource, String contextPath, Collection<String> cssContributions, Collection<String> jsContributions, Map<String,String> variableSubstitution, Writer writer) throws IOException
 	{
 		String index_file = IOUtils.toString(resource);
 		String lowercase_index_file = index_file.toLowerCase();
@@ -62,6 +67,15 @@ public class IndexPageEnhancer
 		int headend = lowercase_index_file.indexOf("</head>");
 
 		//use real html parser here instead?
+		if (variableSubstitution != null)
+		{
+			for (String variableName : variableSubstitution.keySet())
+			{
+				String variableReplace = VAR_START + variableName + VAR_END;
+				index_file = index_file.replaceAll(Matcher.quoteReplacement(variableReplace), variableSubstitution.get(variableName));
+			}
+		}
+		
 		StringBuilder sb = new StringBuilder(index_file);
 		sb.insert(headend, getAllContributions(cssContributions, jsContributions));
 		sb.insert(headstart+6, getBaseTag(contextPath));

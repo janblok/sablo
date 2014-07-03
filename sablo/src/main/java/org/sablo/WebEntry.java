@@ -19,6 +19,7 @@ package org.sablo;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collection;
+import java.util.Map;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -80,6 +81,14 @@ public abstract class WebEntry implements Filter
 	}
 
 	/**
+	 * Make it possible for subclasses to replace variables
+	 * @return the variable name,value as map
+	 */
+	protected Map<String,String> getVariableSubstitution(){
+		return null;
+	}
+	
+	/**
 	 * Provide the websocketsessionfactory
 	 * @return the factory
 	 */
@@ -119,7 +128,7 @@ public abstract class WebEntry implements Filter
 				((HttpServletResponse)servletResponse).setContentType("text/html");
 				
 				PrintWriter w = servletResponse.getWriter();
-				IndexPageEnhancer.enhance(getClass().getResource("index.html"),request.getContextPath(), getCSSContributions(), getJSContributions() , w);
+				IndexPageEnhancer.enhance(getClass().getResource("index.html"),request.getContextPath(), getCSSContributions(), getJSContributions() , getVariableSubstitution(), w);
 				w.flush();
 				
 				return;

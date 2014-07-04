@@ -148,26 +148,26 @@ public class WebComponentTest {
 		component.setProperty("font", new Dimension(), null);
 		assertNull(component.getProperty("font"));
 		
-		assertTrue(component.setProperty("font", new Font("Arial", Font.BOLD, 12), null));
+		assertTrue(component.setProperty("font", new Font("SansSerif", Font.BOLD, 12), null));
 		
 		Map<String, Object> properties = component.getProperties();
 		assertNotNull(properties.get("font"));
 		
-		assertEquals(new Font("Arial", Font.BOLD, 12), properties.get("font"));
-		assertEquals(new Font("Arial", Font.BOLD, 12), component.getProperty("font"));
+		assertEquals(new Font("SansSerif", Font.BOLD, 12), properties.get("font"));
+		assertEquals(new Font("SansSerif", Font.BOLD, 12), component.getProperty("font"));
 		
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 		
 		String msg = JSONUtils.writeDataWithConversions(data, null, ConversionLocation.BROWSER_UPDATE);
-		assertEquals("{\"msg\":{\"font\":{\"fontWeight\":\"bold\",\"fontSize\":\"12px\",\"fontFamily\":\"Arial, Verdana, Arial\"},\"name\":\"test\"}}", msg);
+		assertEquals("{\"msg\":{\"font\":{\"fontWeight\":\"bold\",\"fontSize\":\"12px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"},\"name\":\"test\"}}", msg);
 		
-		component.putBrowserProperty("font", new JSONObject("{\"italic\":\"italic\",\"fontSize\":\"10px\",\"fontFamily\":\"Arial, Verdana, Arial\"}"));
+		component.putBrowserProperty("font", new JSONObject("{\"italic\":\"italic\",\"fontSize\":\"10px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"}"));
 		properties = component.getProperties();
 		assertNotNull(properties.get("font"));
 		
 		Font font = (Font) component.getProperty("font");
-		assertEquals("Arial", font.getName());
+		assertEquals("SansSerif", font.getName());
 		assertFalse(font.isBold());
 		assertTrue(font.isItalic());
 		assertEquals(10, font.getSize());

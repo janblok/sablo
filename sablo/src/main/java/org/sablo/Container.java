@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.sablo.specification.WebComponentSpecification;
 import org.sablo.websocket.WebsocketEndpoint;
 
 /**
@@ -32,9 +33,9 @@ public abstract class Container extends WebComponent
 {
 	protected final Map<String, WebComponent> components = new HashMap<>();
 
-	public Container(String name)
+	public Container(String name, WebComponentSpecification spec)
 	{
-		super(name);
+		super(name, spec);
 	}
 
 	public void add(WebComponent component)

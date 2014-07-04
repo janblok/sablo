@@ -28,6 +28,7 @@ import org.sablo.WebComponent;
 import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
 import org.sablo.specification.WebComponentApiDefinition;
+import org.sablo.specification.WebServiceSpecProvider;
 import org.sablo.specification.property.types.DatePropertyType;
 import org.sablo.websocket.impl.ClientService;
 import org.slf4j.Logger;
@@ -141,7 +142,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 	 * @return
 	 */
 	protected IClientService createClientService(String name) {
-		return new ClientService(name);
+		return new ClientService(name, WebServiceSpecProvider.getInstance().getWebServiceSpecification(name));
 	}
 	
 	public Map<String,Map<String,Object>> getServiceChanges() {

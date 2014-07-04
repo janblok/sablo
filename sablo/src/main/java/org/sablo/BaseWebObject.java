@@ -68,6 +68,9 @@ public abstract class BaseWebObject
 	public BaseWebObject(String name, WebComponentSpecification specification) {
 		this.name = name;
 		this.specification = specification;
+		if (specification == null)
+			throw new IllegalStateException(
+					"Cannot work without specification");
 	}
 
 	/**

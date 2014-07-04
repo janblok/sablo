@@ -70,7 +70,12 @@ public class WebComponentSpecification extends PropertyDescription
 		else this.libraries = new String[0];
 	}
 
-	void addHandler(PropertyDescription propertyDescription)
+	protected final void addApiFunction(WebComponentApiDefinition apiFunction)
+	{
+		apis.put(apiFunction.getName(), apiFunction);
+	}
+
+	protected final void addHandler(PropertyDescription propertyDescription)
 	{
 		handlers.put(propertyDescription.getName(), propertyDescription);
 	}
@@ -78,7 +83,7 @@ public class WebComponentSpecification extends PropertyDescription
 	/**
 	 * @param hndlrs
 	 */
-	void putAllHandlers(Map<String, PropertyDescription> hndlrs)
+	protected final void putAllHandlers(Map<String, PropertyDescription> hndlrs)
 	{
 		handlers.putAll(hndlrs);
 	}
@@ -89,11 +94,6 @@ public class WebComponentSpecification extends PropertyDescription
 	public Map<String, PropertyDescription> getHandlers()
 	{
 		return Collections.unmodifiableMap(handlers);
-	}
-
-	void addApiFunction(WebComponentApiDefinition apiFunction)
-	{
-		apis.put(apiFunction.getName(), apiFunction);
 	}
 
 	public WebComponentApiDefinition getApiFunction(String apiFunctionName)

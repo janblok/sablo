@@ -36,8 +36,8 @@ import org.sablo.websocket.WebsocketEndpoint;
 public class ClientService extends BaseWebObject implements IClientService {
 
 
-	public ClientService(String serviceName) {
-		super(serviceName,  WebServiceSpecProvider.getInstance().getWebServiceSpecification(serviceName));
+	public ClientService(String serviceName, WebComponentSpecification spec) {
+		super(serviceName,  spec);
 	}
 	
 	@Override

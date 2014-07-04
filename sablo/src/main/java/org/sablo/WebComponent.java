@@ -18,6 +18,7 @@ package org.sablo;
 
 import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.WebComponentSpecProvider;
+import org.sablo.specification.WebComponentSpecification;
 import org.sablo.websocket.WebsocketEndpoint;
 
 /**
@@ -33,16 +34,11 @@ public class WebComponent extends BaseWebObject
 	public WebComponent(String componentType, String name) {
 		super(name, WebComponentSpecProvider.getInstance()
 				.getWebComponentSpecification(componentType));
-		if (componentType != null) {
-			if (specification == null)
-				throw new IllegalStateException(
-						"Cannot work without specification");
-		} 
 		properties.put("name", name);
 	}
 
-	WebComponent(String name) {
-		this(null, name);
+	public WebComponent(String name, WebComponentSpecification spec) {
+		super(name, spec);
 	}
 
 	/**

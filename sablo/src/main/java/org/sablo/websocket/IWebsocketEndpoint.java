@@ -54,6 +54,17 @@ public interface IWebsocketEndpoint
 	Object sendMessage(Map<String, ? > data, boolean async, IForJsonConverter forJsonConverter) throws IOException;
 
 	/**
+	 * Send a message to the browser, add conversion
+	 * @param data
+	 * @param async when false, wait for response
+	 * @param forJsonConverter
+	 * @param conversionLocation information on how to convert data to message text
+	 * @return remote response (when not async)
+	 * @throws IOException
+	 */
+	Object sendMessage(Map<String, ? > data, boolean async, IForJsonConverter forJsonConverter,ConversionLocation conversionLocation) throws IOException;
+	
+	/**
 	 * Just send this text as message, no conversion, no waiting for response.
 	 * @param txt
 	 * @throws IOException

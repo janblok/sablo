@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.sablo.Container;
+import org.sablo.websocket.ConversionLocation;
 import org.sablo.websocket.IForJsonConverter;
 import org.sablo.websocket.IWebsocketEndpoint;
 import org.sablo.websocket.IWebsocketSession;
@@ -90,15 +91,21 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 	{
 		// TODO should this throw an illegal call exception? Because this kind of call shouildn't be used in this class?
 		// returns the first none null value.
+		return sendMessage(data, async, forJsonConverter,ConversionLocation.BROWSER_UPDATE);
+	}
+
+	@Override
+	public Object sendMessage(Map<String, ?> data, boolean async,IForJsonConverter forJsonConverter,ConversionLocation conversionLocation) throws IOException 
+	{
 		Object retValue = null;
 		for (IWebsocketEndpoint endpoint : session.getRegisteredEnpoints())
 		{
-			Object reply = endpoint.sendMessage(data, async, forJsonConverter);
+			Object reply = endpoint.sendMessage(data, async, forJsonConverter,conversionLocation);
 			retValue = retValue == null ? reply : retValue;
 		}
 		return retValue;
 	}
-
+	
 	@Override
 	public void sendMessage(String txt) throws IOException
 	{

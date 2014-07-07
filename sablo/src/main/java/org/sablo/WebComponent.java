@@ -51,6 +51,16 @@ public class WebComponent extends BaseWebObject
 	}
 	
 	/**
+	 * Sets the parent container.
+	 * 
+	 * @param parent new parent container
+	 */
+	public final void setParent(Container parent)
+	{
+		this.parent = parent;
+	}
+	
+	/**
 	 * @return
 	 */
 	public boolean isVisible() {

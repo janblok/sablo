@@ -19,6 +19,7 @@ package org.sablo.websocket;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -285,6 +286,18 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 					});
 				} else {
 					log.info("unknown service called from the client: " + serviceName);
+				}
+				return;
+			}
+			if (obj.has("servicedatapush"))
+			{
+				String servicename = obj.optString("servicedatapush");
+				IClientService service = getWebsocketSession().getService(servicename);
+				JSONObject changes = obj.optJSONObject("changes");
+				Iterator keys = changes.keys();
+				while(keys.hasNext()) {
+					String key = (String) keys.next();
+					service.putBrowserProperty(key, changes.opt(key));
 				}
 				return;
 			}

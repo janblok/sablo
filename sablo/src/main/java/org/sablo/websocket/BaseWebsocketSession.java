@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.sablo.WebComponent;
 import org.sablo.eventthread.EventDispatcher;
@@ -96,6 +97,18 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 
 	public void onOpen(String argument)
 	{
+		// send all the service data to the browser.
+		Map<String, Object> data = new HashMap<>(3);
+		Map<String,Map<String,Object>> serviceData = new HashMap<>();
+		for (Entry<String, IClientService> entry : services.entrySet()) {
+			serviceData.put(entry.getKey(), entry.getValue().getProperties());
+		}
+		data.put("services", serviceData);
+		try {
+			WebsocketEndpoint.get().sendMessage(data, true, getForJsonConverter());
+		} catch (IOException e) {
+			log.error(e.getLocalizedMessage(), e);
+		}
 	}
 
 	@Override

@@ -17,16 +17,21 @@ package org.sablo.specification.property.types;
 
 import java.util.Date;
 
+import org.json.JSONException;
+import org.json.JSONWriter;
 import org.sablo.specification.property.IClassPropertyType;
+import org.sablo.websocket.IForJsonConverter;
+import org.sablo.websocket.utils.DataConversion;
 
 /**
- * Dates are handled specially on both ends currently (thats why it doesnt implement {@link IClassPropertyType})
- * Maybe this type can replace that completley to be just as another type.
+ * Dates are also handled specially on both ends currently.
+ * TODO Maybe this type can replace that special handling completely to be just as another type.
  * 
  * @author jcompagner
  *
  */
-public class DatePropertyType extends DefaultPropertyType<Date> {
+public class DatePropertyType extends DefaultPropertyType<Date> implements IClassPropertyType<Date, Date>
+{
 
 	public static final DatePropertyType INSTANCE = new DatePropertyType();
 	
@@ -37,4 +42,25 @@ public class DatePropertyType extends DefaultPropertyType<Date> {
 	public String getName() {
 		return "date";
 	}
+
+	@Override
+	public Class<Date> getTypeClass() {
+		return Date.class;
+	}
+
+	@Override
+	public Date fromJSON(Object newValue, Date previousValue) {
+		if (newValue instanceof Long) return new Date(((Long)newValue).longValue());
+		return null;
+	}
+
+	@Override
+	public void toJSON(JSONWriter writer, Date value,
+			DataConversion clientConversion, IForJsonConverter forJsonConverter)
+			throws JSONException
+	{
+		if (clientConversion != null) clientConversion.convert("Date");
+		writer = writer.value(value.getTime());
+	}
+
 }

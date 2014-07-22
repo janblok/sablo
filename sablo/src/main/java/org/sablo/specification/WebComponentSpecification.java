@@ -16,6 +16,8 @@
 
 package org.sablo.specification;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,6 +29,7 @@ import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.property.CustomPropertyTypeResolver;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
@@ -43,7 +46,7 @@ public class WebComponentSpecification extends PropertyDescription
 	private static final Logger log = LoggerFactory.getLogger(WebComponentSpecification.class.getCanonicalName());
 
 	public static final String TYPES_KEY = "types";
-	
+
 	private final Map<String, PropertyDescription> handlers = new HashMap<>(); // second String is always a "function" for now, but in the future it will probably contain more (to specify sent args/types...)
 	private final Map<String, WebComponentApiDefinition> apis = new HashMap<>();
 	private final String definition;
@@ -51,7 +54,9 @@ public class WebComponentSpecification extends PropertyDescription
 	private final String displayName;
 	private final String packageName;
 
-	private Map<String, IPropertyType<?>> foundTypes;
+	private Map<String, IPropertyType< ? >> foundTypes;
+
+	private String serverScript;
 
 	public WebComponentSpecification(String name, String packageName, String displayName, String definition, JSONArray libs)
 	{
@@ -69,6 +74,24 @@ public class WebComponentSpecification extends PropertyDescription
 		}
 		else this.libraries = new String[0];
 	}
+
+
+	/**
+	 * @param serverScript the serverScript to set
+	 */
+	public void setServerScript(String serverScript)
+	{
+		this.serverScript = serverScript;
+	}
+
+	/**
+	 * @return
+	 */
+	public String getServerScript()
+	{
+		return serverScript;
+	}
+
 
 	protected final void addApiFunction(WebComponentApiDefinition apiFunction)
 	{
@@ -100,7 +123,7 @@ public class WebComponentSpecification extends PropertyDescription
 	{
 		return apis.get(apiFunctionName);
 	}
-	
+
 	public Map<String, WebComponentApiDefinition> getApiFunctions()
 	{
 		return Collections.unmodifiableMap(apis);
@@ -149,26 +172,37 @@ public class WebComponentSpecification extends PropertyDescription
 			property = property.substring(0, property.length() - 2);
 		}
 		// first check the local onces.
-		IPropertyType<?> t = foundTypes.get(property);
+		IPropertyType< ? > t = foundTypes.get(property);
 		if (t == null) t = TypesRegistry.getType(property);
 		return new ParsedProperty(t, isArray);
 	}
-	
-	public static Map<String, IPropertyType<?>> getTypes(JSONObject typesContainer) throws JSONException {
-		WebComponentSpecification spec = new WebComponentSpecification("", "", "", "",null);
+
+	public static Map<String, IPropertyType< ? >> getTypes(JSONObject typesContainer) throws JSONException
+	{
+		WebComponentSpecification spec = new WebComponentSpecification("", "", "", "", null);
 		spec.parseTypes(typesContainer);
 		return spec.foundTypes;
 	}
 
 	@SuppressWarnings("unchecked")
-	public static WebComponentSpecification parseSpec(String specfileContent, String packageName)
-		throws JSONException
+	public static WebComponentSpecification parseSpec(String specfileContent, String packageName, IPackageReader reader) throws JSONException
 	{
 		JSONObject json = new JSONObject('{' + specfileContent + '}');
 
-		WebComponentSpecification spec = new WebComponentSpecification(json.getString("name"), packageName, json.optString("displayName", null), json.getString("definition"),
-			json.optJSONArray("libraries"));
+		WebComponentSpecification spec = new WebComponentSpecification(json.getString("name"), packageName, json.optString("displayName", null),
+			json.getString("definition"), json.optJSONArray("libraries"));
 
+		if (json.has("serverscript"))
+		{
+			try
+			{
+				spec.setServerScript(reader.readTextFile(json.getString("serverscript").substring(packageName.length()), Charset.forName("UTF8")));
+			}
+			catch (IOException e)
+			{
+				e.printStackTrace();
+			}
+		}
 		// first types, can be used in properties
 		spec.parseTypes(json);
 
@@ -181,9 +215,9 @@ public class WebComponentSpecification extends PropertyDescription
 		{
 			JSONObject api = json.getJSONObject("api");
 			Iterator<String> itk = api.keys();
-			while (itk.hasNext()) 
+			while (itk.hasNext())
 			{
-				String func = (String) itk.next();
+				String func = itk.next();
 				JSONObject jsonDef = api.getJSONObject(func);
 				WebComponentApiDefinition def = new WebComponentApiDefinition(func);
 
@@ -230,14 +264,14 @@ public class WebComponentSpecification extends PropertyDescription
 
 	/**
 	 * Parses json spec object for declared custom types; custom type will be stored prefixed by spec name (if available)
-	 * 
+	 *
 	 * @param json JSON to parse for custom types;
-	 * 
+	 *
 	 * @throws JSONException
 	 */
 	void parseTypes(JSONObject json) throws JSONException
 	{
-		String specName = json.optString("name",null);
+		String specName = json.optString("name", null);
 		foundTypes = new HashMap<>();
 		if (json.has("types"))
 		{
@@ -247,7 +281,7 @@ public class WebComponentSpecification extends PropertyDescription
 			while (types.hasNext())
 			{
 				String name = types.next();
-				ICustomType<?> wct = CustomPropertyTypeResolver.getInstance().resolveCustomPropertyType(specName != null ? (specName + "."+ name) : name);
+				ICustomType< ? > wct = CustomPropertyTypeResolver.getInstance().resolveCustomPropertyType(specName != null ? (specName + "." + name) : name);
 				foundTypes.put(name, wct);
 			}
 
@@ -256,7 +290,7 @@ public class WebComponentSpecification extends PropertyDescription
 			while (types.hasNext())
 			{
 				String typeName = types.next();
-				ICustomType<?> type = (ICustomType<?>) foundTypes.get(typeName);
+				ICustomType< ? > type = (ICustomType< ? >)foundTypes.get(typeName);
 				JSONObject typeJSON = jsonObject.getJSONObject(typeName);
 				if (typeJSON.has("model"))
 				{
@@ -296,17 +330,16 @@ public class WebComponentSpecification extends PropertyDescription
 		return paramName;
 	}
 
-	private Map<String, PropertyDescription> parseProperties(String propKey, JSONObject json)
-		throws JSONException
+	private Map<String, PropertyDescription> parseProperties(String propKey, JSONObject json) throws JSONException
 	{
 		Map<String, PropertyDescription> pds = new HashMap<>();
 		if (json.has(propKey))
 		{
 			JSONObject jsonProps = json.getJSONObject(propKey);
 			Iterator<String> itk = jsonProps.keys();
-			while (itk.hasNext()) 
+			while (itk.hasNext())
 			{
-				String key = (String) itk.next();
+				String key = itk.next();
 				Object value = jsonProps.get(key);
 				IPropertyType type = null;
 				boolean isArray = false;

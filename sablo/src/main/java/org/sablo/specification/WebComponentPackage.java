@@ -136,12 +136,14 @@ public class WebComponentPackage
 					{
 						try
 						{
-							WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName());
+							WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
 							// add properties defined by us
 							// TODO this is servoy specific so remove?
 							if (parsed.getProperty("size") == null) parsed.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
-							if (parsed.getProperty("location") == null) parsed.putProperty("location", new PropertyDescription("location",PointPropertyType.INSTANCE));
-							if (parsed.getProperty("anchors") == null) parsed.putProperty("anchors", new PropertyDescription("anchors",IntPropertyType.INSTANCE));
+							if (parsed.getProperty("location") == null) parsed.putProperty("location", new PropertyDescription("location",
+								PointPropertyType.INSTANCE));
+							if (parsed.getProperty("anchors") == null) parsed.putProperty("anchors", new PropertyDescription("anchors",
+								IntPropertyType.INSTANCE));
 							descriptions.add(parsed);
 						}
 						catch (Exception e)
@@ -150,15 +152,15 @@ public class WebComponentPackage
 						}
 					}
 				}
-				
-				for (String specpath : getWebEntrySpecNames(mf,"Web-Service"))
+
+				for (String specpath : getWebEntrySpecNames(mf, "Web-Service"))
 				{
 					String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
 					if (specfileContent != null)
 					{
 						try
 						{
-							WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName());
+							WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
 							descriptions.add(parsed);
 						}
 						catch (Exception e)
@@ -261,7 +263,7 @@ public class WebComponentPackage
 			}
 			catch (IOException e)
 			{
-				log.error("Exception in getUrlForPath",e);
+				log.error("Exception in getUrlForPath", e);
 			}
 			finally
 			{
@@ -370,7 +372,7 @@ public class WebComponentPackage
 				}
 				catch (MalformedURLException e)
 				{
-					log.error("MalformedURLException",e);
+					log.error("MalformedURLException", e);
 				}
 			}
 			return null;
@@ -467,7 +469,7 @@ public class WebComponentPackage
 			}
 			catch (MalformedURLException e)
 			{
-				log.error("MalformedURLException",e);
+				log.error("MalformedURLException", e);
 				return null;
 			}
 		}

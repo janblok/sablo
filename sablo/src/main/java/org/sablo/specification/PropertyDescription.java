@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.sablo.specification.property.CustomPropertyType;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
 
@@ -35,34 +36,34 @@ import org.sablo.specification.property.IPropertyType;
 public class PropertyDescription
 {
 	private final String name;
-	private final IPropertyType<?> type;
+	private final IPropertyType< ? > type;
 	private final Object config;
 	private final boolean array;
 	private boolean optional = false; // currently only used in the context of an api function parameter
 	private final Object defaultValue;
 	private final List<Object> values;
 	private String scope = null;
-	
+
 	//case of nested type
 	private Map<String, PropertyDescription> properties = null;
 
 
-	public PropertyDescription(String name, IPropertyType<?> type)
+	public PropertyDescription(String name, IPropertyType< ? > type)
 	{
 		this(name, type, false, null, null);
 	}
 
-	public PropertyDescription(String name, IPropertyType<?> type, Object config)
+	public PropertyDescription(String name, IPropertyType< ? > type, Object config)
 	{
 		this(name, type, false, config, null);
 	}
 
-	public PropertyDescription(String name, IPropertyType<?> type, boolean array, Object config, Object defaultValue)
+	public PropertyDescription(String name, IPropertyType< ? > type, boolean array, Object config, Object defaultValue)
 	{
 		this(name, type, null, array, config, defaultValue, null);
 	}
 
-	public PropertyDescription(String name, IPropertyType<?> type, String scope, boolean array, Object config, Object defaultValue, List<Object> values)
+	public PropertyDescription(String name, IPropertyType< ? > type, String scope, boolean array, Object config, Object defaultValue, List<Object> values)
 	{
 		this.name = name;
 		this.type = type;
@@ -106,7 +107,7 @@ public class PropertyDescription
 		return name;
 	}
 
-	public IPropertyType<?> getType()
+	public IPropertyType< ? > getType()
 	{
 		return type;
 	}
@@ -115,7 +116,7 @@ public class PropertyDescription
 	{
 		return scope;
 	}
-	
+
 	public Object getConfig()
 	{
 		return config;
@@ -166,13 +167,13 @@ public class PropertyDescription
 		else if (!name.equals(other.name)) return false;
 		if (type != other.type) return false;
 		if (array != other.array) return false;
-		
+
 		if (defaultValue == null)
 		{
 			if (other.defaultValue != null) return false;
 		}
 		else if (!defaultValue.equals(other.defaultValue)) return false;
-		
+
 		return true;
 	}
 
@@ -201,13 +202,17 @@ public class PropertyDescription
 		{
 			// this must be a custom type then
 			PropertyDescription propertyDescription = properties.get(name.substring(0, indexOfDot));
-			PropertyDescription typeSpec = ((ICustomType<?>)propertyDescription.getType()).getCustomJSONTypeDefinition();
+			PropertyDescription typeSpec = ((ICustomType< ? >)propertyDescription.getType()).getCustomJSONTypeDefinition();
 			return typeSpec.getProperty(name.substring(indexOfDot + 1));
 		}
 
 		if (properties != null)
 		{
 			return properties.get(name);
+		}
+		else if (type instanceof CustomPropertyType)
+		{
+			return ((CustomPropertyType< ? >)type).getCustomJSONTypeDefinition().getProperty(name);
 		}
 		return null;
 	}
@@ -275,7 +280,7 @@ public class PropertyDescription
 	{
 		if (!isArray()) return this;
 
-		PropertyDescription clone = new PropertyDescription(name, type,scope, false, config, defaultValue, values);
+		PropertyDescription clone = new PropertyDescription(name, type, scope, false, config, defaultValue, values);
 		clone.setOptional(optional);
 		clone.properties = properties;
 		return clone;

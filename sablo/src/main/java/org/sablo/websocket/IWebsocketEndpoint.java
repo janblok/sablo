@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.sablo.Container;
+import org.sablo.specification.PropertyDescription;
 
 
 /**
@@ -44,26 +45,32 @@ public interface IWebsocketEndpoint
 	void cancelSession(String reason);
 
 	/**
-	 * Send a message to the browser, add conversion
-	 * @param data
-	 * @param async when false, wait for response
-	 * @param forJsonConverter
-	 * @return remote response (when not async)
-	 * @throws IOException
+	 * Sends a message to the client/browser, containing the given data (transformed into JSON based on give dataTypes).
+	 * Uses ConversionLocation.BROWSER_UPDATE as conversion location.<br/>
+	 *
+	 * If there are any pending service calls those will be sent to the client/attached to the message as well.
+	 *
+	 * @param data the data to be sent to the client (converted to JSON format where needed).
+	 * @param dataTypes description of the data structure; each key in "data" might have a corresponding child "dataTypes.getProperty(key)" who's type can be used for "to JSON" conversion.
+	 * @param async specifies is the messages should be sent later or right away.
+	 * @return if async it will return null; otherwise it will return whatever the client sends back as a response to this message.
+	 * @throws IOException when such an exception occurs.
 	 */
-	Object sendMessage(Map<String, ? > data, boolean async, IForJsonConverter forJsonConverter) throws IOException;
+	Object sendMessage(Map<String, ? > data, PropertyDescription dataTypes, boolean async) throws IOException;
 
 	/**
-	 * Send a message to the browser, add conversion
-	 * @param data
-	 * @param async when false, wait for response
-	 * @param forJsonConverter
-	 * @param conversionLocation information on how to convert data to message text
-	 * @return remote response (when not async)
-	 * @throws IOException
+	 * Sends a message to the client/browser, containing the given data (transformed into JSON based on give dataTypes).<br/>
+	 * If there are any pending service calls those will be sent to the client/attached to the message as well.
+	 *
+	 * @param data the data to be sent to the client (converted to JSON format where needed).
+	 * @param dataTypes description of the data structure; each key in "data" might have a corresponding child "dataTypes.getProperty(key)" who's type can be used for "to JSON" conversion.
+	 * @param async specifies is the messages should be sent later or right away.
+	 * @param conversionLocation identifies the source type of this data.
+	 * @return if async it will return null; otherwise it will return whatever the client sends back as a response to this message.
+	 * @throws IOException when such an exception occurs.
 	 */
-	Object sendMessage(Map<String, ? > data, boolean async, IForJsonConverter forJsonConverter,ConversionLocation conversionLocation) throws IOException;
-	
+	Object sendMessage(Map<String, ? > data, PropertyDescription dataTypes, boolean async, ConversionLocation conversionLocation) throws IOException;
+
 	/**
 	 * Just send this text as message, no conversion, no waiting for response.
 	 * @param txt
@@ -74,40 +81,47 @@ public interface IWebsocketEndpoint
 	/**
 	 * Send a response for a previous request.
 	 * @see IWebsocketSession#callService(String, String, org.json.JSONObject, Object).
-	 * 
+	 *
 	 * @param msgId id of previous request
 	 * @param object value to respond
+	 * @param the type of the object (can be used for 'to JSON' conversions; can be null.
 	 * @param success is this a normal or an error response?
 	 * @throws IOException
 	 */
-	void sendResponse(Object msgId, Object object, boolean success, IForJsonConverter forJsonConverter) throws IOException;
+	void sendResponse(Object msgId, Object object, PropertyDescription objectType, boolean success) throws IOException;
 
-	/** Execute a service call asynchronously.
-	 * 
-	 * @param serviceName
-	 * @param functionName
-	 * @param arguments
+	/**
+	 * Execute a (client/browser) service call asynchronously.
+	 *
+	 * @param serviceName the name of the service to call client side.
+	 * @param functionName the name of the service's function to call.
+	 * @param arguments the arguments to be passed to the service's function call.
+	 * @param argumentTypes the types of arguments passed; can be null (the types are used for correct 'to JSON' conversion for websocket traffic).
 	 */
-	void executeAsyncServiceCall(String serviceName, String functionName, Object[] arguments);
+	void executeAsyncServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes);
 
-	/** Execute a service call synchronously.
-	 * 
-	 * @param serviceName
-	 * @param functionName
-	 * @param arguments
+	/**
+	 * Execute a (client/browser) service call asynchronously and returns the resulting value.
+	 *
+	 * @param serviceName the name of the service to call client side.
+	 * @param functionName the name of the service's function to call.
+	 * @param arguments the arguments to be passed to the service's function call.
+	 * @param argumentTypes the types of arguments passed; can be null (the types are used for correct 'to JSON' conversion for web-socket traffic).
 	 * @param changes TODO
-	 * @return remote result
-	 * @throws IOException
+	 * @param changesTypes TODO the types of changes passed; can be null (the types are used for correct 'to JSON' conversion for web-socket traffic).
+	 * @return remote result.
+	 * @throws IOException if such an exception happens.
 	 */
-	Object executeServiceCall(String serviceName, String functionName, Object[] arguments, Map<String, ?> changes) throws IOException;
-	
+	Object executeServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes, Map<String, ? > changes,
+		PropertyDescription changesTypes) throws IOException;
+
 	/**
 	 * Gets the window id belonging to this endpoint (a tab or window in the browser)
-	 * 
+	 *
 	 * @return a window id
 	 */
 	public String getWindowId();
-	
+
 	/**
 	 * Sets the window id for this endpoint.
 	 * @param windowId
@@ -122,9 +136,9 @@ public interface IWebsocketEndpoint
 
 	/**
 	 * Get the component changes
-	 * @return the changes for all registered Containers. 
+	 * @return the changes for all registered Containers.
 	 */
-	Map<String, Map<String, Map<String, Object>>> getAllComponentsChanges();
+	TypedData<Map<String, Map<String, Map<String, Object>>>> getAllComponentsChanges();
 
 	/**
 	 * Get the websocket session

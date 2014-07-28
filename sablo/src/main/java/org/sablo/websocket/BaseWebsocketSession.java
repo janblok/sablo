@@ -25,13 +25,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.json.JSONException;
 import org.sablo.WebComponent;
 import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
+import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.WebServiceSpecProvider;
+import org.sablo.specification.property.DataConverterContext;
+import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.specification.property.types.DatePropertyType;
 import org.sablo.websocket.impl.ClientService;
+import org.sablo.websocket.utils.JSONUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,11 +79,13 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 
 	public final IEventDispatcher getEventDispatcher()
 	{
-		if (executor == null) {
-			synchronized (this) {
-				if (executor == null) {
-					Thread thread = new Thread(executor = createDispatcher(),
-							"Executor,uuid:" + uuid);
+		if (executor == null)
+		{
+			synchronized (this)
+			{
+				if (executor == null)
+				{
+					Thread thread = new Thread(executor = createDispatcher(), "Executor,uuid:" + uuid);
 					thread.setDaemon(true);
 					thread.start();
 				}
@@ -99,14 +106,29 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 	{
 		// send all the service data to the browser.
 		Map<String, Object> data = new HashMap<>(3);
-		Map<String,Map<String,Object>> serviceData = new HashMap<>();
-		for (Entry<String, IClientService> entry : services.entrySet()) {
-			serviceData.put(entry.getKey(), entry.getValue().getProperties());
+		Map<String, Map<String, Object>> serviceData = new HashMap<>();
+		PropertyDescription serviceDataTypes = AggregatedPropertyType.newAggregatedProperty();
+
+		for (Entry<String, IClientService> entry : services.entrySet())
+		{
+			TypedData<Map<String, Object>> sd = entry.getValue().getProperties();
+			serviceData.put(entry.getKey(), sd.content);
+			if (sd.contentType != null) serviceDataTypes.putProperty(entry.getKey(), sd.contentType);
 		}
+		if (!serviceDataTypes.hasChildProperties()) serviceDataTypes = null;
 		data.put("services", serviceData);
-		try {
-			WebsocketEndpoint.get().sendMessage(data, true, getForJsonConverter());
-		} catch (IOException e) {
+		PropertyDescription dataTypes = null;
+		if (serviceDataTypes != null)
+		{
+			dataTypes = AggregatedPropertyType.newAggregatedProperty();
+			dataTypes.putProperty("services", serviceDataTypes);
+		}
+		try
+		{
+			WebsocketEndpoint.get().sendMessage(data, dataTypes, true);
+		}
+		catch (IOException e)
+		{
 			log.error(e.getLocalizedMessage(), e);
 		}
 	}
@@ -138,12 +160,14 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 	{
 		return serverServices.get(name);
 	}
-	
+
 	@Override
-	public IClientService getService(String name) {
-		
+	public IClientService getService(String name)
+	{
+
 		IClientService clientService = services.get(name);
-		if (clientService == null) {
+		if (clientService == null)
+		{
 			clientService = createClientService(name);
 			services.put(name, clientService);
 		}
@@ -154,34 +178,48 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 	 * @param name
 	 * @return
 	 */
-	protected IClientService createClientService(String name) {
+	protected IClientService createClientService(String name)
+	{
 		return new ClientService(name, WebServiceSpecProvider.getInstance().getWebServiceSpecification(name));
 	}
-	
-	public Map<String,Map<String,Object>> getServiceChanges() {
-		Map<String,Map<String,Object>> changes = new HashMap<>();
-		for (IClientService service : services.values()) {
-			Map<String, Object> serviceChanges = service.getChanges();
-			if (!serviceChanges.isEmpty()) changes.put(service.getName(), serviceChanges);
-		}
-		return changes;
-	}
-	
-	public Object invokeApi(WebComponent receiver, WebComponentApiDefinition apiFunction, Object[] arguments)
+
+	public TypedData<Map<String, Map<String, Object>>> getServiceChanges()
 	{
-		return invokeApi(receiver, apiFunction, arguments, null);
+		Map<String, Map<String, Object>> changes = new HashMap<>();
+		PropertyDescription changeTypes = AggregatedPropertyType.newAggregatedProperty();
+
+		for (IClientService service : services.values())
+		{
+			TypedData<Map<String, Object>> serviceChanges = service.getChanges();
+			if (!serviceChanges.content.isEmpty())
+			{
+				changes.put(service.getName(), serviceChanges.content);
+				if (serviceChanges.contentType != null) changeTypes.putProperty(service.getName(), serviceChanges.contentType);
+			}
+		}
+		if (!changeTypes.hasChildProperties()) changeTypes = null;
+		return new TypedData<Map<String, Map<String, Object>>>(changes, changeTypes);
 	}
-	
-	protected Object invokeApi(WebComponent receiver, WebComponentApiDefinition apiFunction, Object[] arguments, Map<String, Object> callContributions)
+
+	public Object invokeApi(WebComponent receiver, WebComponentApiDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes)
+	{
+		return invokeApi(receiver, apiFunction, arguments, argumentTypes, null);
+	}
+
+	protected Object invokeApi(WebComponent receiver, WebComponentApiDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes,
+		Map<String, Object> callContributions)
 	{
 		// {"call":{"form":"product","bean":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}}
 		try
 		{
-			Map<String, Map<String, Map<String, Object>>> changes = WebsocketEndpoint.get().getAllComponentsChanges();
+			TypedData<Map<String, Map<String, Map<String, Object>>>> changes = WebsocketEndpoint.get().getAllComponentsChanges();
 			Map<String, Object> data = new HashMap<>();
-			data.put("forms", changes);
+			PropertyDescription dataTypes = AggregatedPropertyType.newAggregatedProperty();
+			data.put("forms", changes.content);
+			if (changes.contentType != null) dataTypes.putProperty("forms", changes.contentType);
 
 			Map<String, Object> call = new HashMap<>();
+			PropertyDescription callTypes = AggregatedPropertyType.newAggregatedProperty();
 			if (callContributions != null) call.putAll(callContributions);
 			call.put("form", receiver.getParent().getName());
 			call.put("bean", receiver.getName());
@@ -189,29 +227,32 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 			if (arguments != null && arguments.length > 0)
 			{
 				call.put("args", arguments);
+				if (argumentTypes != null) callTypes.putProperty("args", argumentTypes);
 			}
 			data.put("call", call);
+			if (!callTypes.hasChildProperties()) dataTypes.putProperty("call", callTypes);
 
-			Object ret = WebsocketEndpoint.get().sendMessage(data, false, getForJsonConverter());
-			// convert dates back
+			Object ret = WebsocketEndpoint.get().sendMessage(data, dataTypes, false);
+			// convert dates back; TODO should this if be removed?; the JSONUtils.fromJSON below should do this anyway
 			if (ret instanceof Long && apiFunction.getReturnType().getType() instanceof DatePropertyType)
 			{
 				return new Date(((Long)ret).longValue());
 			}
-			return ret;
+			try
+			{
+				return JSONUtils.fromJSON(null, ret, apiFunction.getReturnType(), new DataConverterContext(apiFunction.getReturnType(), receiver));
+			}
+			catch (JSONException e)
+			{
+				log.error("Cannot parse api call return value JSON for: " + ret, e);
+			}
 		}
 		catch (IOException e)
 		{
-			log.error("IOException occurred",e);
+			log.error("IOException occurred", e);
 		}
 
 		return null;
 	}
 
-	@Override
-	public IForJsonConverter getForJsonConverter()
-	{
-		// by default no conversion, only support basic types
-		return null;
-	}
 }

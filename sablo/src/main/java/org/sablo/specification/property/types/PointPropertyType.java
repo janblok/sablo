@@ -21,46 +21,54 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.sablo.specification.property.IClassPropertyType;
-import org.sablo.websocket.IForJsonConverter;
+import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.websocket.utils.DataConversion;
 
 /**
  * @author jcompagner
  *
  */
-public class PointPropertyType extends DefaultPropertyType<Point> implements IClassPropertyType<Point,Point> {
+public class PointPropertyType extends DefaultPropertyType<Point> implements IClassPropertyType<Point>
+{
 
 	public static final PointPropertyType INSTANCE = new PointPropertyType();
-	
-	private PointPropertyType() {
+
+	private PointPropertyType()
+	{
 	}
-	
+
 	@Override
-	public String getName() {
+	public String getName()
+	{
 		return "point";
 	}
 
 	@Override
-	public Point fromJSON(Object newValue, Point previousValue) {
-		if (newValue instanceof JSONObject) {
-			JSONObject json = (JSONObject) newValue;
+	public Point fromJSON(Object newValue, Point previousValue, IDataConverterContext dataConverterContext)
+	{
+		if (newValue instanceof JSONObject)
+		{
+			JSONObject json = (JSONObject)newValue;
 			return new Point(json.optInt("x"), json.optInt("y"));
 		}
 		return null;
 	}
-	
+
 	@Override
-	public void toJSON(JSONWriter writer, Point object, DataConversion clientConversion, IForJsonConverter forJsonConverter) throws JSONException {
-		writer.object().key("x").value(object.getX()).key("y").value(object.getY()).endObject();
+	public JSONWriter toJSON(JSONWriter writer, Point object, DataConversion clientConversion) throws JSONException
+	{
+		return writer.object().key("x").value(object.getX()).key("y").value(object.getY()).endObject();
 	}
-	
+
 	@Override
-	public Point defaultValue() {
-		return new Point(0,0);
+	public Point defaultValue()
+	{
+		return new Point(0, 0);
 	}
-	
+
 	@Override
-	public Class<Point> getTypeClass() {
+	public Class<Point> getTypeClass()
+	{
 		return Point.class;
 	}
 }

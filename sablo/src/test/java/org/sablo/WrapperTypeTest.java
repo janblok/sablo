@@ -15,7 +15,8 @@
  */
 package org.sablo;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.InputStream;
 import java.util.HashMap;
@@ -25,13 +26,12 @@ import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.junit.Before;
 import org.junit.Test;
-import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
+import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.types.TypesRegistry;
 import org.sablo.websocket.ConversionLocation;
-import org.sablo.websocket.IForJsonConverter;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 
@@ -39,36 +39,43 @@ import org.sablo.websocket.utils.JSONUtils;
  * @author jcompagner
  *
  */
-public class WrapperTypeTest {
+public class WrapperTypeTest
+{
 
 	/**
 	 * @author jcompagner
 	 *
 	 */
-	public class MyWrapperType implements IWrapperType<String,MyWrapper> {
+	public class MyWrapperType implements IWrapperType<String, MyWrapper>
+	{
 
 		@Override
-		public String getName() {
+		public String getName()
+		{
 			return "mywrapper";
 		}
 
 		@Override
-		public Object parseConfig(JSONObject config) {
+		public Object parseConfig(JSONObject config)
+		{
 			return config;
 		}
 
 		@Override
-		public MyWrapper defaultValue() {
+		public MyWrapper defaultValue()
+		{
 			return null;
 		}
 
 		@Override
-		public String unwrap(MyWrapper value) {
+		public String unwrap(MyWrapper value)
+		{
 			return value.string;
 		}
 
 		@Override
-		public MyWrapper wrap(String value, MyWrapper previousValue, IDataConverterContext dataConverterContext) {
+		public MyWrapper wrap(String value, MyWrapper previousValue, IDataConverterContext dataConverterContext)
+		{
 			if (previousValue == null) previousValue = new MyWrapper();
 			previousValue.string = value;
 			previousValue.counter++;
@@ -76,33 +83,33 @@ public class WrapperTypeTest {
 		}
 
 		@Override
-		public Class<MyWrapper> getTypeClass() {
-			return MyWrapper.class;
-		}
-
-		@Override
-		public String fromJSON(Object newValue, MyWrapper previousValue) {
-			if (newValue instanceof JSONObject) {
-				return ((JSONObject) newValue).optString("string"); 
+		public MyWrapper fromJSON(Object newValue, MyWrapper previousValue, IDataConverterContext dataConverterContext)
+		{
+			if (newValue instanceof JSONObject)
+			{
+				return wrap(((JSONObject)newValue).optString("string"), previousValue, dataConverterContext);
 			}
-			else if (newValue instanceof String){
-				return (String) newValue;
+			else if (newValue instanceof String)
+			{
+				return wrap((String)newValue, previousValue, dataConverterContext);
 			}
 			return null;
 		}
 
 		@Override
-		public void toJSON(JSONWriter writer, MyWrapper object, DataConversion clientConversion, IForJsonConverter forJsonConverter)
-				throws JSONException {
+		public JSONWriter toJSON(JSONWriter writer, MyWrapper object, DataConversion clientConversion) throws JSONException
+		{
 			writer.object();
 			writer.key("string").value(object.string);
 			writer.key("counter").value(object.counter);
 			writer.endObject();
+			return writer;
 		}
 
 	}
-	
-	public class MyWrapper {
+
+	public class MyWrapper
+	{
 		private String string;
 		private int counter;
 	}
@@ -111,48 +118,50 @@ public class WrapperTypeTest {
 	 * @throws java.lang.Exception
 	 */
 	@Before
-	public void setUp() throws Exception {
-		
+	public void setUp() throws Exception
+	{
+
 		TypesRegistry.addType(new MyWrapperType());
 		InputStream is = getClass().getResourceAsStream("WebComponentTest-manifest.spec");
 		byte[] bytes = new byte[is.available()];
 		is.read(bytes);
 		String manifest = new String(bytes);
 		is.close();
-		
+
 		is = getClass().getResourceAsStream("WrapperTypeTest-mycomponent.spec");
 		bytes = new byte[is.available()];
 		is.read(bytes);
 		String comp = new String(bytes);
 		is.close();
-		
+
 		HashMap<String, String> components = new HashMap<>();
 		components.put("mycomponent.spec", comp);
-		WebComponentSpecProvider.init(new IPackageReader[] {new InMemPackageReader(manifest, components)});
+		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(manifest, components) });
 	}
 
 	@Test
-	public void test() throws JSONException {
-		WebComponent component = new WebComponent("mycomponent","test");
+	public void test() throws JSONException
+	{
+		WebComponent component = new WebComponent("mycomponent", "test");
 		component.setProperty("somepropp", "test", null);
-		
+
 		assertEquals("test", component.getProperty("somepropp"));
-		
+
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", component.getProperties());
-		
+
 		String msg = JSONUtils.writeDataWithConversions(data, null, ConversionLocation.BROWSER_UPDATE);
 		assertEquals("{\"msg\":{\"somepropp\":{\"string\":\"test\",\"counter\":1},\"name\":\"test\"}}", msg);
-		
+
 		component.putBrowserProperty("somepropp", "tester");
-		
-		assertTrue(component.getProperties().get("somepropp") instanceof MyWrapper);
-		
+
+		assertTrue(component.getRawProperties().get("somepropp") instanceof MyWrapper);
+
 		assertEquals("tester", component.getProperty("somepropp"));
-		
+
 		component.putBrowserProperty("somepropp", new JSONObject("{\"string\":\"test\"}"));
-		assertTrue(component.getProperties().get("somepropp") instanceof MyWrapper);
-		
+		assertTrue(component.getRawProperties().get("somepropp") instanceof MyWrapper);
+
 		assertEquals("test", component.getProperty("somepropp"));
 	}
 

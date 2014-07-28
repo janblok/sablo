@@ -15,14 +15,14 @@
  */
 package org.sablo.specification.property;
 
-
 /**
  * Property types that are wrapped into a custom class.
  * @author gboros
  */
-public interface IWrapperType<T,W> extends IClassPropertyType<W,T>
+public interface IWrapperType<T, W> extends IConvertedPropertyType<W>
 {
 	T unwrap(W value);
-	
+
 	W wrap(T value, W previousValue, IDataConverterContext dataConverterContext);
+
 }

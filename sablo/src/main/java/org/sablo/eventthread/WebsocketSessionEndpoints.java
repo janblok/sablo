@@ -21,10 +21,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.sablo.Container;
+import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.ConversionLocation;
-import org.sablo.websocket.IForJsonConverter;
 import org.sablo.websocket.IWebsocketEndpoint;
 import org.sablo.websocket.IWebsocketSession;
+import org.sablo.websocket.TypedData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,21 +101,20 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 	}
 
 	@Override
-	public Object sendMessage(Map<String, ? > data, boolean async, IForJsonConverter forJsonConverter) throws IOException
+	public Object sendMessage(Map<String, ? > data, PropertyDescription dataType, boolean async) throws IOException
 	{
 		// TODO should this throw an illegal call exception? Because this kind of call shouildn't be used in this class?
 		// returns the first none null value.
-		return sendMessage(data, async, forJsonConverter, ConversionLocation.BROWSER_UPDATE);
+		return sendMessage(data, dataType, async, ConversionLocation.BROWSER_UPDATE);
 	}
 
 	@Override
-	public Object sendMessage(Map<String, ? > data, boolean async, IForJsonConverter forJsonConverter, ConversionLocation conversionLocation)
-		throws IOException
+	public Object sendMessage(Map<String, ? > data, PropertyDescription dataType, boolean async, ConversionLocation conversionLocation) throws IOException
 	{
 		Object retValue = null;
 		for (IWebsocketEndpoint endpoint : session.getRegisteredEnpoints())
 		{
-			Object reply = endpoint.sendMessage(data, async, forJsonConverter, conversionLocation);
+			Object reply = endpoint.sendMessage(data, dataType, async, conversionLocation);
 			retValue = retValue == null ? reply : retValue;
 		}
 		return retValue;
@@ -129,24 +130,24 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 	}
 
 	@Override
-	public void sendResponse(Object msgId, Object object, boolean success, IForJsonConverter forJsonConverter) throws IOException
+	public void sendResponse(Object msgId, Object object, PropertyDescription objectType, boolean success) throws IOException
 	{
 		for (IWebsocketEndpoint endpoint : session.getRegisteredEnpoints())
 		{
-			endpoint.sendResponse(msgId, object, success, forJsonConverter);
+			endpoint.sendResponse(msgId, object, objectType, success);
 		}
 	}
 
 	@Override
-	public void executeAsyncServiceCall(String serviceName, String functionName, Object[] arguments)
+	public void executeAsyncServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes)
 	{
 		for (IWebsocketEndpoint endpoint : session.getRegisteredEnpoints())
 		{
-			endpoint.executeAsyncServiceCall(serviceName, functionName, arguments);
+			endpoint.executeAsyncServiceCall(serviceName, functionName, arguments, argumentTypes);
 			try
 			{
 				// Call is initiated not from client, flush call otherwise it will only be sent after next client call
-				endpoint.sendMessage(null, true, null);
+				endpoint.sendMessage(null, null, true, null);
 			}
 			catch (IOException e)
 			{
@@ -157,14 +158,15 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 	}
 
 	@Override
-	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, Map<String, ? > changes) throws IOException
+	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes, Map<String, ? > changes,
+		PropertyDescription changesTypes) throws IOException
 	{
 		// TODO should this throw an illegal call exception? Because this kind of call shouildn't be used in this class?
 		// returns the first none null value.
 		Object retValue = null;
 		for (IWebsocketEndpoint endpoint : session.getRegisteredEnpoints())
 		{
-			Object reply = endpoint.executeServiceCall(serviceName, functionName, arguments, changes);
+			Object reply = endpoint.executeServiceCall(serviceName, functionName, arguments, argumentTypes, changes, changesTypes);
 			retValue = retValue == null ? reply : retValue;
 		}
 		return retValue;
@@ -180,14 +182,20 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 	}
 
 	@Override
-	public Map<String, Map<String, Map<String, Object>>> getAllComponentsChanges()
+	public TypedData<Map<String, Map<String, Map<String, Object>>>> getAllComponentsChanges()
 	{
 		Map<String, Map<String, Map<String, Object>>> changes = new HashMap<>(8);
+		PropertyDescription changeTypes = AggregatedPropertyType.newAggregatedProperty();
+
 		for (IWebsocketEndpoint endpoint : session.getRegisteredEnpoints())
 		{
-			changes.putAll(endpoint.getAllComponentsChanges());
+			TypedData<Map<String, Map<String, Map<String, Object>>>> endPointComponentChanges = endpoint.getAllComponentsChanges();
+			changes.putAll(endPointComponentChanges.content);
+			if (endPointComponentChanges.contentType != null) changeTypes.putAll(endPointComponentChanges.contentType.getProperties());
 		}
-		return changes;
+		if (!changeTypes.hasChildProperties()) changeTypes = null;
+
+		return new TypedData<Map<String, Map<String, Map<String, Object>>>>(changes, changeTypes);
 	}
 
 	@Override

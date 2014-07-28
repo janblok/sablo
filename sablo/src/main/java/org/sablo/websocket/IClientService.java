@@ -23,14 +23,15 @@ import org.json.JSONException;
 /**
  * Represents the client side service object on the server.
  * Can be used to execute functions client side, or the get or set model data.
- * 
+ *
  * @author jcompagner
  *
  */
-public interface IClientService {
+public interface IClientService
+{
 
 
-	/** 
+	/**
 	 * Execute a service call asynchronously.
 	 * @param serviceName
 	 * @param functionName
@@ -38,7 +39,7 @@ public interface IClientService {
 	 */
 	public void executeAsyncServiceCall(String functionName, Object[] arguments);
 
-	/** 
+	/**
 	 * Execute a service call synchronously.
 	 * @param serviceName
 	 * @param functionName
@@ -47,50 +48,48 @@ public interface IClientService {
 	 * @throws IOException
 	 */
 	public Object executeServiceCall(String functionName, Object[] arguments) throws IOException;
-	
+
 	/**
 	 * Called when a property on the client is changed, json conversion should be done.
-	 * 
+	 *
 	 * @param property
 	 * @param value
 	 */
-	public void putBrowserProperty(String propertyName, Object propertyValue)
-			throws JSONException;
-	
+	public void putBrowserProperty(String propertyName, Object propertyValue) throws JSONException;
+
 	/**
 	 * put a model value, will be send to the client.
-	 * 
+	 *
 	 * @param property
 	 * @param value
 	 * @param sourceOfValue
 	 */
-	public boolean setProperty(String propertyName, Object propertyValue,
-			ConversionLocation sourceOfValue);
-	
+	public boolean setProperty(String propertyName, Object propertyValue, ConversionLocation sourceOfValue);
+
 	/**
-	 * get a model value 
+	 * get a model value
 	 * @param property
 	 * @return the value for this property in the model
 	 */
 	public Object getProperty(String property);
-	
+
 	/**
-	 * Get all the changed values 
-	 * 
+	 * Get all the changed values
+	 *
 	 * @return map of property->value
 	 */
-	public Map<String, Object> getProperties();
-	
+	public TypedData<Map<String, Object>> getProperties();
+
 	/**
-	 * Get all the changed values 
-	 * 
-	 * @return map of property->value
+	 * Get all the changed values
+	 *
+	 * @return map of property->value & the type information for those values to be converted to JSON.
 	 */
-	public Map<String, Object> getChanges();
-	
+	public TypedData<Map<String, Object>> getChanges();
+
 	/**
 	 * get the name of this service.
-	 * 
+	 *
 	 * @return String the name
 	 */
 	public String getName();

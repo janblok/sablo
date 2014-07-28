@@ -22,7 +22,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentSpecification;
+import org.sablo.specification.property.types.AggregatedPropertyType;
+import org.sablo.websocket.TypedData;
 import org.sablo.websocket.WebsocketEndpoint;
 
 /**
@@ -59,10 +62,11 @@ public abstract class Container extends WebComponent
 	{
 		return Collections.unmodifiableCollection(components.values());
 	}
-	
-	public Map<String, Map<String, Object>> getAllComponentsChanges()
+
+	public TypedData<Map<String, Map<String, Object>>> getAllComponentsChanges()
 	{
 		Map<String, Map<String, Object>> props = new HashMap<String, Map<String, Object>>(8);
+		PropertyDescription propTypes = AggregatedPropertyType.newAggregatedProperty();
 
 		ArrayList<WebComponent> allComponents = new ArrayList<WebComponent>();
 		allComponents.add(this); // add the container itself
@@ -70,19 +74,22 @@ public abstract class Container extends WebComponent
 
 		for (WebComponent wc : allComponents)
 		{
-			Map<String, Object> changes = wc.getChanges();
-			if (changes.size() > 0)
+			TypedData<Map<String, Object>> changes = wc.getChanges();
+			if (changes.content.size() > 0)
 			{
-				props.put(wc == this ? "" : wc.getName(), changes); //$NON-NLS-1$
+				props.put(wc == this ? "" : wc.getName(), changes.content); //$NON-NLS-1$
+				if (changes.contentType != null) propTypes.putProperty(wc == this ? "" : wc.getName(), changes.contentType);
 			}
 		}
-		return props;
+		if (!propTypes.hasChildProperties()) propTypes = null;
+		return new TypedData<Map<String, Map<String, Object>>>(props, propTypes);
 	}
 
-	public Map<String, Map<String, Object>> getAllComponentsProperties()
+	public TypedData<Map<String, Map<String, Object>>> getAllComponentsProperties()
 	{
 		WebsocketEndpoint.get().regisiterContainer(this);
 		Map<String, Map<String, Object>> props = new HashMap<String, Map<String, Object>>();
+		PropertyDescription propTypes = AggregatedPropertyType.newAggregatedProperty();
 
 		ArrayList<WebComponent> allComponents = new ArrayList<WebComponent>();
 		allComponents.add(this); // add the form itself
@@ -90,10 +97,13 @@ public abstract class Container extends WebComponent
 
 		for (WebComponent wc : allComponents)
 		{
-			Map<String, Object> changes = wc.getProperties();
+			TypedData<Map<String, Object>> changes = wc.getProperties();
 			wc.clearChanges();
-			props.put(wc == this ? "" : wc.getName(), changes); //$NON-NLS-1$
+			String name = (wc == this ? "" : wc.getName());
+			props.put(name, changes.content);
+			if (changes.contentType != null) propTypes.putProperty(name, changes.contentType);
 		}
-		return props;
+		if (!propTypes.hasChildProperties()) propTypes = null;
+		return new TypedData<Map<String, Map<String, Object>>>(props, propTypes);
 	}
 }

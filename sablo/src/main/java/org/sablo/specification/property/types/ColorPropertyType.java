@@ -23,15 +23,16 @@ import java.util.Map;
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.property.IClassPropertyType;
-import org.sablo.websocket.IForJsonConverter;
+import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.websocket.utils.DataConversion;
 
 /**
  * @author jcompagner
  *
  */
-public class ColorPropertyType extends DefaultPropertyType<Color> implements IClassPropertyType<Color,Color>{
-	
+public class ColorPropertyType extends DefaultPropertyType<Color> implements IClassPropertyType<Color>
+{
+
 	private static final Map<String, String> basicCssColors = new HashMap<String, String>();
 
 	static
@@ -57,22 +58,25 @@ public class ColorPropertyType extends DefaultPropertyType<Color> implements ICl
 	public static final String COLOR_RGBA_DEF = "rgba";
 	public static final String TRANSPARENT = "transparent";
 	public static final Color COLOR_TRANSPARENT = new Color(0, 0, 0, 0);
-	
+
 	public static final ColorPropertyType INSTANCE = new ColorPropertyType();
-	
-	private ColorPropertyType() {
+
+	private ColorPropertyType()
+	{
 	}
-	
+
 	@Override
-	public String getName() {
+	public String getName()
+	{
 		return "color";
 	}
-	
+
 	@Override
-	public Color fromJSON(Object newValue, Color previousValue) {
+	public Color fromJSON(Object newValue, Color previousValue, IDataConverterContext dataConverterContext)
+	{
 		Color retval = null;
 
-		String ss = (String) newValue;
+		String ss = (String)newValue;
 		if (newValue != null && (ss.length() == 4 || ss.length() == 7))
 		{
 			if (ss.length() == 4) // abbreviated
@@ -102,38 +106,40 @@ public class ColorPropertyType extends DefaultPropertyType<Color> implements ICl
 			catch (Exception e)
 			{
 				// ignore
-				if (basicCssColors.containsKey(ss.toLowerCase())) return fromJSON(basicCssColors.get(ss.toLowerCase()), null);
+				if (basicCssColors.containsKey(ss.toLowerCase())) return fromJSON(basicCssColors.get(ss.toLowerCase()), null, dataConverterContext);
 			}
 		}
 		return retval;
 	}
-	
+
 	@Override
-	public void toJSON(JSONWriter writer, Color c, DataConversion clientConversion, IForJsonConverter forJsonConverter) throws JSONException {
-			int alpha = c.getAlpha();
-			if (alpha == 255)
-			{
-				String r = Integer.toHexString(c.getRed());
-				if (r.length() == 1) r = "0" + r; //$NON-NLS-1$
-				String g = Integer.toHexString(c.getGreen());
-				if (g.length() == 1) g = "0" + g; //$NON-NLS-1$
-				String b = Integer.toHexString(c.getBlue());
-				if (b.length() == 1) b = "0" + b; //$NON-NLS-1$
-				writer.value("#" + r + g + b); //$NON-NLS-1$
-			}
-			else if (alpha == 0)
-			{
-				writer.value(TRANSPARENT);
-			}
-			else
-			{
-				writer.value(COLOR_RGBA_DEF + '(' + c.getRed() + ',' + c.getGreen() + ',' + c.getBlue() + ',' + Math.round((alpha / 255f) * 10)/10f +
-					')');
-			}
+	public JSONWriter toJSON(JSONWriter writer, Color c, DataConversion clientConversion) throws JSONException
+	{
+		int alpha = c.getAlpha();
+		if (alpha == 255)
+		{
+			String r = Integer.toHexString(c.getRed());
+			if (r.length() == 1) r = "0" + r; //$NON-NLS-1$
+			String g = Integer.toHexString(c.getGreen());
+			if (g.length() == 1) g = "0" + g; //$NON-NLS-1$
+			String b = Integer.toHexString(c.getBlue());
+			if (b.length() == 1) b = "0" + b; //$NON-NLS-1$
+			writer.value("#" + r + g + b); //$NON-NLS-1$
+		}
+		else if (alpha == 0)
+		{
+			writer.value(TRANSPARENT);
+		}
+		else
+		{
+			writer.value(COLOR_RGBA_DEF + '(' + c.getRed() + ',' + c.getGreen() + ',' + c.getBlue() + ',' + Math.round((alpha / 255f) * 10) / 10f + ')');
+		}
+		return writer;
 	}
 
 	@Override
-	public Class<Color> getTypeClass() {
+	public Class<Color> getTypeClass()
+	{
 		return Color.class;
 	}
 

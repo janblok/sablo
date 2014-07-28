@@ -91,6 +91,10 @@ public class PropertyDescription
 		return Collections.EMPTY_MAP;
 	}
 
+	public boolean hasChildProperties()
+	{
+		return properties != null && !properties.isEmpty();
+	}
 
 	public Set<String> getAllPropertiesNames()
 	{

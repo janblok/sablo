@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
-import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.websocket.CloseReason;
@@ -38,9 +37,9 @@ import javax.websocket.server.ServerEndpoint;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
-import org.json.JSONWriter;
 import org.sablo.Container;
-import org.sablo.websocket.utils.DataConversion;
+import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.utils.JSONUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +62,7 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 	private static final Logger log = LoggerFactory.getLogger(WebsocketEndpoint.class.getCanonicalName());
 	private static ThreadLocal<IWebsocketEndpoint> currentInstance = new ThreadLocal<>();
 
-	private WeakHashMap<Container, Object> usedContainers = new WeakHashMap<>(3); // set of used container in order to collect all changes  
+	private final WeakHashMap<Container, Object> usedContainers = new WeakHashMap<>(3); // set of used container in order to collect all changes
 
 	public static IWebsocketEndpoint get()
 	{
@@ -91,7 +90,7 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 	 * connection with browser
 	 */
 	private Session session;
-	
+
 	private String windowId;
 
 	/*
@@ -102,6 +101,7 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 	private final AtomicInteger nextMessageId = new AtomicInteger(0);
 	private final Map<Integer, List<Object>> pendingMessages = new HashMap<>();
 	private final List<Map<String, Object>> serviceCalls = new ArrayList<>();
+	private final PropertyDescription serviceCallTypes = AggregatedPropertyType.newAggregatedProperty();
 
 	public WebsocketEndpoint()
 	{
@@ -109,8 +109,7 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 
 	@OnOpen
 	public void start(Session newSession, @PathParam("endpointType")
-	final String endpointType, @PathParam("sessionid")
-	String sessionid, @PathParam("windowid")
+	final String endpointType, @PathParam("sessionid") String sessionid, @PathParam("windowid")
 	final String windowid, @PathParam("argument")
 	final String arg) throws Exception
 	{
@@ -124,9 +123,8 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 		try
 		{
 			wsSession = WebsocketSessionManager.getOrCreateSession(endpointType, uuid, true);
-			
-			if (!wsSession.getUuid().equals(uuid))
-				sendMessage(new JSONStringer().object().key("sessionid").value(wsSession.getUuid()).endObject().toString());
+
+			if (!wsSession.getUuid().equals(uuid)) sendMessage(new JSONStringer().object().key("sessionid").value(wsSession.getUuid()).endObject().toString());
 			wsSession.registerEndpoint(this);
 			wsSession.onOpen(argument);
 		}
@@ -135,23 +133,28 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 			currentInstance.remove();
 		}
 	}
-	
+
 	/**
 	 * @return the windowId
 	 */
 	@Override
-	public String getWindowId() {
+	public String getWindowId()
+	{
 		return windowId;
 	}
-	
+
 	/**
 	 * @param windowId the windowId to set
 	 */
-	public void setWindowId(String windowId) {
+	public void setWindowId(String windowId)
+	{
 		this.windowId = windowId;
-		try {
+		try
+		{
 			sendMessage(new JSONStringer().object().key("windowid").value(windowId).endObject().toString());
-		} catch (Exception e) {
+		}
+		catch (Exception e)
+		{
 			log.error("error sending the window id to the client", e);
 		}
 	}
@@ -159,11 +162,11 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 	@OnError
 	public void onError(Throwable t)
 	{
-		if (t instanceof IOException) 
+		if (t instanceof IOException)
 		{
 			log.error("IOException happend", t.getMessage()); // TODO if it has no message but has a 'cause' it will not print anything useful
 		}
-		else 
+		else
 		{
 			log.error("Exception happend", t);
 		}
@@ -254,37 +257,44 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 				// service call
 				final String serviceName = obj.optString("service");
 				final IServerService service = wsSession.getServerService(serviceName);
-				
-				if (service != null) {
-					wsSession.getEventDispatcher().addEvent(new Runnable() {
-						
+
+				if (service != null)
+				{
+					wsSession.getEventDispatcher().addEvent(new Runnable()
+					{
+
 						@Override
-						public void run() {
+						public void run()
+						{
 							Object result = null;
 							String error = null;
-							try {
-								result = service.executeMethod(obj.optString("methodname"),
-										obj.optJSONObject("args"));
-							} catch (Exception e) {
+							try
+							{
+								result = service.executeMethod(obj.optString("methodname"), obj.optJSONObject("args"));
+							}
+							catch (Exception e)
+							{
 								error = "Error: " + e.getMessage();
 								log.error(error, e);
 							}
-							
-							final Object msgId =  obj.opt("cmsgid");
+
+							final Object msgId = obj.opt("cmsgid");
 							if (msgId != null) // client wants response
 							{
-								try {
-									WebsocketEndpoint.get().sendResponse(msgId,
-											error == null ? result : error,
-													error == null,
-													wsSession.getForJsonConverter());
-								} catch (IOException e) {
+								try
+								{
+									WebsocketEndpoint.get().sendResponse(msgId, error == null ? result : error, null, error == null);
+								}
+								catch (IOException e)
+								{
 									log.error(e.getMessage(), e);
 								}
 							}
 						}
 					});
-				} else {
+				}
+				else
+				{
 					log.info("unknown service called from the client: " + serviceName);
 				}
 				return;
@@ -295,8 +305,9 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 				IClientService service = getWebsocketSession().getService(servicename);
 				JSONObject changes = obj.optJSONObject("changes");
 				Iterator keys = changes.keys();
-				while(keys.hasNext()) {
-					String key = (String) keys.next();
+				while (keys.hasNext())
+				{
+					String key = (String)keys.next();
 					service.putBrowserProperty(key, changes.opt(key));
 				}
 				return;
@@ -305,7 +316,7 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 		}
 		catch (JSONException e)
 		{
-			log.error("JSONException",e);
+			log.error("JSONException", e);
 			return;
 		}
 		finally
@@ -315,46 +326,53 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 
 	}
 
-	private void addServiceCall(String serviceName, String functionName, Object[] arguments)
+	private void addServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes)
 	{
 		// {"services":[{name:serviceName,call:functionName,args:argumentsArray}]}
 		Map<String, Object> serviceCall = new HashMap<>();
+		PropertyDescription typesOfThisCall = AggregatedPropertyType.newAggregatedProperty();
 		serviceCall.put("name", serviceName);
 		serviceCall.put("call", functionName);
 		serviceCall.put("args", arguments);
+		if (argumentTypes != null) typesOfThisCall.putProperty("args", argumentTypes);
 		serviceCalls.add(serviceCall);
+		serviceCallTypes.putProperty(String.valueOf(serviceCalls.size() - 1), typesOfThisCall);
 	}
 
 	@Override
-	public void executeAsyncServiceCall(String serviceName, String functionName, Object[] arguments)
+	public void executeAsyncServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes)
 	{
-		addServiceCall(serviceName, functionName, arguments);
+		addServiceCall(serviceName, functionName, arguments, argumentTypes);
 	}
 
 	@Override
-	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, Map<String, ?> changes) throws IOException
+	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes, Map<String, ? > changes,
+		PropertyDescription changesTypes) throws IOException
 	{
-		addServiceCall(serviceName, functionName, arguments);
-		return sendMessage(changes, false, wsSession.getForJsonConverter()); // will return response from last service call
+		addServiceCall(serviceName, functionName, arguments, argumentTypes);
+		return sendMessage(changes, changesTypes, false); // will return response from last service call
 	}
 
-	public Object sendMessage(Map<String, ? > data, boolean async, IForJsonConverter forJsonConverter) throws IOException
+	public Object sendMessage(Map<String, ? > data, PropertyDescription dataTypes, boolean async) throws IOException
 	{
-		return sendMessage(data, async, forJsonConverter,ConversionLocation.BROWSER_UPDATE);
+		return sendMessage(data, dataTypes, async, ConversionLocation.BROWSER_UPDATE);
 	}
 
-	public Object sendMessage(Map<String, ? > data, boolean async, IForJsonConverter forJsonConverter,ConversionLocation conversionLocation) throws IOException
+	public Object sendMessage(Map<String, ? > data, PropertyDescription dataTypes, boolean async, ConversionLocation conversionLocation) throws IOException
 	{
 		if ((data == null || data.size() == 0) && serviceCalls.size() == 0) return null;
 
 		Map<String, Object> message = new HashMap<>();
+		PropertyDescription messageTypes = AggregatedPropertyType.newAggregatedProperty();
 		if (data != null && data.size() > 0)
 		{
 			message.put("msg", data);
+			if (dataTypes != null) messageTypes.putProperty("msg", dataTypes);
 		}
 		if (serviceCalls.size() > 0)
 		{
 			message.put("services", serviceCalls);
+			if (serviceCallTypes != null) messageTypes.putProperty("services", serviceCallTypes);
 		}
 
 		Integer messageId = null;
@@ -365,7 +383,8 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 
 		try
 		{
-			sendText(JSONUtils.writeDataWithConversions(message, forJsonConverter, conversionLocation));
+			if (!messageTypes.hasChildProperties()) messageTypes = null;
+			sendText(JSONUtils.writeDataWithConversions(message, messageTypes, conversionLocation));
 		}
 		catch (JSONException e)
 		{
@@ -376,21 +395,21 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 
 		return (messageId == null) ? null : waitResponse(messageId);
 	}
-	
+
 	public void sendMessage(String txt) throws IOException
 	{
 		sendText("{\"msg\":" + txt + '}');
 	}
 
 	@Override
-	public void sendResponse(Object msgId, Object object, boolean success, IForJsonConverter forJsonConverter) throws IOException
+	public void sendResponse(Object msgId, Object object, PropertyDescription objectType, boolean success) throws IOException
 	{
 		Map<String, Object> data = new HashMap<>();
 		data.put("cmsgid", msgId);
 		data.put(success ? "ret" : "exception", object);
 		try
 		{
-			sendText(JSONUtils.writeDataWithConversions(data, forJsonConverter, ConversionLocation.BROWSER_UPDATE));
+			sendText(JSONUtils.writeDataWithConversions(data, objectType, ConversionLocation.BROWSER_UPDATE));
 		}
 		catch (JSONException e)
 		{
@@ -439,31 +458,36 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 	}
 
 	@Override
-	public void regisiterContainer(Container container) 
+	public void regisiterContainer(Container container)
 	{
 		usedContainers.put(container, new Object());
 	}
 
 	@Override
-	public synchronized Map<String, Map<String, Map<String, Object>>> getAllComponentsChanges()
+	public synchronized TypedData<Map<String, Map<String, Map<String, Object>>>> getAllComponentsChanges()
 	{
 		Map<String, Map<String, Map<String, Object>>> changes = new HashMap<>(8);
-		for (Container fc: usedContainers.keySet())
+		PropertyDescription changeTypes = AggregatedPropertyType.newAggregatedProperty();
+
+		for (Container fc : usedContainers.keySet())
 		{
 			if (fc.isVisible())
 			{
-				Map<String, Map<String, Object>> formChanges = fc.getAllComponentsChanges();
-				if (formChanges.size() > 0)
+				TypedData<Map<String, Map<String, Object>>> formChanges = fc.getAllComponentsChanges();
+				if (formChanges.content.size() > 0)
 				{
-					changes.put(fc.getName(), formChanges);
+					changes.put(fc.getName(), formChanges.content);
+					if (formChanges.contentType != null) changeTypes.putProperty(fc.getName(), formChanges.contentType);
 				}
 			}
 		}
-		return changes;
+		if (!changeTypes.hasChildProperties()) changeTypes = null;
+
+		return new TypedData<Map<String, Map<String, Map<String, Object>>>>(changes, changeTypes);
 	}
 
 	@Override
-	public IWebsocketSession getWebsocketSession() 
+	public IWebsocketSession getWebsocketSession()
 	{
 		return wsSession;
 	}

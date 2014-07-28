@@ -16,80 +16,93 @@
 
 package org.sablo;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebComponentSpecification;
+import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.WebsocketEndpoint;
 
 /**
  * Server side representation of an angular webcomponent in the browser. It is
  * defined by a strong specification api,event and property-model wise
- * 
+ *
  * @author jblok
  */
 public class WebComponent extends BaseWebObject
 {
 	Container parent;
 
-	public WebComponent(String componentType, String name) {
-		super(name, WebComponentSpecProvider.getInstance()
-				.getWebComponentSpecification(componentType));
+	public WebComponent(String componentType, String name)
+	{
+		super(name, WebComponentSpecProvider.getInstance().getWebComponentSpecification(componentType));
 		properties.put("name", name);
 	}
 
-	public WebComponent(String name, WebComponentSpecification spec) {
+	public WebComponent(String name, WebComponentSpecification spec)
+	{
 		super(name, spec);
 	}
 
 	/**
 	 * Returns the parent container
-	 * 
+	 *
 	 * @return the parent container
 	 */
-	public final Container getParent() {
+	public final Container getParent()
+	{
 		return parent;
 	}
-	
+
 	/**
 	 * Sets the parent container.
-	 * 
+	 *
 	 * @param parent new parent container
 	 */
 	public final void setParent(Container parent)
 	{
 		this.parent = parent;
 	}
-	
+
 	/**
 	 * @return
 	 */
-	public boolean isVisible() {
-		Boolean v = (Boolean) properties.get("visible");
+	public boolean isVisible()
+	{
+		Boolean v = (Boolean)properties.get("visible");
 		return (v == null ? false : v.booleanValue());
 	}
 
 	/**
 	 * Register as visible
-	 * 
+	 *
 	 * @return
 	 */
-	public void setVisible(boolean v) {
+	public void setVisible(boolean v)
+	{
 		properties.put("visible", v);
 	}
-	
+
 	/**
 	 * Invoke apiFunction by name, fails silently if not found
-	 * 
+	 *
 	 * @param apiFunctionName
 	 *            the function name
 	 * @param args
 	 *            the args
 	 * @return the value if any
 	 */
-	public Object invokeApi(String apiFunctionName, Object[] args) {
-		WebComponentApiDefinition apiFunction = specification
-				.getApiFunction(apiFunctionName);
-		if (apiFunction != null) {
+	public Object invokeApi(String apiFunctionName, Object[] args)
+	{
+		WebComponentApiDefinition apiFunction = specification.getApiFunction(apiFunctionName);
+		if (apiFunction != null)
+		{
 			return invokeApi(apiFunction, args);
 		}
 		return null;
@@ -97,16 +110,59 @@ public class WebComponent extends BaseWebObject
 
 	/**
 	 * Invoke apiFunction
-	 * 
+	 *
 	 * @param apiFunction
 	 *            the function
 	 * @param args
 	 *            the args
 	 * @return the value if any
 	 */
-	public Object invokeApi(WebComponentApiDefinition apiFunction, Object[] args) {
-		return WebsocketEndpoint.get().getWebsocketSession()
-				.invokeApi(this, apiFunction, args);
+	public Object invokeApi(WebComponentApiDefinition apiFunction, Object[] args)
+	{
+		return WebsocketEndpoint.get().getWebsocketSession().invokeApi(this, apiFunction, args, getParameterTypes(apiFunction));
 	}
-	
+
+	public static PropertyDescription getParameterTypes(WebComponentApiDefinition apiFunc)
+	{
+		PropertyDescription parameterTypes = null;
+		final List<PropertyDescription> types = apiFunc.getParameters();
+		if (types != null && types.size() > 0)
+		{
+			parameterTypes = new PropertyDescription("", AggregatedPropertyType.INSTANCE)
+			{
+				@Override
+				public Map<String, PropertyDescription> getProperties()
+				{
+					Map<String, PropertyDescription> map = new HashMap<String, PropertyDescription>();
+					for (int i = 0; i < types.size(); i++)
+						map.put(String.valueOf(i), types.get(i));
+					return map;
+				}
+
+				@Override
+				public PropertyDescription getProperty(String name)
+				{
+					try
+					{
+						return types.get(Integer.parseInt(name));
+					}
+					catch (NumberFormatException e)
+					{
+						return null;
+					}
+				}
+
+				@Override
+				public Set<String> getAllPropertiesNames()
+				{
+					Set<String> s = new HashSet<String>();
+					for (int i = 0; i < types.size() - 1; i++)
+						s.add(String.valueOf(i));
+					return super.getAllPropertiesNames();
+				}
+			};
+		}
+		return parameterTypes;
+	}
+
 }

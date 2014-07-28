@@ -13,28 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sablo.specification.property.types;
 
-import org.json.JSONObject;
-import org.sablo.specification.property.IPropertyType;
+package org.sablo.websocket;
+
+import org.sablo.specification.PropertyDescription;
 
 /**
- * @author jcompagner
+ * Data + corresponding types (prepared to be sent to the client).
  *
+ * @author acostescu
  */
-public abstract class DefaultPropertyType<T> implements IPropertyType<T>
+public class TypedData<T>
 {
+	/**
+	 * The data (for example to be sent to the client).
+	 */
+	public final T content;
+	/**
+	 * The description of the data's structure; can be null or might have a corresponding type that can be used for "to JSON" conversion.
+	 */
+	public final PropertyDescription contentType;
 
-	@Override
-	public Object parseConfig(JSONObject config)
+	public TypedData(T content, PropertyDescription contentType)
 	{
-		return config;
-	}
-
-	@Override
-	public T defaultValue()
-	{
-		return null;
+		this.content = content;
+		this.contentType = contentType;
 	}
 
 }

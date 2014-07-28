@@ -17,44 +17,54 @@ package org.sablo.websocket.impl;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.sablo.BaseWebObject;
+import org.sablo.WebComponent;
+import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.WebComponentSpecification;
 import org.sablo.specification.WebServiceSpecProvider;
+import org.sablo.specification.property.DataConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.websocket.IClientService;
+import org.sablo.websocket.TypedData;
 import org.sablo.websocket.WebsocketEndpoint;
 
 /**
  * implementation of {@link IClientService}
- * 
+ *
  * @author jcompagner
  */
-public class ClientService extends BaseWebObject implements IClientService {
+public class ClientService extends BaseWebObject implements IClientService
+{
 
-
-	public ClientService(String serviceName, WebComponentSpecification spec) {
-		super(serviceName,  spec);
+	public ClientService(String serviceName, WebComponentSpecification spec)
+	{
+		super(serviceName, spec);
 	}
-	
+
 	@Override
 	public Object executeServiceCall(String functionName, Object[] arguments) throws IOException
 	{
-		Map<String, Object> serviceChanges = getChanges();
-		Object retValue = WebsocketEndpoint.get().executeServiceCall(name, functionName, arguments, serviceChanges.isEmpty()?null:Collections.singletonMap("services", Collections.singletonMap(getName(),serviceChanges)));
-		if (retValue != null) {
+		TypedData<Map<String, Object>> serviceChanges = getChanges();
+		Object retValue = WebsocketEndpoint.get().executeServiceCall(name, functionName, arguments, getParameterTypes(functionName),
+			serviceChanges.content.isEmpty() ? null : Collections.singletonMap("services", Collections.singletonMap(getName(), serviceChanges.content)),
+			serviceChanges.contentType);
+		if (retValue != null)
+		{
 			WebComponentSpecification spec = WebServiceSpecProvider.getInstance().getWebServiceSpecification(name);
-			if (spec != null) {
+			if (spec != null)
+			{
 				WebComponentApiDefinition apiFunction = spec.getApiFunction(functionName);
-				if (apiFunction != null && apiFunction.getReturnType() != null && apiFunction.getReturnType().getType() instanceof IClassPropertyType) {
+				if (apiFunction != null && apiFunction.getReturnType() != null && apiFunction.getReturnType().getType() instanceof IClassPropertyType)
+				{
 					// TODO wrapper types return now directly the wrapper class in toJava() this should not be returned.
 //					if (apiFunction.getReturnType().getType() instanceof IWrapperType) {
-//						return 
+//						return
 //					}
-					return ((IClassPropertyType)apiFunction.getReturnType().getType()).fromJSON(retValue, null);
+					return ((IClassPropertyType)apiFunction.getReturnType().getType()).fromJSON(retValue, null,
+						new DataConverterContext(apiFunction.getReturnType(), this));
 				}
 			}
 		}
@@ -64,6 +74,20 @@ public class ClientService extends BaseWebObject implements IClientService {
 	@Override
 	public void executeAsyncServiceCall(String functionName, Object[] arguments)
 	{
-		WebsocketEndpoint.get().executeAsyncServiceCall(name, functionName, arguments);
+		WebsocketEndpoint.get().executeAsyncServiceCall(name, functionName, arguments, getParameterTypes(functionName));
 	}
+
+	protected PropertyDescription getParameterTypes(String functionName)
+	{
+		// we have a list of properties available; create a suitable wrapper PropertyDescription that has the
+		// param indexes as child PropertyDescriptions
+		PropertyDescription parameterTypes = null;
+		WebComponentApiDefinition apiFunc = specification.getApiFunction(functionName);
+		if (apiFunc != null)
+		{
+			parameterTypes = WebComponent.getParameterTypes(apiFunc);
+		}
+		return parameterTypes;
+	}
+
 }

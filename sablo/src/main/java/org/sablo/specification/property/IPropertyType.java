@@ -17,12 +17,15 @@
 package org.sablo.specification.property;
 
 import org.json.JSONObject;
+import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
 
 /**
  * This class represents property types - which can have normal usage as declared in their type definition JSON,
- * can be default types or can have special handling (in case of complex properties, keeping different structures of data at design time/server side/client side).
- * 
+ * can be default types or can have special handling (in case of wrapped/class types/complex properties, keeping different structures of data at design time/server side/client side).
+ *
+ * @param <T> the type that {@link WebComponent#setProperty(String, Object, org.sablo.websocket.ConversionLocation)} and {@link WebComponent#getProperty(String)} end up storing in the WebComponent properties map.
+ *
  * @author acostescu
  */
 public interface IPropertyType<T>
@@ -37,15 +40,15 @@ public interface IPropertyType<T>
 	/**
 	 * Parse the JSON property configuration object into something that is easily usable later on (through {@link PropertyDescription#getConfig()}) by the property type implementation.<BR>
 	 * Example of JSON: "myComponentProperty: { type: 'myCustomType', myCustomTypeConfig1: true, myCustomTypeConfig2: [2, 4 ,6] }"<BR><BR>
-	 * 
-	 * If this is null but the property declaration contains configuration information, {@link PropertyDescription#getConfig()} will contain the actual JSON object. 
-	 * 
+	 *
+	 * If this is null but the property declaration contains configuration information, {@link PropertyDescription#getConfig()} will contain the actual JSON object.
+	 *
 	 * it should return the config object itself if it doesn't do anything.
-	 * 
+	 *
 	 * @return a custom object generated from the json or the json object itself.
 	 */
 	public Object parseConfig(JSONObject config);
-	
+
 	public T defaultValue();
 
 }

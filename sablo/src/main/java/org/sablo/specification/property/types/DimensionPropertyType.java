@@ -21,46 +21,54 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.sablo.specification.property.IClassPropertyType;
-import org.sablo.websocket.IForJsonConverter;
+import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.websocket.utils.DataConversion;
 
 /**
  * @author jcompagner
  *
  */
-public class DimensionPropertyType extends DefaultPropertyType<Dimension> implements IClassPropertyType<Dimension,Dimension> {
+public class DimensionPropertyType extends DefaultPropertyType<Dimension> implements IClassPropertyType<Dimension>
+{
 
 	public static final DimensionPropertyType INSTANCE = new DimensionPropertyType();
-	
-	private DimensionPropertyType() {
+
+	private DimensionPropertyType()
+	{
 	}
-	
+
 	@Override
-	public String getName() {
+	public String getName()
+	{
 		return "dimension";
 	}
 
 	@Override
-	public Dimension fromJSON(Object newValue, Dimension previousValue) {
-		if (newValue instanceof JSONObject) {
-			JSONObject json = (JSONObject) newValue;
+	public Dimension fromJSON(Object newValue, Dimension previousValue, IDataConverterContext dataConverterContext)
+	{
+		if (newValue instanceof JSONObject)
+		{
+			JSONObject json = (JSONObject)newValue;
 			return new Dimension(json.optInt("width"), json.optInt("height"));
 		}
 		return null;
 	}
-	
+
 	@Override
-	public void toJSON(JSONWriter writer, Dimension object, DataConversion clientConversion, IForJsonConverter forJsonConverter) throws JSONException {
-		writer.object().key("width").value(object.getWidth()).key("height").value(object.getHeight()).endObject();
+	public JSONWriter toJSON(JSONWriter writer, Dimension object, DataConversion clientConversion) throws JSONException
+	{
+		return writer.object().key("width").value(object.getWidth()).key("height").value(object.getHeight()).endObject();
 	}
-	
+
 	@Override
-	public Dimension defaultValue() {
+	public Dimension defaultValue()
+	{
 		return new Dimension(0, 0);
 	}
-	
+
 	@Override
-	public Class<Dimension> getTypeClass() {
+	public Class<Dimension> getTypeClass()
+	{
 		return Dimension.class;
 	}
 }

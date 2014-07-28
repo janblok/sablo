@@ -16,12 +16,12 @@
 
 package org.sablo.websocket;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.json.JSONObject;
 import org.sablo.WebComponent;
 import org.sablo.eventthread.IEventDispatcher;
+import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentApiDefinition;
 
 /**
@@ -86,22 +86,15 @@ public interface IWebsocketSession
 	 * @param service handler
 	 */
 	public void registerServerService(String name, IServerService service);
-	
+
 	/**
 	 * Returns a server side service for that name.
 	 * @param name
 	 * @return
 	 */
 	public IServerService getServerService(String name);
-	
+
 	public IClientService getService(String name);
-
-
-	/**
-	 * Get the converter for converting domain objects to supported objects for json messages.
-	 * Return null for no specific conversion.
-	 */
-	IForJsonConverter getForJsonConverter();
 
 	/**
 	 * Invoke an function on the webcomponent
@@ -109,5 +102,5 @@ public interface IWebsocketSession
 	 * @param apiFunction the function to invoke
 	 * @param arguments
 	 */
-	public Object invokeApi(WebComponent receiver, WebComponentApiDefinition apiFunction, Object[] arguments);
+	public Object invokeApi(WebComponent receiver, WebComponentApiDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes);
 }

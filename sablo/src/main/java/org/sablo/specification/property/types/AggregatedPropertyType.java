@@ -13,26 +13,53 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.sablo.specification.property.types;
 
 import org.json.JSONObject;
+import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IPropertyType;
 
 /**
- * @author jcompagner
+ * Property type that is only used to aggregate other property types through a {@link PropertyDescription}'s child properties - at runtime.
  *
+ * @author acostescu
  */
-public abstract class DefaultPropertyType<T> implements IPropertyType<T>
+public class AggregatedPropertyType implements IPropertyType<Object>
 {
+
+	public static AggregatedPropertyType INSTANCE = new AggregatedPropertyType();
+
+	public static PropertyDescription newAggregatedProperty()
+	{
+		return new PropertyDescription("", AggregatedPropertyType.INSTANCE)
+		{
+			@Override
+			public String toString()
+			{
+				return super.toString(true);
+			}
+		};
+	}
+
+	private AggregatedPropertyType()
+	{
+	}
+
+	@Override
+	public String getName()
+	{
+		return "AggregatedProperty"; //$NON-NLS-1$
+	}
 
 	@Override
 	public Object parseConfig(JSONObject config)
 	{
-		return config;
+		return null; // not used
 	}
 
 	@Override
-	public T defaultValue()
+	public Object defaultValue()
 	{
 		return null;
 	}

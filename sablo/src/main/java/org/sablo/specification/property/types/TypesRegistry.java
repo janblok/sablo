@@ -28,13 +28,14 @@ import org.slf4j.LoggerFactory;
  * @author jcompagner
  *
  */
-public class TypesRegistry {
-	
+public class TypesRegistry
+{
+
 	private static final Logger log = LoggerFactory.getLogger(TypesRegistry.class.getCanonicalName());
-	
-	private static Map<String,IPropertyType<?>> types = new HashMap<>();
-	private static Map<Class<?>,IClassPropertyType<?,?>> typesByClass = new HashMap<>();
-	
+
+	private static Map<String, IPropertyType< ? >> types = new HashMap<>();
+	private static Map<Class< ? >, IClassPropertyType< ? >> typesByClass = new HashMap<>();
+
 	static
 	{
 		types.put("int", IntPropertyType.INSTANCE);
@@ -44,7 +45,6 @@ public class TypesRegistry {
 		types.put("boolean", BooleanPropertyType.INSTANCE);
 		types.put("color", ColorPropertyType.INSTANCE);
 		types.put("string", StringPropertyType.INSTANCE);
-		types.put("border", BorderPropertyType.INSTANCE);
 		types.put("insets", InsetsPropertyType.INSTANCE);
 		types.put("date", DatePropertyType.INSTANCE);
 		types.put("dimension", DimensionPropertyType.INSTANCE);
@@ -57,41 +57,48 @@ public class TypesRegistry {
 		types.put("values", ValuesPropertyType.INSTANCE);
 		types.put("componentDef", ComponentDefPropertyType.INSTANCE);
 		types.put("byte", BytePropertyType.INSTANCE);
-		
-		for (IPropertyType<?> type : types.values()) {
-			if (type instanceof IClassPropertyType) {
-				IClassPropertyType<?,?> previous = typesByClass.put( ((IClassPropertyType<?,?>)type).getTypeClass(), (IClassPropertyType<?,?>) type);
-				if (previous != null) {
-					throw new RuntimeException("duplicate type found for class: " + ((IClassPropertyType<?,?>)type).getTypeClass() + " of type: " + type.getName() + " replaced: " + ((IPropertyType<?>)previous).getName());
+
+		for (IPropertyType< ? > type : types.values())
+		{
+			if (type instanceof IClassPropertyType)
+			{
+				IClassPropertyType< ? > previous = typesByClass.put(((IClassPropertyType< ? >)type).getTypeClass(), (IClassPropertyType< ? >)type);
+				if (previous != null)
+				{
+					throw new RuntimeException("duplicate type found for class: " + ((IClassPropertyType< ? >)type).getTypeClass() + " of type: " +
+						type.getName() + " replaced: " + ((IPropertyType< ? >)previous).getName());
 				}
 			}
 		}
 	}
-	
-	
-	
-	public static IPropertyType<?> getType(String name) {
-		IPropertyType<?> type = types.get(name);
+
+
+	public static IPropertyType< ? > getType(String name)
+	{
+		IPropertyType< ? > type = types.get(name);
 		if (type == null) throw new RuntimeException("Type '" + name + "' not found in " + printTypes());
 		return type;
 	}
-	
-	public static IClassPropertyType<?,?> getType(Class<?> clz) {
-		IClassPropertyType<?,?> type = typesByClass.get(clz);
+
+	public static IClassPropertyType< ? > getType(Class< ? > clz)
+	{
+		IClassPropertyType< ? > type = typesByClass.get(clz);
 		//TODO if this is still null should we do a isAssignableFrom/instanceof check?
 		// clz could be a concrete type, but the registered type is a interface class type.
 //		if (type == null) throw new RuntimeException("Type for class: '" + clz + "' not found in " + printTypes());
 		return type;
 	}
 
-	public static String printTypes() {
+	public static String printTypes()
+	{
 		StringBuilder sb = new StringBuilder();
-		for (IPropertyType<?> type: types.values())
+		for (IPropertyType< ? > type : types.values())
 		{
 			sb.append(type.getName());
-			if (type instanceof IClassPropertyType) {
+			if (type instanceof IClassPropertyType)
+			{
 				sb.append("[");
-				sb.append(((IClassPropertyType<?,?>) type).getTypeClass());
+				sb.append(((IClassPropertyType< ? >)type).getTypeClass());
 				sb.append("]");
 			}
 			sb.append(",");
@@ -102,8 +109,10 @@ public class TypesRegistry {
 	/**
 	 * @param parsedTypes
 	 */
-	public static void addTypes(Collection<IPropertyType<?>> collection) {
-		for (IPropertyType<?> type : collection) {
+	public static void addTypes(Collection<IPropertyType< ? >> collection)
+	{
+		for (IPropertyType< ? > type : collection)
+		{
 			addType(type);
 		}
 	}
@@ -111,15 +120,20 @@ public class TypesRegistry {
 	/**
 	 * @param wct
 	 */
-	public static void addType(IPropertyType<?> type) {
-		IPropertyType<?> previous = types.put(type.getName(), type);
-		if (previous != null) {
+	public static void addType(IPropertyType< ? > type)
+	{
+		IPropertyType< ? > previous = types.put(type.getName(), type);
+		if (previous != null)
+		{
 			log.info("there was already a type for typename " + type.getName() + ": " + previous + " replaced by: " + type);
 		}
-		if (type instanceof IClassPropertyType) {
-			previous = typesByClass.put( ((IClassPropertyType<?,?>)type).getTypeClass(), (IClassPropertyType<?,?>) type);
-			if (previous != null) {
-				log.info("there was already a type for type class " + ((IClassPropertyType<?,?>)type).getTypeClass() + ": " + previous + " replaced by: " + type);
+		if (type instanceof IClassPropertyType)
+		{
+			previous = typesByClass.put(((IClassPropertyType< ? >)type).getTypeClass(), (IClassPropertyType< ? >)type);
+			if (previous != null)
+			{
+				log.info("there was already a type for type class " + ((IClassPropertyType< ? >)type).getTypeClass() + ": " + previous + " replaced by: " +
+					type);
 			}
 		}
 	}

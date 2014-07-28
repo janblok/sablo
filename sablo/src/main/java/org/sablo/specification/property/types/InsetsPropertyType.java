@@ -20,44 +20,50 @@ import java.awt.Insets;
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.property.IClassPropertyType;
-import org.sablo.websocket.IForJsonConverter;
+import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.websocket.utils.DataConversion;
 
 /**
  * @author jcompagner
  *
  */
-public class InsetsPropertyType extends DefaultPropertyType<Insets> implements IClassPropertyType<Insets,Insets>{
+public class InsetsPropertyType extends DefaultPropertyType<Insets> implements IClassPropertyType<Insets>
+{
 
 	public static final InsetsPropertyType INSTANCE = new InsetsPropertyType();
-	
-	private InsetsPropertyType() {
+
+	private InsetsPropertyType()
+	{
 	}
-	
+
 	@Override
-	public String getName() {
+	public String getName()
+	{
 		return "insets";
 	}
-	
+
 	@Override
-	public Insets fromJSON(Object newValue, Insets previousValue) {
+	public Insets fromJSON(Object newValue, Insets previousValue, IDataConverterContext dataConverterContext)
+	{
 		// TODO
 		return null;
 	}
-	
-	
+
+
 	@Override
-	public void toJSON(JSONWriter writer, Insets i, DataConversion clientConversion, IForJsonConverter forJsonConverter) throws JSONException {
+	public JSONWriter toJSON(JSONWriter writer, Insets i, DataConversion clientConversion) throws JSONException
+	{
 		writer.object();
 		writer.key("paddingTop").value(i.top + "px");
 		writer.key("paddingBottom").value(i.bottom + "px");
 		writer.key("paddingLeft").value(i.left + "px");
 		writer.key("paddingRight").value(i.right + "px");
-		writer.endObject();
+		return writer.endObject();
 	}
 
 	@Override
-	public Class<Insets> getTypeClass() {
+	public Class<Insets> getTypeClass()
+	{
 		return Insets.class;
 	}
 

@@ -13,28 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sablo.specification.property.types;
 
-import org.json.JSONObject;
-import org.sablo.specification.property.IPropertyType;
+package org.sablo.specification.property;
+
+import org.json.JSONException;
+import org.json.JSONWriter;
+import org.sablo.websocket.utils.DataConversion;
 
 /**
- * @author jcompagner
+ * A property type that needs special (JSON) conversion for web-socket traffic.<br/>
  *
+ * @author acostescu
  */
-public abstract class DefaultPropertyType<T> implements IPropertyType<T>
+public interface IConvertedPropertyType<T> extends IPropertyType<T>
 {
 
-	@Override
-	public Object parseConfig(JSONObject config)
-	{
-		return config;
-	}
+	public T fromJSON(Object newValue, T previousValue, IDataConverterContext dataConverterContext);
 
-	@Override
-	public T defaultValue()
-	{
-		return null;
-	}
+	public JSONWriter toJSON(JSONWriter writer, T object, DataConversion clientConversion) throws JSONException;
 
 }

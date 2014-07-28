@@ -18,11 +18,10 @@ package org.sablo;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.sablo.specification.PropertyDescription;
@@ -30,11 +29,12 @@ import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebComponentSpecification;
 import org.sablo.specification.property.DataConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
-import org.sablo.specification.property.IComplexTypeImpl;
-import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.IWrapperType;
+import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.ConversionLocation;
+import org.sablo.websocket.TypedData;
+import org.sablo.websocket.utils.JSONUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,24 +115,47 @@ public abstract class BaseWebObject
 		return object;
 	}
 
-	public Map<String, Object> getChanges()
+	public boolean hasChanges()
+	{
+		return !changedProperties.isEmpty();
+	}
+
+	public TypedData<Map<String, Object>> getChanges()
 	{
 		if (changedProperties.size() > 0)
 		{
 			Map<String, Object> changes = new HashMap<>();
+			PropertyDescription changeTypes = AggregatedPropertyType.newAggregatedProperty();
 			for (String propertyName : changedProperties)
 			{
 				changes.put(propertyName, properties.get(propertyName));
+				PropertyDescription t = specification.getProperty(propertyName);
+				if (t != null) changeTypes.putProperty(propertyName, t);
 			}
+			if (!changeTypes.hasChildProperties()) changeTypes = null;
 			changedProperties.clear();
-			return changes;
+			return new TypedData<Map<String, Object>>(changes, changeTypes);
 		}
-		return Collections.emptyMap();
+		Map<String, Object> em = Collections.emptyMap();
+		return new TypedData<>(em, null);
 	}
 
-	public Map<String, Object> getProperties()
+	public Map<String, Object> getRawProperties()
 	{
 		return properties;
+	}
+
+	public TypedData<Map<String, Object>> getProperties()
+	{
+		PropertyDescription propertyTypes = AggregatedPropertyType.newAggregatedProperty();
+		for (Entry<String, Object> p : properties.entrySet())
+		{
+			PropertyDescription t = specification.getProperty(p.getKey());
+			if (t != null) propertyTypes.putProperty(p.getKey(), t);
+		}
+		if (!propertyTypes.hasChildProperties()) propertyTypes = null;
+
+		return new TypedData<Map<String, Object>>(properties, propertyTypes);
 	}
 
 	public void clearChanges()
@@ -267,10 +290,10 @@ public abstract class BaseWebObject
 		Object object = (type instanceof IWrapperType) ? ((IWrapperType)type).wrap(newValue, oldValue, new DataConverterContext(propertyDesc, this)) : newValue;
 		if (type instanceof IClassPropertyType && object != null)
 		{
-			if (!((IClassPropertyType< ? , ? >)type).getTypeClass().isAssignableFrom(object.getClass()))
+			if (!((IClassPropertyType< ? >)type).getTypeClass().isAssignableFrom(object.getClass()))
 			{
 				log.info("property: " + propertyName + " of component " + getName() + " set with value: " + newValue + " which is not of type: " +
-					((IClassPropertyType< ? , ? >)type).getTypeClass());
+					((IClassPropertyType< ? >)type).getTypeClass());
 				return null;
 			}
 		}
@@ -296,98 +319,8 @@ public abstract class BaseWebObject
 		if (newValue == null || newValue == JSONObject.NULL) return null;
 
 		PropertyDescription propertyDesc = specification.getProperty(propertyName);
-		Object value = propertyDesc != null ? convertPropertyValueAndWrap(oldValue, newValue, propertyDesc) : null;
+		Object value = propertyDesc != null ? JSONUtils.fromJSON(oldValue, newValue, propertyDesc, new DataConverterContext(propertyDesc, this)) : null;
 		return value != null && value != newValue ? value : convertPropertyValue(propertyName, oldValue, newValue, sourceOfValue);
-	}
-
-	/**
-	 * @param oldValue
-	 * @param newValue
-	 * @param type
-	 * @throws JSONException
-	 */
-	private Object convertPropertyValueAndWrap(Object oldValue, Object newValue, PropertyDescription propDesc) throws JSONException
-	{
-
-		if (propDesc.isArray())
-		{
-			if (propDesc.getType() instanceof IComplexTypeImpl && ((IComplexTypeImpl)propDesc.getType()).getJSONToJavaPropertyConverter(true) != null)
-			{
-				return newValue; // this is currently handled elsewhere (when setting property in component)
-			}
-
-			if (newValue instanceof JSONArray)
-			{
-				JSONArray array = (JSONArray)newValue;
-				Object[] objectArray = new Object[array.length()];
-				for (int i = 0; i < array.length(); i++)
-				{
-					Object obj = array.opt(i);
-					objectArray[i] = obj == null ? null : convertValueAndWrap(null, obj, propDesc);
-				}
-				return objectArray;
-			}
-			else
-			{
-				throw new RuntimeException("property " + propDesc + " is types as array, but the value is not an JSONArray: " + newValue);
-			}
-
-		}
-		else
-		{
-			return convertValueAndWrap(oldValue, newValue, propDesc);
-		}
-	}
-
-	/**
-	 * @param oldValue
-	 * @param newValue
-	 * @param type
-	 * @throws JSONException
-	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private Object convertValueAndWrap(Object oldValue, Object newValue, PropertyDescription desc) throws JSONException
-	{
-		if (newValue == null || newValue == JSONObject.NULL) return null;
-		IPropertyType< ? > type = desc.getType();
-		if (type instanceof IClassPropertyType)
-		{
-			Object fromJSON = ((IClassPropertyType)type).fromJSON(newValue, oldValue);
-			if (type instanceof IWrapperType)
-			{
-				return ((IWrapperType)type).wrap(fromJSON, oldValue, new DataConverterContext(desc, this));
-			}
-			return fromJSON;
-		}
-		else if (type instanceof IComplexTypeImpl)
-		{
-			return newValue; // this is currently handled elsewhere (when setting property in component)
-		}
-		else if (type instanceof ICustomType)
-		{
-			// custom type, convert json to map with values.
-			if (newValue instanceof JSONObject)
-			{
-				Map<String, Object> retValue = new HashMap<>();
-				Map<String, Object> oldValues = (Map<String, Object>)(oldValue instanceof Map ? oldValue : Collections.emptyMap());
-				PropertyDescription customTypeDesc = ((ICustomType)type).getCustomJSONTypeDefinition();
-				Iterator<String> keys = ((JSONObject)newValue).keys();
-				while (keys.hasNext())
-				{
-					String key = keys.next();
-					Object propValue = ((JSONObject)newValue).get(key);
-					Object oldPropValue = oldValues.get(key);
-					PropertyDescription property = customTypeDesc.getProperty(key);
-					if (property == null) continue; // ignore properties that are not spec'ed
-													// for
-													// this type..
-					Object value = convertPropertyValueAndWrap(oldPropValue, propValue, property);
-					retValue.put(key, value);
-				}
-				return retValue;
-			}
-		}
-		return newValue;
 	}
 
 	/**

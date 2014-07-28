@@ -31,60 +31,63 @@ import org.sablo.specification.property.types.PointPropertyType;
  * @author jcompagner
  *
  */
-public class TypesTest {
+public class TypesTest
+{
 
 	@Test
-	public void testDimensionType() throws Exception {
+	public void testDimensionType() throws Exception
+	{
 		DimensionPropertyType type = DimensionPropertyType.INSTANCE;
-		
+
 		Dimension dim = type.defaultValue();
 		assertNotNull(dim);
-		
+
 		assertEquals(0, dim.height);
 		assertEquals(0, dim.width);
-		
+
 		dim.height = 10;
 		dim.width = 10;
-		
+
 		JSONStringer writer = new JSONStringer();
-		type.toJSON(writer, dim, null, null);
-		
+		type.toJSON(writer, dim, null);
+
 		String json = writer.toString();
-		
+
 		assertEquals("{\"width\":10,\"height\":10}", json);
-		
+
 		JSONObject object = new JSONObject(json);
-		
-		Dimension result = type.fromJSON(object, dim);
-		
+
+		Dimension result = type.fromJSON(object, dim, null);
+
 		assertEquals(dim, result);
 	}
 
-	
+
 	@Test
-	public void testPointType() throws Exception {
+	public void testPointType() throws Exception
+	{
 		PointPropertyType type = PointPropertyType.INSTANCE;
-		
+
 		Point point = type.defaultValue();
 		assertNotNull(point);
-		
+
 		assertEquals(0, point.x);
 		assertEquals(0, point.y);
-		
+
 		point.x = 10;
 		point.y = 10;
-		
+
 		JSONStringer writer = new JSONStringer();
-		type.toJSON(writer, point, null, null);
-		
+		type.toJSON(writer, point, null);
+
 		String json = writer.toString();
-		
+
 		assertEquals("{\"x\":10,\"y\":10}", json);
-		
+
 		JSONObject object = new JSONObject(json);
-		
-		Point result = type.fromJSON(object, point);
-		
+
+		Point result = type.fromJSON(object, point, null);
+
 		assertEquals(point, result);
 	}
 

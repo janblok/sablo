@@ -63,6 +63,17 @@ public abstract class Container extends WebComponent
 		return Collections.unmodifiableCollection(components.values());
 	}
 
+	@Override
+	public void dispose()
+	{
+		super.dispose();
+		for (WebComponent component : components.values())
+		{
+			component.dispose();
+		}
+		components.clear();
+	}
+
 	public TypedData<Map<String, Map<String, Object>>> getAllComponentsChanges()
 	{
 		Map<String, Map<String, Object>> props = new HashMap<String, Map<String, Object>>(8);

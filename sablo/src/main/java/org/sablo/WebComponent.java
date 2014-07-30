@@ -61,13 +61,25 @@ public class WebComponent extends BaseWebObject
 	}
 
 	/**
-	 * Sets the parent container.
-	 *
-	 * @param parent new parent container
+	 * Finds the first container parent of this component of the given class.
+	 * 
+	 * @param <Z> type of parent
+	 * @param c class to search for
+	 * @return First container parent that is an instance of the given class, or null if none can be
+	 *         found
 	 */
-	public final void setParent(Container parent)
+	public final <Z> Z findParent(final Class<Z> c)
 	{
-		this.parent = parent;
+		Container current = getParent();
+		while (current != null)
+		{
+			if (c.isInstance(current))
+			{
+				return c.cast(current);
+			}
+			current = current.getParent();
+		}
+		return null;
 	}
 
 	/**
@@ -87,6 +99,16 @@ public class WebComponent extends BaseWebObject
 	public void setVisible(boolean v)
 	{
 		properties.put("visible", v);
+	}
+
+	@Override
+	public void dispose()
+	{
+		super.dispose();
+		if (parent != null)
+		{
+			parent.remove(this);
+		}
 	}
 
 	/**

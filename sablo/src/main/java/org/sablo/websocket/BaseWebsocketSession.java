@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.json.JSONException;
+import org.sablo.Container;
 import org.sablo.WebComponent;
 import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
@@ -221,7 +222,12 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 			Map<String, Object> call = new HashMap<>();
 			PropertyDescription callTypes = AggregatedPropertyType.newAggregatedProperty();
 			if (callContributions != null) call.putAll(callContributions);
-			call.put("form", receiver.getParent().getName());
+			Container topContainer = receiver.getParent();
+			while (topContainer != null && topContainer.getParent() != null)
+			{
+				topContainer = topContainer.getParent();
+			}
+			call.put("form", topContainer.getName());
 			call.put("bean", receiver.getName());
 			call.put("api", apiFunction.getName());
 			if (arguments != null && arguments.length > 0)

@@ -265,7 +265,8 @@ public class JSONUtils
 			}
 			else
 			{
-				throw new IllegalArgumentException("unsupported value type for value: " + converted);
+				w = w.value(new JSONObject("{}"));
+				log.error("unsupported value type for value: " + converted, new IllegalArgumentException("unsupported value type for value: " + converted));
 			}
 		}
 

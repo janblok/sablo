@@ -195,7 +195,7 @@ public class PropertyDescription
 	public void putProperty(String name, PropertyDescription type)
 	{
 		if (properties == null) properties = new HashMap<>();
-		if (type == null) throw new RuntimeException("PropertyDescription type should not be null");
+		if (type == null) properties.remove(name);
 		properties.put(name, type);
 	}
 

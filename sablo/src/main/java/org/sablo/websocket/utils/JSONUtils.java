@@ -131,8 +131,7 @@ public class JSONUtils
 	public static JSONWriter toJSONValue(JSONWriter writer, Object value, PropertyDescription valueType, DataConversion clientConversion,
 		ConversionLocation toDestinationType) throws JSONException, IllegalArgumentException
 	{
-		boolean conversionDone = false;
-		if (valueType != null)
+		if (value != null && valueType != null)
 		{
 			IPropertyType< ? > type = valueType.getType();
 			if (type instanceof IConvertedPropertyType)

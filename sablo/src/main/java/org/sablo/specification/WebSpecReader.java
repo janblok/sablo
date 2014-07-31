@@ -32,10 +32,10 @@ import org.slf4j.LoggerFactory;
  * @author jcompagner
  *
  */
-class WebSpecReader 
+class WebSpecReader
 {
 	private static final Logger log = LoggerFactory.getLogger(WebSpecReader.class.getCanonicalName());
-	
+
 	private final Map<String, WebComponentSpecification> cachedDescriptions = new HashMap<>();
 
 	private final IPackageReader[] packageReaders;
@@ -45,8 +45,9 @@ class WebSpecReader
 		this.packageReaders = packageReaders;
 		load();
 	}
-	
-	void load() {
+
+	synchronized void load()
+	{
 		cachedDescriptions.clear();
 		List<WebComponentPackage> packages = new ArrayList<>();
 		for (IPackageReader packageReader : packageReaders)
@@ -66,8 +67,8 @@ class WebSpecReader
 			}
 		}
 	}
-	
-	protected void readGloballyDefinedTypes(List<WebComponentPackage> packages)
+
+	protected synchronized void readGloballyDefinedTypes(List<WebComponentPackage> packages)
 	{
 		try
 		{
@@ -103,7 +104,7 @@ class WebSpecReader
 		}
 	}
 
-	protected void cacheComponentSpecs(List<WebComponentPackage> packages)
+	protected synchronized void cacheComponentSpecs(List<WebComponentPackage> packages)
 	{
 		for (WebComponentPackage p : packages)
 		{
@@ -127,12 +128,12 @@ class WebSpecReader
 		}
 	}
 
-	public WebComponentSpecification getWebComponentSpecification(String componentTypeName)
+	public synchronized WebComponentSpecification getWebComponentSpecification(String componentTypeName)
 	{
 		return cachedDescriptions.get(componentTypeName);
 	}
 
-	public WebComponentSpecification[] getWebComponentSpecifications()
+	public synchronized WebComponentSpecification[] getWebComponentSpecifications()
 	{
 		return cachedDescriptions.values().toArray(new WebComponentSpecification[cachedDescriptions.size()]);
 	}

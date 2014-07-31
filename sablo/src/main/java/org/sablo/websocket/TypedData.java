@@ -28,11 +28,11 @@ public class TypedData<T>
 	/**
 	 * The data (for example to be sent to the client).
 	 */
-	public final T content;
+	public T content;
 	/**
 	 * The description of the data's structure; can be null or might have a corresponding type that can be used for "to JSON" conversion.
 	 */
-	public final PropertyDescription contentType;
+	public PropertyDescription contentType;
 
 	public TypedData(T content, PropertyDescription contentType)
 	{

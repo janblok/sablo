@@ -67,7 +67,7 @@ public abstract class Container extends WebComponent
 	public void dispose()
 	{
 		super.dispose();
-		for (WebComponent component : components.values())
+		for (WebComponent component : components.values().toArray(new WebComponent[0]))
 		{
 			component.dispose();
 		}

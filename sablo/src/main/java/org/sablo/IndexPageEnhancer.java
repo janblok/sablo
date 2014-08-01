@@ -19,17 +19,10 @@ package org.sablo;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 
-import javax.security.auth.login.Configuration;
-
-import junit.runner.Version;
-
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebComponentSpecification;
@@ -44,7 +37,7 @@ public class IndexPageEnhancer
 {
 	private static String VAR_START = "##";
 	private static String VAR_END = "##";
-	
+
 	private IndexPageEnhancer()
 	{
 	}
@@ -59,7 +52,8 @@ public class IndexPageEnhancer
 	 * @param writer the writer to write to
 	 * @throws IOException
 	 */
-	public static void enhance(URL resource, String contextPath, Collection<String> cssContributions, Collection<String> jsContributions, Map<String,String> variableSubstitution, Writer writer) throws IOException
+	public static void enhance(URL resource, String contextPath, Collection<String> cssContributions, Collection<String> jsContributions,
+		Map<String, String> variableSubstitution, Writer writer) throws IOException
 	{
 		String index_file = IOUtils.toString(resource);
 		String lowercase_index_file = index_file.toLowerCase();
@@ -75,10 +69,10 @@ public class IndexPageEnhancer
 				index_file = index_file.replaceAll(Matcher.quoteReplacement(variableReplace), variableSubstitution.get(variableName));
 			}
 		}
-		
+
 		StringBuilder sb = new StringBuilder(index_file);
 		sb.insert(headend, getAllContributions(cssContributions, jsContributions));
-		sb.insert(headstart+6, getBaseTag(contextPath));
+		sb.insert(headstart + 6, getBaseTag(contextPath));
 		writer.append(sb);
 	}
 
@@ -87,7 +81,7 @@ public class IndexPageEnhancer
 	 * @param contextPath the contextPath to be used in base tag
 	 * @return the decorated base tag
 	 */
-	private static String getBaseTag(String contextPath) 
+	private static String getBaseTag(String contextPath)
 	{
 		return String.format("<base href=\"%s/\">\n", contextPath);
 	}
@@ -96,24 +90,24 @@ public class IndexPageEnhancer
 	 * Returns the contributions for webcomponents and services
 	 * @return headContributions
 	 */
-	private static String getAllContributions(Collection<String> cssContributions, Collection<String> jsContributions) 
+	private static String getAllContributions(Collection<String> cssContributions, Collection<String> jsContributions)
 	{
 		StringBuilder retval = new StringBuilder();
-		
+
 		WebComponentSpecification[] webComponentDescriptions = WebComponentSpecProvider.getInstance().getWebComponentSpecifications();
 		for (WebComponentSpecification spec : webComponentDescriptions)
 		{
-			retval.append(String.format("<script src=\"%s\"></script>\n",spec.getDefinition()));
+			retval.append(String.format("<script src=\"%s\"></script>\n", spec.getDefinition()));
 			String[] libraries = spec.getLibraries();
 			for (String lib : libraries)
 			{
 				if (lib.toLowerCase().endsWith(".css"))
 				{
-					retval.append(String.format("<link rel=\"stylesheet\" href=\"%s\"/>\n",lib));
+					retval.append(String.format("<link rel=\"stylesheet\" href=\"%s\"/>\n", lib));
 				}
 				else if (lib.toLowerCase().endsWith(".js"))
 				{
-					retval.append(String.format("<script src=\"%s\"></script>\n",lib));
+					retval.append(String.format("<script src=\"%s\"></script>\n", lib));
 				}
 			}
 		}
@@ -121,17 +115,17 @@ public class IndexPageEnhancer
 		WebComponentSpecification[] webServiceDescriptions = WebServiceSpecProvider.getInstance().getWebServiceSpecifications();
 		for (WebComponentSpecification spec : webServiceDescriptions)
 		{
-			retval.append(String.format("<script src=\"%s\"></script>\n",spec.getDefinition()));
+			retval.append(String.format("<script src=\"%s\"></script>\n", spec.getDefinition()));
 			String[] libraries = spec.getLibraries();
 			for (String lib : libraries)
 			{
 				if (lib.toLowerCase().endsWith(".css"))
 				{
-					retval.append(String.format("<link rel=\"stylesheet\" href=\"%s\"/>\n",lib));
+					retval.append(String.format("<link rel=\"stylesheet\" href=\"%s\"/>\n", lib));
 				}
 				else if (lib.toLowerCase().endsWith(".js"))
 				{
-					retval.append(String.format("<script src=\"%s\"></script>\n",lib));
+					retval.append(String.format("<script src=\"%s\"></script>\n", lib));
 				}
 			}
 		}
@@ -140,7 +134,7 @@ public class IndexPageEnhancer
 		{
 			for (String lib : cssContributions)
 			{
-				retval.append(String.format("<link rel=\"stylesheet\" href=\"%s\"/>\n",lib));
+				retval.append(String.format("<link rel=\"stylesheet\" href=\"%s\"/>\n", lib));
 			}
 		}
 
@@ -148,7 +142,7 @@ public class IndexPageEnhancer
 		{
 			for (String lib : jsContributions)
 			{
-				retval.append(String.format("<script src=\"%s\"></script>\n",lib));
+				retval.append(String.format("<script src=\"%s\"></script>\n", lib));
 			}
 		}
 

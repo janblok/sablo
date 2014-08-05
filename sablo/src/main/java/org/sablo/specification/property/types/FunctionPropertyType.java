@@ -21,20 +21,22 @@ import org.json.JSONObject;
  * @author jcompagner
  *
  */
-public class FunctionPropertyType extends DefaultPropertyType<String> {
-	
+public class FunctionPropertyType extends DefaultPropertyType<Object>
+{
 	public static final FunctionPropertyType INSTANCE = new FunctionPropertyType();
-	
-	private FunctionPropertyType() {
+
+	protected FunctionPropertyType()
+	{
 	}
-	
-	@Override
-	public String getName() {
+
+	public String getName()
+	{
 		return "function";
 	}
 
 	@Override
-	public Object parseConfig(JSONObject json) {
+	public Object parseConfig(JSONObject json)
+	{
 		return Boolean.valueOf(json != null && json.optBoolean("adddefault"));
 	}
 }

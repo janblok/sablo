@@ -307,7 +307,7 @@ public class JSONUtils
 					{
 						Object obj = array.opt(i);
 						objectArray[i] = obj == null ? null : fromJSON(oldArray != null && Array.getLength(oldArray) > i ? Array.get(oldArray, i) : null, obj,
-							propDesc, dataConversionContext);
+							propDesc.asArrayElement(), dataConversionContext);
 					}
 					return objectArray;
 				}

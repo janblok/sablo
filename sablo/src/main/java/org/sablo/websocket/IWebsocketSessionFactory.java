@@ -27,5 +27,5 @@ public interface IWebsocketSessionFactory
 	 * @param endpointType
 	 * @return
 	 */
-	IWebsocketSession createSession(String endpointType, String uuid) throws Exception;
+	IWebsocketSession createSession(String uuid) throws Exception;
 }

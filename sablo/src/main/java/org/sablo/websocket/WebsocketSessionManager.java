@@ -32,8 +32,8 @@ import org.slf4j.LoggerFactory;
 public class WebsocketSessionManager
 {
 	private static final Logger log = LoggerFactory.getLogger(WebsocketSessionManager.class.getCanonicalName());
-	
-	private static IWebsocketSessionFactory websocketSessionFactory;
+
+	private static Map<String, IWebsocketSessionFactory> websocketSessionFactories = new HashMap<>();
 
 	//maps form uuid to session
 	private static Map<String, IWebsocketSession> wsSessions = new HashMap<>();
@@ -68,10 +68,13 @@ public class WebsocketSessionManager
 
 	public static IWebsocketSession getSession(String endpointType, String prevUuid)
 	{
-		try {
+		try
+		{
 			return getOrCreateSession(endpointType, prevUuid, false);
-		} catch (Exception e) {
-			log.error("exception calling getSession (not create) should not happen",e);
+		}
+		catch (Exception e)
+		{
+			log.error("exception calling getSession (not create) should not happen", e);
 		}
 		return null;
 	}
@@ -107,9 +110,9 @@ public class WebsocketSessionManager
 			{
 				wsSessions.remove(key);
 				wsSession = null;
-				if (create && websocketSessionFactory != null)
+				if (create && websocketSessionFactories.containsKey(endpointType))
 				{
-					wsSession = websocketSessionFactory.createSession(endpointType,uuid);
+					wsSession = websocketSessionFactories.get(endpointType).createSession(uuid);
 				}
 				if (wsSession != null)
 				{
@@ -149,8 +152,8 @@ public class WebsocketSessionManager
 		}
 	}
 
-	public static void setWebsocketSessionFactory(IWebsocketSessionFactory factory)
+	public static void setWebsocketSessionFactory(String endpointType, IWebsocketSessionFactory factory)
 	{
-		websocketSessionFactory = factory;
+		websocketSessionFactories.put(endpointType, factory);
 	}
 }

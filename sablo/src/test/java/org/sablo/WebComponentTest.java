@@ -34,6 +34,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
@@ -44,6 +45,7 @@ import org.sablo.websocket.utils.JSONUtils;
  * @author jcompagner
  *
  */
+@Ignore
 public class WebComponentTest
 {
 

@@ -47,28 +47,36 @@ public abstract class WebEntry implements Filter
 //	 */
 //	public abstract Class<WebApplication>[] getWebApplications();
 
+	private final String endpointType;
+
+	public WebEntry(String endpointType)
+	{
+		this.endpointType = endpointType;
+	}
+
 	/**
 	 * Provide all the webcompontent bundle names. 
 	 * @return the bundle names
 	 */
 	public abstract String[] getWebComponentBundleNames();
-	
+
 	@Override
 	public void init(final FilterConfig fc) throws ServletException
 	{
 		//register the session factory at the manager
-		WebsocketSessionManager.setWebsocketSessionFactory(createSessionFactory());
+		WebsocketSessionManager.setWebsocketSessionFactory(endpointType, createSessionFactory());
 
-		WebComponentSpecProvider provider = WebComponentSpecProvider.init(fc.getServletContext(), getWebComponentBundleNames());
+		WebComponentSpecProvider.init(fc.getServletContext(), getWebComponentBundleNames());
 
-		WebServiceSpecProvider.init(fc.getServletContext());
+		WebServiceSpecProvider.init(fc.getServletContext()); // met getWebServicesBundleNames()
 	}
 
 	/**
 	 * Make it possible for subclasses to supply contributions
 	 * @return the contributions as collection of strings
 	 */
-	protected Collection<String> getJSContributions() {
+	protected Collection<String> getJSContributions()
+	{
 		return null;
 	}
 
@@ -76,7 +84,8 @@ public abstract class WebEntry implements Filter
 	 * Make it possible for subclasses to supply contributions
 	 * @return the contributions as collection of strings
 	 */
-	protected Collection<String> getCSSContributions() {
+	protected Collection<String> getCSSContributions()
+	{
 		return null;
 	}
 
@@ -84,15 +93,17 @@ public abstract class WebEntry implements Filter
 	 * Make it possible for subclasses to replace variables
 	 * @return the variable name,value as map
 	 */
-	protected Map<String,String> getVariableSubstitution(){
+	protected Map<String, String> getVariableSubstitution()
+	{
 		return null;
 	}
-	
+
 	/**
 	 * Provide the websocketsessionfactory
 	 * @return the factory
 	 */
 	protected abstract IWebsocketSessionFactory createSessionFactory();
+
 //	{
 //		return new IWebsocketSessionFactory(){
 //			@Override
@@ -115,7 +126,7 @@ public abstract class WebEntry implements Filter
 //			}
 //		};
 //	}
-	
+
 	@Override
 	public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException
 	{
@@ -126,14 +137,15 @@ public abstract class WebEntry implements Filter
 			if (uri != null && uri.endsWith("index.html"))
 			{
 				((HttpServletResponse)servletResponse).setContentType("text/html");
-				
+
 				PrintWriter w = servletResponse.getWriter();
-				IndexPageEnhancer.enhance(getClass().getResource("index.html"),request.getContextPath(), getCSSContributions(), getJSContributions() , getVariableSubstitution(), w);
+				IndexPageEnhancer.enhance(getClass().getResource("index.html"), request.getContextPath(), getCSSContributions(), getJSContributions(),
+					getVariableSubstitution(), w);
 				w.flush();
-				
+
 				return;
 			}
-			
+
 			filterChain.doFilter(servletRequest, servletResponse);
 		}
 		catch (RuntimeException | Error e)
@@ -141,7 +153,7 @@ public abstract class WebEntry implements Filter
 			throw e;
 		}
 	}
-	
+
 	@Override
 	public void destroy()
 	{

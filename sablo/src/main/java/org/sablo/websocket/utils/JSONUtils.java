@@ -137,7 +137,16 @@ public class JSONUtils
 			if (type instanceof IConvertedPropertyType)
 			{
 				// good, we now know that it needs special conversion
-				return ((IConvertedPropertyType)type).toJSON(writer, value, clientConversion);
+				try
+				{
+					return ((IConvertedPropertyType)type).toJSON(writer, value, clientConversion);
+				}
+				catch (Exception ex)
+				{
+					writer.value(null);
+					log.error("Error while converting value: " + value + " to type: " + type, new RuntimeException());
+					return writer;
+				}
 			}
 		}
 
@@ -265,7 +274,8 @@ public class JSONUtils
 			else
 			{
 				w = w.value(new JSONObject("{}"));
-				log.error("unsupported value type for value: " + converted, new IllegalArgumentException("unsupported value type for value: " + converted));
+				log.error("unsupported value type:" + valueType + " for value: " + converted, new IllegalArgumentException(
+					"unsupported value type for value: " + converted));
 			}
 		}
 

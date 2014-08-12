@@ -52,17 +52,21 @@ public class WebComponentSpecification extends PropertyDescription
 	private final String definition;
 	private final String[] libraries;
 	private final String displayName;
+	private final String categoryName;
+	private final String icon;
 	private final String packageName;
 
 	private Map<String, IPropertyType< ? >> foundTypes;
 
 	private String serverScript;
 
-	public WebComponentSpecification(String name, String packageName, String displayName, String definition, JSONArray libs)
+	public WebComponentSpecification(String name, String packageName, String displayName, String categoryName, String icon, String definition, JSONArray libs)
 	{
 		super(name, null);
 		this.packageName = packageName;
 		this.displayName = displayName;
+		this.categoryName = categoryName;
+		this.icon = icon;
 		this.definition = definition;
 		if (libs != null)
 		{
@@ -134,6 +138,16 @@ public class WebComponentSpecification extends PropertyDescription
 		return displayName == null ? getName() : displayName;
 	}
 
+	public String getCategoryName()
+	{
+		return categoryName;
+	}
+
+	public String getIcon()
+	{
+		return icon;
+	}
+
 	public String getPackageName()
 	{
 		return packageName;
@@ -179,7 +193,7 @@ public class WebComponentSpecification extends PropertyDescription
 
 	public static Map<String, IPropertyType< ? >> getTypes(JSONObject typesContainer) throws JSONException
 	{
-		WebComponentSpecification spec = new WebComponentSpecification("", "", "", "", null);
+		WebComponentSpecification spec = new WebComponentSpecification("", "", "", null, null, "", null);
 		spec.parseTypes(typesContainer);
 		return spec.foundTypes;
 	}
@@ -190,7 +204,7 @@ public class WebComponentSpecification extends PropertyDescription
 		JSONObject json = new JSONObject('{' + specfileContent + '}');
 
 		WebComponentSpecification spec = new WebComponentSpecification(json.getString("name"), packageName, json.optString("displayName", null),
-			json.getString("definition"), json.optJSONArray("libraries"));
+			json.optString("categoryName", null), json.optString("icon", null), json.getString("definition"), json.optJSONArray("libraries"));
 
 		if (json.has("serverscript"))
 		{

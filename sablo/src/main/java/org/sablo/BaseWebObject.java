@@ -80,6 +80,14 @@ public abstract class BaseWebObject
 	}
 
 	/**
+	 * @return the specification
+	 */
+	public WebComponentSpecification getSpecification()
+	{
+		return specification;
+	}
+
+	/**
 	 * Execute incoming event
 	 *
 	 * @param eventType

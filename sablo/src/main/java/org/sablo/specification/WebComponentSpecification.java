@@ -16,8 +16,7 @@
 
 package org.sablo.specification;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -58,7 +57,7 @@ public class WebComponentSpecification extends PropertyDescription
 
 	private Map<String, IPropertyType< ? >> foundTypes;
 
-	private String serverScript;
+	private URL serverScript;
 
 	public WebComponentSpecification(String name, String packageName, String displayName, String categoryName, String icon, String definition, JSONArray libs)
 	{
@@ -83,7 +82,7 @@ public class WebComponentSpecification extends PropertyDescription
 	/**
 	 * @param serverScript the serverScript to set
 	 */
-	public void setServerScript(String serverScript)
+	public void setServerScript(URL serverScript)
 	{
 		this.serverScript = serverScript;
 	}
@@ -91,7 +90,7 @@ public class WebComponentSpecification extends PropertyDescription
 	/**
 	 * @return
 	 */
-	public String getServerScript()
+	public URL getServerScript()
 	{
 		return serverScript;
 	}
@@ -208,14 +207,7 @@ public class WebComponentSpecification extends PropertyDescription
 
 		if (json.has("serverscript"))
 		{
-			try
-			{
-				spec.setServerScript(reader.readTextFile(json.getString("serverscript").substring(packageName.length()), Charset.forName("UTF8")));
-			}
-			catch (IOException e)
-			{
-				e.printStackTrace();
-			}
+			spec.setServerScript(reader.getUrlForPath(json.getString("serverscript").substring(packageName.length())));
 		}
 		// first types, can be used in properties
 		spec.parseTypes(json);

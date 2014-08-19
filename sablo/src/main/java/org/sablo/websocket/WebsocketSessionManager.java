@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 public class WebsocketSessionManager
 {
 	private static final Logger log = LoggerFactory.getLogger(WebsocketSessionManager.class.getCanonicalName());
-	
+
 	private static IWebsocketSessionFactory websocketSessionFactory;
 
 	//maps form uuid to session
@@ -68,17 +68,20 @@ public class WebsocketSessionManager
 
 	public static IWebsocketSession getSession(String endpointType, String prevUuid)
 	{
-		try {
+		try
+		{
 			return getOrCreateSession(endpointType, prevUuid, false);
-		} catch (Exception e) {
-			log.error("exception calling getSession (not create) should not happen",e);
+		}
+		catch (Exception e)
+		{
+			log.error("exception calling getSession (not create) should not happen", e);
 		}
 		return null;
 	}
 
 	/**
 	 * This method only throws an exception if the creation of the client fails (so the create boolean is true)
-	 * 
+	 *
 	 * @param endpointType
 	 * @param prevUuid
 	 * @param create
@@ -109,7 +112,7 @@ public class WebsocketSessionManager
 				wsSession = null;
 				if (create && websocketSessionFactory != null)
 				{
-					wsSession = websocketSessionFactory.createSession(endpointType,uuid);
+					wsSession = websocketSessionFactory.createSession(endpointType, uuid);
 				}
 				if (wsSession != null)
 				{
@@ -152,5 +155,10 @@ public class WebsocketSessionManager
 	public static void setWebsocketSessionFactory(IWebsocketSessionFactory factory)
 	{
 		websocketSessionFactory = factory;
+	}
+
+	public static IWebsocketSessionFactory getWebsocketSessionFactory()
+	{
+		return websocketSessionFactory;
 	}
 }

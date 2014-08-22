@@ -242,7 +242,7 @@ public class WebComponentSpecification extends PropertyDescription
 							boolean isOptional = false;
 							if (param.has("optional")) isOptional = true;
 
-							ParsedProperty pp = spec.parsePropertyString(param.getString(paramName));
+							ParsedProperty pp = spec.parsePropertyString(param.getString("type"));
 							PropertyDescription desc = new PropertyDescription(paramName, pp.type, Boolean.valueOf(pp.array)); // hmm why not set the array field instead of configObject here?
 							desc.setOptional(isOptional);
 							def.addParameter(desc);
@@ -320,20 +320,17 @@ public class WebComponentSpecification extends PropertyDescription
 
 	private static String parseParamName(JSONObject param)
 	{
-		String paramName = (String)param.keys().next();
-		if (paramName.equals("optional"))
+		String paramName;
+		try
 		{
-			Iterator it = param.keys();
-			while (it.hasNext())
-			{
-				String name = (String)it.next();
-				if (!name.equals("optional"))
-				{
-					paramName = name;
-				}
-			}
+			paramName = (String)param.get("name");
+			return paramName;
 		}
-		return paramName;
+		catch (JSONException e)
+		{
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 	private Map<String, PropertyDescription> parseProperties(String propKey, JSONObject json) throws JSONException

@@ -1,10 +1,11 @@
-name: 'mycomponent',
-displayName: 'My Component',
-definition: 'mycomponent.js',
-libraries: [],
-model:
 {
-        somepropp : 'mywrapper', 
-},
-
+	"name": "mycomponent",
+	"displayName": "My Component",
+	"definition": "mycomponent.js",
+	"libraries": [],
+	"model":
+	{
+	        "somepropp": "mywrapper"
+	}
+}
  

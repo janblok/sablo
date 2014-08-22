@@ -200,7 +200,7 @@ public class WebComponentSpecification extends PropertyDescription
 	@SuppressWarnings("unchecked")
 	public static WebComponentSpecification parseSpec(String specfileContent, String packageName, IPackageReader reader) throws JSONException
 	{
-		JSONObject json = new JSONObject('{' + specfileContent + '}');
+		JSONObject json = new JSONObject(specfileContent);
 
 		WebComponentSpecification spec = new WebComponentSpecification(json.getString("name"), packageName, json.optString("displayName", null),
 			json.optString("categoryName", null), json.optString("icon", null), json.getString("definition"), json.optJSONArray("libraries"));

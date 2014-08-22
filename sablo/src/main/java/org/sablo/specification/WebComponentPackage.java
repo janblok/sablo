@@ -98,7 +98,7 @@ public class WebComponentPackage
 						String specfileContent = reader.readTextFile(globalTypesSpecPath, Charset.forName("UTF8")); // TODO: check encoding
 						if (specfileContent != null)
 						{
-							JSONObject json = new JSONObject('{' + specfileContent + '}');
+							JSONObject json = new JSONObject(specfileContent);
 							Object types = json.get(WebComponentSpecification.TYPES_KEY);
 							if (types instanceof JSONObject)
 							{
@@ -208,7 +208,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -219,7 +219,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -245,7 +245,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -320,7 +320,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -331,7 +331,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -357,7 +357,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -419,7 +419,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -430,7 +430,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -457,7 +457,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override

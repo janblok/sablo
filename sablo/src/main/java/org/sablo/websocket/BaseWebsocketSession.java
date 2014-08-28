@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.json.JSONException;
 import org.sablo.Container;
 import org.sablo.WebComponent;
 import org.sablo.eventthread.EventDispatcher;
@@ -113,11 +112,17 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 		for (Entry<String, IClientService> entry : services.entrySet())
 		{
 			TypedData<Map<String, Object>> sd = entry.getValue().getProperties();
-			serviceData.put(entry.getKey(), sd.content);
+			if (!sd.content.isEmpty())
+			{
+				serviceData.put(entry.getKey(), sd.content);
+			}
 			if (sd.contentType != null) serviceDataTypes.putProperty(entry.getKey(), sd.contentType);
 		}
 		if (!serviceDataTypes.hasChildProperties()) serviceDataTypes = null;
-		data.put("services", serviceData);
+		if (serviceData.size() > 0)
+		{
+			data.put("services", serviceData);
+		}
 		PropertyDescription dataTypes = null;
 		if (serviceDataTypes != null)
 		{
@@ -126,7 +131,10 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 		}
 		try
 		{
-			WebsocketEndpoint.get().sendMessage(data, dataTypes, true);
+			if (data.size() > 0)
+			{
+				WebsocketEndpoint.get().sendMessage(data, dataTypes, true);
+			}
 		}
 		catch (IOException e)
 		{
@@ -244,13 +252,16 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 			{
 				return new Date(((Long)ret).longValue());
 			}
-			try
+			if (apiFunction.getReturnType() != null)
 			{
-				return JSONUtils.fromJSON(null, ret, apiFunction.getReturnType(), new DataConverterContext(apiFunction.getReturnType(), receiver));
-			}
-			catch (JSONException e)
-			{
-				log.error("Cannot parse api call return value JSON for: " + ret, e);
+				try
+				{
+					return JSONUtils.fromJSON(null, ret, apiFunction.getReturnType(), new DataConverterContext(apiFunction.getReturnType(), receiver));
+				}
+				catch (Exception e)
+				{
+					log.error("Cannot parse api call return value JSON for: " + ret + " for api call: " + apiFunction, e);
+				}
 			}
 		}
 		catch (IOException e)

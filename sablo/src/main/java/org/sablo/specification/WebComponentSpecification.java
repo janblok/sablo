@@ -238,7 +238,7 @@ public class WebComponentSpecification extends PropertyDescription
 						for (int p = 0; p < params.length(); p++)
 						{
 							JSONObject param = params.getJSONObject(p);
-							String paramName = parseParamName(param);
+							String paramName = (String)param.get("name");
 							boolean isOptional = false;
 							if (param.has("optional")) isOptional = true;
 
@@ -316,21 +316,6 @@ public class WebComponentSpecification extends PropertyDescription
 				}
 			}
 		}
-	}
-
-	private static String parseParamName(JSONObject param)
-	{
-		String paramName;
-		try
-		{
-			paramName = (String)param.get("name");
-			return paramName;
-		}
-		catch (JSONException e)
-		{
-			e.printStackTrace();
-		}
-		return null;
 	}
 
 	private Map<String, PropertyDescription> parseProperties(String propKey, JSONObject json) throws JSONException

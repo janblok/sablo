@@ -81,6 +81,12 @@ public class WebComponentPackage
 		return reader.getName();
 	}
 
+
+	public String getPackageName()
+	{
+		return reader.getPackageName();
+	}
+
 	public void appendGlobalTypesJSON(JSONObject allGlobalTypesFromAllPackages) throws IOException
 	{
 		Manifest mf = reader.getManifest();

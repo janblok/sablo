@@ -35,9 +35,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
+import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
+import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.ConversionLocation;
+import org.sablo.websocket.TypedData;
 import org.sablo.websocket.utils.JSONUtils;
 
 /**
@@ -297,9 +300,13 @@ public class WebComponentTest
 		assertSame(array, array2);
 
 		HashMap<String, Object> data = new HashMap<>();
-		data.put("msg", component.getProperties());
+		TypedData<Map<String, Object>> properties = component.getProperties();
+		data.put("msg", properties.content);
 
-		String msg = JSONUtils.writeDataWithConversions(data, null, ConversionLocation.BROWSER_UPDATE);
+		PropertyDescription messageTypes = AggregatedPropertyType.newAggregatedProperty();
+		messageTypes.putProperty("msg", properties.contentType);
+
+		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, ConversionLocation.BROWSER_UPDATE);
 		assertEquals(
 			"{\"msg\":{\"name\":\"test\",\"types\":[{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"},{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}]}}",
 			msg);

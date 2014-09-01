@@ -20,6 +20,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -30,8 +31,10 @@ import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.specification.property.IWrapperType;
+import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.specification.property.types.TypesRegistry;
 import org.sablo.websocket.ConversionLocation;
+import org.sablo.websocket.TypedData;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 
@@ -148,9 +151,11 @@ public class WrapperTypeTest
 		assertEquals("test", component.getProperty("somepropp"));
 
 		HashMap<String, Object> data = new HashMap<>();
-		data.put("msg", component.getProperties());
+		TypedData<Map<String, Object>> properties = component.getProperties();
+		data.put("msg", properties.content);
 
-		String msg = JSONUtils.writeDataWithConversions(data, null, ConversionLocation.BROWSER_UPDATE);
+		String msg = JSONUtils.writeDataWithConversions(data, AggregatedPropertyType.newAggregatedProperty().putProperty("msg", properties.contentType),
+			ConversionLocation.BROWSER_UPDATE);
 		assertEquals("{\"msg\":{\"somepropp\":{\"string\":\"test\",\"counter\":1},\"name\":\"test\"}}", msg);
 
 		component.putBrowserProperty("somepropp", "tester");
@@ -164,5 +169,4 @@ public class WrapperTypeTest
 
 		assertEquals("test", component.getProperty("somepropp"));
 	}
-
 }

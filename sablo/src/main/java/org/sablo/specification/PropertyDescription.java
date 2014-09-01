@@ -192,11 +192,12 @@ public class PropertyDescription
 	}
 
 
-	public void putProperty(String name, PropertyDescription type)
+	public PropertyDescription putProperty(String name, PropertyDescription type)
 	{
 		if (properties == null) properties = new HashMap<>();
 		if (type == null) properties.remove(name);
 		properties.put(name, type);
+		return this;
 	}
 
 	public PropertyDescription getProperty(String name)

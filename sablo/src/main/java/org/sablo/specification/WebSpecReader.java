@@ -128,7 +128,10 @@ class WebSpecReader
 		{
 			WebComponentSpecification old = cachedDescriptions.put(desc.getName(), desc);
 			if (old != null) log.error("Conflict found! Duplicate web component definition name: " + old.getName());
-			else currentPackageComponents.add(desc.getName());
+			else
+			{
+				if (!currentPackageComponents.contains(desc.getName())) currentPackageComponents.add(desc.getName());
+			}
 		}
 	}
 

@@ -22,6 +22,7 @@ import org.json.JSONWriter;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.websocket.utils.DataConversion;
+import org.sablo.websocket.utils.JSONUtils;
 
 /**
  * Dates are also handled specially on both ends currently.
@@ -59,9 +60,10 @@ public class DatePropertyType extends DefaultPropertyType<Date> implements IClas
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, Date value, DataConversion clientConversion) throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Date value, DataConversion clientConversion) throws JSONException
 	{
 		if (clientConversion != null) clientConversion.convert("Date");
+		JSONUtils.addKeyIfPresent(writer, key);
 		return writer.value(value.getTime());
 	}
 

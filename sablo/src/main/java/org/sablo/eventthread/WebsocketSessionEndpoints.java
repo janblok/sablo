@@ -23,7 +23,6 @@ import java.util.Map;
 import org.sablo.Container;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.types.AggregatedPropertyType;
-import org.sablo.websocket.ConversionLocation;
 import org.sablo.websocket.IWebsocketEndpoint;
 import org.sablo.websocket.IWebsocketSession;
 import org.sablo.websocket.TypedData;
@@ -103,18 +102,10 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 	@Override
 	public Object sendMessage(Map<String, ? > data, PropertyDescription dataType, boolean async) throws IOException
 	{
-		// TODO should this throw an illegal call exception? Because this kind of call shouildn't be used in this class?
-		// returns the first none null value.
-		return sendMessage(data, dataType, async, ConversionLocation.BROWSER_UPDATE);
-	}
-
-	@Override
-	public Object sendMessage(Map<String, ? > data, PropertyDescription dataType, boolean async, ConversionLocation conversionLocation) throws IOException
-	{
 		Object retValue = null;
 		for (IWebsocketEndpoint endpoint : session.getRegisteredEnpoints())
 		{
-			Object reply = endpoint.sendMessage(data, dataType, async, conversionLocation);
+			Object reply = endpoint.sendMessage(data, dataType, async);
 			retValue = retValue == null ? reply : retValue;
 		}
 		return retValue;
@@ -147,7 +138,7 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 			try
 			{
 				// Call is initiated not from client, flush call otherwise it will only be sent after next client call
-				endpoint.sendMessage(null, null, true, null);
+				endpoint.sendMessage(null, null, true);
 			}
 			catch (IOException e)
 			{

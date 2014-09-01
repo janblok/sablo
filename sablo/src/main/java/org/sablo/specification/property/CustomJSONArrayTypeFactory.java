@@ -16,9 +16,27 @@
 
 package org.sablo.specification.property;
 
+import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.property.types.IPropertyTypeFactory;
+
 /**
- * @author jcompagner
+ * Creates custom json array types based on what's present in the spec file.
+ *
+ * @author acostescu
  */
-public interface IComplexValue<T> {
+public class CustomJSONArrayTypeFactory implements IPropertyTypeFactory<PropertyDescription, Object>
+{
+
+	@Override
+	public IPropertyType<Object> createType(PropertyDescription definition)
+	{
+		return new CustomJSONArrayType(definition);
+	}
+
+	@Override
+	public String toString()
+	{
+		return "Default Sablo custom JSON array type factory.";
+	}
 
 }

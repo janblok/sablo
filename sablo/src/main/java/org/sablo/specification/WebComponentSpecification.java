@@ -30,6 +30,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
+import org.sablo.specification.property.CustomJSONArrayType;
 import org.sablo.specification.property.CustomPropertyTypeResolver;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
@@ -394,8 +395,20 @@ public class WebComponentSpecification extends PropertyDescription
 				}
 				if (type != null)
 				{
+					if (isArray)
+					{
+						// here we could have something like { type: 'myprop[]', a: ..., b: ... } so with a config object;
+						// the config object will be used by the 'CustomJSONArray' type;
+						// a config for the element type can be specified like this: { type: 'myprop[]', a: ..., b: ..., elementConfig: {...} } and we could give that to the elementDescription instead
+						JSONObject elementConfig = configObject.optJSONObject("elementConfig");
+						PropertyDescription elementDescription = new PropertyDescription(key, type, scope, elementConfig != null
+							? type.parseConfig(elementConfig) : null, defaultValue, values);
+						type = TypesRegistry.getType(CustomJSONArrayType.TYPE_ID);
+						((CustomJSONArrayType< ? , ? >)type).setDefinition(elementDescription);
+					}
+
 					Object config = type.parseConfig(configObject);
-					pds.put(key, new PropertyDescription(key, type, scope, isArray, config, defaultValue, values));
+					pds.put(key, new PropertyDescription(key, type, scope, config, defaultValue, values));
 				}
 			}
 		}

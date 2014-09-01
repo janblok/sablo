@@ -18,34 +18,38 @@ package org.sablo.specification.property;
 
 import org.json.JSONObject;
 import org.sablo.specification.PropertyDescription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Property types that are defined in JSON spec files.
  * @author acostescu
  */
-public class CustomPropertyType<T> implements ICustomType<T>
+public abstract class CustomJSONPropertyType<T> implements ICustomType<T>
 {
 
+	protected static final Logger log = LoggerFactory.getLogger(IPropertyType.class.getCanonicalName());
 	private PropertyDescription definition;
-	private String name;
+	private final String name;
 
 	/**
 	 * Creates a new property types that is defined in JSON spec files.
 	 * @param typeName the name of this type as used in spec files.
 	 * @param definition the parsed JSON definition of this type. If null, it must be set later via {@link #setDefinition(PropertyDescription)}.
 	 */
-	public CustomPropertyType(String typeName, PropertyDescription definition)
+	public CustomJSONPropertyType(String typeName, PropertyDescription definition)
 	{
 		this.name = typeName;
 		setDefinition(definition);
 	}
-	
+
 	@Override
-	public String getName() {
+	public String getName()
+	{
 		return name;
 	}
 
-	void setDefinition(PropertyDescription definition)
+	public void setDefinition(PropertyDescription definition)
 	{
 		this.definition = definition;
 	}
@@ -67,15 +71,14 @@ public class CustomPropertyType<T> implements ICustomType<T>
 	}
 
 	@Override
-	public Object parseConfig(JSONObject config) {
+	public Object parseConfig(JSONObject config)
+	{
 		return config;
 	}
-	
-	/* (non-Javadoc)
-	 * @see org.sablo.specification.property.IPropertyType#defaultValue()
-	 */
+
 	@Override
-	public T defaultValue() {
+	public T defaultValue()
+	{
 		return null;
 	}
 

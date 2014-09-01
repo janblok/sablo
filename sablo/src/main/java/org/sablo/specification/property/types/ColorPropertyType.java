@@ -25,6 +25,7 @@ import org.json.JSONWriter;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.websocket.utils.DataConversion;
+import org.sablo.websocket.utils.JSONUtils;
 
 /**
  * @author jcompagner
@@ -113,8 +114,10 @@ public class ColorPropertyType extends DefaultPropertyType<Color> implements ICl
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, Color c, DataConversion clientConversion) throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Color c, DataConversion clientConversion) throws JSONException
 	{
+		JSONUtils.addKeyIfPresent(writer, key);
+
 		int alpha = c.getAlpha();
 		if (alpha == 255)
 		{

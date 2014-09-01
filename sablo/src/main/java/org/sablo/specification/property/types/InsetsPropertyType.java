@@ -22,6 +22,7 @@ import org.json.JSONWriter;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.websocket.utils.DataConversion;
+import org.sablo.websocket.utils.JSONUtils;
 
 /**
  * @author jcompagner
@@ -51,8 +52,9 @@ public class InsetsPropertyType extends DefaultPropertyType<Insets> implements I
 
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, Insets i, DataConversion clientConversion) throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Insets i, DataConversion clientConversion) throws JSONException
 	{
+		JSONUtils.addKeyIfPresent(writer, key);
 		writer.object();
 		writer.key("paddingTop").value(i.top + "px");
 		writer.key("paddingBottom").value(i.bottom + "px");

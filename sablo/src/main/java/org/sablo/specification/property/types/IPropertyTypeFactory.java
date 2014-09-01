@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package org.sablo.specification.property;
+package org.sablo.specification.property.types;
 
-import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.property.IPropertyType;
 
 /**
- * @author jcompagner
+ * One can register type factories instead of direct types to a name.</BR>
+ * This is useful for parameterized types. For example a CustomJSONObject or CustomJSONArray type depends on how it is defined in the spec file.
+ *
+ * @author acostescu
  */
-public interface ICustomType<T> extends IPropertyType<T>
+public interface IPropertyTypeFactory<ParamT, T>
 {
 
-	/**
-	 * Can be null; if it's not null then this type was defined as a custom type in JSON. It could also have special handling attached to it,
-	 * depending on what other method return.
-	 * @return the corresponding (JSON based) representation of this type's definition.
-	 */
-	PropertyDescription getCustomJSONTypeDefinition();
+	IPropertyType<T> createType(ParamT params);
 
 }

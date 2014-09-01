@@ -23,6 +23,7 @@ import org.json.JSONWriter;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.websocket.utils.DataConversion;
+import org.sablo.websocket.utils.JSONUtils;
 
 /**
  * @author jcompagner
@@ -55,8 +56,9 @@ public class PointPropertyType extends DefaultPropertyType<Point> implements ICl
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, Point object, DataConversion clientConversion) throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Point object, DataConversion clientConversion) throws JSONException
 	{
+		JSONUtils.addKeyIfPresent(writer, key);
 		return writer.object().key("x").value(object.getX()).key("y").value(object.getY()).endObject();
 	}
 

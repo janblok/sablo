@@ -355,11 +355,6 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 
 	public Object sendMessage(Map<String, ? > data, PropertyDescription dataTypes, boolean async) throws IOException
 	{
-		return sendMessage(data, dataTypes, async, ConversionLocation.BROWSER_UPDATE);
-	}
-
-	public Object sendMessage(Map<String, ? > data, PropertyDescription dataTypes, boolean async, ConversionLocation conversionLocation) throws IOException
-	{
 		if ((data == null || data.size() == 0) && serviceCalls.size() == 0) return null;
 
 		Map<String, Object> message = new HashMap<>();
@@ -384,7 +379,7 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 		try
 		{
 			if (!messageTypes.hasChildProperties()) messageTypes = null;
-			sendText(JSONUtils.writeDataWithConversions(message, messageTypes, conversionLocation));
+			sendText(JSONUtils.writeDataWithConversions(message, messageTypes));
 		}
 		catch (JSONException e)
 		{
@@ -409,7 +404,7 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 		data.put(success ? "ret" : "exception", object);
 		try
 		{
-			sendText(JSONUtils.writeDataWithConversions(data, objectType, ConversionLocation.BROWSER_UPDATE));
+			sendText(JSONUtils.writeDataWithConversions(data, objectType));
 		}
 		catch (JSONException e)
 		{

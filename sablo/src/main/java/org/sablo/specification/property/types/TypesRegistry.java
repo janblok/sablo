@@ -19,6 +19,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.sablo.specification.property.CustomJSONArrayType;
+import org.sablo.specification.property.CustomJSONArrayTypeFactory;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IPropertyType;
 import org.slf4j.Logger;
@@ -34,7 +36,9 @@ public class TypesRegistry
 	private static final Logger log = LoggerFactory.getLogger(TypesRegistry.class.getCanonicalName());
 
 	private static Map<String, IPropertyType< ? >> types = new HashMap<>();
+	private static Map<String, IPropertyTypeFactory< ? , ? >> typeFactories = new HashMap<>();
 	private static Map<Class< ? >, IClassPropertyType< ? >> typesByClass = new HashMap<>();
+
 
 	static
 	{
@@ -70,6 +74,9 @@ public class TypesRegistry
 				}
 			}
 		}
+
+		typeFactories.put(CustomJSONArrayType.TYPE_ID, new CustomJSONArrayTypeFactory());
+//		typeFactories.put(CustomJSONObjectType.TYPE_ID, new CustomJSONObjectTypeFactory());
 	}
 
 
@@ -78,6 +85,13 @@ public class TypesRegistry
 		IPropertyType< ? > type = types.get(name);
 		if (type == null) throw new RuntimeException("Type '" + name + "' not found in " + printTypes());
 		return type;
+	}
+
+	public static <ParamT> IPropertyType< ? > createNewType(String name, ParamT params)
+	{
+		IPropertyTypeFactory<ParamT, ? > typeFactory = (IPropertyTypeFactory<ParamT, ? >)typeFactories.get(name);
+		if (typeFactory == null) throw new RuntimeException("Type factory for type '" + name + "' not found in " + printTypeFactories());
+		return typeFactory.createType(params);
 	}
 
 	public static IClassPropertyType< ? > getType(Class< ? > clz)
@@ -106,6 +120,17 @@ public class TypesRegistry
 		return sb.toString();
 	}
 
+	public static String printTypeFactories()
+	{
+		StringBuilder sb = new StringBuilder();
+		for (String typeName : typeFactories.keySet())
+		{
+			sb.append(typeName);
+			sb.append(",");
+		}
+		return sb.toString();
+	}
+
 	/**
 	 * @param parsedTypes
 	 */
@@ -117,9 +142,6 @@ public class TypesRegistry
 		}
 	}
 
-	/**
-	 * @param wct
-	 */
 	public static void addType(IPropertyType< ? > type)
 	{
 		IPropertyType< ? > previous = types.put(type.getName(), type);
@@ -137,4 +159,14 @@ public class TypesRegistry
 			}
 		}
 	}
+
+	public static void addTypeFactory(String typeName, IPropertyTypeFactory< ? , ? > factory)
+	{
+		IPropertyTypeFactory< ? , ? > previous = typeFactories.put(typeName, factory);
+		if (previous != null)
+		{
+			log.info("there was already a type factory for typename " + typeName + ": " + previous + " replaced by: " + factory);
+		}
+	}
+
 }

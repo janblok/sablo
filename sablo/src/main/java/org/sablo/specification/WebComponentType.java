@@ -22,6 +22,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.sablo.specification.property.IPropertyType;
+
 
 /**
  * @author jcompagner
@@ -32,7 +34,7 @@ public class WebComponentType
 	private final String name;
 
 	/**
-	 * 
+	 *
 	 */
 	public WebComponentType(String name)
 	{
@@ -61,7 +63,7 @@ public class WebComponentType
 	/**
 	 * @param valuelist
 	 */
-	public Map<String, PropertyDescription> getProperties(PropertyType pt)
+	public Map<String, PropertyDescription> getProperties(IPropertyType pt)
 	{
 		Map<String, PropertyDescription> filtered = new HashMap<>(4);
 		for (PropertyDescription pd : properties.values())

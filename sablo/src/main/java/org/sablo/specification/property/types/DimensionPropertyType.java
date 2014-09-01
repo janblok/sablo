@@ -23,6 +23,7 @@ import org.json.JSONWriter;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.websocket.utils.DataConversion;
+import org.sablo.websocket.utils.JSONUtils;
 
 /**
  * @author jcompagner
@@ -55,8 +56,9 @@ public class DimensionPropertyType extends DefaultPropertyType<Dimension> implem
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, Dimension object, DataConversion clientConversion) throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Dimension object, DataConversion clientConversion) throws JSONException
 	{
+		JSONUtils.addKeyIfPresent(writer, key);
 		return writer.object().key("width").value(object.getWidth()).key("height").value(object.getHeight()).endObject();
 	}
 

@@ -80,6 +80,14 @@ public abstract class BaseWebObject
 	}
 
 	/**
+	 * @return the specification
+	 */
+	public WebComponentSpecification getSpecification()
+	{
+		return specification;
+	}
+
+	/**
 	 * Execute incoming event
 	 *
 	 * @param eventType
@@ -173,11 +181,12 @@ public abstract class BaseWebObject
 	public boolean setProperty(String propertyName, Object propertyValue)
 	{
 		Map<String, Object> map = properties;
+		Object wrappedValue = propertyValue;
 		try
 		{
 			// TODO can the propertyName can contain dots? Or should this be
 			// handled by the type??
-			propertyValue = wrapPropertyValue(propertyName, map.get(propertyName), propertyValue);
+			wrappedValue = wrapPropertyValue(propertyName, map.get(propertyName), propertyValue);
 		}
 		catch (Exception e)
 		{
@@ -186,7 +195,7 @@ public abstract class BaseWebObject
 		}
 
 		// TODO can the propertyName can contain dots? Or should this be handled
-		// by the type?? Remove this code below.
+		// by the type?? Remove this code below. (the getProperty doesn't suppor this!)
 		String firstPropertyPart = propertyName;
 		String lastPropertyPart = propertyName;
 		String[] parts = propertyName.split("\\.");
@@ -209,10 +218,12 @@ public abstract class BaseWebObject
 		if (map.containsKey(lastPropertyPart))
 		{
 			// existing property
-			Object oldValue = map.put(lastPropertyPart, propertyValue);
+			Object oldValue = getProperty(propertyName);
+			map.put(lastPropertyPart, wrappedValue);
+
 			onPropertyChange(firstPropertyPart, oldValue, propertyValue);
 
-			if ((oldValue != null && !oldValue.equals(propertyValue)) || (propertyValue != null && !propertyValue.equals(oldValue)))
+			if ((oldValue != null && !oldValue.equals(wrappedValue)) || (wrappedValue != null && !wrappedValue.equals(oldValue)))
 			{
 				changedProperties.add(firstPropertyPart);
 				return true;
@@ -221,7 +232,7 @@ public abstract class BaseWebObject
 		else
 		{
 			// new property
-			map.put(lastPropertyPart, propertyValue);
+			map.put(lastPropertyPart, wrappedValue);
 			onPropertyChange(firstPropertyPart, null, propertyValue);
 
 			changedProperties.add(firstPropertyPart);

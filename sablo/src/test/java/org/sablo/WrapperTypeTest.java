@@ -148,9 +148,11 @@ public class WrapperTypeTest
 		assertEquals("test", component.getProperty("somepropp"));
 
 		HashMap<String, Object> data = new HashMap<>();
-		data.put("msg", component.getProperties());
+		TypedData<Map<String, Object>> properties = component.getProperties();
+		data.put("msg", properties.content);
 
-		String msg = JSONUtils.writeDataWithConversions(JSONUtils.ToJSONConverter.INSTANCE, data, null);
+		String msg = JSONUtils.writeDataWithConversions(data, AggregatedPropertyType.newAggregatedProperty().putProperty("msg", properties.contentType),
+			ConversionLocation.BROWSER_UPDATE);
 		assertEquals("{\"msg\":{\"somepropp\":{\"string\":\"test\",\"counter\":1},\"name\":\"test\"}}", msg);
 
 		component.putBrowserProperty("somepropp", "tester");

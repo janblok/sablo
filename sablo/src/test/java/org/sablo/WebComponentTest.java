@@ -296,9 +296,13 @@ public class WebComponentTest
 		assertSame(array, array2);
 
 		HashMap<String, Object> data = new HashMap<>();
-		data.put("msg", component.getProperties());
+		TypedData<Map<String, Object>> properties = component.getProperties();
+		data.put("msg", properties.content);
 
-		String msg = JSONUtils.writeDataWithConversions(data, null);
+		PropertyDescription messageTypes = AggregatedPropertyType.newAggregatedProperty();
+		messageTypes.putProperty("msg", properties.contentType);
+
+		String msg = JSONUtils.writeDataWithConversions(data, messageTypes);
 		assertEquals(
 			"{\"msg\":{\"name\":\"test\",\"types\":[{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"},{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}]}}",
 			msg);

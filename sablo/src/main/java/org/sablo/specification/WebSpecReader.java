@@ -37,6 +37,7 @@ class WebSpecReader
 	private static final Logger log = LoggerFactory.getLogger(WebSpecReader.class.getCanonicalName());
 
 	private final Map<String, WebComponentSpecification> cachedDescriptions = new HashMap<>();
+	private final Map<String, List<String>> packagesToComponentNames = new HashMap<>();
 
 	private final IPackageReader[] packageReaders;
 
@@ -110,7 +111,7 @@ class WebSpecReader
 		{
 			try
 			{
-				cache(p.getWebComponentDescriptions());
+				cache(p.getPackageName(), p.getWebComponentDescriptions());
 			}
 			catch (IOException e)
 			{
@@ -119,12 +120,18 @@ class WebSpecReader
 		}
 	}
 
-	private void cache(List<WebComponentSpecification> webComponentDescriptions)
+	private void cache(String packageName, List<WebComponentSpecification> webComponentDescriptions)
 	{
+		if (packagesToComponentNames.get(packageName) == null) packagesToComponentNames.put(packageName, new ArrayList<String>());
+		List<String> currentPackageComponents = packagesToComponentNames.get(packageName);
 		for (WebComponentSpecification desc : webComponentDescriptions)
 		{
 			WebComponentSpecification old = cachedDescriptions.put(desc.getName(), desc);
 			if (old != null) log.error("Conflict found! Duplicate web component definition name: " + old.getName());
+			else
+			{
+				if (!currentPackageComponents.contains(desc.getName())) currentPackageComponents.add(desc.getName());
+			}
 		}
 	}
 
@@ -136,5 +143,10 @@ class WebSpecReader
 	public synchronized WebComponentSpecification[] getWebComponentSpecifications()
 	{
 		return cachedDescriptions.values().toArray(new WebComponentSpecification[cachedDescriptions.size()]);
+	}
+
+	public synchronized Map<String, List<String>> getPackagesToComponents()
+	{
+		return packagesToComponentNames;
 	}
 }

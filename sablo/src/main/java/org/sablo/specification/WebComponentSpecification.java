@@ -16,8 +16,7 @@
 
 package org.sablo.specification;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -59,7 +58,7 @@ public class WebComponentSpecification extends PropertyDescription
 
 	private Map<String, IPropertyType< ? >> foundTypes;
 
-	private String serverScript;
+	private URL serverScript;
 
 	public WebComponentSpecification(String name, String packageName, String displayName, String categoryName, String icon, String definition, JSONArray libs)
 	{
@@ -84,7 +83,7 @@ public class WebComponentSpecification extends PropertyDescription
 	/**
 	 * @param serverScript the serverScript to set
 	 */
-	public void setServerScript(String serverScript)
+	public void setServerScript(URL serverScript)
 	{
 		this.serverScript = serverScript;
 	}
@@ -92,7 +91,7 @@ public class WebComponentSpecification extends PropertyDescription
 	/**
 	 * @return
 	 */
-	public String getServerScript()
+	public URL getServerScript()
 	{
 		return serverScript;
 	}
@@ -202,21 +201,14 @@ public class WebComponentSpecification extends PropertyDescription
 	@SuppressWarnings("unchecked")
 	public static WebComponentSpecification parseSpec(String specfileContent, String packageName, IPackageReader reader) throws JSONException
 	{
-		JSONObject json = new JSONObject('{' + specfileContent + '}');
+		JSONObject json = new JSONObject(specfileContent);
 
 		WebComponentSpecification spec = new WebComponentSpecification(json.getString("name"), packageName, json.optString("displayName", null),
 			json.optString("categoryName", null), json.optString("icon", null), json.getString("definition"), json.optJSONArray("libraries"));
 
 		if (json.has("serverscript"))
 		{
-			try
-			{
-				spec.setServerScript(reader.readTextFile(json.getString("serverscript").substring(packageName.length()), Charset.forName("UTF8")));
-			}
-			catch (IOException e)
-			{
-				e.printStackTrace();
-			}
+			spec.setServerScript(reader.getUrlForPath(json.getString("serverscript").substring(packageName.length())));
 		}
 		// first types, can be used in properties
 		spec.parseTypes(json);
@@ -247,11 +239,11 @@ public class WebComponentSpecification extends PropertyDescription
 						for (int p = 0; p < params.length(); p++)
 						{
 							JSONObject param = params.getJSONObject(p);
-							String paramName = parseParamName(param);
+							String paramName = (String)param.get("name");
 							boolean isOptional = false;
 							if (param.has("optional")) isOptional = true;
 
-							ParsedProperty pp = spec.parsePropertyString(param.getString(paramName));
+							ParsedProperty pp = spec.parsePropertyString(param.getString("type"));
 							PropertyDescription desc = new PropertyDescription(paramName, pp.type, Boolean.valueOf(pp.array)); // hmm why not set the array field instead of configObject here?
 							desc.setOptional(isOptional);
 							def.addParameter(desc);
@@ -325,24 +317,6 @@ public class WebComponentSpecification extends PropertyDescription
 				}
 			}
 		}
-	}
-
-	private static String parseParamName(JSONObject param)
-	{
-		String paramName = (String)param.keys().next();
-		if (paramName.equals("optional"))
-		{
-			Iterator it = param.keys();
-			while (it.hasNext())
-			{
-				String name = (String)it.next();
-				if (!name.equals("optional"))
-				{
-					paramName = name;
-				}
-			}
-		}
-		return paramName;
 	}
 
 	private Map<String, PropertyDescription> parseProperties(String propKey, JSONObject json) throws JSONException

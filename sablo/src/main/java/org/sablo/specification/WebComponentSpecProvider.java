@@ -16,10 +16,9 @@
 
 package org.sablo.specification;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
+import java.util.Set;
 
 import javax.servlet.ServletContext;
 
@@ -55,7 +54,7 @@ public class WebComponentSpecProvider
 	 * @param webComponentBundleNames
 	 * @return the provider
 	 */
-	public static WebComponentSpecProvider init(ServletContext servletContext, String[] webComponentBundleNames) 
+	public static WebComponentSpecProvider init(ServletContext servletContext, String[] webComponentBundleNames)
 	{
 		if (instance == null)
 		{
@@ -74,7 +73,7 @@ public class WebComponentSpecProvider
 					}
 					catch (Exception e)
 					{
-						log.error("Exception during init",e);
+						log.error("Exception during init", e);
 					}
 				}
 			}
@@ -89,30 +88,48 @@ public class WebComponentSpecProvider
 			instance.reader.load();
 		}
 	}
-	
+
 	private final WebSpecReader reader;
 
-	private WebComponentSpecProvider(WebSpecReader reader) {
+	private WebComponentSpecProvider(WebSpecReader reader)
+	{
 		this.reader = reader;
 	}
 
 	/**
 	 * Get the specification for the given component type.
-	 * 
+	 *
 	 * @param componentType
 	 * @return the components specification, null if not found.
 	 */
-	public WebComponentSpecification getWebComponentSpecification(
-			String componentType) {
+	public WebComponentSpecification getWebComponentSpecification(String componentType)
+	{
 		return reader.getWebComponentSpecification(componentType);
 	}
 
 	/**
 	 * get all registered web component specifications.
-	 * 
+	 *
 	 * @return an array of all the specifications
 	 */
-	public WebComponentSpecification[] getWebComponentSpecifications() {
+	public WebComponentSpecification[] getWebComponentSpecifications()
+	{
 		return reader.getWebComponentSpecifications();
+	}
+
+	/**
+	 * Get a list of all packages that contain web component specification
+	 */
+	public Set<String> getPackageNames()
+	{
+		return reader.getPackagesToComponents().keySet();
+	}
+
+	/**
+	 * Get a list of all components contained by provided package name
+	 */
+	public List<String> getComponentsInPackage(String packageName)
+	{
+		return reader.getPackagesToComponents().get(packageName);
 	}
 }

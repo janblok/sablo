@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 public class WebsocketSessionManager
 {
 	private static final Logger log = LoggerFactory.getLogger(WebsocketSessionManager.class.getCanonicalName());
-	
+
 	private static IWebsocketSessionFactory websocketSessionFactory;
 
 	//maps form uuid to session
@@ -43,42 +43,39 @@ public class WebsocketSessionManager
 
 	private static final long SESSION_TIMEOUT = 1 * 60 * 1000;
 
-	private static String getSessionKey(String endpointType, String uuid)
-	{
-		return endpointType + ':' + uuid;
-	}
-
-	public static void addSession(String endpointType, IWebsocketSession wsSession)
+	public static void addSession(IWebsocketSession wsSession)
 	{
 		synchronized (wsSessions)
 		{
-			wsSessions.put(getSessionKey(endpointType, wsSession.getUuid()), wsSession);
+			wsSessions.put(wsSession.getUuid(), wsSession);
 		}
 	}
 
-	public static IWebsocketSession removeSession(String endpointType, String uuid)
+	public static IWebsocketSession removeSession(String uuid)
 	{
 		synchronized (wsSessions)
 		{
-			String key = getSessionKey(endpointType, uuid);
-			nonActiveWsSessions.remove(key);
-			return wsSessions.remove(key);
+			nonActiveWsSessions.remove(uuid);
+			return wsSessions.remove(uuid);
 		}
 	}
 
 	public static IWebsocketSession getSession(String endpointType, String prevUuid)
 	{
-		try {
+		try
+		{
 			return getOrCreateSession(endpointType, prevUuid, false);
-		} catch (Exception e) {
-			log.error("exception calling getSession (not create) should not happen",e);
+		}
+		catch (Exception e)
+		{
+			log.error("exception calling getSession (not create) should not happen", e);
 		}
 		return null;
 	}
 
 	/**
 	 * This method only throws an exception if the creation of the client fails (so the create boolean is true)
-	 * 
+	 *
 	 * @param endpointType
 	 * @param prevUuid
 	 * @param create
@@ -94,26 +91,24 @@ public class WebsocketSessionManager
 			String key;
 			if (uuid != null && uuid.length() > 0)
 			{
-				key = getSessionKey(endpointType, uuid);
-				wsSession = wsSessions.get(key);
-				nonActiveWsSessions.remove(key);
+				wsSession = wsSessions.get(uuid);
+				nonActiveWsSessions.remove(uuid);
 			}
 			else
 			{
 				uuid = UUID.randomUUID().toString();
-				key = getSessionKey(endpointType, uuid);
 			}
 			if (wsSession == null || !wsSession.isValid())
 			{
-				wsSessions.remove(key);
+				wsSessions.remove(uuid);
 				wsSession = null;
 				if (create && websocketSessionFactory != null)
 				{
-					wsSession = websocketSessionFactory.createSession(endpointType,uuid);
+					wsSession = websocketSessionFactory.createSession(endpointType, uuid);
 				}
 				if (wsSession != null)
 				{
-					wsSessions.put(key, wsSession);
+					wsSessions.put(uuid, wsSession);
 				}
 			}
 		}
@@ -144,7 +139,7 @@ public class WebsocketSessionManager
 			//mark current as non active
 			if (uuid != null)
 			{
-				nonActiveWsSessions.put(getSessionKey(endpointType, uuid), new Long(currentTime));
+				nonActiveWsSessions.put(uuid, new Long(currentTime));
 			}
 		}
 	}
@@ -152,5 +147,10 @@ public class WebsocketSessionManager
 	public static void setWebsocketSessionFactory(IWebsocketSessionFactory factory)
 	{
 		websocketSessionFactory = factory;
+	}
+
+	public static IWebsocketSessionFactory getWebsocketSessionFactory()
+	{
+		return websocketSessionFactory;
 	}
 }

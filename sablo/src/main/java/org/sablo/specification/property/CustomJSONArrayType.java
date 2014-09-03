@@ -46,6 +46,8 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 	protected static final String INDEX = "i";
 	protected static final String VALUE = "v";
 
+	public static final String ELEMENT_CONFIG_KEY = "elementConfig";
+
 	private static int runtimeCount = 1;
 
 	private synchronized static int newRuntimeCount()

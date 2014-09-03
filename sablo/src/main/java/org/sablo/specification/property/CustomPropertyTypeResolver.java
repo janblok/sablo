@@ -70,17 +70,17 @@ public class CustomPropertyTypeResolver
 		{
 			// currently typeName can resolve to a pure JSON handled all-over-the-place property type or
 			// a special type that has JSON defined spec, but also it behaves differently in different stages - see 'components' type
-			IPropertyType< ? > smartCustomType = TypesRegistry.getType(typeName);
+			IPropertyType< ? > smartCustomType = TypesRegistry.getType(typeName, false);
 
 			if (smartCustomType instanceof CustomJSONPropertyType< ? >)
 			{
 				propertyType = ((CustomJSONPropertyType< ? >)smartCustomType);
-				propertyType.setDefinition(new PropertyDescription(typeName, propertyType));
+				propertyType.setCustomJSONDefinition(new PropertyDescription(typeName, propertyType));
 			}
 			else if (smartCustomType == null)
 			{
 				propertyType = new CustomJSONObjectType(typeName, null); // that null is temporary - it will get populated later by the parser
-				propertyType.setDefinition(new PropertyDescription(typeName, propertyType));
+				propertyType.setCustomJSONDefinition(new PropertyDescription(typeName, propertyType));
 			}
 			else
 			{

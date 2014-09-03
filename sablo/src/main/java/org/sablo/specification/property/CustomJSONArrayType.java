@@ -41,10 +41,10 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 
 	public static final String TYPE_ID = "JSON_arr";
 
-	protected static final String VALUE = "v";
-	protected static final String IDX = "i";
 	protected static final String CONTENT_VERSION = "version";
 	protected static final String UPDATES = "updates";
+	protected static final String INDEX = "i";
+	protected static final String VALUE = "v";
 
 	private static int runtimeCount = 1;
 
@@ -167,7 +167,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 						for (int i = updatedRows.length() - 1; i >= 0; i--)
 						{
 							JSONObject row = updatedRows.getJSONObject(i);
-							int idx = row.getInt(IDX);
+							int idx = row.getInt(INDEX);
 							Object val = row.get(VALUE);
 
 							if (baseList.size() > idx)
@@ -246,12 +246,11 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, DataConversion clientConversionMarkers)
-		throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, DataConversion conversionMarkers) throws JSONException
 	{
 		if (changeAwareList != null)
 		{
-			if (clientConversionMarkers != null) clientConversionMarkers.convert(CustomJSONArrayType.TYPE_ID); // so that the client knows it must use the custom client side JS for what JSON it gets
+			if (conversionMarkers != null) conversionMarkers.convert(CustomJSONArrayType.TYPE_ID); // so that the client knows it must use the custom client side JS for what JSON it gets
 
 			Set<Integer> changes = changeAwareList.getChangedIndexes();
 			List<WT> wrappedBaseList = changeAwareList.getWrappedBaseList();
@@ -260,14 +259,22 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 			{
 				// send all (currently we don't support granular updates for add/remove but we could in the future)
 				JSONUtils.addKeyIfPresent(writer, key);
-				writer.array();
+				DataConversion arrayConversionMarkers = new DataConversion();
+				writer.object().key(CONTENT_VERSION).value(changeAwareList.increaseContentVersion()).key(VALUE).array();
 				for (int i = 0; i < wrappedBaseList.size(); i++)
 				{
-					if (clientConversionMarkers != null) clientConversionMarkers.pushNode(String.valueOf(i));
-					JSONUtils.toBrowserJSONValue(writer, null, wrappedBaseList.get(i), getCustomJSONTypeDefinition(), clientConversionMarkers);
-					if (clientConversionMarkers != null) clientConversionMarkers.popNode();
+					arrayConversionMarkers.pushNode(String.valueOf(i));
+					JSONUtils.toBrowserJSONValue(writer, null, wrappedBaseList.get(i), getCustomJSONTypeDefinition(), arrayConversionMarkers);
+					arrayConversionMarkers.popNode();
 				}
 				writer.endArray();
+				if (arrayConversionMarkers.getConversions().size() > 0)
+				{
+					writer.key("conversions").object();
+					JSONUtils.writeConversions(writer, arrayConversionMarkers.getConversions());
+					writer.endObject();
+				}
+				writer.endObject();
 			}
 			else
 			{
@@ -275,15 +282,26 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 				JSONUtils.addKeyIfPresent(writer, key);
 
 				writer.object();
-				writer.key(UPDATES);
+				writer.key(CONTENT_VERSION).value(changeAwareList.increaseContentVersion()).key(UPDATES);
 				writer.array();
+				DataConversion arrayConversionMarkers = new DataConversion();
 				for (Integer idx : changes)
 				{
-					if (clientConversionMarkers != null) clientConversionMarkers.pushNode(String.valueOf(idx));
-					JSONUtils.toBrowserJSONValue(writer, null, wrappedBaseList.get(idx.intValue()), getCustomJSONTypeDefinition(), clientConversionMarkers);
-					if (clientConversionMarkers != null) clientConversionMarkers.popNode();
+					arrayConversionMarkers.pushNode(String.valueOf(idx));
+					writer.object().key(INDEX).value(idx);
+					arrayConversionMarkers.pushNode(VALUE);
+					JSONUtils.toBrowserJSONValue(writer, VALUE, wrappedBaseList.get(idx.intValue()), getCustomJSONTypeDefinition(), arrayConversionMarkers);
+					arrayConversionMarkers.popNode();
+					writer.endObject();
+					arrayConversionMarkers.popNode();
 				}
 				writer.endArray();
+				if (arrayConversionMarkers.getConversions().size() > 0)
+				{
+					writer.key("conversions").object();
+					JSONUtils.writeConversions(writer, arrayConversionMarkers.getConversions());
+					writer.endObject();
+				}
 				writer.endObject();
 			}
 			changeAwareList.clearChanges();

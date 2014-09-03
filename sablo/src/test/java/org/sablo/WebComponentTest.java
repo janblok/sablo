@@ -35,8 +35,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
+import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
+import org.sablo.specification.property.types.AggregatedPropertyType;
+import org.sablo.websocket.TypedData;
 import org.sablo.websocket.utils.JSONUtils;
 
 /**

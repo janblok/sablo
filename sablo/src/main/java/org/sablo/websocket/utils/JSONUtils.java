@@ -55,7 +55,7 @@ public class JSONUtils
 	private static final Logger log = LoggerFactory.getLogger(JSONUtils.class.getCanonicalName());
 
 	@SuppressWarnings("unchecked")
-	private static void writeConversions(JSONWriter object, Map<String, Object> map) throws JSONException
+	public static void writeConversions(JSONWriter object, Map<String, Object> map) throws JSONException
 	{
 		for (Entry<String, Object> entry : map.entrySet())
 		{

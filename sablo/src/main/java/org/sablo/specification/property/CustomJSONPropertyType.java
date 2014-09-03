@@ -35,12 +35,12 @@ public abstract class CustomJSONPropertyType<T> implements ICustomType<T>
 	/**
 	 * Creates a new property types that is defined in JSON spec files.
 	 * @param typeName the name of this type as used in spec files.
-	 * @param definition the parsed JSON definition of this type. If null, it must be set later via {@link #setDefinition(PropertyDescription)}.
+	 * @param definition the parsed JSON definition of this type. If null, it must be set later via {@link #setCustomJSONDefinition(PropertyDescription)}.
 	 */
 	public CustomJSONPropertyType(String typeName, PropertyDescription definition)
 	{
 		this.name = typeName;
-		setDefinition(definition);
+		setCustomJSONDefinition(definition);
 	}
 
 	@Override
@@ -49,7 +49,7 @@ public abstract class CustomJSONPropertyType<T> implements ICustomType<T>
 		return name;
 	}
 
-	public void setDefinition(PropertyDescription definition)
+	public void setCustomJSONDefinition(PropertyDescription definition)
 	{
 		this.definition = definition;
 	}

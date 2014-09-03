@@ -107,6 +107,11 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 
 	protected int increaseContentVersion()
 	{
+		// currently this is only increased when a new version is sent client side; normally any changes on the list itself
+		// and any updates from client should be executing in the same thread one after the other; that means that you shouldn't
+		// get into a situation where this list is modified, the version is not yet increased (as it's not yet sent to client) and an
+		// update comes and does granular updates verifying the old version (because before another task executes, when the list changes it should
+		// also serialize changes to browser which would increase the version).
 		return ++version;
 	}
 

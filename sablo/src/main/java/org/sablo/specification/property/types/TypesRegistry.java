@@ -80,11 +80,16 @@ public class TypesRegistry
 	}
 
 
-	public static IPropertyType< ? > getType(String name)
+	public static IPropertyType< ? > getType(String name, boolean failIfNull)
 	{
 		IPropertyType< ? > type = types.get(name);
-		if (type == null) throw new RuntimeException("Type '" + name + "' not found in " + printTypes());
+		if (type == null && failIfNull) throw new RuntimeException("Type '" + name + "' not found in " + printTypes());
 		return type;
+	}
+
+	public static IPropertyType< ? > getType(String name)
+	{
+		return getType(name, true);
 	}
 
 	public static <ParamT> IPropertyType< ? > createNewType(String name, ParamT params)

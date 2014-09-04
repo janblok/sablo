@@ -20,17 +20,26 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.property.types.TypesRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Class responsible for creating {@link IPropertyType} instances and attaching custom behavior to them.<BR>
  * A property type can be for example defined in JSON spec files only or could have 'complex' behavior - behaving differently
  * in different stages (server-side/client-side/...).
- *   
+ *
+ * The so called "smart custom types" are types with custom implementation registered using the {@link TypesRegistry} class, but which also have
+ * a custom JSON definition defined in a spec file (most of the time defining only the design JSON structure that should be used by GUI editor
+ * - so not used at runtime). So the types from the TypeRegistry that match a custom JSON type definition in a spec file and implement {@link ICustomType}
+ * will get the custom JSON information added to them.
+ *
  * @author acostescu
  */
 public class CustomPropertyTypeResolver
 {
 
+	private static final Logger log = LoggerFactory.getLogger(IPropertyType.class.getCanonicalName());
 	private static final CustomPropertyTypeResolver INSTANCE = new CustomPropertyTypeResolver();
 
 	public static final CustomPropertyTypeResolver getInstance()
@@ -38,25 +47,14 @@ public class CustomPropertyTypeResolver
 		return INSTANCE;
 	}
 
-	private final Map<String, IComplexTypeImpl< ? , ? >> availableComplexTypes = new HashMap<>();
-	private final Map<String, CustomPropertyType> cache = new HashMap<>();
-
-	/**
-	 * Registers a new complex type with the type system.
-	 * @param typeName the type's name as used in .spec files.
-	 * @param typeDescription the implementation of this complex custom type.
-	 */
-	public void registerNewComplexType(String typeName, IComplexTypeImpl< ? , ? > typeDescription)
-	{
-		availableComplexTypes.put(typeName, typeDescription);
-	}
+	private final Map<String, CustomJSONPropertyType< ? >> cache = new HashMap<>();
 
 	/**
 	 * Checks is a type is already registered.
 	 */
 	public boolean hasTypeName(String string)
 	{
-		return availableComplexTypes.containsKey(string);
+		return TypesRegistry.getType(string) != null;
 	}
 
 	/**
@@ -65,29 +63,35 @@ public class CustomPropertyTypeResolver
 	 * @param typeName the type name as used in .spec files; if spec name is available type name will be prefixed by spec name to avoid conflicts
 	 * @return the appropriate property type (handler).
 	 */
-	public ICustomType<?> resolveCustomPropertyType(String typeName)
+	public ICustomType< ? > resolveCustomPropertyType(String typeName)
 	{
-		CustomPropertyType propertyType = cache.get(typeName);
+		CustomJSONPropertyType< ? > propertyType = cache.get(typeName);
 		if (propertyType == null)
 		{
 			// currently typeName can resolve to a pure JSON handled all-over-the-place property type or
 			// a special type that has JSON defined spec, but also it behaves differently in different stages - see 'components' type
-			IComplexTypeImpl< ? , ? > complexTypeImplementation = availableComplexTypes.get(typeName);
+			IPropertyType< ? > smartCustomType = TypesRegistry.getType(typeName, false);
 
-			if (complexTypeImplementation != null)
+			if (smartCustomType instanceof CustomJSONPropertyType< ? >)
 			{
-				propertyType = new ComplexCustomPropertyType(typeName, null, complexTypeImplementation); // that null is temporary - it will get populated later by the parser
-				propertyType.setDefinition(new PropertyDescription(typeName, propertyType));
+				propertyType = ((CustomJSONPropertyType< ? >)smartCustomType);
+				propertyType.setCustomJSONDefinition(new PropertyDescription(typeName, propertyType));
+			}
+			else if (smartCustomType == null)
+			{
+				propertyType = new CustomJSONObjectType(typeName, null); // that null is temporary - it will get populated later by the parser
+				propertyType.setCustomJSONDefinition(new PropertyDescription(typeName, propertyType));
 			}
 			else
 			{
-				propertyType = new CustomPropertyType(typeName, null); // that null is temporary - it will get populated later by the parser
-				propertyType.setDefinition(new PropertyDescription(typeName, propertyType));
+				log.error("Type '" +
+					typeName +
+					"' is defined in a spec file, but also has a special java implementation that ignores the spec declaration. Is this a type naming conflict? Using spec declaration.");
+				return null;
 			}
 
 			cache.put(typeName, propertyType);
 		}
 		return propertyType;
 	}
-
 }

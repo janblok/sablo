@@ -20,20 +20,25 @@ package org.sablo.specification.property.types;
  * @author jcompagner
  *
  */
-public class BytePropertyType extends DefaultPropertyType<Byte> {
+public class BytePropertyType extends DefaultPropertyType<Byte>
+{
 
 	public static final BytePropertyType INSTANCE = new BytePropertyType();
-	
-	private BytePropertyType() {
-	}
-	
-	@Override
-	public String getName() {
-		return "byte";
+	public static final String TYPE_NAME = "byte";
+
+	protected BytePropertyType()
+	{
 	}
 
 	@Override
-	public Byte defaultValue() {
+	public String getName()
+	{
+		return TYPE_NAME;
+	}
+
+	@Override
+	public Byte defaultValue()
+	{
 		return null;
 	}
 }

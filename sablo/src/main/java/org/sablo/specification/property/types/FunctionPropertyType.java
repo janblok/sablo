@@ -24,6 +24,7 @@ import org.json.JSONObject;
 public class FunctionPropertyType extends DefaultPropertyType<Object>
 {
 	public static final FunctionPropertyType INSTANCE = new FunctionPropertyType();
+	public static final String TYPE_NAME = "function";
 
 	protected FunctionPropertyType()
 	{
@@ -31,7 +32,7 @@ public class FunctionPropertyType extends DefaultPropertyType<Object>
 
 	public String getName()
 	{
-		return "function";
+		return TYPE_NAME;
 	}
 
 	@Override

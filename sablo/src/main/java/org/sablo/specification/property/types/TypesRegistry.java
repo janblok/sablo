@@ -19,6 +19,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.sablo.specification.property.CustomJSONArrayType;
+import org.sablo.specification.property.CustomJSONArrayTypeFactory;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IPropertyType;
 import org.slf4j.Logger;
@@ -28,56 +30,61 @@ import org.slf4j.LoggerFactory;
  * @author jcompagner
  *
  */
+@SuppressWarnings("nls")
 public class TypesRegistry
 {
 
 	private static final Logger log = LoggerFactory.getLogger(TypesRegistry.class.getCanonicalName());
 
 	private static Map<String, IPropertyType< ? >> types = new HashMap<>();
+	private static Map<String, IPropertyTypeFactory< ? , ? >> typeFactories = new HashMap<>();
 	private static Map<Class< ? >, IClassPropertyType< ? >> typesByClass = new HashMap<>();
+
 
 	static
 	{
-		types.put("int", IntPropertyType.INSTANCE);
-		types.put("long", LongPropertyType.INSTANCE);
-		types.put("float", FloatPropertyType.INSTANCE);
-		types.put("double", DoublePropertyType.INSTANCE);
-		types.put("boolean", BooleanPropertyType.INSTANCE);
-		types.put("color", ColorPropertyType.INSTANCE);
-		types.put("string", StringPropertyType.INSTANCE);
-		types.put("insets", InsetsPropertyType.INSTANCE);
-		types.put("date", DatePropertyType.INSTANCE);
-		types.put("dimension", DimensionPropertyType.INSTANCE);
-		types.put("font", FontPropertyType.INSTANCE);
-		types.put("function", FunctionPropertyType.INSTANCE);
-		types.put("object", ObjectPropertyType.INSTANCE);
-		types.put("point", PointPropertyType.INSTANCE);
-		types.put("styleclass", StyleClassPropertyType.INSTANCE);
-		types.put("tabseq", TabSeqPropertyType.INSTANCE);
-		types.put("values", ValuesPropertyType.INSTANCE);
-		types.put("componentDef", ComponentDefPropertyType.INSTANCE);
-		types.put("byte", BytePropertyType.INSTANCE);
+		addType(IntPropertyType.INSTANCE);
+		addType(LongPropertyType.INSTANCE);
+		addType(FloatPropertyType.INSTANCE);
+		addType(DoublePropertyType.INSTANCE);
+		addType(BooleanPropertyType.INSTANCE);
+		addType(ColorPropertyType.INSTANCE);
+		addType(StringPropertyType.INSTANCE);
+		addType(InsetsPropertyType.INSTANCE);
+		addType(DatePropertyType.INSTANCE);
+		addType(DimensionPropertyType.INSTANCE);
+		addType(FontPropertyType.INSTANCE);
+		addType(FunctionPropertyType.INSTANCE);
+		addType(ObjectPropertyType.INSTANCE);
+		addType(PointPropertyType.INSTANCE);
+		addType(StyleClassPropertyType.INSTANCE);
+		addType(TabSeqPropertyType.INSTANCE);
+		addType(ValuesPropertyType.INSTANCE);
+		addType(ComponentDefPropertyType.INSTANCE);
+		addType(BytePropertyType.INSTANCE);
 
-		for (IPropertyType< ? > type : types.values())
-		{
-			if (type instanceof IClassPropertyType)
-			{
-				IClassPropertyType< ? > previous = typesByClass.put(((IClassPropertyType< ? >)type).getTypeClass(), (IClassPropertyType< ? >)type);
-				if (previous != null)
-				{
-					throw new RuntimeException("duplicate type found for class: " + ((IClassPropertyType< ? >)type).getTypeClass() + " of type: " +
-						type.getName() + " replaced: " + ((IPropertyType< ? >)previous).getName());
-				}
-			}
-		}
+		addTypeFactory(CustomJSONArrayType.TYPE_NAME, new CustomJSONArrayTypeFactory());
+//		addTypeFactory(CustomJSONObjectType.TYPE_NAME, new CustomJSONObjectTypeFactory());
 	}
 
 
-	public static IPropertyType< ? > getType(String name)
+	public static IPropertyType< ? > getType(String name, boolean failIfNull)
 	{
 		IPropertyType< ? > type = types.get(name);
-		if (type == null) throw new RuntimeException("Type '" + name + "' not found in " + printTypes());
+		if (type == null && failIfNull) throw new RuntimeException("Type '" + name + "' not found in " + printTypes());
 		return type;
+	}
+
+	public static IPropertyType< ? > getType(String name)
+	{
+		return getType(name, true);
+	}
+
+	public static <ParamT> IPropertyType< ? > createNewType(String name, ParamT params)
+	{
+		IPropertyTypeFactory<ParamT, ? > typeFactory = (IPropertyTypeFactory<ParamT, ? >)typeFactories.get(name);
+		if (typeFactory == null) throw new RuntimeException("Type factory for type '" + name + "' not found in " + printTypeFactories());
+		return typeFactory.createType(params);
 	}
 
 	public static IClassPropertyType< ? > getType(Class< ? > clz)
@@ -106,6 +113,17 @@ public class TypesRegistry
 		return sb.toString();
 	}
 
+	public static String printTypeFactories()
+	{
+		StringBuilder sb = new StringBuilder();
+		for (String typeName : typeFactories.keySet())
+		{
+			sb.append(typeName);
+			sb.append(",");
+		}
+		return sb.toString();
+	}
+
 	/**
 	 * @param parsedTypes
 	 */
@@ -117,9 +135,6 @@ public class TypesRegistry
 		}
 	}
 
-	/**
-	 * @param wct
-	 */
 	public static void addType(IPropertyType< ? > type)
 	{
 		IPropertyType< ? > previous = types.put(type.getName(), type);
@@ -137,4 +152,14 @@ public class TypesRegistry
 			}
 		}
 	}
+
+	public static void addTypeFactory(String typeName, IPropertyTypeFactory< ? , ? > factory)
+	{
+		IPropertyTypeFactory< ? , ? > previous = typeFactories.put(typeName, factory);
+		if (previous != null)
+		{
+			log.info("there was already a type factory for typename " + typeName + ": " + previous + " replaced by: " + factory);
+		}
+	}
+
 }

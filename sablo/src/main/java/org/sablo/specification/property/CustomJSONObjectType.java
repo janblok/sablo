@@ -16,23 +16,27 @@
 
 package org.sablo.specification.property;
 
+import java.util.Map;
+
+import org.sablo.specification.PropertyDescription;
 
 /**
- * Implementors of this interface are able to provide complex property type behavior (special client-side/server-side handling) for JSON custom property types.
+ * Type for what in spec files you see defined in the types section. (custom javascript object types)
+ * It should be a kind of proxy for all possible conversion types to it's child types.
+ *
  * @author acostescu
  */
-public interface IComplexTypeImpl<CT, T extends IComplexPropertyValue> extends IPropertyType<T>
+public class CustomJSONObjectType extends CustomJSONPropertyType<Map<String, ? >>
 {
 
-	public static final String ARRAY = "[]";
-
-	// TODO document this
-	IJSONToJavaPropertyConverter<CT, T> getJSONToJavaPropertyConverter(boolean isArray);
-
-	// TODO document this
-	IDesignJSONToJavaPropertyConverter<CT, T> getDesignJSONToJavaPropertyConverter(boolean isArray);
-
-	// TODO document this
-	IServerObjToJavaPropertyConverter<CT, T> getServerObjectToJavaPropertyConverter(boolean isArray);
+	/**
+	 * @param typeName
+	 * @param definition
+	 */
+	public CustomJSONObjectType(String typeName, PropertyDescription definition)
+	{
+		super(typeName, definition);
+		// TODO Auto-generated constructor stub
+	}
 
 }

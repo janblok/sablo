@@ -20,15 +20,19 @@ package org.sablo.specification.property.types;
  * @author jcompagner
  *
  */
-public class ComponentDefPropertyType extends DefaultPropertyType<Object> {
+public class ComponentDefPropertyType extends DefaultPropertyType<Object>
+{
 
 	public static final ComponentDefPropertyType INSTANCE = new ComponentDefPropertyType();
-	
-	private ComponentDefPropertyType() {
+	public static final String TYPE_NAME = "componentDef";
+
+	private ComponentDefPropertyType()
+	{
 	}
-	
+
 	@Override
-	public String getName() {
-		return "componentDef";
+	public String getName()
+	{
+		return TYPE_NAME;
 	}
 }

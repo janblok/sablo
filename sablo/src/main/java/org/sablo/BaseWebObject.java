@@ -30,9 +30,9 @@ import org.sablo.specification.WebComponentSpecification;
 import org.sablo.specification.property.DataConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IPropertyType;
+import org.sablo.specification.property.ISmartPropertyValue;
 import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.types.AggregatedPropertyType;
-import org.sablo.websocket.ConversionLocation;
 import org.sablo.websocket.TypedData;
 import org.sablo.websocket.utils.JSONUtils;
 import org.slf4j.Logger;
@@ -178,14 +178,15 @@ public abstract class BaseWebObject
 	 * @param propertyValue
 	 * @return true is was change
 	 */
-	public boolean setProperty(String propertyName, Object propertyValue, ConversionLocation sourceOfValue)
+	public boolean setProperty(String propertyName, Object propertyValue)
 	{
 		Map<String, Object> map = properties;
+		Object wrappedValue = propertyValue;
 		try
 		{
 			// TODO can the propertyName can contain dots? Or should this be
 			// handled by the type??
-			propertyValue = wrapPropertyValue(propertyName, map.get(propertyName), propertyValue);
+			wrappedValue = wrapPropertyValue(propertyName, map.get(propertyName), propertyValue);
 		}
 		catch (Exception e)
 		{
@@ -194,7 +195,7 @@ public abstract class BaseWebObject
 		}
 
 		// TODO can the propertyName can contain dots? Or should this be handled
-		// by the type?? Remove this code below.
+		// by the type?? Remove this code below. (the getProperty doesn't suppor this!)
 		String firstPropertyPart = propertyName;
 		String lastPropertyPart = propertyName;
 		String[] parts = propertyName.split("\\.");
@@ -217,10 +218,12 @@ public abstract class BaseWebObject
 		if (map.containsKey(lastPropertyPart))
 		{
 			// existing property
-			Object oldValue = map.put(lastPropertyPart, propertyValue);
+			Object oldValue = getProperty(propertyName);
+			map.put(lastPropertyPart, wrappedValue);
+
 			onPropertyChange(firstPropertyPart, oldValue, propertyValue);
 
-			if ((oldValue != null && !oldValue.equals(propertyValue)) || (propertyValue != null && !propertyValue.equals(oldValue)))
+			if ((oldValue != null && !oldValue.equals(wrappedValue)) || (wrappedValue != null && !wrappedValue.equals(oldValue)))
 			{
 				changedProperties.add(firstPropertyPart);
 				return true;
@@ -229,8 +232,8 @@ public abstract class BaseWebObject
 		else
 		{
 			// new property
-			map.put(lastPropertyPart, propertyValue);
-			onPropertyChange(firstPropertyPart, null, propertyValue);
+			map.put(lastPropertyPart, wrappedValue);
+			onPropertyChange(firstPropertyPart, null, wrappedValue);
 
 			changedProperties.add(firstPropertyPart);
 			return true;
@@ -265,7 +268,7 @@ public abstract class BaseWebObject
 		// }
 		// }// end TODO REMOVE
 		Object oldValue = properties.get(propertyName);
-		properties.put(propertyName, convertValueAndWrap(propertyName, oldValue, propertyValue, ConversionLocation.BROWSER_UPDATE));
+		properties.put(propertyName, convertValueFromJSON(propertyName, oldValue, propertyValue));
 	}
 
 	/**
@@ -280,6 +283,30 @@ public abstract class BaseWebObject
 	 */
 	protected void onPropertyChange(String propertyName, Object oldValue, Object newValue)
 	{
+		if (newValue instanceof ISmartPropertyValue && newValue != oldValue)
+		{
+			final String complexPropertyRoot = propertyName;
+
+			// NOTE here newValue and oldValue are the wrapped values in case of wrapper types (so what is actually stored in this base web object's map)
+
+			if (oldValue instanceof ISmartPropertyValue)
+			{
+				((ISmartPropertyValue)oldValue).detach();
+			}
+
+			// a new complex property is linked to this component; initialize it
+			((ISmartPropertyValue)newValue).attachToBaseObject(new IChangeListener()
+			{
+				@Override
+				public void valueChanged()
+				{
+					flagPropertyChanged(complexPropertyRoot);
+					// this must have happened on the event thread, in which case, after each event is fired, a check for changes happen
+					// if it didn't happen on the event thread something is really wrong, cause then properties might change while
+					// they are being read at the same time by the event thread
+				}
+			}, this);
+		}
 	}
 
 	/**
@@ -314,21 +341,22 @@ public abstract class BaseWebObject
 	 *
 	 * @param propertyName
 	 *            the property name
-	 * @param oldValue
+	 * @param previousComponentValue
 	 *            the old val
-	 * @param newValue
+	 * @param newJSONValue
 	 *            the new val
 	 * @param sourceOfValue
 	 * @return the converted value
 	 * @throws JSONException
 	 */
-	private Object convertValueAndWrap(String propertyName, Object oldValue, Object newValue, ConversionLocation sourceOfValue) throws JSONException
+	private Object convertValueFromJSON(String propertyName, Object previousComponentValue, Object newJSONValue) throws JSONException
 	{
-		if (newValue == null || newValue == JSONObject.NULL) return null;
+		if (newJSONValue == null || newJSONValue == JSONObject.NULL) return null;
 
 		PropertyDescription propertyDesc = specification.getProperty(propertyName);
-		Object value = propertyDesc != null ? JSONUtils.fromJSON(oldValue, newValue, propertyDesc, new DataConverterContext(propertyDesc, this)) : null;
-		return value != null && value != newValue ? value : convertPropertyValue(propertyName, oldValue, newValue, sourceOfValue);
+		Object value = propertyDesc != null ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDesc, new DataConverterContext(propertyDesc,
+			this)) : null;
+		return value != null && value != newJSONValue ? value : convertPropertyValue(propertyName, previousComponentValue, newJSONValue);
 	}
 
 	/**
@@ -345,7 +373,7 @@ public abstract class BaseWebObject
 	 * @return the converted value
 	 * @throws JSONException
 	 */
-	protected Object convertPropertyValue(String propertyName, Object oldValue, Object newValue, ConversionLocation sourceOfValue) throws JSONException
+	protected Object convertPropertyValue(String propertyName, Object oldValue, Object newValue) throws JSONException
 	{
 		return newValue;
 	}
@@ -355,7 +383,10 @@ public abstract class BaseWebObject
 	 */
 	public void dispose()
 	{
-
+		for (Object p : getRawProperties().values())
+		{
+			if (p instanceof ISmartPropertyValue) ((ISmartPropertyValue)p).detach(); // clear any listeners/held resources
+		}
 	}
 
 }

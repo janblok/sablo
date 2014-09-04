@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
+import org.json.JSONException;
 import org.sablo.BaseWebObject;
 import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
@@ -26,10 +27,12 @@ import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.WebComponentSpecification;
 import org.sablo.specification.WebServiceSpecProvider;
 import org.sablo.specification.property.DataConverterContext;
-import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.websocket.IClientService;
 import org.sablo.websocket.TypedData;
 import org.sablo.websocket.WebsocketEndpoint;
+import org.sablo.websocket.utils.JSONUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * implementation of {@link IClientService}
@@ -38,6 +41,8 @@ import org.sablo.websocket.WebsocketEndpoint;
  */
 public class ClientService extends BaseWebObject implements IClientService
 {
+
+	private static final Logger log = LoggerFactory.getLogger(BaseWebObject.class.getCanonicalName());
 
 	public ClientService(String serviceName, WebComponentSpecification spec)
 	{
@@ -57,14 +62,18 @@ public class ClientService extends BaseWebObject implements IClientService
 			if (spec != null)
 			{
 				WebComponentApiDefinition apiFunction = spec.getApiFunction(functionName);
-				if (apiFunction != null && apiFunction.getReturnType() != null && apiFunction.getReturnType().getType() instanceof IClassPropertyType)
+				if (apiFunction != null && apiFunction.getReturnType() != null)
 				{
-					// TODO wrapper types return now directly the wrapper class in toJava() this should not be returned.
-//					if (apiFunction.getReturnType().getType() instanceof IWrapperType) {
-//						return
-//					}
-					return ((IClassPropertyType)apiFunction.getReturnType().getType()).fromJSON(retValue, null,
-						new DataConverterContext(apiFunction.getReturnType(), this));
+					try
+					{
+						return JSONUtils.fromJSONUnwrapped(null, retValue, apiFunction.getReturnType(), new DataConverterContext(apiFunction.getReturnType(),
+							this));
+					}
+					catch (JSONException e)
+					{
+						log.error("Error interpreting return value (wrong type ?):", e); //$NON-NLS-1$
+						return null;
+					}
 				}
 			}
 		}

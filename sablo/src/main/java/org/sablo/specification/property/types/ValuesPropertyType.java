@@ -23,56 +23,69 @@ import org.sablo.specification.ValuesConfig;
  * @author jcompagner
  *
  */
-public class ValuesPropertyType extends DefaultPropertyType<Object[]> {
+public class ValuesPropertyType extends DefaultPropertyType<Object[]>
+{
 
 	public static final ValuesPropertyType INSTANCE = new ValuesPropertyType();
-	
-	private ValuesPropertyType() {
-	}
-	
-	@Override
-	public String getName() {
-		return "values";
+	public static final String TYPE_NAME = "values";
+
+	private ValuesPropertyType()
+	{
 	}
 
 	@Override
-	public Object parseConfig(JSONObject json) {
+	public String getName()
+	{
+		return TYPE_NAME;
+	}
+
+	@Override
+	public Object parseConfig(JSONObject json)
+	{
 		ValuesConfig config = new ValuesConfig();
-		if (json != null) {
-			if (json.has("default")) {
+		if (json != null)
+		{
+			if (json.has("default"))
+			{
 				Object realdef = null;
 				Object displaydef = null;
 				Object def = json.opt("default");
-				if (def instanceof JSONObject) {
-					realdef = ((JSONObject) def).opt("real");
-					displaydef = ((JSONObject) def).opt("display");
-				} else {
+				if (def instanceof JSONObject)
+				{
+					realdef = ((JSONObject)def).opt("real");
+					displaydef = ((JSONObject)def).opt("display");
+				}
+				else
+				{
 					// some value, both real and display
 					realdef = def;
 				}
-				config.addDefault(realdef, displaydef == null ? null
-						: displaydef.toString());
+				config.addDefault(realdef, displaydef == null ? null : displaydef.toString());
 			}
 
 			Object values = json.opt("values");
-			if (values instanceof JSONArray) {
-				int len = ((JSONArray) values).length();
+			if (values instanceof JSONArray)
+			{
+				int len = ((JSONArray)values).length();
 				Object[] real = new Object[len];
 				String[] display = new String[len];
-				for (int i = 0; i < len; i++) {
-					Object elem = ((JSONArray) values).opt(i);
+				for (int i = 0; i < len; i++)
+				{
+					Object elem = ((JSONArray)values).opt(i);
 					Object displayval;
-					if (elem instanceof JSONObject) {
+					if (elem instanceof JSONObject)
+					{
 						// real and display
-						real[i] = ((JSONObject) elem).opt("real");
-						displayval = ((JSONObject) elem).opt("display");
-					} else {
+						real[i] = ((JSONObject)elem).opt("real");
+						displayval = ((JSONObject)elem).opt("display");
+					}
+					else
+					{
 						// some value, both real and display
 						real[i] = elem;
 						displayval = elem;
 					}
-					display[i] = displayval == null ? "" : displayval
-							.toString();
+					display[i] = displayval == null ? "" : displayval.toString();
 				}
 				config.setValues(real, display);
 			}

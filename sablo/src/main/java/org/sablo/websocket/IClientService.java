@@ -64,7 +64,7 @@ public interface IClientService
 	 * @param value
 	 * @param sourceOfValue
 	 */
-	public boolean setProperty(String propertyName, Object propertyValue, ConversionLocation sourceOfValue);
+	public boolean setProperty(String propertyName, Object propertyValue);
 
 	/**
 	 * get a model value

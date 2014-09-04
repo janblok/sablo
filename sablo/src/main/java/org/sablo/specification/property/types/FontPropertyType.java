@@ -23,6 +23,7 @@ import org.json.JSONWriter;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.websocket.utils.DataConversion;
+import org.sablo.websocket.utils.JSONUtils;
 
 /**
  * @author jcompagner
@@ -32,15 +33,16 @@ public class FontPropertyType extends DefaultPropertyType<Font> implements IClas
 {
 
 	public static final FontPropertyType INSTANCE = new FontPropertyType();
+	public static final String TYPE_NAME = "font";
 
-	private FontPropertyType()
+	protected FontPropertyType()
 	{
 	}
 
 	@Override
 	public String getName()
 	{
-		return "font";
+		return TYPE_NAME;
 	}
 
 	@Override
@@ -75,8 +77,9 @@ public class FontPropertyType extends DefaultPropertyType<Font> implements IClas
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter w, Font font, DataConversion clientConversion) throws JSONException
+	public JSONWriter toJSON(JSONWriter w, String key, Font font, DataConversion clientConversion) throws JSONException
 	{
+		JSONUtils.addKeyIfPresent(w, key);
 		w.object();
 		if (font.isBold())
 		{

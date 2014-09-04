@@ -20,16 +20,20 @@ package org.sablo.specification.property.types;
  * @author jcompagner
  *
  */
-public class StyleClassPropertyType extends DefaultPropertyType<String> {
+public class StyleClassPropertyType extends DefaultPropertyType<String>
+{
 
 	public static final StyleClassPropertyType INSTANCE = new StyleClassPropertyType();
-	
-	private StyleClassPropertyType() {
+	public static final String TYPE_NAME = "styleclass";
+
+	private StyleClassPropertyType()
+	{
 	}
-	
+
 	@Override
-	public String getName() {
-		return "styleclass";
+	public String getName()
+	{
+		return TYPE_NAME;
 	}
 
 }

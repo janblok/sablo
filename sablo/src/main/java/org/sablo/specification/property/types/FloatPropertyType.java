@@ -20,21 +20,26 @@ package org.sablo.specification.property.types;
  * @author jcompagner
  *
  */
-public class FloatPropertyType extends DefaultPropertyType<Float> {
-	
+public class FloatPropertyType extends DefaultPropertyType<Float>
+{
+
 	public static final FloatPropertyType INSTANCE = new FloatPropertyType();
-	
-	private FloatPropertyType() {
-	}
-	
-	@Override
-	public String getName() {
-		return "float";
+	public static final String TYPE_NAME = "float";
+
+	private FloatPropertyType()
+	{
 	}
 
 	@Override
-	public Float defaultValue() {
+	public String getName()
+	{
+		return TYPE_NAME;
+	}
+
+	@Override
+	public Float defaultValue()
+	{
 		return Float.valueOf(0);
 	}
-	
+
 }

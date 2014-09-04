@@ -13,33 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.sablo.specification.property.types;
 
-import org.json.JSONObject;
+import org.sablo.specification.property.IPropertyType;
 
 /**
- * @author jcompagner
+ * One can register type factories instead of direct types to a name.</BR>
+ * This is useful for parameterized types. For example a CustomJSONObject or CustomJSONArray type depends on how it is defined in the spec file.
  *
+ * @author acostescu
  */
-public class ScrollbarsPropertyType extends DefaultPropertyType<Integer>
+public interface IPropertyTypeFactory<ParamT, T>
 {
 
-	public static final ScrollbarsPropertyType INSTANCE = new ScrollbarsPropertyType();
-	public static final String TYPE_NAME = "scrollbars";
+	IPropertyType<T> createType(ParamT params);
 
-	private ScrollbarsPropertyType()
-	{
-	}
-
-	@Override
-	public String getName()
-	{
-		return TYPE_NAME;
-	}
-
-	@Override
-	public Object parseConfig(JSONObject json)
-	{
-		return json;
-	}
 }

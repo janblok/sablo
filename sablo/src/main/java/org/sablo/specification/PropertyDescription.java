@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.sablo.specification.property.CustomPropertyType;
+import org.sablo.specification.property.CustomJSONPropertyType;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
 
@@ -38,7 +38,7 @@ public class PropertyDescription
 	private final String name;
 	private final IPropertyType< ? > type;
 	private final Object config;
-	private final boolean array;
+//	private final boolean array;
 	private boolean optional = false; // currently only used in the context of an api function parameter
 	private final Object defaultValue;
 	private final List<Object> values;
@@ -50,24 +50,23 @@ public class PropertyDescription
 
 	public PropertyDescription(String name, IPropertyType< ? > type)
 	{
-		this(name, type, false, null, null);
+		this(name, type, null, null);
 	}
 
 	public PropertyDescription(String name, IPropertyType< ? > type, Object config)
 	{
-		this(name, type, false, config, null);
+		this(name, type, config, null);
 	}
 
-	public PropertyDescription(String name, IPropertyType< ? > type, boolean array, Object config, Object defaultValue)
+	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Object defaultValue)
 	{
-		this(name, type, null, array, config, defaultValue, null);
+		this(name, type, null, config, defaultValue, null);
 	}
 
-	public PropertyDescription(String name, IPropertyType< ? > type, String scope, boolean array, Object config, Object defaultValue, List<Object> values)
+	public PropertyDescription(String name, IPropertyType< ? > type, String scope, Object config, Object defaultValue, List<Object> values)
 	{
 		this.name = name;
 		this.type = type;
-		this.array = array;
 		this.config = config;
 		this.defaultValue = defaultValue;
 		this.values = values;
@@ -136,11 +135,11 @@ public class PropertyDescription
 		return values == null ? null : new ArrayList<Object>(values);
 	}
 
-	public boolean isArray()
-	{
-		return array;
-	}
-
+//	public boolean isArray()
+//	{
+//		return array;
+//	}
+//
 	@Override
 	public int hashCode()
 	{
@@ -170,7 +169,6 @@ public class PropertyDescription
 		}
 		else if (!name.equals(other.name)) return false;
 		if (type != other.type) return false;
-		if (array != other.array) return false;
 
 		if (defaultValue == null)
 		{
@@ -192,11 +190,12 @@ public class PropertyDescription
 	}
 
 
-	public void putProperty(String name, PropertyDescription type)
+	public PropertyDescription putProperty(String name, PropertyDescription type)
 	{
 		if (properties == null) properties = new HashMap<>();
 		if (type == null) properties.remove(name);
 		properties.put(name, type);
+		return this;
 	}
 
 	public PropertyDescription getProperty(String name)
@@ -214,9 +213,9 @@ public class PropertyDescription
 		{
 			return properties.get(name);
 		}
-		else if (type instanceof CustomPropertyType)
+		else if (type instanceof CustomJSONPropertyType)
 		{
-			return ((CustomPropertyType< ? >)type).getCustomJSONTypeDefinition().getProperty(name);
+			return ((CustomJSONPropertyType< ? >)type).getCustomJSONTypeDefinition().getProperty(name);
 		}
 		return null;
 	}
@@ -241,8 +240,8 @@ public class PropertyDescription
 
 	public String toString(boolean showFullType)
 	{
-		return "PropertyDescription[name: " + name + ", type: " + (showFullType ? type : "'" + type.getName() + "' type") + ", array: " + array + ", config: " +
-			config + ", default value: " + defaultValue + "]";
+		return "PropertyDescription[name: " + name + ", type: " + (showFullType ? type : "'" + type.getName() + "' type") + ", config: " + config +
+			", default value: " + defaultValue + "]";
 	}
 
 	public String toStringWholeTree()
@@ -275,19 +274,6 @@ public class PropertyDescription
 	{
 		for (int i = 0; i < level * 2; i++)
 			b.append(' ');
-	}
-
-	/**
-	 * In case this property is an array (see {@link #isArray()}) it will return the same property description type for an element of that array.
-	 */
-	public PropertyDescription asArrayElement()
-	{
-		if (!isArray()) return this;
-
-		PropertyDescription clone = new PropertyDescription(name, type, scope, false, config, defaultValue, values);
-		clone.setOptional(optional);
-		clone.properties = properties;
-		return clone;
 	}
 
 }

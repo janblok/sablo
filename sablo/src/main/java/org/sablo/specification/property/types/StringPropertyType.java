@@ -20,16 +20,20 @@ package org.sablo.specification.property.types;
  * @author jcompagner
  *
  */
-public class StringPropertyType extends DefaultPropertyType<String> {
+public class StringPropertyType extends DefaultPropertyType<String>
+{
 
 	public static final StringPropertyType INSTANCE = new StringPropertyType();
-	
-	private StringPropertyType() {
+	public static final String TYPE_NAME = "string";
+
+	private StringPropertyType()
+	{
 	}
-	
+
 	@Override
-	public String getName() {
-		return "string";
+	public String getName()
+	{
+		return TYPE_NAME;
 	}
 
 }

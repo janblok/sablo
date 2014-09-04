@@ -36,9 +36,12 @@ import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
-import org.sablo.websocket.ConversionLocation;
+import org.sablo.specification.property.ChangeAwareList;
+import org.sablo.specification.property.types.AggregatedPropertyType;
+import org.sablo.websocket.TypedData;
 import org.sablo.websocket.utils.JSONUtils;
 
 /**
@@ -55,8 +58,6 @@ public class WebComponentTest
 	@Before
 	public void setUp() throws Exception
 	{
-
-
 		InputStream is = getClass().getResourceAsStream("WebComponentTest-manifest.spec");
 		byte[] bytes = new byte[is.available()];
 		is.read(bytes);
@@ -81,7 +82,7 @@ public class WebComponentTest
 		// TODO should this be null or the default value???
 		assertNull(component.getProperty("doesnotexisits"));
 
-		component.setProperty("doesnotexisits", "test", null);
+		component.setProperty("doesnotexisits", "test");
 
 		assertEquals("test", component.getProperty("doesnotexisits"));
 	}
@@ -94,10 +95,10 @@ public class WebComponentTest
 		assertNull(component.getProperty("size"));
 
 		// put in something illegal
-		component.setProperty("size", Color.black, null);
+		component.setProperty("size", Color.black);
 		assertNull(component.getProperty("size"));
 
-		assertTrue(component.setProperty("size", new Dimension(10, 10), null));
+		assertTrue(component.setProperty("size", new Dimension(10, 10)));
 
 		Map<String, Object> properties = component.getRawProperties();
 		assertNotNull(properties.get("size"));
@@ -108,7 +109,7 @@ public class WebComponentTest
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 
-		String msg = JSONUtils.writeDataWithConversions(data, null, ConversionLocation.BROWSER_UPDATE);
+		String msg = JSONUtils.writeDataWithConversions(data, null);
 		assertEquals("{\"msg\":{\"name\":\"test\",\"size\":{\"width\":10,\"height\":10}}}", msg);
 
 		component.putBrowserProperty("size", new JSONObject("{\"width\":20,\"height\":20}"));
@@ -126,10 +127,10 @@ public class WebComponentTest
 		assertNull(component.getProperty("background"));
 
 		// put in something illegal
-		component.setProperty("background", new Dimension(), null);
+		component.setProperty("background", new Dimension());
 		assertNull(component.getProperty("background"));
 
-		assertTrue(component.setProperty("background", Color.black, null));
+		assertTrue(component.setProperty("background", Color.black));
 
 		Map<String, Object> properties = component.getRawProperties();
 		assertNotNull(properties.get("background"));
@@ -140,7 +141,7 @@ public class WebComponentTest
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 
-		String msg = JSONUtils.writeDataWithConversions(data, null, ConversionLocation.BROWSER_UPDATE);
+		String msg = JSONUtils.writeDataWithConversions(data, null);
 		assertEquals("{\"msg\":{\"background\":\"#000000\",\"name\":\"test\"}}", msg);
 
 		component.putBrowserProperty("background", "#ff0000");
@@ -158,10 +159,10 @@ public class WebComponentTest
 		assertNull(component.getProperty("font"));
 
 		// put in something illegal
-		component.setProperty("font", new Dimension(), null);
+		component.setProperty("font", new Dimension());
 		assertNull(component.getProperty("font"));
 
-		assertTrue(component.setProperty("font", new Font("SansSerif", Font.BOLD, 12), null));
+		assertTrue(component.setProperty("font", new Font("SansSerif", Font.BOLD, 12)));
 
 		Map<String, Object> properties = component.getRawProperties();
 		assertNotNull(properties.get("font"));
@@ -172,7 +173,7 @@ public class WebComponentTest
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 
-		String msg = JSONUtils.writeDataWithConversions(data, null, ConversionLocation.BROWSER_UPDATE);
+		String msg = JSONUtils.writeDataWithConversions(data, null);
 		assertEquals("{\"msg\":{\"font\":{\"fontWeight\":\"bold\",\"fontSize\":\"12px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"},\"name\":\"test\"}}", msg);
 
 		component.putBrowserProperty("font", new JSONObject("{\"italic\":\"italic\",\"fontSize\":\"10px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"}"));
@@ -194,10 +195,10 @@ public class WebComponentTest
 		assertNull(component.getProperty("location"));
 
 		// put in something illegal
-		component.setProperty("location", Color.black, null);
+		component.setProperty("location", Color.black);
 		assertNull(component.getProperty("location"));
 
-		assertTrue(component.setProperty("location", new Point(10, 10), null));
+		assertTrue(component.setProperty("location", new Point(10, 10)));
 
 		Map<String, Object> properties = component.getRawProperties();
 		assertNotNull(properties.get("location"));
@@ -208,7 +209,7 @@ public class WebComponentTest
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 
-		String msg = JSONUtils.writeDataWithConversions(data, null, ConversionLocation.BROWSER_UPDATE);
+		String msg = JSONUtils.writeDataWithConversions(data, null);
 		assertEquals("{\"msg\":{\"location\":{\"x\":10,\"y\":10},\"name\":\"test\"}}", msg);
 
 		component.putBrowserProperty("location", new JSONObject("{\"x\":20,\"y\":20}"));
@@ -232,7 +233,7 @@ public class WebComponentTest
 		customType.put("foreground", Color.black);
 
 
-		assertTrue(component.setProperty("atype", customType, null));
+		assertTrue(component.setProperty("atype", customType));
 
 		Map<String, Object> properties = component.getRawProperties();
 		assertNotNull(properties.get("atype"));
@@ -243,7 +244,7 @@ public class WebComponentTest
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 
-		String msg = JSONUtils.writeDataWithConversions(data, null, ConversionLocation.BROWSER_UPDATE);
+		String msg = JSONUtils.writeDataWithConversions(data, null);
 		assertEquals("{\"msg\":{\"atype\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"},\"name\":\"test\"}}", msg);
 
 		component.putBrowserProperty("atype", new JSONObject("{\"name\":\"myname\",\"active\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}"));
@@ -291,19 +292,28 @@ public class WebComponentTest
 		customType2.put("active", Boolean.FALSE);
 		customType2.put("foreground", Color.white);
 
+		// arrays are wrapped in a smart array that can wrap and convert/handle changes automatically
 		Object[] array = new Object[] { customType1, customType2 };
-		assertTrue(component.setProperty("types", array, null));
+		assertTrue(component.setProperty("types", array));
 
-		Object[] array2 = (Object[])component.getProperty("types");
+		ChangeAwareList<Object, Object> array2 = (ChangeAwareList)component.getProperty("types"); // ChangeAwareList
 
-		assertSame(array, array2);
+		boolean same = true;
+		int i = 0;
+		for (Object o : array)
+			same = same | (o != array2.get(i++));
+		assertTrue(same);
 
 		HashMap<String, Object> data = new HashMap<>();
-		data.put("msg", component.getProperties());
+		TypedData<Map<String, Object>> properties = component.getProperties();
+		data.put("msg", properties.content);
 
-		String msg = JSONUtils.writeDataWithConversions(data, null, ConversionLocation.BROWSER_UPDATE);
+		PropertyDescription messageTypes = AggregatedPropertyType.newAggregatedProperty();
+		messageTypes.putProperty("msg", properties.contentType);
+
+		String msg = JSONUtils.writeDataWithConversions(data, messageTypes);
 		assertEquals(
-			"{\"msg\":{\"name\":\"test\",\"types\":[{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"},{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}]}}",
+			"{\"msg\":{\"name\":\"test\",\"types\":{\"ver\":2,\"v\":[{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"},{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}]}},\"conversions\":{\"msg\":{\"types\":\"JSON_arr\"}}}",
 			msg);
 
 		component.putBrowserProperty(
@@ -311,16 +321,15 @@ public class WebComponentTest
 			new JSONArray(
 				"[{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"},{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"},{\"name\":\"myname3\",\"active\":true,\"foreground\":null}]"));
 
-		Object[] array3 = (Object[])component.getProperty("types");
+		ChangeAwareList<Object, Object> array3 = (ChangeAwareList)component.getProperty("types");
 
-		assertEquals(3, array3.length);
+		assertEquals(3, array3.size());
 
-		assertEquals("myname", ((Map< ? , ? >)array3[0]).get("name"));
-		assertEquals("myname2", ((Map< ? , ? >)array3[1]).get("name"));
-		assertEquals("myname3", ((Map< ? , ? >)array3[2]).get("name"));
-		assertEquals(Color.red, ((Map< ? , ? >)array3[1]).get("foreground"));
-		assertNull(((Map< ? , ? >)array3[2]).get("foreground"));
+		assertEquals("myname", ((Map< ? , ? >)array3.get(0)).get("name"));
+		assertEquals("myname2", ((Map< ? , ? >)array3.get(1)).get("name"));
+		assertEquals("myname3", ((Map< ? , ? >)array3.get(2)).get("name"));
+		assertEquals(Color.red, ((Map< ? , ? >)array3.get(1)).get("foreground"));
+		assertNull(((Map< ? , ? >)array3.get(2)).get("foreground"));
 
 	}
-
 }

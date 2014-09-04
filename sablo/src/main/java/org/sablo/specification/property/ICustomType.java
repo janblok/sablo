@@ -21,7 +21,8 @@ import org.sablo.specification.PropertyDescription;
 /**
  * @author jcompagner
  */
-public interface ICustomType<T> extends IPropertyType<T> {
+public interface ICustomType<T> extends IPropertyType<T>
+{
 
 	/**
 	 * Can be null; if it's not null then this type was defined as a custom type in JSON. It could also have special handling attached to it,
@@ -29,4 +30,5 @@ public interface ICustomType<T> extends IPropertyType<T> {
 	 * @return the corresponding (JSON based) representation of this type's definition.
 	 */
 	PropertyDescription getCustomJSONTypeDefinition();
+
 }

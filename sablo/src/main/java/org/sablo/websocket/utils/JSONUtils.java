@@ -16,8 +16,6 @@
 
 package org.sablo.websocket.utils;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -34,13 +32,12 @@ import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.DataConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
-import org.sablo.specification.property.IComplexPropertyValue;
-import org.sablo.specification.property.IComplexTypeImpl;
 import org.sablo.specification.property.IConvertedPropertyType;
 import org.sablo.specification.property.ICustomType;
+import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.specification.property.IPropertyType;
+import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.types.TypesRegistry;
-import org.sablo.websocket.ConversionLocation;
 import org.sablo.websocket.TypedData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +55,7 @@ public class JSONUtils
 	private static final Logger log = LoggerFactory.getLogger(JSONUtils.class.getCanonicalName());
 
 	@SuppressWarnings("unchecked")
-	private static void writeConversions(JSONWriter object, Map<String, Object> map) throws JSONException
+	public static void writeConversions(JSONWriter object, Map<String, Object> map) throws JSONException
 	{
 		for (Entry<String, Object> entry : map.entrySet())
 		{
@@ -74,16 +71,19 @@ public class JSONUtils
 		}
 	}
 
-	public static JSONWriter writeDataWithConversions(JSONWriter writer, Map<String, ? > data, PropertyDescription dataTypes,
-		ConversionLocation conversionLocation) throws JSONException
+	public static JSONWriter writeDataWithConversions(JSONWriter writer, Map<String, ? > data, PropertyDescription dataTypes) throws JSONException
+	{
+		return writeDataWithConversions(ToJSONConverter.INSTANCE, writer, data, dataTypes);
+	}
+
+	public static JSONWriter writeDataWithConversions(IToJSONConverter converter, JSONWriter writer, Map<String, ? > data, PropertyDescription dataTypes)
+		throws JSONException
 	{
 		DataConversion dataConversion = new DataConversion();
 		for (Entry<String, ? > entry : data.entrySet())
 		{
 			dataConversion.pushNode(entry.getKey());
-			writer.key(entry.getKey());
-			JSONUtils.toJSONValue(writer, entry.getValue(), dataTypes != null ? dataTypes.getProperty(entry.getKey()) : null, dataConversion,
-				conversionLocation);
+			converter.toJSONValue(writer, entry.getKey(), entry.getValue(), dataTypes != null ? dataTypes.getProperty(entry.getKey()) : null, dataConversion);
 			dataConversion.popNode();
 		}
 
@@ -97,95 +97,95 @@ public class JSONUtils
 		return writer;
 	}
 
-	public static String writeDataWithConversions(Map<String, ? > data, PropertyDescription dataTypes, ConversionLocation conversionLocation)
-		throws JSONException
+	public static String writeDataWithConversions(Map<String, ? > data, PropertyDescription dataTypes) throws JSONException
+	{
+		return writeDataWithConversions(ToJSONConverter.INSTANCE, data, dataTypes);
+	}
+
+	public static String writeDataWithConversions(IToJSONConverter converter, Map<String, ? > data, PropertyDescription dataTypes) throws JSONException
 	{
 		JSONWriter writer = new JSONStringer().object();
-		writeDataWithConversions(writer, data, dataTypes, conversionLocation);
+		writeDataWithConversions(converter, writer, data, dataTypes);
 		return writer.endObject().toString();
 	}
 
+//
+//	/**
+//	 * Writes the given object as design-time JSON into the JSONWriter.
+//	 * @param writer the JSONWriter.
+//	 * @param value the value to be written to the writer.
+//	 * @return the writer object to continue writing JSON.
+//	 * @throws JSONException
+//	 * @throws IllegalArgumentException if the given object could not be written to JSON for some reason.
+//	 */
+//	public static JSONWriter toDesignJSONValue(JSONWriter writer, Object value, PropertyDescription valueType) throws JSONException, IllegalArgumentException
+//	{
+//		return toJSONValue(writer, value, valueType, null, ConversionLocation.DESIGN);
+//	}
+
 	/**
-	 * Writes the given object as design-time JSON into the JSONWriter.
-	 * @param writer the JSONWriter.
-	 * @param value the value to be written to the writer.
-	 * @return the writer object to continue writing JSON.
-	 * @throws JSONException
-	 * @throws IllegalArgumentException if the given object could not be written to JSON for some reason.
+	 * Shortcut for using {@link ToJSONConverter} directly.
+	 *
+	 * @param key if this value will be part of a JSON object, key is non-null and you MUST do writer.key(...) before adding the converted value. This
+	 * is useful for cases when you don't want the value written at all in resulting JSON in which case you don't write neither key or value. If
+	 * key is null and you want to write the converted value write only the converted value to the writer, ignore the key.
 	 */
-	public static JSONWriter toDesignJSONValue(JSONWriter writer, Object value, PropertyDescription valueType) throws JSONException, IllegalArgumentException
+	public static JSONWriter toBrowserJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion clientConversion)
+		throws JSONException, IllegalArgumentException
 	{
-		return toJSONValue(writer, value, valueType, null, ConversionLocation.DESIGN);
+		return JSONUtils.ToJSONConverter.INSTANCE.toJSONValue(writer, key, value, valueType, clientConversion);
+	}
+
+	public static JSONWriter addKeyIfPresent(JSONWriter writer, String key) throws JSONException
+	{
+		if (key != null) writer.key(key);
+		return writer;
 	}
 
 	/**
 	 * Writes the given object into the JSONWriter. (it is meant to be used for transforming the basic types that can be sent by beans/components)
+	 *
+	 * @param toJSONConverter
 	 * @param writer the JSONWriter.
+	 * @param key if this value will be part of a JSON object, key is non-null and you MUST do writer.key(...) before adding the converted value. This
+	 * is useful for cases when you don't want the value written at all in resulting JSON in which case you don't write neither key or value. If
+	 * key is null and you want to write the converted value write only the converted value to the writer, ignore the key.
 	 * @param value the value to be written to the writer.
 	 * @param valueType the types of the value; can be null in which case a 'best-effort' to JSON conversion will take place.
 	 * @param clientConversion the object where the type (like Date) of the conversion that should happen on the client.
-	 * @return the writer object to continue writing JSON.
-	 * @throws JSONException
+	 * @return true if the given value could be written using default logic and false otherwise.
 	 * @throws IllegalArgumentException if the given object could not be written to JSON for some reason.
 	 */
-	public static JSONWriter toJSONValue(JSONWriter writer, Object value, PropertyDescription valueType, DataConversion clientConversion,
-		ConversionLocation toDestinationType) throws JSONException, IllegalArgumentException
+	public static boolean defaultToJSONValue(IToJSONConverter toJSONConverter, JSONWriter w, String key, Object value, PropertyDescription valueType,
+		DataConversion clientConversion) throws JSONException, IllegalArgumentException
 	{
-		if (value != null && valueType != null)
-		{
-			IPropertyType< ? > type = valueType.getType();
-			if (type instanceof IConvertedPropertyType)
-			{
-				// good, we now know that it needs special conversion
-				try
-				{
-					return ((IConvertedPropertyType)type).toJSON(writer, value, clientConversion);
-				}
-				catch (Exception ex)
-				{
-					writer.value(null);
-					log.error("Error while converting value: " + value + " to type: " + type, new RuntimeException());
-					return writer;
-				}
-			}
-		}
-
-		if (value instanceof IComplexPropertyValue)
-		{
-			if (toDestinationType == ConversionLocation.BROWSER_UPDATE) return ((IComplexPropertyValue)value).changesToJSON(writer, clientConversion);
-			else if (toDestinationType == ConversionLocation.BROWSER) return ((IComplexPropertyValue)value).toJSON(writer, clientConversion);
-			else if (toDestinationType == ConversionLocation.DESIGN) return ((IComplexPropertyValue)value).toDesignJSON(writer); // less frequent or never
-			else
-			{
-				writer.value(null);
-				log.error("Trying to convert a java object to JSON value of unknown/unsupported destination type.", new RuntimeException());
-			}
-		}
-
 		// there is no clear conversion; see if we find a primitive/default or Class based conversion
-		JSONWriter w = writer;
 		Object converted = value;
 
 		if (converted == null || converted == JSONObject.NULL)
 		{
+			addKeyIfPresent(w, key);
 			w = w.value(null); // null is allowed
 		}
 		else if (converted instanceof JSONArray) // TODO are we using JSON object or Map and Lists? ( as internal representation of properties)
 		{
+			addKeyIfPresent(w, key);
 			w = w.value(converted);
 		}
 		else if (converted instanceof JSONObject)
 		{
+			addKeyIfPresent(w, key);
 			w = w.value(converted);
 		}
 		else if (converted instanceof List)
 		{
 			List< ? > lst = (List< ? >)converted;
+			addKeyIfPresent(w, key);
 			w.array();
 			for (int i = 0; i < lst.size(); i++)
 			{
 				if (clientConversion != null) clientConversion.pushNode(String.valueOf(i));
-				toJSONValue(w, lst.get(i), getArrayElementType(valueType, i), clientConversion, toDestinationType);
+				toJSONConverter.toJSONValue(w, null, lst.get(i), getArrayElementType(valueType, i), clientConversion);
 				if (clientConversion != null) clientConversion.popNode();
 			}
 			w.endArray();
@@ -193,17 +193,19 @@ public class JSONUtils
 		else if (converted instanceof Object[])
 		{
 			Object[] array = (Object[])converted;
+			addKeyIfPresent(w, key);
 			w.array();
 			for (int i = 0; i < array.length; i++)
 			{
 				if (clientConversion != null) clientConversion.pushNode(String.valueOf(i));
-				toJSONValue(w, array[i], getArrayElementType(valueType, i), clientConversion, toDestinationType);
+				toJSONConverter.toJSONValue(w, null, array[i], getArrayElementType(valueType, i), clientConversion);
 				if (clientConversion != null) clientConversion.popNode();
 			}
 			w.endArray();
 		}
 		else if (converted instanceof Map)
 		{
+			addKeyIfPresent(w, key);
 			w = w.object();
 			Map<String, ? > map = (Map<String, ? >)converted;
 			for (Entry<String, ? > entry : map.entrySet())
@@ -220,14 +222,14 @@ public class JSONUtils
 					// it creates 2 json entries with the same key ('complexmodel') and on the client side it only takes one of them
 					w.key(keys[0]);
 					w.object();
-					w.key(keys[1]);
-					toJSONValue(w, entry.getValue(), valueType != null ? valueType.getProperty(entry.getKey()) : null, clientConversion, toDestinationType);
+					toJSONConverter.toJSONValue(w, keys[1], entry.getValue(), valueType != null ? valueType.getProperty(entry.getKey()) : null,
+						clientConversion);
 					w.endObject();
 				}// END TODO REMOVE
 				else
 				{
-					w.key(entry.getKey());
-					toJSONValue(w, entry.getValue(), valueType != null ? valueType.getProperty(entry.getKey()) : null, clientConversion, toDestinationType);
+					toJSONConverter.toJSONValue(w, entry.getKey(), entry.getValue(), valueType != null ? valueType.getProperty(entry.getKey()) : null,
+						clientConversion);
 				}
 				if (clientConversion != null) clientConversion.popNode();
 			}
@@ -236,144 +238,99 @@ public class JSONUtils
 		else if (converted instanceof JSONWritable)
 		{
 			TypedData<Map<String, Object>> dm = ((JSONWritable)converted).toMap();
-			toJSONValue(w, dm.content, dm.contentType, clientConversion, toDestinationType);
+			toJSONConverter.toJSONValue(w, key, dm.content, dm.contentType, clientConversion);
 		}
 		// best-effort to still find a way to write data and convert if needed follows
+		else if (converted instanceof Integer || converted instanceof Long)
+		{
+			addKeyIfPresent(w, key);
+			w = w.value(((Number)converted).longValue());
+		}
+		else if (converted instanceof Boolean)
+		{
+			addKeyIfPresent(w, key);
+			w = w.value(((Boolean)converted).booleanValue());
+		}
+		else if (converted instanceof Number)
+		{
+			addKeyIfPresent(w, key);
+			w = w.value(((Number)converted).doubleValue());
+		}
+		else if (converted instanceof String)
+		{
+			addKeyIfPresent(w, key);
+			w = w.value(converted);
+		}
+		else if (converted instanceof CharSequence)
+		{
+			addKeyIfPresent(w, key);
+			w = w.value(converted.toString());
+		}
+		else if (converted instanceof Date)
+		{
+			addKeyIfPresent(w, key);
+			if (clientConversion != null) clientConversion.convert("Date");
+			w = w.value(((Date)converted).getTime());
+		}
 		else
 		{
-			IClassPropertyType<Object> classType = (IClassPropertyType<Object>)(converted == null ? null : TypesRegistry.getType(converted.getClass()));
-			if (classType != null)
-			{
-				classType.toJSON(writer, converted, clientConversion);
-			}
-			else if (converted instanceof Integer || converted instanceof Long)
-			{
-				w = w.value(((Number)converted).longValue());
-			}
-			else if (converted instanceof Boolean)
-			{
-				w = w.value(((Boolean)converted).booleanValue());
-			}
-			else if (converted instanceof Number)
-			{
-				w = w.value(((Number)converted).doubleValue());
-			}
-			else if (converted instanceof String)
-			{
-				w = w.value(converted);
-			}
-			else if (converted instanceof CharSequence)
-			{
-				w = w.value(converted.toString());
-			}
-			else if (converted instanceof Date)
-			{
-				if (clientConversion != null) clientConversion.convert("Date");
-				w = w.value(((Date)converted).getTime());
-			}
-			else
-			{
-				w = w.value(new JSONObject("{}"));
-				log.error("unsupported value type:" + valueType + " for value: " + converted, new IllegalArgumentException(
-					"unsupported value type for value: " + converted));
-			}
+			return false;
 		}
 
-		return w;
+		return true;
 	}
 
-	public static Object fromJSON(Object oldValue, Object newValue, PropertyDescription propDesc, DataConverterContext dataConversionContext)
-		throws JSONException
+	public static Object fromJSONUnwrapped(Object previousComponentValue, Object newJSONValue, PropertyDescription propDesc,
+		DataConverterContext dataConversionContext) throws JSONException
 	{
-		if (propDesc.isArray())
+		Object value = fromJSON(previousComponentValue, newJSONValue, propDesc, dataConversionContext);
+		if (propDesc != null && propDesc.getType() instanceof IWrapperType< ? , ? >)
 		{
-			if (propDesc.getType() instanceof IComplexTypeImpl && ((IComplexTypeImpl)propDesc.getType()).getJSONToJavaPropertyConverter(true) != null)
-			{
-				IComplexTypeImpl complexType = (IComplexTypeImpl)propDesc.getType();
-				return complexType.getJSONToJavaPropertyConverter(true).jsonToJava(newValue, (IComplexPropertyValue)oldValue, propDesc.getConfig());
-			}
-
-			if (newValue instanceof JSONArray)
-			{
-				JSONArray array = (JSONArray)newValue;
-				boolean oldIsArray = (oldValue != null ? oldValue.getClass().isArray() : true); // by default we want to convert it to simple array
-				boolean oldIsList = (oldIsArray ? false : oldValue instanceof List);
-
-				if (oldIsList)
-				{
-					List<Object> list = new ArrayList<>();
-					List< ? > oldList = (List)oldValue;
-					for (int i = 0; i < array.length(); i++)
-					{
-						list.add(fromJSON((oldList.size() > i) ? oldList.get(i) : null, array.opt(i), propDesc.asArrayElement(), dataConversionContext));
-					}
-					return list;
-				}
-				else
-				{
-					Object oldArray = oldIsArray ? oldValue : null;
-					Object[] objectArray = new Object[array.length()];
-					for (int i = 0; i < array.length(); i++)
-					{
-						Object obj = array.opt(i);
-						objectArray[i] = obj == null ? null : fromJSON(oldArray != null && Array.getLength(oldArray) > i ? Array.get(oldArray, i) : null, obj,
-							propDesc.asArrayElement(), dataConversionContext);
-					}
-					return objectArray;
-				}
-			}
-			else
-			{
-				throw new RuntimeException("property " + propDesc + " is types as array, but the value is not an JSONArray: " + newValue);
-			}
-
+			// will probably never happen as all this fromJSON thing was only meant for Dates (at least currently)
+			IWrapperType wType = ((IWrapperType< ? , ? >)propDesc.getType());
+			value = wType.unwrap(wType.fromJSON(value, null, null));
 		}
-		else
-		{
-			return convertValueFromJSON(oldValue, newValue, propDesc, dataConversionContext);
-		}
+		return value;
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	protected static Object convertValueFromJSON(Object oldValue, Object newValue, PropertyDescription desc, DataConverterContext dataConversionContext)
-		throws JSONException
+	public static Object fromJSON(Object oldValue, Object newValue, PropertyDescription desc, IDataConverterContext dataConversionContext) throws JSONException
 	{
 		if (newValue == null || newValue == JSONObject.NULL) return null;
-		IPropertyType< ? > type = desc.getType();
-		if (type instanceof IConvertedPropertyType)
+		if (desc != null)
 		{
-			return ((IConvertedPropertyType)type).fromJSON(newValue, oldValue, dataConversionContext);
-		}
-		else if (type instanceof IComplexTypeImpl)
-		{
-			IComplexTypeImpl complexType = (IComplexTypeImpl)type;
-			if (complexType.getJSONToJavaPropertyConverter(desc.isArray()) != null)
+			IPropertyType< ? > type = desc.getType();
+			if (type instanceof IConvertedPropertyType< ? >)
 			{
-				return complexType.getJSONToJavaPropertyConverter(desc.isArray()).jsonToJava(newValue, (IComplexPropertyValue)oldValue, desc.getConfig());
+				return ((IConvertedPropertyType)type).fromJSON(newValue, oldValue, dataConversionContext);
 			}
-		}
-		else if (type instanceof ICustomType)
-		{
-			// custom type, convert json to map with values.
-			if (newValue instanceof JSONObject)
+			else if (type instanceof IWrapperType< ? , ? >)
 			{
-				Map<String, Object> retValue = new HashMap<>();
-				Map<String, Object> oldValues = (Map<String, Object>)(oldValue instanceof Map ? oldValue : Collections.emptyMap());
-				PropertyDescription customTypeDesc = ((ICustomType)type).getCustomJSONTypeDefinition();
-				Iterator<String> keys = ((JSONObject)newValue).keys();
-				while (keys.hasNext())
+				return ((IWrapperType)type).fromJSON(newValue, oldValue, dataConversionContext);
+			}
+			else if (type instanceof ICustomType)
+			{
+				// custom type, convert json to map with values.
+				if (newValue instanceof JSONObject)
 				{
-					String key = keys.next();
-					Object propValue = ((JSONObject)newValue).get(key);
-					Object oldPropValue = oldValues.get(key);
-					PropertyDescription property = customTypeDesc.getProperty(key);
-					if (property == null) continue; // ignore properties that are not spec'ed
-													// for
-													// this type..
-					Object value = fromJSON(oldPropValue, propValue, property, dataConversionContext);
-					retValue.put(key, value);
+					Map<String, Object> retValue = new HashMap<>();
+					Map<String, Object> oldValues = (Map<String, Object>)(oldValue instanceof Map ? oldValue : Collections.emptyMap());
+					PropertyDescription customTypeDesc = ((ICustomType)type).getCustomJSONTypeDefinition();
+					Iterator<String> keys = ((JSONObject)newValue).keys();
+					while (keys.hasNext())
+					{
+						String key = keys.next();
+						Object propValue = ((JSONObject)newValue).get(key);
+						Object oldPropValue = oldValues.get(key);
+						PropertyDescription property = customTypeDesc.getProperty(key);
+						if (property == null) continue; // ignore properties that are not spec'ed
+														// for
+														// this type..
+						Object value = fromJSON(oldPropValue, propValue, property, dataConversionContext);
+						retValue.put(key, value);
+					}
+					return retValue;
 				}
-				return retValue;
 			}
 		}
 		return newValue;
@@ -384,8 +341,7 @@ public class JSONUtils
 		PropertyDescription elValueType = null;
 		if (valueType != null)
 		{
-			if (valueType.isArray()) elValueType = valueType.asArrayElement();
-			else elValueType = valueType.getProperty(String.valueOf(i));
+			elValueType = valueType.getProperty(String.valueOf(i));
 		}
 		return elValueType;
 	}
@@ -422,6 +378,85 @@ public class JSONUtils
 	public static interface JSONWritable
 	{
 		TypedData<Map<String, Object>> toMap();
+	}
+
+	public static interface IToJSONConverter
+	{
+		/**
+		 * Converts from a value to JSON form (that can be sent to the browser) and writes to "writer".
+		 * @param writer the JSON writer to write to
+		 * @param key if this value will be part of a JSON object, key is non-null and you MUST do writer.key(...) before adding the converted value. This
+		 * is useful for cases when you don't want the value written at all in resulting JSON in which case you don't write neither key or value. If
+		 * key is null and you want to write the converted value write only the converted value to the writer, ignore the key.
+		 * @param value the value to be converted and written.
+		 * @param valueType the type of the property as described in the spec file
+		 * @param clientConversion client conversion markers that can be set and if set will be used client side to interpret the data properly.
+		 * @param toDestinationType TODO remove this
+		 * @return the JSON writer for easily continuing the write process in the caller.
+		 */
+		JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion clientConversion)
+			throws JSONException, IllegalArgumentException;
+
+	}
+
+	public static class ToJSONConverter implements IToJSONConverter
+	{
+
+		public static final ToJSONConverter INSTANCE = new ToJSONConverter();
+
+		@Override
+		public JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion browserConversionMarkers)
+			throws JSONException, IllegalArgumentException
+		{
+			if (value != null && valueType != null)
+			{
+				IPropertyType< ? > type = valueType.getType();
+				if (type instanceof IConvertedPropertyType)
+				{
+					// good, we now know that it needs special conversion
+					try
+					{
+						return ((IConvertedPropertyType)type).toJSON(writer, key, value, browserConversionMarkers);
+					}
+					catch (Exception ex)
+					{
+						log.error("Error while converting value: " + value + " to type: " + type, ex);
+						return writer;
+					}
+				}
+				else if (type instanceof IWrapperType< ? , ? >)
+				{
+					// good, we now know that it needs special conversion
+					try
+					{
+						return ((IWrapperType)type).toJSON(writer, key, value, browserConversionMarkers);
+					}
+					catch (Exception ex)
+					{
+						log.error("Error while converting value: " + value + " to type: " + type, ex);
+						return writer;
+					}
+				}
+			}
+
+			// best-effort to still find a way to write data and convert if needed follows
+			IClassPropertyType<Object> classType = (IClassPropertyType<Object>)(value == null ? null : TypesRegistry.getType(value.getClass()));
+			if (classType != null)
+			{
+				return classType.toJSON(writer, key, value, browserConversionMarkers);
+			}
+
+			if (!defaultToJSONValue(this, writer, key, value, valueType, browserConversionMarkers))
+			{
+				// addKeyIfPresent(w, key);
+				// w = w.value(new JSONObject("{}"));
+				// write nothing here, neither key nor value as we know not how to do the conversion...
+				log.error("unsupported value type:" + valueType + " for value: " + value, new IllegalArgumentException("unsupported value type for value: " +
+					value));
+			}
+
+			return writer;
+		}
 	}
 
 }

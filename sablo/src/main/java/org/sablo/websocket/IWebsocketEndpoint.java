@@ -59,19 +59,6 @@ public interface IWebsocketEndpoint
 	Object sendMessage(Map<String, ? > data, PropertyDescription dataTypes, boolean async) throws IOException;
 
 	/**
-	 * Sends a message to the client/browser, containing the given data (transformed into JSON based on give dataTypes).<br/>
-	 * If there are any pending service calls those will be sent to the client/attached to the message as well.
-	 *
-	 * @param data the data to be sent to the client (converted to JSON format where needed).
-	 * @param dataTypes description of the data structure; each key in "data" might have a corresponding child "dataTypes.getProperty(key)" who's type can be used for "to JSON" conversion.
-	 * @param async specifies is the messages should be sent later or right away.
-	 * @param conversionLocation identifies the source type of this data.
-	 * @return if async it will return null; otherwise it will return whatever the client sends back as a response to this message.
-	 * @throws IOException when such an exception occurs.
-	 */
-	Object sendMessage(Map<String, ? > data, PropertyDescription dataTypes, boolean async, ConversionLocation conversionLocation) throws IOException;
-
-	/**
 	 * Just send this text as message, no conversion, no waiting for response.
 	 * @param txt
 	 * @throws IOException

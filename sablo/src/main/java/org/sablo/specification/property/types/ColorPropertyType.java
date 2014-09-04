@@ -61,15 +61,16 @@ public class ColorPropertyType extends DefaultPropertyType<Color> implements ICl
 	public static final Color COLOR_TRANSPARENT = new Color(0, 0, 0, 0);
 
 	public static final ColorPropertyType INSTANCE = new ColorPropertyType();
+	public static final String TYPE_NAME = "color";
 
-	private ColorPropertyType()
+	protected ColorPropertyType()
 	{
 	}
 
 	@Override
 	public String getName()
 	{
-		return "color";
+		return TYPE_NAME;
 	}
 
 	@Override
@@ -97,7 +98,7 @@ public class ColorPropertyType extends DefaultPropertyType<Color> implements ICl
 		{
 			return COLOR_TRANSPARENT;
 		}
-		if (retval == null)
+		if (retval == null && ss != null)
 		{
 			try
 			{
@@ -116,26 +117,29 @@ public class ColorPropertyType extends DefaultPropertyType<Color> implements ICl
 	@Override
 	public JSONWriter toJSON(JSONWriter writer, String key, Color c, DataConversion clientConversion) throws JSONException
 	{
-		JSONUtils.addKeyIfPresent(writer, key);
+		if (c != null)
+		{
+			JSONUtils.addKeyIfPresent(writer, key);
 
-		int alpha = c.getAlpha();
-		if (alpha == 255)
-		{
-			String r = Integer.toHexString(c.getRed());
-			if (r.length() == 1) r = "0" + r; //$NON-NLS-1$
-			String g = Integer.toHexString(c.getGreen());
-			if (g.length() == 1) g = "0" + g; //$NON-NLS-1$
-			String b = Integer.toHexString(c.getBlue());
-			if (b.length() == 1) b = "0" + b; //$NON-NLS-1$
-			writer.value("#" + r + g + b); //$NON-NLS-1$
-		}
-		else if (alpha == 0)
-		{
-			writer.value(TRANSPARENT);
-		}
-		else
-		{
-			writer.value(COLOR_RGBA_DEF + '(' + c.getRed() + ',' + c.getGreen() + ',' + c.getBlue() + ',' + Math.round((alpha / 255f) * 10) / 10f + ')');
+			int alpha = c.getAlpha();
+			if (alpha == 255)
+			{
+				String r = Integer.toHexString(c.getRed());
+				if (r.length() == 1) r = "0" + r; //$NON-NLS-1$
+				String g = Integer.toHexString(c.getGreen());
+				if (g.length() == 1) g = "0" + g; //$NON-NLS-1$
+				String b = Integer.toHexString(c.getBlue());
+				if (b.length() == 1) b = "0" + b; //$NON-NLS-1$
+				writer.value("#" + r + g + b); //$NON-NLS-1$
+			}
+			else if (alpha == 0)
+			{
+				writer.value(TRANSPARENT);
+			}
+			else
+			{
+				writer.value(COLOR_RGBA_DEF + '(' + c.getRed() + ',' + c.getGreen() + ',' + c.getBlue() + ',' + Math.round((alpha / 255f) * 10) / 10f + ')');
+			}
 		}
 		return writer;
 	}

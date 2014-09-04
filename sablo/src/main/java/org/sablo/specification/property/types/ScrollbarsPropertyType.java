@@ -21,20 +21,25 @@ import org.json.JSONObject;
  * @author jcompagner
  *
  */
-public class ScrollbarsPropertyType extends DefaultPropertyType<Integer> {
+public class ScrollbarsPropertyType extends DefaultPropertyType<Integer>
+{
 
 	public static final ScrollbarsPropertyType INSTANCE = new ScrollbarsPropertyType();
-	
-	private ScrollbarsPropertyType() {
-	}
-	
-	@Override
-	public String getName() {
-		return "scrollbars";
+	public static final String TYPE_NAME = "scrollbars";
+
+	private ScrollbarsPropertyType()
+	{
 	}
 
 	@Override
-	public Object parseConfig(JSONObject json) {
+	public String getName()
+	{
+		return TYPE_NAME;
+	}
+
+	@Override
+	public Object parseConfig(JSONObject json)
+	{
 		return json;
 	}
 }

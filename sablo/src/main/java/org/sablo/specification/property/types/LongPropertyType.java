@@ -20,20 +20,25 @@ package org.sablo.specification.property.types;
  * @author jcompagner
  *
  */
-public class LongPropertyType extends DefaultPropertyType<Long> {
+public class LongPropertyType extends DefaultPropertyType<Long>
+{
 
 	public static final LongPropertyType INSTANCE = new LongPropertyType();
-	
-	private LongPropertyType() {
-	}
-	
-	@Override
-	public String getName() {
-		return "long";
+	public static final String TYPE_NAME = "long";
+
+	private LongPropertyType()
+	{
 	}
 
 	@Override
-	public Long defaultValue() {
+	public String getName()
+	{
+		return TYPE_NAME;
+	}
+
+	@Override
+	public Long defaultValue()
+	{
 		return Long.valueOf(0);
 	}
 }

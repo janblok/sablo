@@ -20,21 +20,26 @@ package org.sablo.specification.property.types;
  * @author jcompagner
  *
  */
-public class BooleanPropertyType extends DefaultPropertyType<Boolean> {
+public class BooleanPropertyType extends DefaultPropertyType<Boolean>
+{
 
 	public static final BooleanPropertyType INSTANCE = new BooleanPropertyType();
-	
-	private BooleanPropertyType() {
-	}
-	
-	@Override
-	public String getName() {
-		return "boolean";
+	public static final String TYPE_NAME = "boolean";
+
+	private BooleanPropertyType()
+	{
 	}
 
 	@Override
-	public Boolean defaultValue() {
+	public String getName()
+	{
+		return TYPE_NAME;
+	}
+
+	@Override
+	public Boolean defaultValue()
+	{
 		return Boolean.FALSE;
 	}
-	
+
 }

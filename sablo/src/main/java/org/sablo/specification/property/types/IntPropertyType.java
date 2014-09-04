@@ -20,20 +20,25 @@ package org.sablo.specification.property.types;
  * @author jcompagner
  *
  */
-public class IntPropertyType extends DefaultPropertyType<Integer> {
+public class IntPropertyType extends DefaultPropertyType<Integer>
+{
 
 	public static final IntPropertyType INSTANCE = new IntPropertyType();
-	
-	private IntPropertyType() {
-	}
-	
-	@Override
-	public String getName() {
-		return "int";
+	public static final String TYPE_NAME = "int";
+
+	private IntPropertyType()
+	{
 	}
 
 	@Override
-	public Integer defaultValue() {
+	public String getName()
+	{
+		return TYPE_NAME;
+	}
+
+	@Override
+	public Integer defaultValue()
+	{
 		return Integer.valueOf(0);
 	}
 }

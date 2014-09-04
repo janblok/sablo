@@ -377,7 +377,7 @@ public class WebComponentSpecification extends PropertyDescription
 						JSONObject elementConfig = configObject != null ? configObject.optJSONObject(CustomJSONArrayType.ELEMENT_CONFIG_KEY) : null;
 						PropertyDescription elementDescription = new PropertyDescription("", type, scope, elementConfig != null
 							? type.parseConfig(elementConfig) : null, defaultValue, values);
-						type = TypesRegistry.createNewType(CustomJSONArrayType.TYPE_ID, elementDescription);
+						type = TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, elementDescription);
 					}
 
 					Object config = type.parseConfig(configObject);

@@ -39,7 +39,7 @@ import org.sablo.websocket.utils.JSONUtils;
 public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> implements IWrapperType<Object, ChangeAwareList<ET, WT>>
 {
 
-	public static final String TYPE_ID = "JSON_arr";
+	public static final String TYPE_NAME = "JSON_arr";
 
 	protected static final String CONTENT_VERSION = "version";
 	protected static final String UPDATES = "updates";
@@ -252,7 +252,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 	{
 		if (changeAwareList != null)
 		{
-			if (conversionMarkers != null) conversionMarkers.convert(CustomJSONArrayType.TYPE_ID); // so that the client knows it must use the custom client side JS for what JSON it gets
+			if (conversionMarkers != null) conversionMarkers.convert(CustomJSONArrayType.TYPE_NAME); // so that the client knows it must use the custom client side JS for what JSON it gets
 
 			Set<Integer> changes = changeAwareList.getChangedIndexes();
 			List<WT> wrappedBaseList = changeAwareList.getWrappedBaseList();
@@ -287,9 +287,10 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 				writer.key(CONTENT_VERSION).value(changeAwareList.increaseContentVersion()).key(UPDATES);
 				writer.array();
 				DataConversion arrayConversionMarkers = new DataConversion();
+				int i = 0;
 				for (Integer idx : changes)
 				{
-					arrayConversionMarkers.pushNode(String.valueOf(idx));
+					arrayConversionMarkers.pushNode(String.valueOf(i++));
 					writer.object().key(INDEX).value(idx);
 					arrayConversionMarkers.pushNode(VALUE);
 					JSONUtils.toBrowserJSONValue(writer, VALUE, wrappedBaseList.get(idx.intValue()), getCustomJSONTypeDefinition(), arrayConversionMarkers);

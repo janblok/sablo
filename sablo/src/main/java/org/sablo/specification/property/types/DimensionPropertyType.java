@@ -33,15 +33,16 @@ public class DimensionPropertyType extends DefaultPropertyType<Dimension> implem
 {
 
 	public static final DimensionPropertyType INSTANCE = new DimensionPropertyType();
+	public static final String TYPE_NAME = "dimension";
 
-	private DimensionPropertyType()
+	protected DimensionPropertyType()
 	{
 	}
 
 	@Override
 	public String getName()
 	{
-		return "dimension";
+		return TYPE_NAME;
 	}
 
 	@Override

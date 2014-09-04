@@ -284,7 +284,7 @@ public class JSONUtils
 		DataConverterContext dataConversionContext) throws JSONException
 	{
 		Object value = fromJSON(previousComponentValue, newJSONValue, propDesc, dataConversionContext);
-		if (propDesc.getType() instanceof IWrapperType< ? , ? >)
+		if (propDesc != null && propDesc.getType() instanceof IWrapperType< ? , ? >)
 		{
 			// will probably never happen as all this fromJSON thing was only meant for Dates (at least currently)
 			IWrapperType wType = ((IWrapperType< ? , ? >)propDesc.getType());
@@ -297,37 +297,40 @@ public class JSONUtils
 	public static Object fromJSON(Object oldValue, Object newValue, PropertyDescription desc, IDataConverterContext dataConversionContext) throws JSONException
 	{
 		if (newValue == null || newValue == JSONObject.NULL) return null;
-		IPropertyType< ? > type = desc.getType();
-		if (type instanceof IConvertedPropertyType< ? >)
+		if (desc != null)
 		{
-			return ((IConvertedPropertyType)type).fromJSON(newValue, oldValue, dataConversionContext);
-		}
-		else if (type instanceof IWrapperType< ? , ? >)
-		{
-			return ((IWrapperType)type).fromJSON(newValue, oldValue, dataConversionContext);
-		}
-		else if (type instanceof ICustomType)
-		{
-			// custom type, convert json to map with values.
-			if (newValue instanceof JSONObject)
+			IPropertyType< ? > type = desc.getType();
+			if (type instanceof IConvertedPropertyType< ? >)
 			{
-				Map<String, Object> retValue = new HashMap<>();
-				Map<String, Object> oldValues = (Map<String, Object>)(oldValue instanceof Map ? oldValue : Collections.emptyMap());
-				PropertyDescription customTypeDesc = ((ICustomType)type).getCustomJSONTypeDefinition();
-				Iterator<String> keys = ((JSONObject)newValue).keys();
-				while (keys.hasNext())
+				return ((IConvertedPropertyType)type).fromJSON(newValue, oldValue, dataConversionContext);
+			}
+			else if (type instanceof IWrapperType< ? , ? >)
+			{
+				return ((IWrapperType)type).fromJSON(newValue, oldValue, dataConversionContext);
+			}
+			else if (type instanceof ICustomType)
+			{
+				// custom type, convert json to map with values.
+				if (newValue instanceof JSONObject)
 				{
-					String key = keys.next();
-					Object propValue = ((JSONObject)newValue).get(key);
-					Object oldPropValue = oldValues.get(key);
-					PropertyDescription property = customTypeDesc.getProperty(key);
-					if (property == null) continue; // ignore properties that are not spec'ed
-													// for
-													// this type..
-					Object value = fromJSON(oldPropValue, propValue, property, dataConversionContext);
-					retValue.put(key, value);
+					Map<String, Object> retValue = new HashMap<>();
+					Map<String, Object> oldValues = (Map<String, Object>)(oldValue instanceof Map ? oldValue : Collections.emptyMap());
+					PropertyDescription customTypeDesc = ((ICustomType)type).getCustomJSONTypeDefinition();
+					Iterator<String> keys = ((JSONObject)newValue).keys();
+					while (keys.hasNext())
+					{
+						String key = keys.next();
+						Object propValue = ((JSONObject)newValue).get(key);
+						Object oldPropValue = oldValues.get(key);
+						PropertyDescription property = customTypeDesc.getProperty(key);
+						if (property == null) continue; // ignore properties that are not spec'ed
+														// for
+														// this type..
+						Object value = fromJSON(oldPropValue, propValue, property, dataConversionContext);
+						retValue.put(key, value);
+					}
+					return retValue;
 				}
-				return retValue;
 			}
 		}
 		return newValue;
@@ -417,8 +420,7 @@ public class JSONUtils
 					}
 					catch (Exception ex)
 					{
-						writer.value(null);
-						log.error("Error while converting value: " + value + " to type: " + type, new RuntimeException());
+						log.error("Error while converting value: " + value + " to type: " + type, ex);
 						return writer;
 					}
 				}
@@ -431,8 +433,7 @@ public class JSONUtils
 					}
 					catch (Exception ex)
 					{
-						writer.value(null);
-						log.error("Error while converting value: " + value + " to type: " + type, new RuntimeException());
+						log.error("Error while converting value: " + value + " to type: " + type, ex);
 						return writer;
 					}
 				}

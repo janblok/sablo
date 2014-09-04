@@ -33,15 +33,16 @@ public class PointPropertyType extends DefaultPropertyType<Point> implements ICl
 {
 
 	public static final PointPropertyType INSTANCE = new PointPropertyType();
+	public static final String TYPE_NAME = "point";
 
-	private PointPropertyType()
+	protected PointPropertyType()
 	{
 	}
 
 	@Override
 	public String getName()
 	{
-		return "point";
+		return TYPE_NAME;
 	}
 
 	@Override

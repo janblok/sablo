@@ -32,15 +32,16 @@ public class InsetsPropertyType extends DefaultPropertyType<Insets> implements I
 {
 
 	public static final InsetsPropertyType INSTANCE = new InsetsPropertyType();
+	public static final String TYPE_NAME = "insets";
 
-	private InsetsPropertyType()
+	protected InsetsPropertyType()
 	{
 	}
 
 	@Override
 	public String getName()
 	{
-		return "insets";
+		return TYPE_NAME;
 	}
 
 	@Override

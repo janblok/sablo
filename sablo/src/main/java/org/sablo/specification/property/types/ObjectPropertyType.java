@@ -20,16 +20,20 @@ package org.sablo.specification.property.types;
  * @author jcompagner
  *
  */
-public class ObjectPropertyType extends DefaultPropertyType<Object> {
+public class ObjectPropertyType extends DefaultPropertyType<Object>
+{
 
 	public static final ObjectPropertyType INSTANCE = new ObjectPropertyType();
-	
-	private ObjectPropertyType() {
+	public static final String TYPE_NAME = "object";
+
+	private ObjectPropertyType()
+	{
 	}
-	
+
 	@Override
-	public String getName() {
-		return "object";
+	public String getName()
+	{
+		return TYPE_NAME;
 	}
 
 }

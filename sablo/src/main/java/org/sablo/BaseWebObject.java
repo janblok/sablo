@@ -233,7 +233,7 @@ public abstract class BaseWebObject
 		{
 			// new property
 			map.put(lastPropertyPart, wrappedValue);
-			onPropertyChange(firstPropertyPart, null, propertyValue);
+			onPropertyChange(firstPropertyPart, null, wrappedValue);
 
 			changedProperties.add(firstPropertyPart);
 			return true;

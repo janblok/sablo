@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
  * @author jcompagner
  *
  */
+@SuppressWarnings("nls")
 public class TypesRegistry
 {
 
@@ -42,41 +43,28 @@ public class TypesRegistry
 
 	static
 	{
-		types.put("int", IntPropertyType.INSTANCE);
-		types.put("long", LongPropertyType.INSTANCE);
-		types.put("float", FloatPropertyType.INSTANCE);
-		types.put("double", DoublePropertyType.INSTANCE);
-		types.put("boolean", BooleanPropertyType.INSTANCE);
-		types.put("color", ColorPropertyType.INSTANCE);
-		types.put("string", StringPropertyType.INSTANCE);
-		types.put("insets", InsetsPropertyType.INSTANCE);
-		types.put("date", DatePropertyType.INSTANCE);
-		types.put("dimension", DimensionPropertyType.INSTANCE);
-		types.put("font", FontPropertyType.INSTANCE);
-		types.put("function", FunctionPropertyType.INSTANCE);
-		types.put("object", ObjectPropertyType.INSTANCE);
-		types.put("point", PointPropertyType.INSTANCE);
-		types.put("styleclass", StyleClassPropertyType.INSTANCE);
-		types.put("tabseq", TabSeqPropertyType.INSTANCE);
-		types.put("values", ValuesPropertyType.INSTANCE);
-		types.put("componentDef", ComponentDefPropertyType.INSTANCE);
-		types.put("byte", BytePropertyType.INSTANCE);
+		addType(IntPropertyType.INSTANCE);
+		addType(LongPropertyType.INSTANCE);
+		addType(FloatPropertyType.INSTANCE);
+		addType(DoublePropertyType.INSTANCE);
+		addType(BooleanPropertyType.INSTANCE);
+		addType(ColorPropertyType.INSTANCE);
+		addType(StringPropertyType.INSTANCE);
+		addType(InsetsPropertyType.INSTANCE);
+		addType(DatePropertyType.INSTANCE);
+		addType(DimensionPropertyType.INSTANCE);
+		addType(FontPropertyType.INSTANCE);
+		addType(FunctionPropertyType.INSTANCE);
+		addType(ObjectPropertyType.INSTANCE);
+		addType(PointPropertyType.INSTANCE);
+		addType(StyleClassPropertyType.INSTANCE);
+		addType(TabSeqPropertyType.INSTANCE);
+		addType(ValuesPropertyType.INSTANCE);
+		addType(ComponentDefPropertyType.INSTANCE);
+		addType(BytePropertyType.INSTANCE);
 
-		for (IPropertyType< ? > type : types.values())
-		{
-			if (type instanceof IClassPropertyType)
-			{
-				IClassPropertyType< ? > previous = typesByClass.put(((IClassPropertyType< ? >)type).getTypeClass(), (IClassPropertyType< ? >)type);
-				if (previous != null)
-				{
-					throw new RuntimeException("duplicate type found for class: " + ((IClassPropertyType< ? >)type).getTypeClass() + " of type: " +
-						type.getName() + " replaced: " + ((IPropertyType< ? >)previous).getName());
-				}
-			}
-		}
-
-		typeFactories.put(CustomJSONArrayType.TYPE_ID, new CustomJSONArrayTypeFactory());
-//		typeFactories.put(CustomJSONObjectType.TYPE_ID, new CustomJSONObjectTypeFactory());
+		addTypeFactory(CustomJSONArrayType.TYPE_NAME, new CustomJSONArrayTypeFactory());
+//		addTypeFactory(CustomJSONObjectType.TYPE_NAME, new CustomJSONObjectTypeFactory());
 	}
 
 

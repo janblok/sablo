@@ -33,15 +33,16 @@ public class FontPropertyType extends DefaultPropertyType<Font> implements IClas
 {
 
 	public static final FontPropertyType INSTANCE = new FontPropertyType();
+	public static final String TYPE_NAME = "font";
 
-	private FontPropertyType()
+	protected FontPropertyType()
 	{
 	}
 
 	@Override
 	public String getName()
 	{
-		return "font";
+		return TYPE_NAME;
 	}
 
 	@Override

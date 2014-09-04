@@ -20,20 +20,25 @@ package org.sablo.specification.property.types;
  * @author jcompagner
  *
  */
-public class DoublePropertyType extends DefaultPropertyType<Double> {
-	
+public class DoublePropertyType extends DefaultPropertyType<Double>
+{
+
 	public static final DoublePropertyType INSTANCE = new DoublePropertyType();
-	
-	private DoublePropertyType() {
-	}
-	
-	@Override
-	public String getName() {
-		return "double";
+	public static final String TYPE_NAME = "double";
+
+	private DoublePropertyType()
+	{
 	}
 
 	@Override
-	public Double defaultValue() {
+	public String getName()
+	{
+		return TYPE_NAME;
+	}
+
+	@Override
+	public Double defaultValue()
+	{
 		return Double.valueOf(0);
 	}
 }

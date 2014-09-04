@@ -35,15 +35,16 @@ public class DatePropertyType extends DefaultPropertyType<Date> implements IClas
 {
 
 	public static final DatePropertyType INSTANCE = new DatePropertyType();
+	public static final String TYPE_NAME = "date";
 
-	private DatePropertyType()
+	protected DatePropertyType()
 	{
 	}
 
 	@Override
 	public String getName()
 	{
-		return "date";
+		return TYPE_NAME;
 	}
 
 	@Override

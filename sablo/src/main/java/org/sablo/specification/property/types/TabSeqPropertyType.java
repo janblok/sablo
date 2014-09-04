@@ -20,19 +20,25 @@ package org.sablo.specification.property.types;
  * @author jcompagner
  *
  */
-public class TabSeqPropertyType extends DefaultPropertyType<Integer> {
+public class TabSeqPropertyType extends DefaultPropertyType<Integer>
+{
 
 	public static final TabSeqPropertyType INSTANCE = new TabSeqPropertyType();
-	
-	private TabSeqPropertyType() {
-	}
-	
-	@Override
-	public String getName() {
-		return "tabseq";
+	public static final String TYPE_NAME = "tabseq";
+
+	private TabSeqPropertyType()
+	{
 	}
 
-	public Integer defaultValue() {
+	@Override
+	public String getName()
+	{
+		return TYPE_NAME;
+	}
+
+	@Override
+	public Integer defaultValue()
+	{
 		return Integer.valueOf(-1);
 	}
 }

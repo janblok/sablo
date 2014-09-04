@@ -38,6 +38,7 @@ import org.junit.Test;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
+import org.sablo.specification.property.ChangeAwareList;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.TypedData;
 import org.sablo.websocket.utils.JSONUtils;
@@ -55,8 +56,6 @@ public class WebComponentTest
 	@Before
 	public void setUp() throws Exception
 	{
-
-
 		InputStream is = getClass().getResourceAsStream("WebComponentTest-manifest.spec");
 		byte[] bytes = new byte[is.available()];
 		is.read(bytes);
@@ -291,12 +290,17 @@ public class WebComponentTest
 		customType2.put("active", Boolean.FALSE);
 		customType2.put("foreground", Color.white);
 
+		// arrays are wrapped in a smart array that can wrap and convert/handle changes automatically
 		Object[] array = new Object[] { customType1, customType2 };
 		assertTrue(component.setProperty("types", array));
 
-		Object[] array2 = (Object[])component.getProperty("types");
+		ChangeAwareList<Object, Object> array2 = (ChangeAwareList)component.getProperty("types"); // ChangeAwareList
 
-		assertSame(array, array2);
+		boolean same = true;
+		int i = 0;
+		for (Object o : array)
+			same = same | (o != array2.get(i++));
+		assertTrue(same);
 
 		HashMap<String, Object> data = new HashMap<>();
 		TypedData<Map<String, Object>> properties = component.getProperties();
@@ -307,7 +311,7 @@ public class WebComponentTest
 
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes);
 		assertEquals(
-			"{\"msg\":{\"name\":\"test\",\"types\":[{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"},{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}]}}",
+			"{\"msg\":{\"name\":\"test\",\"types\":{\"ver\":2,\"v\":[{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"},{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}]}},\"conversions\":{\"msg\":{\"types\":\"JSON_arr\"}}}",
 			msg);
 
 		component.putBrowserProperty(
@@ -315,16 +319,15 @@ public class WebComponentTest
 			new JSONArray(
 				"[{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"},{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"},{\"name\":\"myname3\",\"active\":true,\"foreground\":null}]"));
 
-		Object[] array3 = (Object[])component.getProperty("types");
+		ChangeAwareList<Object, Object> array3 = (ChangeAwareList)component.getProperty("types");
 
-		assertEquals(3, array3.length);
+		assertEquals(3, array3.size());
 
-		assertEquals("myname", ((Map< ? , ? >)array3[0]).get("name"));
-		assertEquals("myname2", ((Map< ? , ? >)array3[1]).get("name"));
-		assertEquals("myname3", ((Map< ? , ? >)array3[2]).get("name"));
-		assertEquals(Color.red, ((Map< ? , ? >)array3[1]).get("foreground"));
-		assertNull(((Map< ? , ? >)array3[2]).get("foreground"));
+		assertEquals("myname", ((Map< ? , ? >)array3.get(0)).get("name"));
+		assertEquals("myname2", ((Map< ? , ? >)array3.get(1)).get("name"));
+		assertEquals("myname3", ((Map< ? , ? >)array3.get(2)).get("name"));
+		assertEquals(Color.red, ((Map< ? , ? >)array3.get(1)).get("foreground"));
+		assertNull(((Map< ? , ? >)array3.get(2)).get("foreground"));
 
 	}
-
 }

@@ -41,7 +41,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 
 	public static final String TYPE_NAME = "JSON_arr";
 
-	protected static final String CONTENT_VERSION = "version";
+	protected static final String CONTENT_VERSION = "ver";
 	protected static final String UPDATES = "updates";
 	protected static final String INDEX = "i";
 	protected static final String VALUE = "v";
@@ -115,7 +115,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 			if (value.getClass().isArray())
 			{
 				// native array
-				baseList = (List<ET>)Arrays.asList(value);
+				baseList = Arrays.asList((ET[])value);
 			}
 			else if (value instanceof List< ? >)
 			{

@@ -4,10 +4,14 @@ angular.module('sabloApp', ['webSocketModule']).config(function($controllerProvi
 }).factory('$sabloApplication', function ($rootScope, $window, $webSocket) {
 	  
 	$window.alert('RAGTEST connect')
-	   var wsSession = $webSocket.connect('', ['todosessionid', 'todowindowid'])
+	   var wsSession = $webSocket.connect('', ['todosessionid'])
 	   wsSession.onMessageObject = function (msg, conversionInfo) {
 		  
 		   alert('RAGTEST message: ' + msg)
+	   };
+	   wsSession.onopen = function (evt) {
+		   
+		   alert('RAGTEST connected: ' + evt)
 	   };
 	    
 	   return {

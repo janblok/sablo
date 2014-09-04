@@ -88,7 +88,6 @@ public class WebsocketSessionManager
 		IWebsocketSession wsSession = null;
 		synchronized (wsSessions)
 		{
-			String key;
 			if (uuid != null && uuid.length() > 0)
 			{
 				wsSession = wsSessions.get(uuid);
@@ -149,8 +148,8 @@ public class WebsocketSessionManager
 		websocketSessionFactories.put(endpointType, factory);
 	}
 
-	public static IWebsocketSessionFactory getWebsocketSessionFactory()
+	public static IWebsocketSessionFactory getWebsocketSessionFactory(String endpointType)
 	{
-		return websocketSessionFactory;
+		return websocketSessionFactories.get(endpointType);
 	}
 }

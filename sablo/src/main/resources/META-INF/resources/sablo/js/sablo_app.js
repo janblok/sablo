@@ -10,20 +10,30 @@ angular.module('sablo', ['webSocketModule']).config(function($controllerProvider
 	   
 	   function connect() {
 			$window.alert('RAGTEST connect')
-			    wsSession = $webSocket.connect('', ['todosessionid', 'todowindowid'])
+			    wsSession = $webSocket.connect('', ['todosessionid'])
 			   wsSession.onMessageObject = function (msg, conversionInfo) {
 				  
 				   alert('RAGTEST message: ' + msg)
 			   };
 	   }
-	    
+	   
+	   function callService(serviceName, methodName, argsObject, async) {
+		   return getSession().callService(serviceName, methodName, argsObject, async)
+	   }
+	   
+	   function requestFormData(formName, model) {
+		   
+		   getSession().callService('formService', 'requestData', {formname:formName}, false).then(
+				   function(data) {
+					   for (var i in data) { model[i] = data[i]; }
+				   });
+	   }
+	   
+	   // api
 	   return {
-		   
 		   connect: connect,
-		   
-		   callService: function(serviceName, methodName, argsObject, async) {
-			   return getSession().callService(serviceName, methodName, argsObject, async)
-		   }
+		   callService: callService,
+		   requestFormData: requestFormData
 	   }
 	   
 }).run(function($window) {

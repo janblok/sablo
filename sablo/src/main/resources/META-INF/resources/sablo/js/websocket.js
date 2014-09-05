@@ -30,7 +30,7 @@ webSocketModule.factory('$webSocket',
 						if (obj.exception) {
 							// something went wrong
 							if (obj.conversions && obj.conversions.exception) {
-								$sabloConverters.convertFromServerToClient(obj.exception, obj.conversions.exception)
+								obj.exception = $sabloConverters.convertFromServerToClient(obj.exception, obj.conversions.exception)
 							}
 							$rootScope.$apply(function() {
 								deferredEvents[obj.cmsgid]
@@ -38,7 +38,7 @@ webSocketModule.factory('$webSocket',
 							})
 						} else {
 							if (obj.conversions && obj.conversions.ret) {
-								$sabloConverters.convertFromServerToClient(obj.ret, obj.conversions.ret)
+								obj.ret = $sabloConverters.convertFromServerToClient(obj.ret, obj.conversions.ret)
 							}
 							$rootScope.$apply(function() {
 								deferredEvents[obj.cmsgid].resolve(obj.ret);
@@ -54,9 +54,9 @@ webSocketModule.factory('$webSocket',
 					if (obj.services) {
 						// services call
 						if (obj.conversions && obj.conversions.services) {
-							$sabloConverters.convertFromServerToClient(obj.services, obj.conversions.services)
+							obj.services = $sabloConverters.convertFromServerToClient(obj.services, obj.conversions.services)
 						}
-						for ( var index in obj.services) {
+						for (var index in obj.services) {
 							var service = obj.services[index];
 							var serviceInstance = $injector.get(service.name);
 							if (serviceInstance
@@ -93,7 +93,15 @@ webSocketModule.factory('$webSocket',
 			}
 
 			var sendMessageObject = function(obj) {
-				websocket.send(JSON.stringify(obj))
+				var msg = JSON.stringify(obj)
+				if (connected) {
+					websocket.send(msg)
+				}
+				else
+				{
+					pendingMessages = pendingMessages || []
+					pendingMessages.push(msg)
+				}
 			}
 
 			var sendDeferredMessage = function(obj) {
@@ -152,6 +160,7 @@ webSocketModule.factory('$webSocket',
 			};
 			
 			var connected = false;
+			var pendingMessages = undefined
 
 			/**
 			 * The $webSocket service API.
@@ -180,7 +189,7 @@ webSocketModule.factory('$webSocket',
 						}
 					}
 					new_uri += pathname + '/websocket';
-					for (a in args) {
+					for (var a in args) {
 						new_uri += '/' + args[a]
 					}
 
@@ -191,6 +200,12 @@ webSocketModule.factory('$webSocket',
 						$rootScope.$apply(function() {
 							connected = true;
 						})
+						if (pendingMessages) {
+							for (var i in pendingMessages) {
+								websocket.send(pendingMessages[i])
+							}
+							pendingMessages = undefined
+						}
 						if (wsSession.onopen)
 							wsSession.onopen(evt)
 					}
@@ -232,7 +247,7 @@ webSocketModule.factory('$webSocket',
 				   var conversionInfo = serviceStatesConversionInfo[servicename];
 				   var changes = {}, prop;
 
-				   for (prop in fulllist) {
+				   for (var prop in fulllist) {
 					   var changed = false;
 					   if (!prev) {
 						   changed = true;
@@ -278,7 +293,7 @@ webSocketModule.factory('$webSocket',
 		 		            if (!serviceState) {
 		 		            	if (conversionInfo && conversionInfo[servicename]) {
 	 		            			// convert all properties, remember type for when a client-server conversion will be needed
-									$sabloConverters.convertFromServerToClient(services[servicename], conversionInfo[servicename], serviceStates[servicename])
+		 		            		services[servicename] = $sabloConverters.convertFromServerToClient(services[servicename], conversionInfo[servicename], serviceStates[servicename])
 		 		            		serviceStatesConversionInfo[servicename] = conversionInfo[servicename];
 		 		            	}
 		 		            	serviceStates[servicename] = services[servicename];
@@ -291,7 +306,7 @@ webSocketModule.factory('$webSocket',
 		 		            		if (conversionInfo && conversionInfo[servicename] && conversionInfo[servicename][key]) {
 		 		            			// convert property, remember type for when a client-server conversion will be needed
 		 		            			if (!serviceStatesConversionInfo[servicename]) serviceStatesConversionInfo[servicename] = {};
-										$sabloConverters.convertFromServerToClient(serviceData[key], conversionInfo[servicename][key], serviceStates[servicename][key])
+		 		            			serviceData[key] = $sabloConverters.convertFromServerToClient(serviceData[key], conversionInfo[servicename][key], serviceStates[servicename][key])
 		 		            			serviceStatesConversionInfo[servicename][key] = conversionInfo[servicename][key];
 		 		            		}
 		 		            		serviceStates[servicename][key] = serviceData[key];

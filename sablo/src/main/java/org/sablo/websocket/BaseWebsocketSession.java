@@ -29,6 +29,7 @@ import org.sablo.Container;
 import org.sablo.WebComponent;
 import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
+import org.sablo.services.FormServiceHandler;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.WebServiceSpecProvider;
@@ -57,6 +58,21 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 	public BaseWebsocketSession(String uuid)
 	{
 		this.uuid = uuid;
+		registerServerService("formService", createFormService());
+	}
+
+	/**
+	 * @return
+	 */
+	protected IServerService createFormService()
+	{
+		return new FormServiceHandler(this);
+	}
+
+	@Override
+	public Container getForm(String formName)
+	{
+		return null;
 	}
 
 	public void registerEndpoint(IWebsocketEndpoint endpoint)
@@ -149,7 +165,17 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 		{
 			endpoint.closeSession();
 		}
-		if (executor != null) executor.destroy();
+		if (executor != null)
+		{
+			synchronized (this)
+			{
+				if (executor != null)
+				{
+					executor.destroy();
+					executor = null;
+				}
+			}
+		}
 	}
 
 	/**
@@ -162,7 +188,10 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 
 	public void registerServerService(String name, IServerService service)
 	{
-		serverServices.put(name, service);
+		if (service != null)
+		{
+			serverServices.put(name, service);
+		}
 	}
 
 	public IServerService getServerService(String name)

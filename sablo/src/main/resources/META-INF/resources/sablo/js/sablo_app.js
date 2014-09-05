@@ -1,24 +1,31 @@
-angular.module('sabloApp', ['webSocketModule']).config(function($controllerProvider) {
-}).controller("SabloController", function($scope, $rootScope, $sabloApplication) {
-	$scope.windowTitle = 'RAGTEST de titel!!';
+angular.module('sablo', ['webSocketModule']).config(function($controllerProvider) {
 }).factory('$sabloApplication', function ($rootScope, $window, $webSocket) {
 	  
-	$window.alert('RAGTEST connect')
-	   var wsSession = $webSocket.connect('', ['todosessionid'])
-	   wsSession.onMessageObject = function (msg, conversionInfo) {
-		  
-		   alert('RAGTEST message: ' + msg)
-	   };
-	   wsSession.onopen = function (evt) {
-		   
-		   alert('RAGTEST connected: ' + evt)
-	   };
+	   var wsSession = null;
+	   
+	   function getSession() {
+		   if (wsSession == null) throw "Session is not created yet, first call connect()";
+		   return wsSession;
+	   }
+	   
+	   function connect() {
+			$window.alert('RAGTEST connect')
+			    wsSession = $webSocket.connect('', ['todosessionid', 'todowindowid'])
+			   wsSession.onMessageObject = function (msg, conversionInfo) {
+				  
+				   alert('RAGTEST message: ' + msg)
+			   };
+	   }
 	    
 	   return {
+		   
+		   connect: connect,
+		   
 		   callService: function(serviceName, methodName, argsObject, async) {
-			   return wsSession.callService(serviceName, methodName, argsObject, async)
+			   return getSession().callService(serviceName, methodName, argsObject, async)
 		   }
 	   }
+	   
 }).run(function($window) {
 	$window.alert('RAGTEST sablo app!')
 })

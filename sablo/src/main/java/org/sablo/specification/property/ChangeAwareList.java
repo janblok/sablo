@@ -28,7 +28,11 @@ import org.sablo.BaseWebObject;
 import org.sablo.IChangeListener;
 
 /**
- * This list is able to do handle/keep track browser <-> server granular updates
+ * This list is able to do handle/keep track of server side changes.
+ * Those changes can then be sent to browser through full array or granular updates (depending on what changed an what the implementation supports).
+ * (as JSON through the web-socket)
+ *
+ * It also implements ISmartPropertyValue so that it can handle correctly any child 'smart' value types.
  *
  * @author acostescu
  */
@@ -40,7 +44,6 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	// the browser changes when this happens through the 'version' mechanism
 	private int version;
 
-	protected IPropertyType<ET> type;
 	protected IDataConverterContext dataConverterContext;
 	protected List<ET> baseList;
 
@@ -54,14 +57,13 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	protected boolean allChanged;
 
 
-	public ChangeAwareList(List<ET> baseList, IPropertyType<ET> type, IDataConverterContext dataConverterContext)
+	public ChangeAwareList(List<ET> baseList, IDataConverterContext dataConverterContext)
 	{
-		this(baseList, type, dataConverterContext, 1);
+		this(baseList, dataConverterContext, 1);
 	}
 
-	public ChangeAwareList(List<ET> baseList, IPropertyType<ET> type, IDataConverterContext dataConverterContext, int initialVersion)
+	public ChangeAwareList(List<ET> baseList, IDataConverterContext dataConverterContext, int initialVersion)
 	{
-		this.type = type;
 		this.dataConverterContext = dataConverterContext;
 		this.baseList = baseList;
 		this.version = initialVersion;
@@ -86,12 +88,19 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		changedIndexes.clear();
 	}
 
-	public List<ET> getBaseList()
+	/**
+	 * Don't use the returned list for operations that make changes that need to be sent to browser! That list isn't tracked for changes.
+	 */
+	protected List<ET> getBaseList()
 	{
 		return baseList;
 	}
 
-	public List<WT> getWrappedBaseList()
+	/**
+	 * Don't use the returned list for operations that make changes that need to be sent to browser! That list isn't tracked for changes.
+	 * If you need to make a set directly in wrapper base list please use {@link #setInWrappedBaseList()} instead.
+	 */
+	protected List<WT> getWrappedBaseListForReadOnly()
 	{
 		List<WT> wrappedBaseList;
 		if (baseList instanceof WrapperList< ? , ? >)
@@ -102,7 +111,24 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		{
 			wrappedBaseList = (List<WT>)baseList; // ET == WT in this case; no wrapping
 		}
+
 		return wrappedBaseList;
+	}
+
+	// privately we can use that list for making changes, as we know what has to be done when that happens
+	private List<WT> getWrappedBaseList()
+	{
+		return getWrappedBaseListForReadOnly();
+	}
+
+	public WT setInWrappedBaseList(int index, WT value, boolean markChanged)
+	{
+		WT tmp = getWrappedBaseListForReadOnly().set(index, value);
+		detachIfNeeded(index, tmp, false);
+		attachToBaseObjectIfNeeded(index, value, false);
+		if (markChanged) markElementChanged(index);
+
+		return tmp;
 	}
 
 	protected int increaseContentVersion()
@@ -120,7 +146,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		return version;
 	}
 
-	private void markElementChanged(int i)
+	protected void markElementChanged(int i)
 	{
 		if (changedIndexes.add(Integer.valueOf(i))) changeMonitor.valueChanged();
 	}
@@ -202,6 +228,9 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			detach(i, el, false);
 			i++;
 		}
+
+		component = null;
+		changeMonitor = null;
 	}
 
 	protected void detach(int idx, WT el, boolean remove)

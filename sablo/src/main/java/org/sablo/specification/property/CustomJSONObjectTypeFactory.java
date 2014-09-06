@@ -16,27 +16,28 @@
 
 package org.sablo.specification.property;
 
-import org.sablo.specification.PropertyDescription;
+import java.util.Map;
+
 import org.sablo.specification.property.types.IPropertyTypeFactory;
 
 /**
- * Creates custom JSON array types based on what's present in the spec file.
+ * Creates custom JSON Object types based on what's present in the spec file.
  *
  * @author acostescu
  */
-public class CustomJSONArrayTypeFactory implements IPropertyTypeFactory<PropertyDescription, Object>
+public class CustomJSONObjectTypeFactory implements IPropertyTypeFactory<String, Map<String, ? >>
 {
 
 	@Override
-	public IPropertyType<Object> createType(PropertyDescription definition)
+	public IPropertyType<Map<String, ? >> createType(String customTypeName)
 	{
-		return new CustomJSONArrayType(definition);
+		return new CustomJSONObjectType(customTypeName, null); // that null is temporary - it will get populated later
 	}
 
 	@Override
 	public String toString()
 	{
-		return "Default Sablo custom JSON array type factory.";
+		return "Default Sablo custom JSON Object type factory.";
 	}
 
 }

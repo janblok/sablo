@@ -47,17 +47,17 @@ public class WrapperMap<ExternalT, BaseT> extends ConvertedMap<ExternalT, BaseT>
 	}
 
 	@Override
-	protected ExternalT convertFromBase(String key, BaseT value)
+	protected ExternalT convertFromBase(String forKey, BaseT value)
 	{
-		IWrapperType<ExternalT, BaseT> wt = types.get(key);
+		IWrapperType<ExternalT, BaseT> wt = types.get(forKey);
 		return wt != null ? wt.unwrap(value) : (ExternalT)value;
 	}
 
 	@Override
-	protected BaseT convertToBase(String key, ExternalT value)
+	protected BaseT convertToBase(String key, boolean ignoreOldValue, ExternalT value)
 	{
 		IWrapperType<ExternalT, BaseT> wt = types.get(key);
-		return wt != null ? wt.wrap(value, key == null ? null : baseMap.get(key), dataConverterContext) : null;
+		return wt != null ? wt.wrap(value, key == null ? null : baseMap.get(key), dataConverterContext) : (BaseT)value;
 	}
 
 }

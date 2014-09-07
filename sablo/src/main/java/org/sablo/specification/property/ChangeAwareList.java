@@ -124,8 +124,11 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	public WT setInWrappedBaseList(int index, WT value, boolean markChanged)
 	{
 		WT tmp = getWrappedBaseListForReadOnly().set(index, value);
-		detachIfNeeded(index, tmp, false);
-		attachToBaseObjectIfNeeded(index, value, false);
+		if (tmp != value)
+		{
+			detachIfNeeded(index, tmp, false);
+			attachToBaseObjectIfNeeded(index, value, false);
+		}
 		if (markChanged) markElementChanged(index);
 
 		return tmp;

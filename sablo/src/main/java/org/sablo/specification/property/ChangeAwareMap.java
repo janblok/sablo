@@ -126,8 +126,11 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	public WT putInWrappedBaseList(String key, WT value, boolean markChanged)
 	{
 		WT tmp = getWrappedBaseMapForReadOnly().put(key, value);
-		detachIfNeeded(key, tmp);
-		attachToBaseObjectIfNeeded(key, value);
+		if (tmp != value)
+		{
+			detachIfNeeded(key, tmp);
+			attachToBaseObjectIfNeeded(key, value);
+		}
 		if (markChanged) markElementChanged(key);
 
 		return tmp;

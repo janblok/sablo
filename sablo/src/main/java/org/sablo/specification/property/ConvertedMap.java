@@ -55,7 +55,7 @@ public abstract class ConvertedMap<ExternalT, BaseT> extends AbstractMap<String,
 	{
 		for (Entry<String, ExternalT> e : external.entrySet())
 		{
-			baseMap.put(e.getKey(), convertToBase(null, e.getValue()));
+			baseMap.put(e.getKey(), convertToBase(e.getKey(), true, e.getValue()));
 		}
 	}
 
@@ -67,20 +67,21 @@ public abstract class ConvertedMap<ExternalT, BaseT> extends AbstractMap<String,
 	/**
 	 * Converts the given base map element value into external world form.
 	 *
-	 * @param key the key that the given element has in the map.
+	 * @param forKey the key that the given element has in the map.
 	 * @param value the base map element value to convert.
 	 * @return the converted element value.
 	 */
-	protected abstract ExternalT convertFromBase(String key, BaseT value);
+	protected abstract ExternalT convertFromBase(String forKey, BaseT value);
 
 	/**
 	 * Converts the given external world element value into a base map element value.
 	 *
-	 * @param key the key that "value" used to have before; can be null if not applicable.
+	 * @param forKey the key that "value" used to have before or will start having now; can be null if not applicable.
+	 * @param ignoreOldValue if this is true, even no lookup for an old value should be done by convert (null/not present is assumed).
 	 * @param value the external world element value to convert.
 	 * @return the base converted element value.
 	 */
-	protected abstract BaseT convertToBase(String key, ExternalT value);
+	protected abstract BaseT convertToBase(String forKey, boolean ignoreOldValue, ExternalT value);
 
 //	@Override
 //	public int size()
@@ -115,7 +116,7 @@ public abstract class ConvertedMap<ExternalT, BaseT> extends AbstractMap<String,
 	@Override
 	public ExternalT put(String key, ExternalT value)
 	{
-		return convertFromBase(key, baseMap.put(key, convertToBase(key, value)));
+		return convertFromBase(key, baseMap.put(key, convertToBase(key, false, value)));
 	}
 
 //	@Override
@@ -189,7 +190,7 @@ public abstract class ConvertedMap<ExternalT, BaseT> extends AbstractMap<String,
 						@Override
 						public ExternalT setValue(ExternalT value)
 						{
-							return convertFromBase(bv.getKey(), bv.setValue(convertToBase(bv.getKey(), value)));
+							return convertFromBase(bv.getKey(), bv.setValue(convertToBase(bv.getKey(), false, value)));
 						}
 
 					};

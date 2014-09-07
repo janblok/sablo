@@ -147,9 +147,16 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 								String key = row.getString(KEY);
 								Object val = row.get(VALUE);
 
-								WT newWrappedEl = (WT)JSONUtils.fromJSON(wrappedBaseMap.get(key), val, getCustomJSONTypeDefinition().getProperty(key),
-									dataConverterContext);
-								previousChangeAwareMap.putInWrappedBaseList(key, newWrappedEl, false);
+								PropertyDescription keyPD = getCustomJSONTypeDefinition().getProperty(key);
+								if (keyPD != null)
+								{
+									WT newWrappedEl = (WT)JSONUtils.fromJSON(wrappedBaseMap.get(key), val, keyPD, dataConverterContext);
+									previousChangeAwareMap.putInWrappedBaseList(key, newWrappedEl, false);
+								}
+								else
+								{
+									log.warn("Cannot set property '" + key + "' of custom JSON Object as it's type is undefined.");
+								}
 							}
 							previousChangeAwareMap.increaseContentVersion();
 						}
@@ -169,17 +176,26 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 						{
 							String key = it.next();
 							WT oldVal = null;
-							if (previousWrappedBaseMap != null)
+							PropertyDescription keyPD = getCustomJSONTypeDefinition().getProperty(key);
+							if (keyPD != null)
 							{
-								oldVal = previousWrappedBaseMap.get(key);
+								if (previousWrappedBaseMap != null)
+								{
+									oldVal = previousWrappedBaseMap.get(key);
+								}
+								try
+								{
+									map.put(key,
+										(WT)JSONUtils.fromJSON(oldVal, obj.opt(key), getCustomJSONTypeDefinition().getProperty(key), dataConverterContext));
+								}
+								catch (JSONException e)
+								{
+									log.error("Cannot parse JSON object element browser JSON.", e);
+								}
 							}
-							try
+							else
 							{
-								map.put(key, (WT)JSONUtils.fromJSON(oldVal, obj.opt(key), getCustomJSONTypeDefinition().getProperty(key), dataConverterContext));
-							}
-							catch (JSONException e)
-							{
-								log.error("Cannot parse JSON object element browser JSON.", e);
+								log.warn("Cannot set property '" + key + "' of custom JSON Object as it's type is undefined.");
 							}
 						}
 

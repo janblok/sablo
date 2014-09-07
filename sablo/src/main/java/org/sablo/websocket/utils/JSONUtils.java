@@ -16,10 +16,7 @@
 
 package org.sablo.websocket.utils;
 
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -33,7 +30,6 @@ import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.DataConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IConvertedPropertyType;
-import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.IWrapperType;
@@ -307,30 +303,6 @@ public class JSONUtils
 			else if (type instanceof IWrapperType< ? , ? >)
 			{
 				return ((IWrapperType)type).fromJSON(newValue, oldValue, dataConversionContext);
-			}
-			else if (type instanceof ICustomType)
-			{
-				// custom type, convert json to map with values.
-				if (newValue instanceof JSONObject)
-				{
-					Map<String, Object> retValue = new HashMap<>();
-					Map<String, Object> oldValues = (Map<String, Object>)(oldValue instanceof Map ? oldValue : Collections.emptyMap());
-					PropertyDescription customTypeDesc = ((ICustomType)type).getCustomJSONTypeDefinition();
-					Iterator<String> keys = ((JSONObject)newValue).keys();
-					while (keys.hasNext())
-					{
-						String key = keys.next();
-						Object propValue = ((JSONObject)newValue).get(key);
-						Object oldPropValue = oldValues.get(key);
-						PropertyDescription property = customTypeDesc.getProperty(key);
-						if (property == null) continue; // ignore properties that are not spec'ed
-														// for
-														// this type..
-						Object value = fromJSON(oldPropValue, propValue, property, dataConversionContext);
-						retValue.put(key, value);
-					}
-					return retValue;
-				}
 			}
 		}
 		return newValue;

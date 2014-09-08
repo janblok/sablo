@@ -55,7 +55,7 @@ public class WebComponentTest
 	@Before
 	public void setUp() throws Exception
 	{
-		InputStream is = getClass().getResourceAsStream("WebComponentTest-manifest.spec");
+		InputStream is = getClass().getResourceAsStream("WebComponentTest.manifest");
 		byte[] bytes = new byte[is.available()];
 		is.read(bytes);
 		String manifest = new String(bytes);

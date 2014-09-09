@@ -109,6 +109,10 @@ public class IndexPageEnhancer
 				{
 					retval.append(String.format("<script src=\"%s\"></script>\n", lib));
 				}
+				else if (lib.toLowerCase().contains("css"))
+				{
+					retval.append(String.format("<link rel=\"stylesheet\" href=\"%s\"/>\n", lib));
+				}
 			}
 		}
 

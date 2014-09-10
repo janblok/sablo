@@ -50,7 +50,7 @@ public class WebComponentSpecification extends PropertyDescription
 	private final Map<String, PropertyDescription> handlers = new HashMap<>(); // second String is always a "function" for now, but in the future it will probably contain more (to specify sent args/types...)
 	private final Map<String, WebComponentApiDefinition> apis = new HashMap<>();
 	private final String definition;
-	private final String[] libraries;
+	private final JSONArray libraries;
 	private final String displayName;
 	private final String categoryName;
 	private final String icon;
@@ -68,15 +68,7 @@ public class WebComponentSpecification extends PropertyDescription
 		this.categoryName = categoryName;
 		this.icon = icon;
 		this.definition = definition;
-		if (libs != null)
-		{
-			this.libraries = new String[libs.length()];
-			for (int i = 0; i < libs.length(); i++)
-			{
-				this.libraries[i] = libs.optString(i);
-			}
-		}
-		else this.libraries = new String[0];
+		this.libraries = libs != null ? libs : new JSONArray();
 	}
 
 
@@ -171,9 +163,9 @@ public class WebComponentSpecification extends PropertyDescription
 		return names;
 	}
 
-	public String[] getLibraries()
+	public JSONArray getLibraries()
 	{
-		return libraries == null ? new String[0] : libraries;
+		return libraries;
 	}
 
 	private ParsedProperty parsePropertyString(final String propertyString)

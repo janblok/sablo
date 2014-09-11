@@ -217,7 +217,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -228,7 +228,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -263,7 +263,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -338,7 +338,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -349,7 +349,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -384,7 +384,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -446,7 +446,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -457,7 +457,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -484,7 +484,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -519,4 +519,15 @@ public class WebComponentPackage
 		}
 	}
 
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString()
+	{
+		return "WebComponnetPackage: " + getPackageName();
+	}
 }

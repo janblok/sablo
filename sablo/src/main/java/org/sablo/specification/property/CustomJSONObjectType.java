@@ -17,6 +17,7 @@
 package org.sablo.specification.property;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -36,18 +37,27 @@ import org.sablo.websocket.utils.JSONUtils;
  *
  * @author acostescu
  */
+@SuppressWarnings("nls")
 // TODO these ET and WT are improper - as for object type they can represent multiple types (a different set for each child key), but they help to avoid some bugs at compile-time
 public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<String, ET>> implements IWrapperType<Map<String, ET>, ChangeAwareMap<ET, WT>>
 {
 
 	public static final String TYPE_NAME = "JSON_obj";
 
-	protected static final String CONTENT_VERSION = "ver";
+	protected static final String CONTENT_VERSION = "vEr";
 	protected static final String UPDATES = "u";
 	protected static final String KEY = "k";
 	protected static final String VALUE = "v";
+	protected static final String INITIALIZE = "in";
+	protected static final String NO_OP = "n";
+
+	protected static Set<String> angularAutoAddedKeysToIgnore = new HashSet<>();
+	{
+		angularAutoAddedKeysToIgnore.add("$$hashKey");
+	}
 
 	protected Map<String, IWrapperType<ET, WT>> wrapperChildProps;
+
 
 	/**
 	 * Creates a new type that handles objects of the given key types (with their own set of default value, config object)
@@ -120,9 +130,12 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 	@Override
 	public ChangeAwareMap<ET, WT> fromJSON(Object newJSONValue, ChangeAwareMap<ET, WT> previousChangeAwareMap, IDataConverterContext dataConverterContext)
 	{
-		if (newJSONValue instanceof JSONObject)
+		JSONObject clientReceivedJSON;
+		if (newJSONValue instanceof JSONObject && (clientReceivedJSON = (JSONObject)newJSONValue).has(CONTENT_VERSION) &&
+			(clientReceivedJSON.has(VALUE) || clientReceivedJSON.has(UPDATES)))
 		{
-			JSONObject clientReceivedJSON = (JSONObject)newJSONValue;
+			if (clientReceivedJSON.has(NO_OP)) return previousChangeAwareMap;
+
 			try
 			{
 				if (previousChangeAwareMap == null || clientReceivedJSON.getInt(CONTENT_VERSION) == previousChangeAwareMap.getListContentVersion() + 1)
@@ -155,7 +168,8 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 								}
 								else
 								{
-									log.warn("Cannot set property '" + key + "' of custom JSON Object as it's type is undefined.");
+									if (!angularAutoAddedKeysToIgnore.contains(key)) log.warn("Cannot set property '" + key +
+										"' of custom JSON Object as it's type is undefined.");
 								}
 							}
 							previousChangeAwareMap.increaseContentVersion();
@@ -165,53 +179,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 					else
 					{
 						// full replace
-						JSONObject obj = clientReceivedJSON.getJSONObject(VALUE);
-						Map<String, WT> map = new HashMap<String, WT>();
-						Map<String, ET> previousBaseMap = previousChangeAwareMap != null ? previousChangeAwareMap.getBaseMap() : null;
-						Map<String, WT> previousWrappedBaseMap = (previousBaseMap instanceof WrapperMap< ? , ? >)
-							? ((WrapperMap<ET, WT>)previousBaseMap).getBaseMap() : (Map<String, WT>)previousBaseMap;
-
-						Iterator<String> it = obj.keys();
-						while (it.hasNext())
-						{
-							String key = it.next();
-							WT oldVal = null;
-							PropertyDescription keyPD = getCustomJSONTypeDefinition().getProperty(key);
-							if (keyPD != null)
-							{
-								if (previousWrappedBaseMap != null)
-								{
-									oldVal = previousWrappedBaseMap.get(key);
-								}
-								try
-								{
-									map.put(key,
-										(WT)JSONUtils.fromJSON(oldVal, obj.opt(key), getCustomJSONTypeDefinition().getProperty(key), dataConverterContext));
-								}
-								catch (JSONException e)
-								{
-									log.error("Cannot parse JSON object element browser JSON.", e);
-								}
-							}
-							else
-							{
-								log.warn("Cannot set property '" + key + "' of custom JSON Object as it's type is undefined.");
-							}
-						}
-
-						Map<String, ET> newBaseMap;
-						if (wrapperChildProps != null)
-						{
-							newBaseMap = new WrapperMap<ET, WT>(map, wrapperChildProps, dataConverterContext);
-						}
-						else
-						{
-							newBaseMap = (Map<String, ET>)map; // in this case ET == WT
-						}
-
-						// TODO how to handle previous null value here; do we need to re-send to client or not (for example initially both client and server had values, at the same time server==null client sends full update); how do we kno case server version is unknown then
-						return new ChangeAwareMap<ET, WT>(newBaseMap, dataConverterContext, previousChangeAwareMap != null
-							? previousChangeAwareMap.increaseContentVersion() : 1);
+						return fullValueReplaceFromBrowser(previousChangeAwareMap, dataConverterContext, clientReceivedJSON.getJSONObject(VALUE));
 					}
 				}
 				else
@@ -237,11 +205,71 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		{
 			return null;
 		}
+		else if (newJSONValue instanceof JSONObject)
+		{
+			// this can happen if the property was undefined before (so not even aware of type client side) and it was assigned a complete object value client side;
+			// in this case we must update server value and send a request back to client containing the type and letting it know that it must start watching the new value (for granular updates)
+			ChangeAwareMap<ET, WT> newChangeAwareMap = fullValueReplaceFromBrowser(previousChangeAwareMap, dataConverterContext, (JSONObject)newJSONValue);
+			newChangeAwareMap.markMustSendTypeToClient();
+			return newChangeAwareMap;
+		}
 		else
 		{
-			throw new RuntimeException("property " + dataConverterContext.getPropertyDescription().getName() +
-				" is typed as JSON object, but the value is not an JSONObject: " + newJSONValue);
+			log.error("property " + dataConverterContext.getPropertyDescription().getName() +
+				" is typed as JSON object, but the value is not an JSONObject or supported update value: " + newJSONValue);
+			return previousChangeAwareMap;
 		}
+	}
+
+	protected ChangeAwareMap<ET, WT> fullValueReplaceFromBrowser(ChangeAwareMap<ET, WT> previousChangeAwareMap, IDataConverterContext dataConverterContext,
+		JSONObject clientReceivedJSON)
+	{
+		Map<String, WT> map = new HashMap<String, WT>();
+		Map<String, ET> previousBaseMap = previousChangeAwareMap != null ? previousChangeAwareMap.getBaseMap() : null;
+		Map<String, WT> previousWrappedBaseMap = (previousBaseMap instanceof WrapperMap< ? , ? >) ? ((WrapperMap<ET, WT>)previousBaseMap).getBaseMap()
+			: (Map<String, WT>)previousBaseMap;
+
+		Iterator<String> it = clientReceivedJSON.keys();
+		while (it.hasNext())
+		{
+			String key = it.next();
+			WT oldVal = null;
+			PropertyDescription keyPD = getCustomJSONTypeDefinition().getProperty(key);
+			if (keyPD != null)
+			{
+				if (previousWrappedBaseMap != null)
+				{
+					oldVal = previousWrappedBaseMap.get(key);
+				}
+				try
+				{
+					map.put(key,
+						(WT)JSONUtils.fromJSON(oldVal, clientReceivedJSON.opt(key), getCustomJSONTypeDefinition().getProperty(key), dataConverterContext));
+				}
+				catch (JSONException e)
+				{
+					log.error("Cannot parse JSON object element browser JSON.", e);
+				}
+			}
+			else
+			{
+				if (!angularAutoAddedKeysToIgnore.contains(key)) log.warn("Cannot set property '" + key + "' of custom JSON Object as it's type is undefined.");
+			}
+		}
+
+		Map<String, ET> newBaseMap;
+		if (wrapperChildProps != null)
+		{
+			newBaseMap = new WrapperMap<ET, WT>(map, wrapperChildProps, dataConverterContext);
+		}
+		else
+		{
+			newBaseMap = (Map<String, ET>)map; // in this case ET == WT
+		}
+
+		// TODO how to handle previous null value here; do we need to re-send to client or not (for example initially both client and server had values, at the same time server==null client sends full update); how do we kno case server version is unknown then
+		return new ChangeAwareMap<ET, WT>(newBaseMap, dataConverterContext, previousChangeAwareMap != null ? previousChangeAwareMap.increaseContentVersion()
+			: 1);
 	}
 
 	@Override
@@ -254,12 +282,13 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 
 			Set<String> changes = changeAwareMap.getChangedKeys();
 			Map<String, WT> wrappedBaseMap = changeAwareMap.getWrappedBaseMapForReadOnly();
+			writer.object();
 			// TODO send all for now also if we know of no changes - when the separate tagging interface for granular updates vs full updates is added we can send NO_OP again
-			if (changeAwareMap.haveRemoveOperationsHappened() || changes.size() == 0)
+			if (changeAwareMap.mustSendAll() || (changes.size() == 0 && !changeAwareMap.mustSendTypeToClient()))
 			{
 				// send all (currently we don't support granular updates for remove but we could in the future)
 				DataConversion objConversionMarkers = new DataConversion();
-				writer.object().key(CONTENT_VERSION).value(changeAwareMap.increaseContentVersion()).key(VALUE).object();
+				writer.key(CONTENT_VERSION).value(changeAwareMap.increaseContentVersion()).key(VALUE).object();
 				for (Entry<String, WT> e : wrappedBaseMap.entrySet())
 				{
 					objConversionMarkers.pushNode(e.getKey());
@@ -274,14 +303,18 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 					JSONUtils.writeConversions(writer, objConversionMarkers.getConversions());
 					writer.endObject();
 				}
-				writer.endObject();
 			}
-			else
+			else if (changes.size() > 0)
 			{
 				// else write changed indexes / granular update:
-				writer.object();
-				writer.key(CONTENT_VERSION).value(changeAwareMap.increaseContentVersion()).key(UPDATES);
-				writer.array();
+				writer.key(CONTENT_VERSION).value(changeAwareMap.increaseContentVersion());
+				if (changeAwareMap.mustSendTypeToClient())
+				{
+					// updates + mustSendTypeToClient can happen if child elements are also similar - and need to instrument their values client-side when set by reference/completely from browser
+					writer.key(INITIALIZE).value(true);
+				}
+
+				writer.key(UPDATES).array();
 				DataConversion objConversionMarkers = new DataConversion();
 				int i = 0;
 				for (String k : changes)
@@ -301,13 +334,20 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 					JSONUtils.writeConversions(writer, objConversionMarkers.getConversions());
 					writer.endObject();
 				}
-				writer.endObject();
 			}
+			else
+			// changeAwareMap.mustSendTypeToClient() is true then
+			{
+				writer.key(CONTENT_VERSION).value(changeAwareMap.getListContentVersion());
+				writer.key(INITIALIZE).value(true);
+			}
+			writer.endObject();
 			changeAwareMap.clearChanges();
 		}
 		else
 		{
-			writer.value(null); // TODO how to handle null values which have no version info (special watches/complete array set from client)? if null is on server and something is set on client or the other way around?
+			if (conversionMarkers != null) conversionMarkers.convert(CustomJSONObjectType.TYPE_NAME); // so that the client knows it must use the custom client side JS for what JSON it gets
+			writer.value(JSONObject.NULL); // TODO how to handle null values which have no version info (special watches/complete array set from client)? if null is on server and something is set on client or the other way around?
 		}
 		return writer;
 	}

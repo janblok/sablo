@@ -56,6 +56,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	protected Set<Integer> changedIndexes = new HashSet<Integer>();
 	protected boolean allChanged;
 
+	protected boolean mustSendTypeToClient;
+
 
 	public ChangeAwareList(List<ET> baseList, IDataConverterContext dataConverterContext)
 	{
@@ -77,7 +79,12 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		return changedIndexes;
 	}
 
-	public boolean haveAddRemoveOperationsHappened()
+	public boolean mustSendTypeToClient()
+	{
+		return mustSendTypeToClient;
+	}
+
+	public boolean mustSendAll()
 	{
 		return allChanged;
 	}
@@ -85,6 +92,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	public void clearChanges()
 	{
 		allChanged = false;
+		mustSendTypeToClient = false;
 		changedIndexes.clear();
 	}
 
@@ -149,16 +157,23 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		return version;
 	}
 
+	protected void markMustSendTypeToClient()
+	{
+		boolean oldMustSendTypeToClient = mustSendTypeToClient;
+		mustSendTypeToClient = true;
+		if (changedIndexes.size() == 0 && !allChanged && !oldMustSendTypeToClient && changeMonitor != null) changeMonitor.valueChanged();
+	}
+
 	protected void markElementChanged(int i)
 	{
-		if (changedIndexes.add(Integer.valueOf(i))) changeMonitor.valueChanged();
+		if (changedIndexes.add(Integer.valueOf(i)) && !allChanged && !mustSendTypeToClient && changeMonitor != null) changeMonitor.valueChanged();
 	}
 
 	protected void markAllChanged()
 	{
 		boolean alreadyCh = allChanged;
 		allChanged = true;
-		if (!alreadyCh) changeMonitor.valueChanged();
+		if (!alreadyCh && changedIndexes.size() == 0 && !mustSendTypeToClient && changeMonitor != null) changeMonitor.valueChanged();
 	}
 
 	protected void attachToBaseObjectIfNeeded(int i, WT el, boolean insert)
@@ -179,6 +194,13 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			attachToBaseObject(i, el, false);
 			i++;
 		}
+
+		if (isChanged()) changeMonitor.valueChanged();
+	}
+
+	protected boolean isChanged()
+	{
+		return (allChanged || mustSendTypeToClient || changedIndexes.size() > 0);
 	}
 
 	// called whenever a new element was added or inserted into the array

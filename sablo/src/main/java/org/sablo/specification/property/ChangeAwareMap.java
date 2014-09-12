@@ -58,6 +58,8 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	protected Set<String> changedKeys = new HashSet<String>();
 	protected boolean allChanged;
 
+	protected boolean mustSendTypeToClient;
+
 	protected EntrySet entrySet;
 
 	public ChangeAwareMap(Map<String, ET> baseMap, IDataConverterContext dataConverterContext)
@@ -80,7 +82,12 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		return changedKeys;
 	}
 
-	public boolean haveRemoveOperationsHappened()
+	public boolean mustSendTypeToClient()
+	{
+		return mustSendTypeToClient;
+	}
+
+	public boolean mustSendAll()
 	{
 		return allChanged;
 	}
@@ -88,6 +95,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	public void clearChanges()
 	{
 		allChanged = false;
+		mustSendTypeToClient = false;
 		changedKeys.clear();
 	}
 
@@ -151,16 +159,23 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		return version;
 	}
 
-	private void markElementChanged(String key)
+	protected void markMustSendTypeToClient()
 	{
-		if (changedKeys.add(key)) changeMonitor.valueChanged();
+		boolean oldMustSendTypeToClient = mustSendTypeToClient;
+		mustSendTypeToClient = true;
+		if (changedKeys.size() == 0 && !allChanged && !oldMustSendTypeToClient && changeMonitor != null) changeMonitor.valueChanged();
+	}
+
+	protected void markElementChanged(String key)
+	{
+		if (changedKeys.add(key) && !allChanged && !mustSendTypeToClient && changeMonitor != null) changeMonitor.valueChanged();
 	}
 
 	protected void markAllChanged()
 	{
 		boolean alreadyCh = allChanged;
 		allChanged = true;
-		if (!alreadyCh) changeMonitor.valueChanged();
+		if (!alreadyCh && changedKeys.size() == 0 && !mustSendTypeToClient && changeMonitor != null) changeMonitor.valueChanged();
 	}
 
 	protected void attachToBaseObjectIfNeeded(String key, WT el)
@@ -179,6 +194,13 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		{
 			attachToBaseObject(e.getKey(), e.getValue());
 		}
+
+		if (isChanged()) changeMonitor.valueChanged();
+	}
+
+	protected boolean isChanged()
+	{
+		return (allChanged || mustSendTypeToClient || changedKeys.size() > 0);
 	}
 
 	// called whenever a new element was added or inserted into the array

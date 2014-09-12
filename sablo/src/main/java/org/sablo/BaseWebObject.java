@@ -108,6 +108,11 @@ public abstract class BaseWebObject
 	public Object getProperty(String propertyName)
 	{
 		Object object = properties.get(propertyName);
+		return unwrapValue(propertyName, object);
+	}
+
+	protected Object unwrapValue(String propertyName, Object object)
+	{
 		if (object != null)
 		{
 			PropertyDescription propDesc = specification.getProperty(propertyName);
@@ -218,12 +223,14 @@ public abstract class BaseWebObject
 		if (map.containsKey(lastPropertyPart))
 		{
 			// existing property
-			Object oldValue = getProperty(propertyName);
+			Object oldValue = getProperty(propertyName); // this unwraps it
 			map.put(lastPropertyPart, wrappedValue);
+			propertyValue = getProperty(propertyName); // this is required as a wrap + unwrap might result in a different object then the initial one
 
+			// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
 			onPropertyChange(firstPropertyPart, oldValue, propertyValue);
 
-			if ((oldValue != null && !oldValue.equals(wrappedValue)) || (wrappedValue != null && !wrappedValue.equals(oldValue)))
+			if ((oldValue != null && !oldValue.equals(propertyValue)) || (propertyValue != null && !propertyValue.equals(oldValue)))
 			{
 				changedProperties.add(firstPropertyPart);
 				return true;
@@ -233,7 +240,10 @@ public abstract class BaseWebObject
 		{
 			// new property
 			map.put(lastPropertyPart, wrappedValue);
-			onPropertyChange(firstPropertyPart, null, wrappedValue);
+			propertyValue = getProperty(propertyName); // this is required as a wrap + unwrap might result in a different object then the initial one
+
+			// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
+			onPropertyChange(firstPropertyPart, null, propertyValue);
 
 			changedProperties.add(firstPropertyPart);
 			return true;
@@ -268,7 +278,11 @@ public abstract class BaseWebObject
 		// }
 		// }// end TODO REMOVE
 		Object oldValue = properties.get(propertyName);
-		properties.put(propertyName, convertValueFromJSON(propertyName, oldValue, propertyValue));
+		Object newValue = convertValueFromJSON(propertyName, oldValue, propertyValue);
+		properties.put(propertyName, newValue);
+
+		// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
+		if (oldValue != newValue) onPropertyChange(propertyName, unwrapValue(propertyName, oldValue), unwrapValue(propertyName, newValue));
 	}
 
 	/**

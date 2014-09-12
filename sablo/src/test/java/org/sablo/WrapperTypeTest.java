@@ -26,7 +26,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
@@ -42,7 +41,6 @@ import org.sablo.websocket.utils.JSONUtils;
  * @author jcompagner
  *
  */
-@Ignore
 public class WrapperTypeTest
 {
 
@@ -127,7 +125,7 @@ public class WrapperTypeTest
 	{
 
 		TypesRegistry.addType(new MyWrapperType());
-		InputStream is = getClass().getResourceAsStream("WebComponentTest-manifest.spec");
+		InputStream is = getClass().getResourceAsStream("WebComponentTest.manifest");
 		byte[] bytes = new byte[is.available()];
 		is.read(bytes);
 		String manifest = new String(bytes);

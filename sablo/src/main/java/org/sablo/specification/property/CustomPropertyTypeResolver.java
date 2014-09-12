@@ -79,7 +79,7 @@ public class CustomPropertyTypeResolver
 			}
 			else if (smartCustomType == null)
 			{
-				propertyType = new CustomJSONObjectType(typeName, null); // that null is temporary - it will get populated later by the parser
+				propertyType = (CustomJSONObjectType)TypesRegistry.createNewType(CustomJSONObjectType.TYPE_NAME, typeName);
 				propertyType.setCustomJSONDefinition(new PropertyDescription(typeName, propertyType));
 			}
 			else

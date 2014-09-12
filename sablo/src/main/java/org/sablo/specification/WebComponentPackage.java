@@ -53,6 +53,7 @@ public class WebComponentPackage
 {
 	private static final Logger log = LoggerFactory.getLogger(WebComponentPackage.class.getCanonicalName());
 	private static final String GLOBAL_TYPES_MANIFEST_ATTR = "Global-Types";
+	private static final String BUNDLE_NAME = "Bundle-Name";
 
 	public interface IPackageReader
 	{
@@ -233,6 +234,15 @@ public class WebComponentPackage
 		@Override
 		public String getPackageName()
 		{
+			try
+			{
+				String bundleName = getManifest().getMainAttributes().getValue(BUNDLE_NAME);
+				if (bundleName != null) return bundleName;
+			}
+			catch (IOException e)
+			{
+				log.error("Bundle Name attribute not found.", e);
+			}
 			return FilenameUtils.getBaseName(jarFile.getAbsolutePath());
 		}
 
@@ -345,6 +355,15 @@ public class WebComponentPackage
 		@Override
 		public String getPackageName()
 		{
+			try
+			{
+				String bundleName = getManifest().getMainAttributes().getValue(BUNDLE_NAME);
+				if (bundleName != null) return bundleName;
+			}
+			catch (IOException e)
+			{
+				log.error("Bundle Name attribute not found.", e);
+			}
 			return dir.getName();
 		}
 
@@ -500,4 +519,15 @@ public class WebComponentPackage
 		}
 	}
 
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString()
+	{
+		return "WebComponnetPackage: " + getPackageName();
+	}
 }

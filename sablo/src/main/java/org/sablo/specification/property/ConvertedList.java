@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.ListIterator;
 
 /**
- * This class wraps an List, representing the data in that array list in a converted form.
+ * This class wraps a List, representing the data in that array list in a converted form.
  * So any element operation from the outside world goes through a 2-way conversion until it reaches the 'base' List.
  *
  * For example add(X) would actually do a baseList.add(convertToBase(X)).
@@ -34,25 +34,27 @@ import java.util.ListIterator;
  * @param <ExternalT> the base list's element types.
  * @param <BaseT> the element types of this list
  */
-public abstract class ConvertedArrayList<ExternalT, BaseT> extends AbstractList<ExternalT>/* mostly for subList() impl */implements List<ExternalT>
+public abstract class ConvertedList<ExternalT, BaseT> extends AbstractList<ExternalT>/* mostly for subList() impl */implements List<ExternalT>
 {
 
 	protected List<BaseT> baseList;
 
-	public ConvertedArrayList(List<ExternalT> external, boolean flag /* this arg is just to disambiguate the between constructors */)
+	public ConvertedList()
 	{
 		this.baseList = new ArrayList<>();
-		int i = 0;
+	}
+
+	public ConvertedList(List<BaseT> base)
+	{
+		this.baseList = base;
+	}
+
+	protected void initFromExternal(List<ExternalT> external)
+	{
 		for (ExternalT e : external)
 		{
 			baseList.add(convertToBase(-1, e));
-			i++;
 		}
-	}
-
-	public ConvertedArrayList(List<BaseT> base)
-	{
-		this.baseList = base;
 	}
 
 	public List<BaseT> getBaseList()

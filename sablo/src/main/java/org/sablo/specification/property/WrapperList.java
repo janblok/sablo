@@ -23,7 +23,7 @@ import java.util.List;
  *
  * @author acostescu
  */
-public class WrapperList<ExternalT, BaseT> extends ConvertedArrayList<ExternalT, BaseT>
+public class WrapperList<ExternalT, BaseT> extends ConvertedList<ExternalT, BaseT>
 {
 
 	protected IWrapperType<ExternalT, BaseT> type;
@@ -31,9 +31,10 @@ public class WrapperList<ExternalT, BaseT> extends ConvertedArrayList<ExternalT,
 
 	public WrapperList(List<ExternalT> external, IWrapperType<ExternalT, BaseT> type, IDataConverterContext dataConverterContext, boolean flag) // this last arg is just to disambiguate the between constructors */
 	{
-		super(external, true);
+		super();
 		this.type = type;
 		this.dataConverterContext = dataConverterContext;
+		initFromExternal(external);
 	}
 
 	public WrapperList(List<BaseT> base, IWrapperType<ExternalT, BaseT> type, IDataConverterContext dataConverterContext)

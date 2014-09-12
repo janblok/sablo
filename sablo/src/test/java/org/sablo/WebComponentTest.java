@@ -30,11 +30,9 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
@@ -48,7 +46,6 @@ import org.sablo.websocket.utils.JSONUtils;
  * @author jcompagner
  *
  */
-@Ignore
 public class WebComponentTest
 {
 
@@ -58,7 +55,7 @@ public class WebComponentTest
 	@Before
 	public void setUp() throws Exception
 	{
-		InputStream is = getClass().getResourceAsStream("WebComponentTest-manifest.spec");
+		InputStream is = getClass().getResourceAsStream("WebComponentTest.manifest");
 		byte[] bytes = new byte[is.available()];
 		is.read(bytes);
 		String manifest = new String(bytes);
@@ -247,7 +244,8 @@ public class WebComponentTest
 		String msg = JSONUtils.writeDataWithConversions(data, null);
 		assertEquals("{\"msg\":{\"atype\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"},\"name\":\"test\"}}", msg);
 
-		component.putBrowserProperty("atype", new JSONObject("{\"name\":\"myname\",\"active\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}"));
+		component.putBrowserProperty("atype", new JSONObject(
+			"{\"ver\":2,\"v\":{\"name\":\"myname\",\"active\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}}"));
 		properties = component.getRawProperties();
 		assertNotNull(properties.get("atype"));
 		assertSame(properties.get("atype"), component.getProperty("atype"));
@@ -260,7 +258,7 @@ public class WebComponentTest
 		// TODO also for custom types none existing properties should just be added? Like in the component itself?
 		// for now we dont allow it..
 		component.putBrowserProperty("atype", new JSONObject(
-			"{\"name\":\"myname\",\"notintype\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}"));
+			"{\"ver\":3,\"v\":{\"name\":\"myname\",\"notintype\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}}"));
 		properties = component.getRawProperties();
 		assertNotNull(properties.get("atype"));
 		assertSame(properties.get("atype"), component.getProperty("atype"));
@@ -313,13 +311,13 @@ public class WebComponentTest
 
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes);
 		assertEquals(
-			"{\"msg\":{\"name\":\"test\",\"types\":{\"ver\":2,\"v\":[{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"},{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}]}},\"conversions\":{\"msg\":{\"types\":\"JSON_arr\"}}}",
+			"{\"msg\":{\"name\":\"test\",\"types\":{\"ver\":2,\"v\":[{\"ver\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"ver\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"conversions\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"conversions\":{\"msg\":{\"types\":\"JSON_arr\"}}}",
 			msg);
 
 		component.putBrowserProperty(
 			"types",
-			new JSONArray(
-				"[{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"},{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"},{\"name\":\"myname3\",\"active\":true,\"foreground\":null}]"));
+			new JSONObject(
+				"{\"ver\":3,\"v\":[{\"ver\":3,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"ver\":3,\"v\":{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"}},{\"ver\":3,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}]}"));
 
 		ChangeAwareList<Object, Object> array3 = (ChangeAwareList)component.getProperty("types");
 

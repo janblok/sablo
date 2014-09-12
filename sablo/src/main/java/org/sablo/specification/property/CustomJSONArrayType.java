@@ -42,7 +42,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 	public static final String TYPE_NAME = "JSON_arr";
 
 	protected static final String CONTENT_VERSION = "ver";
-	protected static final String UPDATES = "updates";
+	protected static final String UPDATES = "u";
 	protected static final String INDEX = "i";
 	protected static final String VALUE = "v";
 
@@ -84,9 +84,8 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 		if (wrappedList != null)
 		{
 			// ok now we have the list or wrap list (depending on if type is IWrapperType or not)
-			// wrap this further into a change-aware list; this is used to be able to perform browser <-> server granular updates
-			return new ChangeAwareList<ET, WT>(wrappedList, getElementType(), dataConverterContext, previousValue != null
-				? previousValue.getListContentVersion() + 1 : 1);
+			// wrap this further into a change-aware list; this is used to be able to track changes and perform server to browser full or granular updates
+			return new ChangeAwareList<ET, WT>(wrappedList, dataConverterContext, previousValue != null ? previousValue.getListContentVersion() + 1 : 1);
 		}
 		return null;
 	}
@@ -145,96 +144,111 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 	{
 		if (newJSONValue instanceof JSONObject)
 		{
-			if (previousChangeAwareList == null)
+			JSONObject clientReceivedJSON = (JSONObject)newJSONValue;
+			try
 			{
-				log.warn("property " + dataConverterContext.getPropertyDescription().getName() +
-					" is typed as array; it got browser updates but server-side it is null; ignoring browser update.");
-			}
-			else
-			{
-
-				JSONObject updates = (JSONObject)newJSONValue;
-
-				try
+				if (previousChangeAwareList == null || clientReceivedJSON.getInt(CONTENT_VERSION) == previousChangeAwareList.getListContentVersion() + 1)
 				{
-					if (updates.getInt(CONTENT_VERSION) == previousChangeAwareList.getListContentVersion())
+					if (clientReceivedJSON.has(UPDATES))
 					{
-						List<ET> baseList = previousChangeAwareList.getBaseList();
-						// here we operate directly on (wrapper) base list as this change doesn't need to be sent back to browser
-						// as browser initiated it; also JSON conversions work on wrapped values
-						List<WT> wrappedBaseList = (baseList instanceof WrapperList< ? , ? >) ? ((WrapperList<ET, WT>)baseList).getBaseList()
-							: (List<WT>)baseList;
-
-						JSONArray updatedRows = updates.getJSONArray(UPDATES);
-						for (int i = updatedRows.length() - 1; i >= 0; i--)
+						if (previousChangeAwareList == null)
 						{
-							JSONObject row = updatedRows.getJSONObject(i);
-							int idx = row.getInt(INDEX);
-							Object val = row.get(VALUE);
-
-							if (baseList.size() > idx)
-							{
-								wrappedBaseList.set(idx,
-									(WT)JSONUtils.fromJSON(wrappedBaseList.get(idx), val, getCustomJSONTypeDefinition(), dataConverterContext));
-							}
-							else
-							{
-								log.error("Custom array property updates from browser are incorrect. Index out of bounds: idx (" + baseList.size() + ")");
-							}
+							log.warn("property " + dataConverterContext.getPropertyDescription().getName() +
+								" is typed as array; it got browser updates but server-side it is null; ignoring browser update.");
 						}
+						else
+						{
+							JSONObject updates = (JSONObject)newJSONValue;
+
+							// here we operate directly on (wrapper) base list as this change doesn't need to be sent back to browser
+							// as browser initiated it; also JSON conversions work on wrapped values
+							List<WT> wrappedBaseListReadOnly = previousChangeAwareList.getWrappedBaseListForReadOnly();
+
+							JSONArray updatedRows = updates.getJSONArray(UPDATES);
+							for (int i = updatedRows.length() - 1; i >= 0; i--)
+							{
+								JSONObject row = updatedRows.getJSONObject(i);
+								int idx = row.getInt(INDEX);
+								Object val = row.get(VALUE);
+
+								if (wrappedBaseListReadOnly.size() > idx)
+								{
+									WT newWrappedEl = (WT)JSONUtils.fromJSON(wrappedBaseListReadOnly.get(idx), val, getCustomJSONTypeDefinition(),
+										dataConverterContext);
+									previousChangeAwareList.setInWrappedBaseList(idx, newWrappedEl, false);
+								}
+								else
+								{
+									log.error("Custom array property updates from browser are incorrect. Index out of bounds: idx (" +
+										wrappedBaseListReadOnly.size() + ")");
+								}
+							}
+							previousChangeAwareList.increaseContentVersion();
+						}
+						return previousChangeAwareList;
 					}
 					else
 					{
-						// dropped browser update because server object changed meanwhile
-						log.warn("property " + dataConverterContext.getPropertyDescription().getName() +
-							" is typed as array; it got browser updates but server version is different - so server changed meanwhile; ignoring browser update.");
+						// full replace
+						JSONArray array = clientReceivedJSON.getJSONArray(VALUE);
+						List<WT> list = new ArrayList<WT>();
+						List<ET> previousBaseList = previousChangeAwareList != null ? previousChangeAwareList.getBaseList() : null;
+						List<WT> previousWrappedBaseList = (previousBaseList instanceof WrapperList< ? , ? >)
+							? ((WrapperList<ET, WT>)previousBaseList).getBaseList() : (List<WT>)previousBaseList;
+
+						for (int i = 0; i < array.length(); i++)
+						{
+							WT oldVal = null;
+							if (previousWrappedBaseList != null && previousWrappedBaseList.size() > i)
+							{
+								oldVal = previousWrappedBaseList.get(i);
+							}
+							try
+							{
+								list.add((WT)JSONUtils.fromJSON(oldVal, array.opt(i), getCustomJSONTypeDefinition(), dataConverterContext));
+							}
+							catch (JSONException e)
+							{
+								log.error("Cannot parse array element browser JSON.", e);
+							}
+						}
+
+						List<ET> newBaseList;
+						IPropertyType<ET> elementType = getElementType();
+						if (elementType instanceof IWrapperType< ? , ? >)
+						{
+							newBaseList = new WrapperList<ET, WT>(list, (IWrapperType<ET, WT>)elementType, dataConverterContext);
+						}
+						else
+						{
+							newBaseList = (List<ET>)list; // in this case ET == WT
+						}
+
+						// TODO how to handle previous null value here; do we need to re-send to client or not (for example initially both client and server had values, at the same time server==null client sends full update); how do we kno case server version is unknown then
+						return new ChangeAwareList<ET, WT>(newBaseList, dataConverterContext, previousChangeAwareList != null
+							? previousChangeAwareList.increaseContentVersion() : 1);
 					}
 				}
-				catch (JSONException e)
+				else
 				{
-					log.error("Cannot correctly parse custom array property updates from browser.", e);
-				}
-			}
-			return previousChangeAwareList;
-		}
-		else if (newJSONValue instanceof JSONArray)
-		{
-			// full replace
-			JSONArray array = (JSONArray)newJSONValue;
-			List<WT> list = new ArrayList<WT>();
-			List<ET> previousBaseList = previousChangeAwareList != null ? previousChangeAwareList.getBaseList() : null;
-			List<WT> previousWrappedBaseList = (previousBaseList instanceof WrapperList< ? , ? >) ? ((WrapperList<ET, WT>)previousBaseList).getBaseList()
-				: (List<WT>)previousBaseList;
+					log.warn("property " + dataConverterContext.getPropertyDescription().getName() + " is typed as array; it got browser updates (" +
+						clientReceivedJSON.getInt(CONTENT_VERSION) + ") but expected server version (" + (previousChangeAwareList.getListContentVersion() + 1) +
+						")  - so server changed meanwhile; ignoring browser update.");
 
-			for (int i = 0; i < array.length(); i++)
-			{
-				WT oldVal = null;
-				if (previousWrappedBaseList != null && previousWrappedBaseList.size() > i)
-				{
-					oldVal = previousWrappedBaseList.get(i);
-				}
-				try
-				{
-					list.add((WT)JSONUtils.fromJSON(oldVal, array.opt(i), getCustomJSONTypeDefinition(), dataConverterContext));
-				}
-				catch (JSONException e)
-				{
-					log.error("Cannot parse array element browser JSON.", e);
-				}
-			}
+					// dropped browser update because server object changed meanwhile;
+					// will send a full update to have the correct value browser-side as well again (currently server side is leading / has more prio because not all server side values might support being recreated from client values)
+					// TODO should this markAllChange be happening if the version is higher client side?
+					// if it is lower then the server value is already send over... (or isn't the server value always already send over and the client just should make sure it doesn't override??)
+					//previousChangeAwareList.markAllChanged();
 
-			List<ET> newBaseList;
-			IPropertyType<ET> elementType = getElementType();
-			if (elementType instanceof IWrapperType< ? , ? >)
-			{
-				newBaseList = new WrapperList<ET, WT>(list, (IWrapperType<ET, WT>)elementType, dataConverterContext);
+					return previousChangeAwareList;
+				}
 			}
-			else
+			catch (JSONException e)
 			{
-				newBaseList = (List<ET>)list; // in this case ET == WT
+				log.error("Cannot correctly parse custom array property updates/values from browser.", e);
+				return previousChangeAwareList;
 			}
-			return new ChangeAwareList<ET, WT>(newBaseList, elementType, dataConverterContext, previousChangeAwareList != null
-				? previousChangeAwareList.getListContentVersion() + 1 : 1);
 		}
 		else if (newJSONValue == null)
 		{
@@ -250,23 +264,23 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 	@Override
 	public JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, DataConversion conversionMarkers) throws JSONException
 	{
+		JSONUtils.addKeyIfPresent(writer, key);
 		if (changeAwareList != null)
 		{
 			if (conversionMarkers != null) conversionMarkers.convert(CustomJSONArrayType.TYPE_NAME); // so that the client knows it must use the custom client side JS for what JSON it gets
 
 			Set<Integer> changes = changeAwareList.getChangedIndexes();
-			List<WT> wrappedBaseList = changeAwareList.getWrappedBaseList();
+			List<WT> wrappedBaseListReadOnly = changeAwareList.getWrappedBaseListForReadOnly();
 			// TODO send all for now also if we know of no changes - when the separate tagging interface for granular updates vs full updates is added we can send NO_OP again
 			if (changeAwareList.haveAddRemoveOperationsHappened() || changes.size() == 0)
 			{
 				// send all (currently we don't support granular updates for add/remove but we could in the future)
-				JSONUtils.addKeyIfPresent(writer, key);
 				DataConversion arrayConversionMarkers = new DataConversion();
 				writer.object().key(CONTENT_VERSION).value(changeAwareList.increaseContentVersion()).key(VALUE).array();
-				for (int i = 0; i < wrappedBaseList.size(); i++)
+				for (int i = 0; i < wrappedBaseListReadOnly.size(); i++)
 				{
 					arrayConversionMarkers.pushNode(String.valueOf(i));
-					JSONUtils.toBrowserJSONValue(writer, null, wrappedBaseList.get(i), getCustomJSONTypeDefinition(), arrayConversionMarkers);
+					JSONUtils.toBrowserJSONValue(writer, null, wrappedBaseListReadOnly.get(i), getCustomJSONTypeDefinition(), arrayConversionMarkers);
 					arrayConversionMarkers.popNode();
 				}
 				writer.endArray();
@@ -281,8 +295,6 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 			else
 			{
 				// else write changed indexes / granular update:
-				JSONUtils.addKeyIfPresent(writer, key);
-
 				writer.object();
 				writer.key(CONTENT_VERSION).value(changeAwareList.increaseContentVersion()).key(UPDATES);
 				writer.array();
@@ -293,7 +305,8 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 					arrayConversionMarkers.pushNode(String.valueOf(i++));
 					writer.object().key(INDEX).value(idx);
 					arrayConversionMarkers.pushNode(VALUE);
-					JSONUtils.toBrowserJSONValue(writer, VALUE, wrappedBaseList.get(idx.intValue()), getCustomJSONTypeDefinition(), arrayConversionMarkers);
+					JSONUtils.toBrowserJSONValue(writer, VALUE, wrappedBaseListReadOnly.get(idx.intValue()), getCustomJSONTypeDefinition(),
+						arrayConversionMarkers);
 					arrayConversionMarkers.popNode();
 					writer.endObject();
 					arrayConversionMarkers.popNode();
@@ -308,6 +321,10 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 				writer.endObject();
 			}
 			changeAwareList.clearChanges();
+		}
+		else
+		{
+			writer.value(null); // TODO how to handle null values which have no version info (special watches/complete array set from client)? if null is on server and something is set on client or the other way around?
 		}
 		return writer;
 	}

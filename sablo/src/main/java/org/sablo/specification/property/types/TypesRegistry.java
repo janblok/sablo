@@ -21,6 +21,8 @@ import java.util.Map;
 
 import org.sablo.specification.property.CustomJSONArrayType;
 import org.sablo.specification.property.CustomJSONArrayTypeFactory;
+import org.sablo.specification.property.CustomJSONObjectType;
+import org.sablo.specification.property.CustomJSONObjectTypeFactory;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IPropertyType;
 import org.slf4j.Logger;
@@ -64,7 +66,7 @@ public class TypesRegistry
 		addType(BytePropertyType.INSTANCE);
 
 		addTypeFactory(CustomJSONArrayType.TYPE_NAME, new CustomJSONArrayTypeFactory());
-//		addTypeFactory(CustomJSONObjectType.TYPE_NAME, new CustomJSONObjectTypeFactory());
+		addTypeFactory(CustomJSONObjectType.TYPE_NAME, new CustomJSONObjectTypeFactory());
 	}
 
 

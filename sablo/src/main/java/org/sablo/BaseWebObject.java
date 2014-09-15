@@ -56,6 +56,11 @@ public abstract class BaseWebObject
 	protected final Map<String, Object> properties = new HashMap<>();
 
 	/**
+	 * default model properties that are not send to the browser.
+	 */
+	protected final Map<String, Object> defaultProperties = new HashMap<>();
+
+	/**
 	 * the changed properties
 	 */
 	private final Set<String> changedProperties = new HashSet<>(3);
@@ -108,6 +113,10 @@ public abstract class BaseWebObject
 	public Object getProperty(String propertyName)
 	{
 		Object object = properties.get(propertyName);
+		if (object == null)
+		{
+			return defaultProperties.get(propertyName);
+		}
 		return unwrapValue(propertyName, object);
 	}
 
@@ -177,6 +186,18 @@ public abstract class BaseWebObject
 	}
 
 	/**
+	 * Set the defaults property value that is not send to the browser.
+	 * This should/can reflect the values that are set in the template as default values.
+	 *
+	 * @param propertyName
+	 * @param propertyValue
+	 */
+	public void setDefaultProperty(String propertyName, Object propertyValue)
+	{
+		defaultProperties.put(propertyName, propertyValue);
+	}
+
+	/**
 	 * Setting new data and recording this as change.
 	 *
 	 * @param propertyName
@@ -185,13 +206,13 @@ public abstract class BaseWebObject
 	 */
 	public boolean setProperty(String propertyName, Object propertyValue)
 	{
-		Map<String, Object> map = properties;
 		Object wrappedValue = propertyValue;
 		try
 		{
 			// TODO can the propertyName can contain dots? Or should this be
 			// handled by the type??
-			wrappedValue = wrapPropertyValue(propertyName, map.get(propertyName), propertyValue);
+			Object oldValue = getOldValue(propertyName);
+			wrappedValue = wrapPropertyValue(propertyName, oldValue, propertyValue);
 		}
 		catch (Exception e)
 		{
@@ -201,6 +222,7 @@ public abstract class BaseWebObject
 
 		// TODO can the propertyName can contain dots? Or should this be handled
 		// by the type?? Remove this code below. (the getProperty doesn't suppor this!)
+		Map<String, Object> map = properties;
 		String firstPropertyPart = propertyName;
 		String lastPropertyPart = propertyName;
 		String[] parts = propertyName.split("\\.");
@@ -252,6 +274,26 @@ public abstract class BaseWebObject
 	}
 
 	/**
+	 * @param propertyName
+	 * @return
+	 * @throws JSONException
+	 */
+	private Object getOldValue(String propertyName) throws JSONException
+	{
+		Object oldValue = properties.get(propertyName);
+		if (oldValue == null && !properties.containsKey(propertyName))
+		{
+			Object defaultProperty = defaultProperties.get(propertyName);
+			if (defaultProperty != null)
+			{
+				// quickly wrap this value so that it can be used as the oldValue later on.
+				oldValue = wrapPropertyValue(propertyName, null, defaultProperty);
+			}
+		}
+		return oldValue;
+	}
+
+	/**
 	 * put property from the outside world, not recording changes. converting to
 	 * the right type.
 	 *
@@ -261,23 +303,7 @@ public abstract class BaseWebObject
 	 */
 	public void putBrowserProperty(String propertyName, Object propertyValue) throws JSONException
 	{
-		// currently we keep Java objects in here; we could switch to having
-		// only json objects in here is it make things quicker
-		// (then whenever a server-side value is put in the map, convert it via
-		// JSONUtils.toJSONValue())
-		// TODO remove this when hierarchical tree structure comes into play
-		// (only needed for )
-		// if (propertyValue instanceof JSONObject)
-		// {
-		// Iterator<String> it = ((JSONObject)propertyValue).keys();
-		// while (it.hasNext())
-		// {
-		// String key = it.next();
-		// properties.put(propertyName + '.' + key,
-		// ((JSONObject)propertyValue).get(key));
-		// }
-		// }// end TODO REMOVE
-		Object oldValue = properties.get(propertyName);
+		Object oldValue = getOldValue(propertyName);
 		Object newValue = convertValueFromJSON(propertyName, oldValue, propertyValue);
 		properties.put(propertyName, newValue);
 

@@ -113,7 +113,7 @@ public abstract class BaseWebObject
 	public Object getProperty(String propertyName)
 	{
 		Object object = properties.get(propertyName);
-		if (object == null)
+		if (object == null && !properties.containsKey(propertyName))
 		{
 			return defaultProperties.get(propertyName);
 		}
@@ -211,7 +211,7 @@ public abstract class BaseWebObject
 		{
 			// TODO can the propertyName can contain dots? Or should this be
 			// handled by the type??
-			Object oldValue = getOldValue(propertyName);
+			Object oldValue = getCurrentValue(propertyName);
 			wrappedValue = wrapPropertyValue(propertyName, oldValue, propertyValue);
 		}
 		catch (Exception e)
@@ -274,11 +274,13 @@ public abstract class BaseWebObject
 	}
 
 	/**
+	 * Gets the current value from the properties, if not set then it fallbacks to the default properties (which it then wraps)
+	 *
 	 * @param propertyName
 	 * @return
 	 * @throws JSONException
 	 */
-	private Object getOldValue(String propertyName) throws JSONException
+	private Object getCurrentValue(String propertyName) throws JSONException
 	{
 		Object oldValue = properties.get(propertyName);
 		if (oldValue == null && !properties.containsKey(propertyName))
@@ -303,7 +305,7 @@ public abstract class BaseWebObject
 	 */
 	public void putBrowserProperty(String propertyName, Object propertyValue) throws JSONException
 	{
-		Object oldValue = getOldValue(propertyName);
+		Object oldValue = getCurrentValue(propertyName);
 		Object newValue = convertValueFromJSON(propertyName, oldValue, propertyValue);
 		properties.put(propertyName, newValue);
 

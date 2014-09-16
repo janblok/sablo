@@ -58,7 +58,7 @@ public abstract class BaseWebObject
 	/**
 	 * default model properties that are not send to the browser.
 	 */
-	protected final Map<String, Object> defaultProperties = new HashMap<>();
+	protected final Map<String, Object> defaultPropertiesUnwrapped = new HashMap<>();
 
 	/**
 	 * the changed properties
@@ -115,7 +115,7 @@ public abstract class BaseWebObject
 		Object object = properties.get(propertyName);
 		if (object == null && !properties.containsKey(propertyName))
 		{
-			return defaultProperties.get(propertyName);
+			return defaultPropertiesUnwrapped.get(propertyName);
 		}
 		return unwrapValue(propertyName, object);
 	}
@@ -194,7 +194,15 @@ public abstract class BaseWebObject
 	 */
 	public void setDefaultProperty(String propertyName, Object propertyValue)
 	{
-		defaultProperties.put(propertyName, propertyValue);
+		if (propertyValue instanceof ISmartPropertyValue) setProperty(propertyName, propertyValue);
+		else
+		{
+			Object oldUnwrappedV = getProperty(propertyName);
+			defaultPropertiesUnwrapped.put(propertyName, propertyValue);
+			Object newUnwrappedV = unwrapValue(propertyName, getCurrentValue(propertyName)); // a default value wrap/unwrap might result in a different value
+
+			if (newUnwrappedV != oldUnwrappedV) onPropertyChange(propertyName, oldUnwrappedV, newUnwrappedV);
+		}
 	}
 
 	/**
@@ -280,12 +288,12 @@ public abstract class BaseWebObject
 	 * @return
 	 * @throws JSONException
 	 */
-	private Object getCurrentValue(String propertyName) throws JSONException
+	private Object getCurrentValue(String propertyName)
 	{
 		Object oldValue = properties.get(propertyName);
 		if (oldValue == null && !properties.containsKey(propertyName))
 		{
-			Object defaultProperty = defaultProperties.get(propertyName);
+			Object defaultProperty = defaultPropertiesUnwrapped.get(propertyName);
 			if (defaultProperty != null)
 			{
 				// quickly wrap this value so that it can be used as the oldValue later on.
@@ -305,12 +313,13 @@ public abstract class BaseWebObject
 	 */
 	public void putBrowserProperty(String propertyName, Object propertyValue) throws JSONException
 	{
-		Object oldValue = getCurrentValue(propertyName);
-		Object newValue = convertValueFromJSON(propertyName, oldValue, propertyValue);
-		properties.put(propertyName, newValue);
+		Object oldWrappedValue = getCurrentValue(propertyName);
+		Object newWrappedValue = convertValueFromJSON(propertyName, oldWrappedValue, propertyValue);
+		properties.put(propertyName, newWrappedValue);
 
 		// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
-		if (oldValue != newValue) onPropertyChange(propertyName, unwrapValue(propertyName, oldValue), unwrapValue(propertyName, newValue));
+		if (oldWrappedValue != newWrappedValue) onPropertyChange(propertyName, unwrapValue(propertyName, oldWrappedValue),
+			unwrapValue(propertyName, newWrappedValue));
 	}
 
 	/**
@@ -360,7 +369,7 @@ public abstract class BaseWebObject
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private Object wrapPropertyValue(String propertyName, Object oldValue, Object newValue) throws JSONException
+	private Object wrapPropertyValue(String propertyName, Object oldValue, Object newValue)
 	{
 		PropertyDescription propertyDesc = specification.getProperty(propertyName);
 		IPropertyType<Object> type = propertyDesc != null ? (IPropertyType<Object>)propertyDesc.getType() : null;

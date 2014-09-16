@@ -162,6 +162,9 @@ public abstract class BaseWebObject
 		return new TypedData<>(em, null);
 	}
 
+	/**
+	 * DO NOT USE THIS METHOD; when possible please use {@link #getProperty(String)}, {@link #getProperties()} or {@link #getAllPropertyNames(boolean)} instead.
+	 */
 	public Map<String, Object> getRawProperties()
 	{
 		return properties;
@@ -328,17 +331,25 @@ public abstract class BaseWebObject
 	 * @param newValue
 	 *            the new val
 	 */
-	protected void onPropertyChange(String propertyName, Object oldValue, final Object newValue)
+	protected void onPropertyChange(String propertyName, final Object oldValue, final Object newValue)
 	{
 		if (newValue instanceof ISmartPropertyValue && newValue != oldValue)
 		{
 			final String complexPropertyRoot = propertyName;
 
-			// NOTE here newValue and oldValue are the wrapped values in case of wrapper types (so what is actually stored in this base web object's map)
+			// NOTE here newValue and oldValue are the unwrapped values in case of wrapper types; TODO maybe we should use wrapped values here
 
 			if (oldValue instanceof ISmartPropertyValue)
 			{
 				((ISmartPropertyValue)oldValue).detach();
+			}
+
+			// in case the 'smart' value completely changed by ref., no use keeping it in default values as it is too smart and it might want to notify changes later, although it wouldn't make sense cause the value is different now
+			Object defaultSmartValue = defaultPropertiesUnwrapped.get(complexPropertyRoot);
+			if (defaultSmartValue instanceof ISmartPropertyValue && defaultSmartValue != newValue)
+			{
+				defaultPropertiesUnwrapped.remove(complexPropertyRoot);
+				((ISmartPropertyValue)defaultSmartValue).detach();
 			}
 
 			// a new complex property is linked to this component; initialize it
@@ -356,7 +367,7 @@ public abstract class BaseWebObject
 					{
 						// something changed in this 'smart' property - so it no longer represents the default value; remove
 						// it from default values (as the value referece is the same but the content changed) and put it in properties map
-						properties.put(complexPropertyRoot, wrapPropertyValue(complexPropertyRoot, getCurrentValue(complexPropertyRoot), newValue));
+						properties.put(complexPropertyRoot, newValue);
 						defaultPropertiesUnwrapped.remove(complexPropertyRoot);
 					}
 				}
@@ -434,13 +445,31 @@ public abstract class BaseWebObject
 	}
 
 	/**
+	 * Use the returned set only for reading, not modifying.
+	 */
+	public Set<String> getAllPropertyNames(boolean includeDefaultValueKeys)
+	{
+		Set<String> allValKeys;
+		if (includeDefaultValueKeys)
+		{
+			allValKeys = new HashSet<String>();
+			allValKeys.addAll(properties.keySet());
+			allValKeys.addAll(defaultPropertiesUnwrapped.keySet());
+		}
+		else allValKeys = properties.keySet();
+
+		return allValKeys;
+	}
+
+	/**
 	 * Called when this object will not longer be used - to release any held resources/remove listeners.
 	 */
 	public void dispose()
 	{
-		for (Object p : getRawProperties().values())
+		for (String pN : getAllPropertyNames(true))
 		{
-			if (p instanceof ISmartPropertyValue) ((ISmartPropertyValue)p).detach(); // clear any listeners/held resources
+			Object pUnwrapped = getProperty(pN);
+			if (pUnwrapped instanceof ISmartPropertyValue) ((ISmartPropertyValue)pUnwrapped).detach(); // clear any listeners/held resources
 		}
 	}
 

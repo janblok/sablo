@@ -194,15 +194,11 @@ public abstract class BaseWebObject
 	 */
 	public void setDefaultProperty(String propertyName, Object propertyValue)
 	{
-		if (propertyValue instanceof ISmartPropertyValue) setProperty(propertyName, propertyValue);
-		else
-		{
-			Object oldUnwrappedV = getProperty(propertyName);
-			defaultPropertiesUnwrapped.put(propertyName, propertyValue);
-			Object newUnwrappedV = unwrapValue(propertyName, getCurrentValue(propertyName)); // a default value wrap/unwrap might result in a different value
+		Object oldUnwrappedV = getProperty(propertyName);
+		defaultPropertiesUnwrapped.put(propertyName, propertyValue);
+		Object newUnwrappedV = unwrapValue(propertyName, getCurrentValue(propertyName)); // a default value wrap/unwrap might result in a different value
 
-			if (newUnwrappedV != oldUnwrappedV) onPropertyChange(propertyName, oldUnwrappedV, newUnwrappedV);
-		}
+		if (newUnwrappedV != oldUnwrappedV) onPropertyChange(propertyName, oldUnwrappedV, newUnwrappedV);
 	}
 
 	/**
@@ -332,7 +328,7 @@ public abstract class BaseWebObject
 	 * @param newValue
 	 *            the new val
 	 */
-	protected void onPropertyChange(String propertyName, Object oldValue, Object newValue)
+	protected void onPropertyChange(String propertyName, Object oldValue, final Object newValue)
 	{
 		if (newValue instanceof ISmartPropertyValue && newValue != oldValue)
 		{
@@ -355,6 +351,14 @@ public abstract class BaseWebObject
 					// this must have happened on the event thread, in which case, after each event is fired, a check for changes happen
 					// if it didn't happen on the event thread something is really wrong, cause then properties might change while
 					// they are being read at the same time by the event thread
+
+					if (defaultPropertiesUnwrapped.containsKey(complexPropertyRoot))
+					{
+						// something changed in this 'smart' property - so it no longer represents the default value; remove
+						// it from default values (as the value referece is the same but the content changed) and put it in properties map
+						properties.put(complexPropertyRoot, wrapPropertyValue(complexPropertyRoot, getCurrentValue(complexPropertyRoot), newValue));
+						defaultPropertiesUnwrapped.remove(complexPropertyRoot);
+					}
 				}
 			}, this);
 		}

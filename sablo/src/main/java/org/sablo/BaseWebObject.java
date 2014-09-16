@@ -200,6 +200,7 @@ public abstract class BaseWebObject
 		Object oldUnwrappedV = getProperty(propertyName);
 		defaultPropertiesUnwrapped.put(propertyName, propertyValue);
 		Object newUnwrappedV = unwrapValue(propertyName, getCurrentValue(propertyName)); // a default value wrap/unwrap might result in a different value
+		if (newUnwrappedV != propertyValue) defaultPropertiesUnwrapped.put(propertyName, newUnwrappedV);
 
 		if (newUnwrappedV != oldUnwrappedV) onPropertyChange(propertyName, oldUnwrappedV, newUnwrappedV);
 	}

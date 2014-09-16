@@ -245,7 +245,7 @@ public class WebComponentTest
 		assertEquals("{\"msg\":{\"atype\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"},\"name\":\"test\"}}", msg);
 
 		component.putBrowserProperty("atype", new JSONObject(
-			"{\"ver\":2,\"v\":{\"name\":\"myname\",\"active\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}}"));
+			"{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}}"));
 		properties = component.getRawProperties();
 		assertNotNull(properties.get("atype"));
 		assertSame(properties.get("atype"), component.getProperty("atype"));
@@ -258,7 +258,7 @@ public class WebComponentTest
 		// TODO also for custom types none existing properties should just be added? Like in the component itself?
 		// for now we dont allow it..
 		component.putBrowserProperty("atype", new JSONObject(
-			"{\"ver\":3,\"v\":{\"name\":\"myname\",\"notintype\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}}"));
+			"{\"vEr\":3,\"v\":{\"name\":\"myname\",\"notintype\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}}"));
 		properties = component.getRawProperties();
 		assertNotNull(properties.get("atype"));
 		assertSame(properties.get("atype"), component.getProperty("atype"));
@@ -311,13 +311,13 @@ public class WebComponentTest
 
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes);
 		assertEquals(
-			"{\"msg\":{\"name\":\"test\",\"types\":{\"ver\":2,\"v\":[{\"ver\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"ver\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"conversions\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"conversions\":{\"msg\":{\"types\":\"JSON_arr\"}}}",
+			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"conversions\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"conversions\":{\"msg\":{\"types\":\"JSON_arr\"}}}",
 			msg);
 
 		component.putBrowserProperty(
 			"types",
 			new JSONObject(
-				"{\"ver\":3,\"v\":[{\"ver\":3,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"ver\":3,\"v\":{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"}},{\"ver\":3,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}]}"));
+				"{\"vEr\":3,\"v\":[{\"vEr\":3,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":3,\"v\":{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"}},{\"vEr\":3,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}]}"));
 
 		ChangeAwareList<Object, Object> array3 = (ChangeAwareList)component.getProperty("types");
 

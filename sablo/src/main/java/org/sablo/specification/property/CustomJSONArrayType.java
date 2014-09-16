@@ -41,7 +41,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 
 	public static final String TYPE_NAME = "JSON_arr";
 
-	protected static final String CONTENT_VERSION = "ver";
+	protected static final String CONTENT_VERSION = "vEr";
 	protected static final String UPDATES = "u";
 	protected static final String INDEX = "i";
 	protected static final String VALUE = "v";

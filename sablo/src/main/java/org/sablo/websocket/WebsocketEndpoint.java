@@ -86,6 +86,7 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 						if (windowId.equals(ep.getWindowId()))
 						{
 							websocketEndpoint = ep;
+							currentInstance.set(websocketEndpoint);
 							break;
 						}
 					}

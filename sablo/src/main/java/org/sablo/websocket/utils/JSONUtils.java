@@ -289,6 +289,9 @@ public class JSONUtils
 		return value;
 	}
 
+	/**
+	 * Returns the object to be set directly in a BaseWebObject properties map. For wrapper types this means a wrapped value directly.
+	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static Object fromJSON(Object oldValue, Object newValue, PropertyDescription desc, IDataConverterContext dataConversionContext) throws JSONException
 	{

@@ -64,6 +64,29 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 		{
 			throw new IllegalStateException("no current websocket endpoint set");
 		}
+
+		IWebsocketSession wsSession = websocketEndpoint.getWebsocketSession();
+		if (wsSession != null)
+		{
+			List<IWebsocketEndpoint> registeredEndpoints = wsSession.getRegisteredEnpoints();
+			if (registeredEndpoints.indexOf(websocketEndpoint) == -1)
+			{
+				String windowId = websocketEndpoint.getWindowId();
+				if (windowId != null)
+				{
+					for (IWebsocketEndpoint ep : registeredEndpoints)
+					{
+						if (windowId.equals(ep.getWindowId()))
+						{
+							websocketEndpoint = ep;
+							currentInstance.set(websocketEndpoint);
+							break;
+						}
+					}
+				}
+			}
+		}
+
 		return websocketEndpoint;
 	}
 
@@ -192,7 +215,6 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 			WebsocketSessionManager.closeSession(endpointType, wsSession.getUuid());
 		}
 		session = null;
-		wsSession = null;
 	}
 
 	private final StringBuilder incomingPartialMessage = new StringBuilder();

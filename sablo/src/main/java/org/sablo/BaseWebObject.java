@@ -56,6 +56,11 @@ public abstract class BaseWebObject
 	protected final Map<String, Object> properties = new HashMap<>();
 
 	/**
+	 * default model properties that are not send to the browser.
+	 */
+	protected final Map<String, Object> defaultPropertiesUnwrapped = new HashMap<>();
+
+	/**
 	 * the changed properties
 	 */
 	private final Set<String> changedProperties = new HashSet<>(3);
@@ -108,6 +113,15 @@ public abstract class BaseWebObject
 	public Object getProperty(String propertyName)
 	{
 		Object object = properties.get(propertyName);
+		if (object == null && !properties.containsKey(propertyName))
+		{
+			return defaultPropertiesUnwrapped.get(propertyName);
+		}
+		return unwrapValue(propertyName, object);
+	}
+
+	protected Object unwrapValue(String propertyName, Object object)
+	{
 		if (object != null)
 		{
 			PropertyDescription propDesc = specification.getProperty(propertyName);
@@ -148,6 +162,9 @@ public abstract class BaseWebObject
 		return new TypedData<>(em, null);
 	}
 
+	/**
+	 * DO NOT USE THIS METHOD; when possible please use {@link #getProperty(String)}, {@link #getProperties()} or {@link #getAllPropertyNames(boolean)} instead.
+	 */
 	public Map<String, Object> getRawProperties()
 	{
 		return properties;
@@ -172,6 +189,23 @@ public abstract class BaseWebObject
 	}
 
 	/**
+	 * Set the defaults property value that is not send to the browser.
+	 * This should/can reflect the values that are set in the template as default values.
+	 *
+	 * @param propertyName
+	 * @param propertyValue
+	 */
+	public void setDefaultProperty(String propertyName, Object propertyValue)
+	{
+		Object oldUnwrappedV = getProperty(propertyName);
+		defaultPropertiesUnwrapped.put(propertyName, propertyValue);
+		Object newUnwrappedV = unwrapValue(propertyName, getCurrentValue(propertyName)); // a default value wrap/unwrap might result in a different value
+		if (newUnwrappedV != propertyValue) defaultPropertiesUnwrapped.put(propertyName, newUnwrappedV);
+
+		if (newUnwrappedV != oldUnwrappedV) onPropertyChange(propertyName, oldUnwrappedV, newUnwrappedV);
+	}
+
+	/**
 	 * Setting new data and recording this as change.
 	 *
 	 * @param propertyName
@@ -180,13 +214,13 @@ public abstract class BaseWebObject
 	 */
 	public boolean setProperty(String propertyName, Object propertyValue)
 	{
-		Map<String, Object> map = properties;
 		Object wrappedValue = propertyValue;
 		try
 		{
 			// TODO can the propertyName can contain dots? Or should this be
 			// handled by the type??
-			wrappedValue = wrapPropertyValue(propertyName, map.get(propertyName), propertyValue);
+			Object oldValue = getCurrentValue(propertyName);
+			wrappedValue = wrapPropertyValue(propertyName, oldValue, propertyValue);
 		}
 		catch (Exception e)
 		{
@@ -196,6 +230,7 @@ public abstract class BaseWebObject
 
 		// TODO can the propertyName can contain dots? Or should this be handled
 		// by the type?? Remove this code below. (the getProperty doesn't suppor this!)
+		Map<String, Object> map = properties;
 		String firstPropertyPart = propertyName;
 		String lastPropertyPart = propertyName;
 		String[] parts = propertyName.split("\\.");
@@ -218,12 +253,14 @@ public abstract class BaseWebObject
 		if (map.containsKey(lastPropertyPart))
 		{
 			// existing property
-			Object oldValue = getProperty(propertyName);
+			Object oldValue = getProperty(propertyName); // this unwraps it
 			map.put(lastPropertyPart, wrappedValue);
+			propertyValue = getProperty(propertyName); // this is required as a wrap + unwrap might result in a different object then the initial one
 
+			// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
 			onPropertyChange(firstPropertyPart, oldValue, propertyValue);
 
-			if ((oldValue != null && !oldValue.equals(wrappedValue)) || (wrappedValue != null && !wrappedValue.equals(oldValue)))
+			if ((oldValue != null && !oldValue.equals(propertyValue)) || (propertyValue != null && !propertyValue.equals(oldValue)))
 			{
 				changedProperties.add(firstPropertyPart);
 				return true;
@@ -233,12 +270,37 @@ public abstract class BaseWebObject
 		{
 			// new property
 			map.put(lastPropertyPart, wrappedValue);
-			onPropertyChange(firstPropertyPart, null, wrappedValue);
+			propertyValue = getProperty(propertyName); // this is required as a wrap + unwrap might result in a different object then the initial one
+
+			// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
+			onPropertyChange(firstPropertyPart, null, propertyValue);
 
 			changedProperties.add(firstPropertyPart);
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Gets the current value from the properties, if not set then it fallbacks to the default properties (which it then wraps)
+	 *
+	 * @param propertyName
+	 * @return
+	 * @throws JSONException
+	 */
+	private Object getCurrentValue(String propertyName)
+	{
+		Object oldValue = properties.get(propertyName);
+		if (oldValue == null && !properties.containsKey(propertyName))
+		{
+			Object defaultProperty = defaultPropertiesUnwrapped.get(propertyName);
+			if (defaultProperty != null)
+			{
+				// quickly wrap this value so that it can be used as the oldValue later on.
+				oldValue = wrapPropertyValue(propertyName, null, defaultProperty);
+			}
+		}
+		return oldValue;
 	}
 
 	/**
@@ -251,24 +313,13 @@ public abstract class BaseWebObject
 	 */
 	public void putBrowserProperty(String propertyName, Object propertyValue) throws JSONException
 	{
-		// currently we keep Java objects in here; we could switch to having
-		// only json objects in here is it make things quicker
-		// (then whenever a server-side value is put in the map, convert it via
-		// JSONUtils.toJSONValue())
-		// TODO remove this when hierarchical tree structure comes into play
-		// (only needed for )
-		// if (propertyValue instanceof JSONObject)
-		// {
-		// Iterator<String> it = ((JSONObject)propertyValue).keys();
-		// while (it.hasNext())
-		// {
-		// String key = it.next();
-		// properties.put(propertyName + '.' + key,
-		// ((JSONObject)propertyValue).get(key));
-		// }
-		// }// end TODO REMOVE
-		Object oldValue = properties.get(propertyName);
-		properties.put(propertyName, convertValueFromJSON(propertyName, oldValue, propertyValue));
+		Object oldWrappedValue = getCurrentValue(propertyName);
+		Object newWrappedValue = convertValueFromJSON(propertyName, oldWrappedValue, propertyValue);
+		properties.put(propertyName, newWrappedValue);
+
+		// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
+		if (oldWrappedValue != newWrappedValue) onPropertyChange(propertyName, unwrapValue(propertyName, oldWrappedValue),
+			unwrapValue(propertyName, newWrappedValue));
 	}
 
 	/**
@@ -281,17 +332,25 @@ public abstract class BaseWebObject
 	 * @param newValue
 	 *            the new val
 	 */
-	protected void onPropertyChange(String propertyName, Object oldValue, Object newValue)
+	protected void onPropertyChange(String propertyName, final Object oldValue, final Object newValue)
 	{
 		if (newValue instanceof ISmartPropertyValue && newValue != oldValue)
 		{
 			final String complexPropertyRoot = propertyName;
 
-			// NOTE here newValue and oldValue are the wrapped values in case of wrapper types (so what is actually stored in this base web object's map)
+			// NOTE here newValue and oldValue are the unwrapped values in case of wrapper types; TODO maybe we should use wrapped values here
 
 			if (oldValue instanceof ISmartPropertyValue)
 			{
 				((ISmartPropertyValue)oldValue).detach();
+			}
+
+			// in case the 'smart' value completely changed by ref., no use keeping it in default values as it is too smart and it might want to notify changes later, although it wouldn't make sense cause the value is different now
+			Object defaultSmartValue = defaultPropertiesUnwrapped.get(complexPropertyRoot);
+			if (defaultSmartValue instanceof ISmartPropertyValue && defaultSmartValue != newValue)
+			{
+				defaultPropertiesUnwrapped.remove(complexPropertyRoot);
+				((ISmartPropertyValue)defaultSmartValue).detach();
 			}
 
 			// a new complex property is linked to this component; initialize it
@@ -304,6 +363,14 @@ public abstract class BaseWebObject
 					// this must have happened on the event thread, in which case, after each event is fired, a check for changes happen
 					// if it didn't happen on the event thread something is really wrong, cause then properties might change while
 					// they are being read at the same time by the event thread
+
+					if (defaultPropertiesUnwrapped.containsKey(complexPropertyRoot))
+					{
+						// something changed in this 'smart' property - so it no longer represents the default value; remove
+						// it from default values (as the value referece is the same but the content changed) and put it in properties map
+						properties.put(complexPropertyRoot, newValue);
+						defaultPropertiesUnwrapped.remove(complexPropertyRoot);
+					}
 				}
 			}, this);
 		}
@@ -318,7 +385,7 @@ public abstract class BaseWebObject
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private Object wrapPropertyValue(String propertyName, Object oldValue, Object newValue) throws JSONException
+	private Object wrapPropertyValue(String propertyName, Object oldValue, Object newValue)
 	{
 		PropertyDescription propertyDesc = specification.getProperty(propertyName);
 		IPropertyType<Object> type = propertyDesc != null ? (IPropertyType<Object>)propertyDesc.getType() : null;
@@ -379,13 +446,31 @@ public abstract class BaseWebObject
 	}
 
 	/**
+	 * Use the returned set only for reading, not modifying.
+	 */
+	public Set<String> getAllPropertyNames(boolean includeDefaultValueKeys)
+	{
+		Set<String> allValKeys;
+		if (includeDefaultValueKeys)
+		{
+			allValKeys = new HashSet<String>();
+			allValKeys.addAll(properties.keySet());
+			allValKeys.addAll(defaultPropertiesUnwrapped.keySet());
+		}
+		else allValKeys = properties.keySet();
+
+		return allValKeys;
+	}
+
+	/**
 	 * Called when this object will not longer be used - to release any held resources/remove listeners.
 	 */
 	public void dispose()
 	{
-		for (Object p : getRawProperties().values())
+		for (String pN : getAllPropertyNames(true))
 		{
-			if (p instanceof ISmartPropertyValue) ((ISmartPropertyValue)p).detach(); // clear any listeners/held resources
+			Object pUnwrapped = getProperty(pN);
+			if (pUnwrapped instanceof ISmartPropertyValue) ((ISmartPropertyValue)pUnwrapped).detach(); // clear any listeners/held resources
 		}
 	}
 

@@ -25,7 +25,9 @@ angular.module('sablo', ['webSocketModule']).config(function($controllerProvider
 		   
 		   getSession().callService('formService', 'requestData', {formname:formName}, false).then(
 				   function(data) {
-					   for (var i in data) { model[i] = data[i]; }
+					   for (var i in data) {
+						   for (j in data[i]) model[i][j] = data[i][j]
+					   }
 				   });
 	   }
 	   

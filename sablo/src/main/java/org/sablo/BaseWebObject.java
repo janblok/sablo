@@ -21,6 +21,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -65,6 +67,11 @@ public abstract class BaseWebObject
 	 */
 	private final Set<String> changedProperties = new HashSet<>(3);
 
+	/**
+	 * the event handlers
+	 */
+	private final ConcurrentMap<String, IEventHandler> eventHandlers = new ConcurrentHashMap<String, IEventHandler>();
+
 	protected final String name;
 
 	public BaseWebObject(String name, WebComponentSpecification specification)
@@ -101,6 +108,11 @@ public abstract class BaseWebObject
 	 */
 	public Object executeEvent(String eventType, Object[] args)
 	{
+		IEventHandler handler = getHandler(eventType);
+		if (handler != null)
+		{
+			return handler.executeEvent(args);
+		}
 		return null;
 	}
 
@@ -460,6 +472,21 @@ public abstract class BaseWebObject
 		else allValKeys = properties.keySet();
 
 		return allValKeys;
+	}
+
+	public void addHandler(String event, IEventHandler handler)
+	{
+		eventHandlers.put(event, handler);
+	}
+
+	public IEventHandler getHandler(String event)
+	{
+		return eventHandlers.get(event);
+	}
+
+	public IEventHandler removeHandler(String event)
+	{
+		return eventHandlers.remove(event);
 	}
 
 	/**

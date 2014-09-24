@@ -24,8 +24,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.sablo.Container;
+import org.sablo.IChangeListener;
 import org.sablo.WebComponent;
 import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
@@ -41,11 +43,12 @@ import org.sablo.websocket.utils.JSONUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
  * Base class for handling a websocket session.
  * @author rgansevles
  */
-public abstract class BaseWebsocketSession implements IWebsocketSession
+public abstract class BaseWebsocketSession implements IWebsocketSession, IChangeListener
 {
 	private static final Logger log = LoggerFactory.getLogger(WebsocketEndpoint.class.getCanonicalName());
 	private final Map<String, IServerService> serverServices = new HashMap<>();
@@ -54,6 +57,11 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 
 	private final String uuid;
 	private volatile IEventDispatcher executor;
+
+	private final AtomicInteger handlingEvent = new AtomicInteger(0);
+
+	private boolean proccessChanges;
+
 
 	public BaseWebsocketSession(String uuid)
 	{
@@ -238,6 +246,68 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 		if (!changeTypes.hasChildProperties()) changeTypes = null;
 		return new TypedData<Map<String, Map<String, Object>>>(changes, changeTypes);
 	}
+
+	public void startHandlingEvent()
+	{
+		handlingEvent.incrementAndGet();
+	}
+
+	public void stopHandlingEvent()
+	{
+		handlingEvent.decrementAndGet();
+		valueChanged();
+	}
+
+	@Override
+	public void valueChanged()
+	{
+		// if there is an incoming message or an NGEvent running on event thread, postpone sending until it's done; else push it.
+		if (!proccessChanges && WebsocketEndpoint.exists() && WebsocketEndpoint.get().hasSession() && handlingEvent.get() == 0)
+		{
+			sendChanges();
+		}
+	}
+
+	/**
+	 *
+	 */
+	protected void sendChanges()
+	{
+		try
+		{
+			proccessChanges = true;
+			// TODO this should be changed, because if there are multiple end-points then 1 end-point will get the changes of a form (and flag everything as not changed)
+			// so the other end point will not see those changes if it would show the same form...
+			// i guess the session should have all the containers (like it has all the services) and then the endpoint should just cherry pick what it will send.
+			TypedData<Map<String, Map<String, Map<String, Object>>>> allFormChanges = WebsocketEndpoint.get().getAllComponentsChanges();
+			TypedData<Map<String, Map<String, Object>>> serviceChanges = getServiceChanges();
+			Map<String, Object> data = new HashMap<>(3);
+			PropertyDescription dataTypes = AggregatedPropertyType.newAggregatedProperty();
+
+			if (!allFormChanges.content.isEmpty())
+			{
+				data.put("forms", allFormChanges.content);
+				if (allFormChanges.contentType != null) dataTypes.putProperty("forms", allFormChanges.contentType);
+			}
+			if (!serviceChanges.content.isEmpty())
+			{
+				data.put("services", serviceChanges.content);
+				if (serviceChanges.contentType != null) dataTypes.putProperty("services", serviceChanges.contentType);
+			}
+			// TOOD see above comment, this should not send to the currently active end-point, but to all end-points
+			// so that any change from 1 end-point request ends up in all the end points.
+			WebsocketEndpoint.get().sendMessage(data, dataTypes, true); // uses ConversionLocation.BROWSER_UPDATE
+		}
+		catch (IOException e)
+		{
+			log.error("sendChanges", e);
+		}
+		finally
+		{
+			proccessChanges = false;
+		}
+	}
+
 
 	public Object invokeApi(WebComponent receiver, WebComponentApiDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes)
 	{

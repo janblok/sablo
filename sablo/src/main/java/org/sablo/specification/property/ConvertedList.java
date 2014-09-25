@@ -65,11 +65,11 @@ public abstract class ConvertedList<ExternalT, BaseT> extends AbstractList<Exter
 	/**
 	 * Converts the given base list element value into external world form.
 	 *
-	//	 * @param index the index that the given element has in the list.
+	 * @param index the index that the given element has in the list.
 	 * @param value the base list element value to convert.
 	 * @return the converted element value.
 	 */
-	protected abstract ExternalT convertFromBase(/* int index, */BaseT value);
+	protected abstract ExternalT convertFromBase(int index, BaseT value);
 
 	/**
 	 * Converts the given external world element value into a base list element value.
@@ -104,6 +104,7 @@ public abstract class ConvertedList<ExternalT, BaseT> extends AbstractList<Exter
 		final Iterator<BaseT> it = baseList.iterator();
 		return new Iterator<ExternalT>()
 		{
+			int i = -1;
 
 			@Override
 			public boolean hasNext()
@@ -114,12 +115,14 @@ public abstract class ConvertedList<ExternalT, BaseT> extends AbstractList<Exter
 			@Override
 			public ExternalT next()
 			{
-				return convertFromBase(it.next());
+				i++;
+				return convertFromBase(i, it.next());
 			}
 
 			@Override
 			public void remove()
 			{
+				i--;
 				it.remove();
 			}
 		};
@@ -135,9 +138,10 @@ public abstract class ConvertedList<ExternalT, BaseT> extends AbstractList<Exter
 	protected List<ExternalT> createAsArrayList()
 	{
 		List<ExternalT> arrayList = new ArrayList<ExternalT>();
+		int i = 0;
 		for (BaseT el : baseList)
 		{
-			arrayList.add(convertFromBase(el));
+			arrayList.add(convertFromBase(i++, el));
 		}
 		return arrayList;
 	}
@@ -230,13 +234,13 @@ public abstract class ConvertedList<ExternalT, BaseT> extends AbstractList<Exter
 	@Override
 	public ExternalT get(int index)
 	{
-		return convertFromBase(baseList.get(index));
+		return convertFromBase(index, baseList.get(index));
 	}
 
 	@Override
 	public ExternalT set(int index, ExternalT element)
 	{
-		return convertFromBase(baseList.set(index, convertToBase(index, element)));
+		return convertFromBase(index, baseList.set(index, convertToBase(index, element)));
 	}
 
 	@Override
@@ -248,7 +252,7 @@ public abstract class ConvertedList<ExternalT, BaseT> extends AbstractList<Exter
 	@Override
 	public ExternalT remove(int index)
 	{
-		return convertFromBase(baseList.remove(index));
+		return convertFromBase(index, baseList.remove(index));
 	}
 
 	@Override
@@ -281,6 +285,7 @@ public abstract class ConvertedList<ExternalT, BaseT> extends AbstractList<Exter
 	{
 
 		protected final ListIterator<BaseT> it;
+		int i = -1;
 
 		public ConvertedListIterator(ListIterator<BaseT> it)
 		{
@@ -296,7 +301,8 @@ public abstract class ConvertedList<ExternalT, BaseT> extends AbstractList<Exter
 		@Override
 		public ExternalT next()
 		{
-			return convertFromBase(it.next());
+			i++;
+			return convertFromBase(i, it.next());
 		}
 
 		@Override
@@ -308,7 +314,8 @@ public abstract class ConvertedList<ExternalT, BaseT> extends AbstractList<Exter
 		@Override
 		public ExternalT previous()
 		{
-			return convertFromBase(it.previous());
+			i--;
+			return convertFromBase(i, it.previous());
 		}
 
 		@Override
@@ -326,18 +333,20 @@ public abstract class ConvertedList<ExternalT, BaseT> extends AbstractList<Exter
 		@Override
 		public void remove()
 		{
+			i--;
 			it.remove();
 		}
 
 		@Override
 		public void set(ExternalT e)
 		{
-			it.set(convertToBase(-1, e));
+			it.set(convertToBase(i, e));
 		}
 
 		@Override
 		public void add(ExternalT e)
 		{
+			i++;
 			it.add(convertToBase(-1, e));
 		}
 	}

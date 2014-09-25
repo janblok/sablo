@@ -102,7 +102,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	/**
 	 * Don't use the returned map for operations that make changes that need to be sent to browser! That map isn't tracked for changes.
 	 */
-	protected Map<String, ET> getBaseMap()
+	public Map<String, ET> getBaseMap()
 	{
 		return baseMap;
 	}
@@ -114,9 +114,9 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	protected Map<String, WT> getWrappedBaseMapForReadOnly()
 	{
 		Map<String, WT> wrappedBaseMap;
-		if (baseMap instanceof WrapperMap< ? , ? >)
+		if (baseMap instanceof IWrappedBaseMapProvider< ? >)
 		{
-			wrappedBaseMap = ((WrapperMap<ET, WT>)baseMap).getBaseMap();
+			wrappedBaseMap = ((IWrappedBaseMapProvider<WT>)baseMap).getWrappedBaseMap();
 		}
 		else
 		{
@@ -171,7 +171,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		if (changedKeys.add(key) && !allChanged && !mustSendTypeToClient && changeMonitor != null) changeMonitor.valueChanged();
 	}
 
-	protected void markAllChanged()
+	public void markAllChanged()
 	{
 		boolean alreadyCh = allChanged;
 		allChanged = true;
@@ -611,5 +611,11 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 //			markAllChanged();
 //		}
 //	}
+
+	@Override
+	public String toString()
+	{
+		return "#change aware map# " + getBaseMap().toString();
+	}
 
 }

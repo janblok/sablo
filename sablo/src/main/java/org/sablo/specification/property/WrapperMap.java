@@ -19,12 +19,15 @@ package org.sablo.specification.property;
 import java.util.Map;
 
 /**
- * This map is able to do the wrap/unwrap operations that sablo base objects usually do internally.
+ * This map is able to do the SABLO wrap/unwrap operations that (Sablo) base objects usually do internally.
+ * <br/><br/>
+ * This is used when the property value is set from java side (in which case the property value
+ * will be based on underlying Java Map).
  *
  * @author acostescu
  */
 //TODO these ET and WT are improper - as for object type they can represent multiple types (a different set for each child key), but they help to avoid some bugs at compile-time
-public class WrapperMap<ExternalT, BaseT> extends ConvertedMap<ExternalT, BaseT>
+public class WrapperMap<ExternalT, BaseT> extends ConvertedMap<ExternalT, BaseT> implements IWrappedBaseMapProvider
 {
 
 	protected Map<String, IWrapperType<ExternalT, BaseT>> types;
@@ -58,6 +61,11 @@ public class WrapperMap<ExternalT, BaseT> extends ConvertedMap<ExternalT, BaseT>
 	{
 		IWrapperType<ExternalT, BaseT> wt = types.get(key);
 		return wt != null ? wt.wrap(value, key == null ? null : baseMap.get(key), dataConverterContext) : (BaseT)value;
+	}
+
+	public Map<String, BaseT> getWrappedBaseMap()
+	{
+		return getBaseMap();
 	}
 
 }

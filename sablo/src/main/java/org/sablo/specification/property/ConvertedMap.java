@@ -35,6 +35,7 @@ import java.util.Set;
  * @param <BaseT> the value types of this map
  */
 //TODO these ET and WT are improper - as for object type they can represent multiple types (a different set for each child key), but they help to avoid some bugs at compile-time
+//TODO here we should allow String and Number as key as JS & Rhino do allow for JS objects, instead of just String so extends AbstractMap<Object, ExternalT>
 public abstract class ConvertedMap<ExternalT, BaseT> extends AbstractMap<String, ExternalT> /* for values() implementation */
 {
 

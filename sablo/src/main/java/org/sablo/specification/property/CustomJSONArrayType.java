@@ -106,7 +106,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 		if (value != null)
 		{
 			IPropertyType<ET> elementType = getElementType();
-			if ((value instanceof List && !(elementType instanceof IWrapperType)) || value instanceof WrapperList)
+			if ((value instanceof List && !(elementType instanceof IWrapperType)) || value instanceof IWrappedBaseListProvider< ? >)
 			{
 				// it's already what we want; return it
 				return (List<ET>)value;
@@ -124,8 +124,8 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 			}
 			else
 			{
-				log.error("The value of this the property is supposed to be a native Array, a List or null, but it was " + value.getClass().getCanonicalName() +
-					".\nProperty description: " + dataConverterContext.getPropertyDescription());
+				log.error("The value of this the property was supposed to be a native Array, a List or null, but it was " +
+					value.getClass().getCanonicalName() + ".\nProperty description: " + dataConverterContext.getPropertyDescription());
 				return null;
 			}
 
@@ -242,9 +242,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 		JSONArray array)
 	{
 		List<WT> list = new ArrayList<WT>();
-		List<ET> previousBaseList = previousChangeAwareList != null ? previousChangeAwareList.getBaseList() : null;
-		List<WT> previousWrappedBaseList = (previousBaseList instanceof WrapperList< ? , ? >) ? ((WrapperList<ET, WT>)previousBaseList).getBaseList()
-			: (List<WT>)previousBaseList;
+		List<WT> previousWrappedBaseList = (previousChangeAwareList != null ? previousChangeAwareList.getWrappedBaseListForReadOnly() : null);
 
 		for (int i = 0; i < array.length(); i++)
 		{

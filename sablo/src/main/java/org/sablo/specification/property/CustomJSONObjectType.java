@@ -105,26 +105,37 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		// look at this wrapped list as the external portal of the list property as far as BaseWebObjects are concerned
 		if (value != null)
 		{
-			if (wrapperChildProps == null)
+			if (value instanceof IWrappedBaseMapProvider)
 			{
-				wrapperChildProps = new HashMap<>();
-
-				for (Entry<String, PropertyDescription> entry : getCustomJSONTypeDefinition().getProperties().entrySet())
-				{
-					Object type = entry.getValue().getType();
-					if (type instanceof IWrapperType< ? , ? >) wrapperChildProps.put(entry.getKey(), (IWrapperType<ET, WT>)type);
-				}
+				// it's already what we want; return it
+				return value;
 			}
+			Map<String, IWrapperType<ET, WT>> wrappingChildren = getChildPropsThatNeedWrapping();
 
-			if (wrapperChildProps == null || wrapperChildProps.isEmpty() || value instanceof WrapperMap)
+			if (wrappingChildren == null || wrappingChildren.isEmpty())
 			{
 				// it's already what we want; return it
 				return value;
 			}
 
-			return new WrapperMap<ET, WT>(value, wrapperChildProps, dataConverterContext, true);
+			return new WrapperMap<ET, WT>(value, wrappingChildren, dataConverterContext, true);
 		}
 		return null;
+	}
+
+	protected Map<String, IWrapperType<ET, WT>> getChildPropsThatNeedWrapping()
+	{
+		if (wrapperChildProps == null)
+		{
+			wrapperChildProps = new HashMap<>();
+
+			for (Entry<String, PropertyDescription> entry : getCustomJSONTypeDefinition().getProperties().entrySet())
+			{
+				Object type = entry.getValue().getType();
+				if (type instanceof IWrapperType< ? , ? >) wrapperChildProps.put(entry.getKey(), (IWrapperType<ET, WT>)type);
+			}
+		}
+		return wrapperChildProps;
 	}
 
 	@Override
@@ -225,9 +236,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		JSONObject clientReceivedJSON)
 	{
 		Map<String, WT> map = new HashMap<String, WT>();
-		Map<String, ET> previousBaseMap = previousChangeAwareMap != null ? previousChangeAwareMap.getBaseMap() : null;
-		Map<String, WT> previousWrappedBaseMap = (previousBaseMap instanceof WrapperMap< ? , ? >) ? ((WrapperMap<ET, WT>)previousBaseMap).getBaseMap()
-			: (Map<String, WT>)previousBaseMap;
+		Map<String, WT> previousWrappedBaseMap = (previousChangeAwareMap != null ? previousChangeAwareMap.getWrappedBaseMapForReadOnly() : null);
 
 		Iterator<String> it = clientReceivedJSON.keys();
 		while (it.hasNext())
@@ -258,9 +267,10 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		}
 
 		Map<String, ET> newBaseMap;
-		if (wrapperChildProps != null)
+		Map<String, IWrapperType<ET, WT>> wrappingChildren = getChildPropsThatNeedWrapping();
+		if (wrappingChildren != null)
 		{
-			newBaseMap = new WrapperMap<ET, WT>(map, wrapperChildProps, dataConverterContext);
+			newBaseMap = new WrapperMap<ET, WT>(map, wrappingChildren, dataConverterContext);
 		}
 		else
 		{

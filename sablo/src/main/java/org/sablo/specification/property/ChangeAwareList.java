@@ -99,7 +99,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	/**
 	 * Don't use the returned list for operations that make changes that need to be sent to browser! That list isn't tracked for changes.
 	 */
-	protected List<ET> getBaseList()
+	public List<ET> getBaseList()
 	{
 		return baseList;
 	}
@@ -111,9 +111,9 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	protected List<WT> getWrappedBaseListForReadOnly()
 	{
 		List<WT> wrappedBaseList;
-		if (baseList instanceof WrapperList< ? , ? >)
+		if (baseList instanceof IWrappedBaseListProvider< ? >)
 		{
-			wrappedBaseList = ((WrapperList<ET, WT>)baseList).getBaseList();
+			wrappedBaseList = ((IWrappedBaseListProvider<WT>)baseList).getWrappedBaseList();
 		}
 		else
 		{
@@ -169,7 +169,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		if (changedIndexes.add(Integer.valueOf(i)) && !allChanged && !mustSendTypeToClient && changeMonitor != null) changeMonitor.valueChanged();
 	}
 
-	protected void markAllChanged()
+	public void markAllChanged()
 	{
 		boolean alreadyCh = allChanged;
 		allChanged = true;
@@ -581,6 +581,12 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			attachToBaseObjectIfNeeded(i, getWrappedBaseList().get(i), true);
 			markAllChanged();
 		}
+	}
+
+	@Override
+	public String toString()
+	{
+		return "#change aware list# " + getBaseList().toString();
 	}
 
 }

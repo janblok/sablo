@@ -19,11 +19,14 @@ package org.sablo.specification.property;
 import java.util.List;
 
 /**
- * This list is able to do the wrap/unwrap operations that sablo base objects usually do internally.
+ * This list is able to do the SABLO wrap/unwrap operations that (Sablo) base objects usually do internally.
+ * <br/><br/>
+ * This is used when the property value is set from java side (in which case the property value
+ * will be based on underlying Java List).
  *
  * @author acostescu
  */
-public class WrapperList<ExternalT, BaseT> extends ConvertedList<ExternalT, BaseT>
+public class WrapperList<ExternalT, BaseT> extends ConvertedList<ExternalT, BaseT> implements IWrappedBaseListProvider
 {
 
 	protected IWrapperType<ExternalT, BaseT> type;
@@ -45,7 +48,7 @@ public class WrapperList<ExternalT, BaseT> extends ConvertedList<ExternalT, Base
 	}
 
 	@Override
-	protected ExternalT convertFromBase(BaseT value)
+	protected ExternalT convertFromBase(int index, BaseT value)
 	{
 		return type.unwrap(value);
 	}
@@ -54,6 +57,11 @@ public class WrapperList<ExternalT, BaseT> extends ConvertedList<ExternalT, Base
 	protected BaseT convertToBase(int previousIndexOfThisElement, ExternalT value)
 	{
 		return type.wrap(value, previousIndexOfThisElement < 0 ? null : baseList.get(previousIndexOfThisElement), dataConverterContext);
+	}
+
+	public List<BaseT> getWrappedBaseList()
+	{
+		return getBaseList();
 	}
 
 }

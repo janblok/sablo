@@ -261,7 +261,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	@Override
 	public void valueChanged()
 	{
-		// if there is an incoming message or an NGEvent running on event thread, postpone sending until it's done; else push it.
+		// if there is an incoming message or an Event running on event thread, postpone sending until it's done; else push it.
 		if (!proccessChanges && WebsocketEndpoint.exists() && WebsocketEndpoint.get().hasSession() && handlingEvent.get() == 0)
 		{
 			sendChanges();

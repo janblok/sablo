@@ -70,6 +70,10 @@ public interface IWebsocketSession
 
 	public String getUuid();
 
+	void startHandlingEvent();
+
+	void stopHandlingEvent();
+
 	/**
 	 * Request to close the websocket session.
 	 */

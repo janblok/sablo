@@ -87,7 +87,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	}
 
 	/**
-	 * This interface can be used when this change aware list is based on a map that can change it's returned contents
+	 * This interface can be used when this change aware list is based on a list that can change it's returned contents
 	 * by other means then through this proxy wrapper. It provides a way to attach / detach elements directly from the base list.
 	 */
 	public static interface IAttachAware<WT>

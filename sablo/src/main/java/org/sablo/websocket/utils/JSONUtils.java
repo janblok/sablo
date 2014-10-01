@@ -284,7 +284,7 @@ public class JSONUtils
 		{
 			// will probably never happen as all this fromJSON thing was only meant for Dates (at least currently)
 			IWrapperType wType = ((IWrapperType< ? , ? >)propDesc.getType());
-			value = wType.unwrap(wType.fromJSON(value, null, null));
+			value = wType.unwrap(value);
 		}
 		return value;
 	}

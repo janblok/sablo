@@ -183,6 +183,15 @@ public class WebComponentSpecification extends PropertyDescription
 		return new ParsedProperty(t, isArray);
 	}
 
+	/**
+	 *
+	 * @return the types parsed from the "types" attribute.
+	 */
+	public Map<String, IPropertyType< ? >> getFoundTypes()
+	{
+		return foundTypes;
+	}
+
 	public static Map<String, IPropertyType< ? >> getTypes(JSONObject typesContainer) throws JSONException
 	{
 		WebComponentSpecification spec = new WebComponentSpecification("", "", "", null, null, "", null);

@@ -55,6 +55,14 @@ public abstract class WebEntry implements Filter
 	}
 
 	/**
+	 * @return the endpointType
+	 */
+	public String getEndpointType()
+	{
+		return endpointType;
+	}
+
+	/**
 	 * Provide all the webcompontent bundle names. 
 	 * @return the bundle names
 	 */
@@ -64,7 +72,7 @@ public abstract class WebEntry implements Filter
 	public void init(final FilterConfig fc) throws ServletException
 	{
 		//register the session factory at the manager
-		WebsocketSessionManager.setWebsocketSessionFactory(endpointType, createSessionFactory());
+		WebsocketSessionManager.setWebsocketSessionFactory(getEndpointType(), createSessionFactory());
 
 		WebComponentSpecProvider.init(fc.getServletContext(), getWebComponentBundleNames());
 

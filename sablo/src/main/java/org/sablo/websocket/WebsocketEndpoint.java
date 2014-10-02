@@ -52,7 +52,8 @@ import org.slf4j.LoggerFactory;
  */
 abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 {
-	protected static final Logger log = LoggerFactory.getLogger(WebsocketEndpoint.class.getCanonicalName());
+	public static final Logger log = LoggerFactory.getLogger(WebsocketEndpoint.class.getCanonicalName());
+
 	private static ThreadLocal<IWebsocketEndpoint> currentInstance = new ThreadLocal<>();
 
 	private final WeakHashMap<Container, Object> usedContainers = new WeakHashMap<>(3); // set of used container in order to collect all changes

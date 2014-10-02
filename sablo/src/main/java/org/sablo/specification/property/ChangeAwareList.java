@@ -69,6 +69,41 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		this.dataConverterContext = dataConverterContext;
 		this.baseList = baseList;
 		this.version = initialVersion;
+
+		if (baseList instanceof IAttachAware) ((IAttachAware<WT>)baseList).setAttachHandler(new IAttachHandler<WT>()
+		{
+			@Override
+			public void attachToBaseObjectIfNeeded(int i)
+			{
+				if (changeMonitor != null) attachToBaseObject(i, getWrappedBaseListForReadOnly().get(i), false);
+			}
+
+			@Override
+			public void detachFromBaseObjectIfNeeded(int i, WT value)
+			{
+				detachIfNeeded(i, value, false);
+			}
+		});
+	}
+
+	/**
+	 * This interface can be used when this change aware list is based on a list that can change it's returned contents
+	 * by other means then through this proxy wrapper. It provides a way to attach / detach elements directly from the base list.
+	 */
+	public static interface IAttachAware<WT>
+	{
+		void setAttachHandler(IAttachHandler<WT> attachHandler);
+	}
+
+	/**
+	 * This interface can be used when this change aware list is based on a map that can change it's returned contents
+	 * by other means then through this proxy wrapper. It provides a way to attach / detach elements directly from the base list.
+	 */
+	public static interface IAttachHandler<WT>
+	{
+		void attachToBaseObjectIfNeeded(int i);
+
+		void detachFromBaseObjectIfNeeded(int i, WT value);
 	}
 
 	/**
@@ -204,6 +239,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	}
 
 	// called whenever a new element was added or inserted into the array
+	// TODO currently here we use the wrapped value for ISmartPropertyValue, but BaseWebObject uses the unwrapped value; I think the BaseWebObject
+	// should be changes to use wrapped as well; either way, it should be the same (currently this works as we don't have any wrapper type with 'smart' values for which the wrapped value differs from the unwrapped value)
 	protected void attachToBaseObject(final int i, WT el, boolean insert)
 	{
 		if (el instanceof ISmartPropertyValue)
@@ -258,6 +295,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		changeMonitor = null;
 	}
 
+	// TODO currently here we use the wrapped value for ISmartPropertyValue, but BaseWebObject uses the unwrapped value; I think the BaseWebObject
+	// should be changes to use wrapped as well; either way, it should be the same (currently this works as we don't have any wrapper type with 'smart' values for which the wrapped value differs from the unwrapped value)
 	protected void detach(int idx, WT el, boolean remove)
 	{
 		if (el instanceof ISmartPropertyValue)
@@ -586,7 +625,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	@Override
 	public String toString()
 	{
-		return "#change aware list# " + getBaseList().toString();
+		return "#CAL# " + getBaseList().toString();
 	}
 
 }

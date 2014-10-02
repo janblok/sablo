@@ -72,6 +72,41 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		this.dataConverterContext = dataConverterContext;
 		this.baseMap = baseMap;
 		this.version = initialVersion;
+
+		if (baseMap instanceof IAttachAware) ((IAttachAware<WT>)baseMap).setAttachHandler(new IAttachHandler<WT>()
+		{
+			@Override
+			public void attachToBaseObjectIfNeeded(String key)
+			{
+				if (changeMonitor != null) attachToBaseObject(key, getWrappedBaseMapForReadOnly().get(key));
+			}
+
+			@Override
+			public void detachFromBaseObjectIfNeeded(String key, WT value)
+			{
+				detachIfNeeded(key, value);
+			}
+		});
+	}
+
+	/**
+	 * This interface can be used when this change aware map is based on a map that can change it's returned contents
+	 * by other means then through this proxy wrapper. It provides a way to attach / detach elements directly from the base map.
+	 */
+	public static interface IAttachAware<WT>
+	{
+		void setAttachHandler(IAttachHandler<WT> attachHandler);
+	}
+
+	/**
+	 * This interface can be used when this change aware map is based on a map that can change it's returned contents
+	 * by other means then through this proxy wrapper. It provides a way to attach / detach elements directly from the base map.
+	 */
+	public static interface IAttachHandler<WT>
+	{
+		void attachToBaseObjectIfNeeded(String key);
+
+		void detachFromBaseObjectIfNeeded(String key, WT value);
 	}
 
 	/**
@@ -204,6 +239,8 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	}
 
 	// called whenever a new element was added or inserted into the array
+	// TODO currently here we use the wrapped value for ISmartPropertyValue, but BaseWebObject uses the unwrapped value; I think the BaseWebObject
+	// should be changes to use wrapped as well; either way, it should be the same (currently this works as we don't have any wrapper type with 'smart' values for which the wrapped value differs from the unwrapped value)
 	protected void attachToBaseObject(final String key, WT el)
 	{
 		if (el instanceof ISmartPropertyValue)
@@ -245,6 +282,8 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		changeMonitor = null;
 	}
 
+	// TODO currently here we use the wrapped value for ISmartPropertyValue, but BaseWebObject uses the unwrapped value; I think the BaseWebObject
+	// should be changes to use wrapped as well; either way, it should be the same (currently this works as we don't have any wrapper type with 'smart' values for which the wrapped value differs from the unwrapped value)
 	protected void detach(String key, WT el)
 	{
 		if (el instanceof ISmartPropertyValue)
@@ -303,6 +342,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 				{
 					WT oldWrappedValue = getWrappedBaseMap().get(currentEl.getKey());
 					baseIterator.remove();
+					markAllChanged();
 					detachIfNeeded(currentEl.getKey(), oldWrappedValue);
 				}
 
@@ -615,7 +655,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	@Override
 	public String toString()
 	{
-		return "#change aware map# " + getBaseMap().toString();
+		return "#CAM# " + getBaseMap().toString();
 	}
 
 }

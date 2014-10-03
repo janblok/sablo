@@ -8,7 +8,9 @@ angular.module('sablo', ['webSocketModule', 'sabloUtils2']).config(function($con
 	   // (3 way binding)
 	   var formStates = {};
 	   var formStatesConversionInfo = {};
-	 
+	   
+	   var deferredProperties = {};
+	   var deferredformStates = {};
 	   var getChangeNotifier = function(formName, beanName) {
 		   return function() {
 			   // will be called by the custom property when it needs to send changes server size

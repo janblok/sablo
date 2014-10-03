@@ -100,8 +100,9 @@
 	    <groupId>org.osgi</groupId>
 	    <artifactId>org.osgi.core</artifactId>
 	    <version>5.0.0</version>
-	    <scope>provided</scope>
-</dependency>
+	    <scope>compile</scope>
+		<optional>true</optional>
+	</dependency>
 	
 </dependencies>
 

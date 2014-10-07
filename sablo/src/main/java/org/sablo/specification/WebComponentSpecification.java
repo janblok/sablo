@@ -145,11 +145,6 @@ public class WebComponentSpecification extends PropertyDescription
 		return packageName;
 	}
 
-	public String getFullName()
-	{
-		return packageName + ':' + getName();
-	}
-
 	public String getDefinition()
 	{
 		return definition;

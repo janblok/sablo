@@ -145,11 +145,6 @@ public class WebComponentSpecification extends PropertyDescription
 		return packageName;
 	}
 
-	public String getFullName()
-	{
-		return packageName + ':' + getName();
-	}
-
 	public String getDefinition()
 	{
 		return definition;
@@ -181,6 +176,15 @@ public class WebComponentSpecification extends PropertyDescription
 		IPropertyType< ? > t = foundTypes.get(property);
 		if (t == null) t = TypesRegistry.getType(property);
 		return new ParsedProperty(t, isArray);
+	}
+
+	/**
+	 *
+	 * @return the types parsed from the "types" attribute.
+	 */
+	public Map<String, IPropertyType< ? >> getFoundTypes()
+	{
+		return foundTypes;
 	}
 
 	public static Map<String, IPropertyType< ? >> getTypes(JSONObject typesContainer) throws JSONException

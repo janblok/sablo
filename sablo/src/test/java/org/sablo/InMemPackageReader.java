@@ -28,38 +28,51 @@ import org.sablo.specification.WebComponentPackage.IPackageReader;
  * @author jcompagner
  *
  */
-public class InMemPackageReader implements IPackageReader {
-	
+public class InMemPackageReader implements IPackageReader
+{
+
 	private final String manifest;
-	private final  Map<String,String> files;
-	public InMemPackageReader(String manifest, Map<String,String> files) {
+	private final Map<String, String> files;
+
+	public InMemPackageReader(String manifest, Map<String, String> files)
+	{
 		this.manifest = manifest;
 		this.files = files;
 	}
 
 	@Override
-	public String getName() {
+	public String getName()
+	{
 		return "inmem";
 	}
 
 	@Override
-	public String getPackageName() {
+	public String getPackageName()
+	{
 		return "inmem";
 	}
 
 	@Override
-	public Manifest getManifest() throws IOException {
+	public Manifest getManifest() throws IOException
+	{
 		return new Manifest(new ByteArrayInputStream(manifest.getBytes()));
 	}
 
 	@Override
-	public String readTextFile(String path, Charset charset) throws IOException {
+	public String readTextFile(String path, Charset charset) throws IOException
+	{
 		return files.get(path);
 	}
 
 	@Override
-	public URL getUrlForPath(String path) {
+	public URL getUrlForPath(String path)
+	{
 		return null;
+	}
+
+	@Override
+	public void reportError(String specpath, Exception e)
+	{
 	}
 
 }

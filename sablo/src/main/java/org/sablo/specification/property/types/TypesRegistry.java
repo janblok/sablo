@@ -73,7 +73,7 @@ public class TypesRegistry
 	public static IPropertyType< ? > getType(String name, boolean failIfNull)
 	{
 		IPropertyType< ? > type = types.get(name);
-		if (type == null && failIfNull) throw new RuntimeException("Type '" + name + "' not found in " + printTypes());
+		if (type == null && failIfNull) throw new RuntimeException("Type '" + name + "' not found in supported types: " + printTypes());
 		return type;
 	}
 
@@ -104,12 +104,12 @@ public class TypesRegistry
 		for (IPropertyType< ? > type : types.values())
 		{
 			sb.append(type.getName());
-			if (type instanceof IClassPropertyType)
-			{
-				sb.append("[");
-				sb.append(((IClassPropertyType< ? >)type).getTypeClass());
-				sb.append("]");
-			}
+//			if (type instanceof IClassPropertyType)
+//			{
+//				sb.append("[");
+//				sb.append(((IClassPropertyType< ? >)type).getTypeClass());
+//				sb.append("]");
+//			}
 			sb.append(",");
 		}
 		return sb.toString();

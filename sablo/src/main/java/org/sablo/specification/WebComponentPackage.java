@@ -67,6 +67,12 @@ public class WebComponentPackage
 
 		URL getUrlForPath(String path);
 
+		/**
+		 * @param specpath
+		 * @param e
+		 */
+		void reportError(String specpath, Exception e);
+
 	}
 
 	private IPackageReader reader;
@@ -121,7 +127,7 @@ public class WebComponentPackage
 					}
 					catch (Exception e)
 					{
-						log.error("Cannot parse global spec file '" + globalTypesSpecPath + "' from package '" + reader.toString() + "'. ", e);
+						reader.reportError(globalTypesSpecPath, e);
 					}
 				}
 			}
@@ -157,7 +163,7 @@ public class WebComponentPackage
 						}
 						catch (Exception e)
 						{
-							log.error("Cannot parse spec file '" + specpath + "' from package '" + reader.toString() + "'. ", e);
+							reader.reportError(specpath, e);
 						}
 					}
 				}
@@ -174,7 +180,7 @@ public class WebComponentPackage
 						}
 						catch (Exception e)
 						{
-							log.error("Cannot parse spec file '" + specpath + "' from package '" + reader.toString() + "'. ", e);
+							reader.reportError(specpath, e);
 						}
 					}
 				}
@@ -217,7 +223,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -228,7 +234,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -263,7 +269,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -317,6 +323,17 @@ public class WebComponentPackage
 			return null;
 		}
 
+		/*
+		 * (non-Javadoc)
+		 *
+		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#reportError(java.lang.String, java.lang.Exception)
+		 */
+		@Override
+		public void reportError(String specpath, Exception e)
+		{
+			log.error("Cannot parse spec file '" + specpath + "' from package '" + toString() + "'. ", e);
+		}
+
 		@Override
 		public String toString()
 		{
@@ -338,7 +355,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -349,7 +366,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -384,7 +401,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -421,6 +438,12 @@ public class WebComponentPackage
 		}
 
 		@Override
+		public void reportError(String specpath, Exception e)
+		{
+			log.error("Cannot parse spec file '" + specpath + "' from package '" + toString() + "'. ", e);
+		}
+
+		@Override
 		public String toString()
 		{
 			return "DirPackage: " + dir.getAbsolutePath();
@@ -446,7 +469,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -457,7 +480,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -484,7 +507,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -517,12 +540,18 @@ public class WebComponentPackage
 				if (is != null) is.close();
 			}
 		}
+
+		@Override
+		public void reportError(String specpath, Exception e)
+		{
+			log.error("Cannot parse spec file '" + specpath + "' from package 'WarReeader[ " + urlOfManifest + " ]'. ", e);
+		}
 	}
 
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see java.lang.Object#toString()
 	 */
 	@Override

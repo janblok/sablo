@@ -88,7 +88,7 @@ public class WebComponent extends BaseWebObject
 	public boolean isVisible()
 	{
 		Boolean v = (Boolean)properties.get("visible");
-		return (v == null ? false : v.booleanValue());
+		return v == null || v.booleanValue();
 	}
 
 	/**

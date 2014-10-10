@@ -51,7 +51,7 @@ public class Activator implements BundleActivator
 
 	public URL getResource(String path)
 	{
-		return context.getBundle().getEntry("/src/main/resources/META-INF/resources/" + path);
+		return context.getBundle().getEntry("/META-INF/resources/" + path);
 	}
 
 	public static Activator getDefault()

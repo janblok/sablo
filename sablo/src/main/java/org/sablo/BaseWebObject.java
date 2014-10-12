@@ -108,7 +108,7 @@ public abstract class BaseWebObject
 	 */
 	public Object executeEvent(String eventType, Object[] args)
 	{
-		IEventHandler handler = getHandler(eventType);
+		IEventHandler handler = getEventHandler(eventType);
 		if (handler != null)
 		{
 			return handler.executeEvent(args);
@@ -474,17 +474,17 @@ public abstract class BaseWebObject
 		return allValKeys;
 	}
 
-	public void addHandler(String event, IEventHandler handler)
+	public void addEventHandler(String event, IEventHandler handler)
 	{
 		eventHandlers.put(event, handler);
 	}
 
-	public IEventHandler getHandler(String event)
+	public IEventHandler getEventHandler(String event)
 	{
 		return eventHandlers.get(event);
 	}
 
-	public IEventHandler removeHandler(String event)
+	public IEventHandler removeEventHandler(String event)
 	{
 		return eventHandlers.remove(event);
 	}

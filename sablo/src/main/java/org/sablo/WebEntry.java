@@ -42,10 +42,6 @@ import org.sablo.websocket.WebsocketSessionManager;
  */
 public abstract class WebEntry implements Filter
 {
-//	/**
-//	 * Provide all the single point interfaces / applications, normally one. 
-//	 */
-//	public abstract Class<WebApplication>[] getWebApplications();
 
 	private final String endpointType;
 
@@ -76,7 +72,7 @@ public abstract class WebEntry implements Filter
 
 		WebComponentSpecProvider.init(fc.getServletContext(), getWebComponentBundleNames());
 
-		WebServiceSpecProvider.init(fc.getServletContext()); // met getWebServicesBundleNames()
+		WebServiceSpecProvider.init(fc.getServletContext());
 	}
 
 	/**
@@ -111,29 +107,6 @@ public abstract class WebEntry implements Filter
 	 * @return the factory
 	 */
 	protected abstract IWebsocketSessionFactory createSessionFactory();
-
-//	{
-//		return new IWebsocketSessionFactory(){
-//			@Override
-//			public IWebsocketSession createSession(String endpointType, String uuid) throws Exception 
-//			{
-//				return new BaseWebsocketSession(uuid)
-//				{
-//
-//					@Override
-//					public boolean isValid() {
-//						return true;
-//					}
-//
-//					@Override
-//					public void handleMessage(JSONObject obj) 
-//					{
-//						// TODO Auto-generated method stub
-//					}
-//				};
-//			}
-//		};
-//	}
 
 	@Override
 	public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException

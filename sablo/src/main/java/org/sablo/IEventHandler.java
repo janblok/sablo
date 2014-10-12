@@ -17,7 +17,7 @@
 package org.sablo;
 
 /**
- * RAGTEST doc
+ * Handle events on web components.
  * 
  * @author rgansevles
  *

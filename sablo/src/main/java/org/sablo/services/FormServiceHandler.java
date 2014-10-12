@@ -25,6 +25,8 @@ import org.sablo.websocket.IWebsocketSession;
 import org.sablo.websocket.TypedData;
 
 /**
+ * formService implementation to handle methods at form level.
+ * 
  * @author rgansevles
  *
  */

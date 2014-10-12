@@ -23,7 +23,7 @@ import org.osgi.framework.BundleContext;
 
 /**
  * Bundle activator for Sablo osgi plugin.
- * 
+ *
  * @author rgansevles
  */
 
@@ -51,7 +51,7 @@ public class Activator implements BundleActivator
 
 	public URL getResource(String path)
 	{
-		return context.getBundle().getEntry("/META-INF/resources/" + path);
+		return context.getBundle().getEntry("/META-INF/resources/" + (path.startsWith("/") ? path.substring(1) : path));
 	}
 
 	public static Activator getDefault()

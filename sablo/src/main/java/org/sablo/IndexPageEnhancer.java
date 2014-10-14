@@ -19,8 +19,8 @@ package org.sablo;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 
@@ -97,12 +97,12 @@ public class IndexPageEnhancer
 	 * Returns the contributions for webcomponents and services
 	 * @return headContributions
 	 */
-	private static String getAllContributions(Collection<String> cssContributions, Collection<String> jsContributions)
+	static String getAllContributions(Collection<String> cssContributions, Collection<String> jsContributions)
 	{
 		StringBuilder retval = new StringBuilder();
 
 		WebComponentSpecification[] webComponentDescriptions = WebComponentSpecProvider.getInstance().getWebComponentSpecifications();
-		ArrayList<JSONObject> allLibraries = new ArrayList<JSONObject>();
+		LinkedHashMap<String, JSONObject> allLibraries = new LinkedHashMap<>();
 		for (WebComponentSpecification spec : webComponentDescriptions)
 		{
 			retval.append(String.format("<script src=\"%s\"></script>\n", spec.getDefinition()));
@@ -116,7 +116,7 @@ public class IndexPageEnhancer
 			mergeLibs(allLibraries, spec.getLibraries());
 		}
 
-		for (JSONObject lib : allLibraries)
+		for (JSONObject lib : allLibraries.values())
 		{
 			switch (lib.optString("mimetype"))
 			{
@@ -155,7 +155,7 @@ public class IndexPageEnhancer
 	 * @param allLibs JSONObject list with libraries from all components
 	 * @param libs JSONObject list with new libraries to add
 	 */
-	private static void mergeLibs(ArrayList<JSONObject> allLibs, JSONArray libs)
+	private static void mergeLibs(LinkedHashMap<String, JSONObject> allLibs, JSONArray libs)
 	{
 		JSONObject lib;
 		for (int i = 0; i < libs.length(); i++)
@@ -167,19 +167,14 @@ public class IndexPageEnhancer
 				String version = lib.optString("version");
 				if (name != null && version != null && lib.has("url") && lib.has("mimetype"))
 				{
-					JSONObject allLib;
-					int removeIdx = -1;
-					for (int j = 0; j < allLibs.size(); j++)
+					String key = name + "," + lib.optString("mimetype");
+					JSONObject allLib = allLibs.get(key);
+					if (allLib != null && version.compareTo(allLib.optString("version")) < 0)
 					{
-						allLib = allLibs.get(j);
-						if (name.equals(allLib.optString("name")) && version.compareTo(allLib.optString("version")) >= 0)
-						{
-							removeIdx = j;
-							break;
-						}
+						log.warn("same lib with lower version found: " + lib);
+						continue;
 					}
-					if (removeIdx > -1) allLibs.remove(removeIdx);
-					allLibs.add(lib);
+					allLibs.put(key, lib);
 				}
 				else
 				{

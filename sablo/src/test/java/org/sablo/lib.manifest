@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Ant-Version: Apache Ant 1.8.4
+Created-By: 1.7.0_05-b06 (Oracle Corporation)
+
+Name: lib1.spec
+Web-Component: True
+
+Name: lib2.spec
+Web-Component: True

@@ -50,23 +50,13 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 
 	public static final String ELEMENT_CONFIG_KEY = "elementConfig";
 
-	private static int runtimeCount = 1;
-
-	private synchronized static int newRuntimeCount()
-	{
-		return runtimeCount++;
-	}
-
 	/**
 	 * Creates a new type that handles arrays of the given element types, with it's own set of default value, config object, ...
-	 * (that's why these are not cached right now; they can be cached if this is not useful in the future - for example we want all arrays to
-	 * be accesible in scripting).
-	 *
 	 * @param definition the defined types of the array's elements
 	 */
 	public CustomJSONArrayType(PropertyDescription definition)
 	{
-		super(definition.getType().getName() + "[] _ " + newRuntimeCount(), definition);
+		super(definition.getType().getName(), definition);
 	}
 
 	@Override

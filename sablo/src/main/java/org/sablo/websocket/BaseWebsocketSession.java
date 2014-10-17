@@ -63,11 +63,6 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	private boolean proccessChanges;
 
 
-	private final AtomicInteger handlingEvent = new AtomicInteger(0);
-
-	private boolean proccessChanges;
-
-
 	public BaseWebsocketSession(String uuid)
 	{
 		this.uuid = uuid;

@@ -83,7 +83,7 @@ public class Event
 		}
 		catch (Exception e)
 		{
-			log.error("Exception in execute",e);
+			log.error("Exception in execute", e);
 			exception = e;
 		}
 		finally
@@ -99,6 +99,7 @@ public class Event
 	 */
 	protected void afterExecute()
 	{
+		session.stopHandlingEvent();
 	}
 
 	/**
@@ -106,6 +107,7 @@ public class Event
 	 */
 	protected void beforeExecute()
 	{
+		session.startHandlingEvent();
 	}
 
 	/**
@@ -122,6 +124,7 @@ public class Event
 	public void willSuspend()
 	{
 		suspended = true;
+		session.stopHandlingEvent();
 	}
 
 	/**
@@ -130,6 +133,7 @@ public class Event
 	public void willResume()
 	{
 		suspended = false;
+		session.startHandlingEvent();
 	}
 
 	/**

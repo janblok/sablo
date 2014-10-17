@@ -26,13 +26,7 @@ import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.websocket.CloseReason;
-import javax.websocket.OnClose;
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
 import javax.websocket.Session;
-import javax.websocket.server.PathParam;
-import javax.websocket.server.ServerEndpoint;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -56,10 +50,10 @@ import org.slf4j.LoggerFactory;
  *
  * @author jcompagner, rgansevles
  */
-@ServerEndpoint(value = "/websocket/{endpointType}/{sessionid}/{windowid}/{argument}")
-public class WebsocketEndpoint implements IWebsocketEndpoint
+abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 {
-	private static final Logger log = LoggerFactory.getLogger(WebsocketEndpoint.class.getCanonicalName());
+	public static final Logger log = LoggerFactory.getLogger(WebsocketEndpoint.class.getCanonicalName());
+
 	private static ThreadLocal<IWebsocketEndpoint> currentInstance = new ThreadLocal<>();
 
 	private final WeakHashMap<Container, Object> usedContainers = new WeakHashMap<>(3); // set of used container in order to collect all changes
@@ -112,6 +106,9 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 	/*
 	 * connection with browser
 	 */
+
+	private final String endpointType;
+
 	private Session session;
 
 	private String windowId;
@@ -126,21 +123,18 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 	private final List<Map<String, Object>> serviceCalls = new ArrayList<>();
 	private final PropertyDescription serviceCallTypes = AggregatedPropertyType.newAggregatedProperty();
 
-	public WebsocketEndpoint()
+	public WebsocketEndpoint(String endpointType)
 	{
+		this.endpointType = endpointType;
 	}
 
-	@OnOpen
-	public void start(Session newSession, @PathParam("endpointType")
-	final String endpointType, @PathParam("sessionid") String sessionid, @PathParam("windowid")
-	final String windowid, @PathParam("argument")
-	final String arg) throws Exception
+	public void start(Session newSession, String sessionid, final String windowid, final String arg) throws Exception
 	{
 		session = newSession;
 
-		String uuid = "NULL".equals(sessionid) ? null : sessionid;
-		windowId = "NULL".equals(windowid) ? null : windowid;
-		String argument = "NULL".equals(arg) ? null : arg;
+		String uuid = "null".equalsIgnoreCase(sessionid) ? null : sessionid;
+		windowId = "null".equalsIgnoreCase(windowid) ? null : windowid;
+		String argument = "null".equalsIgnoreCase(arg) ? null : arg;
 
 		currentInstance.set(this);
 		try
@@ -182,19 +176,6 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 		}
 	}
 
-	@OnError
-	public void onError(Throwable t)
-	{
-		if (t instanceof IOException)
-		{
-			log.error("IOException happened", t.getMessage()); // TODO if it has no message but has a 'cause' it will not print anything useful
-		}
-		else
-		{
-			log.error("Exception happened", t);
-		}
-	}
-
 	@Override
 	public void closeSession()
 	{
@@ -227,9 +208,7 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 		}
 	}
 
-	@OnClose
-	public void onClose(@PathParam("endpointType")
-	final String endpointType)
+	public void onClose()
 	{
 		if (wsSession != null)
 		{
@@ -241,7 +220,6 @@ public class WebsocketEndpoint implements IWebsocketEndpoint
 
 	private final StringBuilder incomingPartialMessage = new StringBuilder();
 
-	@OnMessage
 	public void incoming(String msg, boolean lastPart)
 	{
 		String message = msg;

@@ -40,6 +40,7 @@ import org.sablo.websocket.utils.JSONUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 /**
  * Base class for handling a websocket session.
  * @author rgansevles
@@ -149,7 +150,17 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 		{
 			endpoint.closeSession();
 		}
-		if (executor != null) executor.destroy();
+		if (executor != null)
+		{
+			synchronized (this)
+			{
+				if (executor != null)
+				{
+					executor.destroy();
+					executor = null;
+				}
+			}
+		}
 	}
 
 	/**
@@ -162,7 +173,10 @@ public abstract class BaseWebsocketSession implements IWebsocketSession
 
 	public void registerServerService(String name, IServerService service)
 	{
-		serverServices.put(name, service);
+		if (service != null)
+		{
+			serverServices.put(name, service);
+		}
 	}
 
 	public IServerService getServerService(String name)

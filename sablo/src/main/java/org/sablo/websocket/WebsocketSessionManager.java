@@ -33,7 +33,7 @@ public class WebsocketSessionManager
 {
 	private static final Logger log = LoggerFactory.getLogger(WebsocketSessionManager.class.getCanonicalName());
 
-	private static IWebsocketSessionFactory websocketSessionFactory;
+	private static Map<String, IWebsocketSessionFactory> websocketSessionFactories = new HashMap<>();
 
 	//maps form uuid to session
 	private static Map<String, IWebsocketSession> wsSessions = new HashMap<>();
@@ -88,7 +88,6 @@ public class WebsocketSessionManager
 		IWebsocketSession wsSession = null;
 		synchronized (wsSessions)
 		{
-			String key;
 			if (uuid != null && uuid.length() > 0)
 			{
 				wsSession = wsSessions.get(uuid);
@@ -102,9 +101,9 @@ public class WebsocketSessionManager
 			{
 				wsSessions.remove(uuid);
 				wsSession = null;
-				if (create && websocketSessionFactory != null)
+				if (create && websocketSessionFactories.containsKey(endpointType))
 				{
-					wsSession = websocketSessionFactory.createSession(endpointType, uuid);
+					wsSession = websocketSessionFactories.get(endpointType).createSession(uuid);
 				}
 				if (wsSession != null)
 				{
@@ -144,13 +143,13 @@ public class WebsocketSessionManager
 		}
 	}
 
-	public static void setWebsocketSessionFactory(IWebsocketSessionFactory factory)
+	public static void setWebsocketSessionFactory(String endpointType, IWebsocketSessionFactory factory)
 	{
-		websocketSessionFactory = factory;
+		websocketSessionFactories.put(endpointType, factory);
 	}
 
-	public static IWebsocketSessionFactory getWebsocketSessionFactory()
+	public static IWebsocketSessionFactory getWebsocketSessionFactory(String endpointType)
 	{
-		return websocketSessionFactory;
+		return websocketSessionFactories.get(endpointType);
 	}
 }

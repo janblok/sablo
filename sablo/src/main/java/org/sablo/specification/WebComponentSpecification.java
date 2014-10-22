@@ -46,11 +46,11 @@ public class WebComponentSpecification extends PropertyDescription
 	private static final Logger log = LoggerFactory.getLogger(WebComponentSpecification.class.getCanonicalName());
 
 	public static final String TYPES_KEY = "types";
-	public static final String SHOW_IN_PALLETE = "showInPalette";
+	public static final String DROPPABLE = "droppable";
 
 	private final Map<String, PropertyDescription> handlers = new HashMap<>(); // second String is always a "function" for now, but in the future it will probably contain more (to specify sent args/types...)
 	private final Map<String, WebComponentApiDefinition> apis = new HashMap<>();
-	private final List<String> showInPalettePropertyTypes = new ArrayList<String>();
+	private final List<String> droppablePropertyTypes = new ArrayList<String>();
 	private final String definition;
 	private final JSONArray libraries;
 	private final String displayName;
@@ -354,10 +354,10 @@ public class WebComponentSpecification extends PropertyDescription
 					{
 						scope = ((JSONObject)value).getString("scope");
 					}
-					if (((JSONObject)value).has(SHOW_IN_PALLETE))
+					if (((JSONObject)value).has(DROPPABLE))
 					{
 						String typeName = ((JSONObject)value).getString("type").replaceFirst("\\[\\]", "");
-						if (((JSONObject)value).getBoolean(SHOW_IN_PALLETE) && foundTypes.containsKey(typeName)) showInPalettePropertyTypes.add(typeName);
+						if (((JSONObject)value).getBoolean(DROPPABLE) && foundTypes.containsKey(typeName)) droppablePropertyTypes.add(typeName);
 					}
 
 					if (((JSONObject)value).has("values"))
@@ -396,7 +396,7 @@ public class WebComponentSpecification extends PropertyDescription
 	 */
 	public List<String> getPaletteTypeNames()
 	{
-		return showInPalettePropertyTypes;
+		return droppablePropertyTypes;
 	}
 
 	@Override
@@ -415,6 +415,15 @@ public class WebComponentSpecification extends PropertyDescription
 			this.type = type;
 			this.array = array;
 		}
+	}
+
+	/**
+	 * @param dropTargetFieldName
+	 */
+	public boolean isArrayReturnType(String dropTargetFieldName)
+	{
+		if (getProperty(dropTargetFieldName) != null && getProperty(dropTargetFieldName).getType() instanceof CustomJSONArrayType< ? , ? >) return true;
+		return false;
 	}
 
 }

@@ -31,6 +31,7 @@ import org.sablo.IChangeListener;
 import org.sablo.WebComponent;
 import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
+import org.sablo.services.FormServiceHandler;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.WebServiceSpecProvider;
@@ -61,10 +62,24 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 
 	private boolean proccessChanges;
 
-
 	public BaseWebsocketSession(String uuid)
 	{
 		this.uuid = uuid;
+		registerServerService("formService", createFormService());
+	}
+
+	/**
+	 * @return
+	 */
+	protected IServerService createFormService()
+	{
+		return new FormServiceHandler(this);
+	}
+
+	@Override
+	public Container getForm(String formName)
+	{
+		return null;
 	}
 
 	public void registerEndpoint(IWebsocketEndpoint endpoint)

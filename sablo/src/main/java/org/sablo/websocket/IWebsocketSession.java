@@ -19,6 +19,7 @@ package org.sablo.websocket;
 import java.util.List;
 
 import org.json.JSONObject;
+import org.sablo.Container;
 import org.sablo.WebComponent;
 import org.sablo.eventthread.IEventDispatcher;
 import org.sablo.specification.PropertyDescription;
@@ -107,4 +108,10 @@ public interface IWebsocketSession
 	 * @param arguments
 	 */
 	public Object invokeApi(WebComponent receiver, WebComponentApiDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes);
+
+	/**
+	 * @param formName
+	 * @return
+	 */
+	public Container getForm(String formName);
 }

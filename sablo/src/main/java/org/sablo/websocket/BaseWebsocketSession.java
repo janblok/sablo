@@ -39,6 +39,8 @@ import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.specification.property.types.DatePropertyType;
 import org.sablo.websocket.impl.ClientService;
 import org.sablo.websocket.utils.JSONUtils;
+import org.sablo.websocket.utils.JSONUtils.ChangesToJSONConverter;
+import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,7 +143,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		{
 			if (data.size() > 0)
 			{
-				WebsocketEndpoint.get().sendMessage(data, dataTypes, true);
+				WebsocketEndpoint.get().sendMessage(data, dataTypes, true, FullValueToJSONConverter.INSTANCE);
 			}
 		}
 		catch (IOException e)
@@ -280,7 +282,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 			}
 			// TOOD see above comment, this should not send to the currently active end-point, but to all end-points
 			// so that any change from 1 end-point request ends up in all the end points.
-			WebsocketEndpoint.get().sendMessage(data, dataTypes, true); // uses ConversionLocation.BROWSER_UPDATE
+			WebsocketEndpoint.get().sendMessage(data, dataTypes, true, ChangesToJSONConverter.INSTANCE); // uses ConversionLocation.BROWSER_UPDATE
 		}
 		catch (IOException e)
 		{
@@ -329,7 +331,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 			data.put("call", call);
 			if (!callTypes.hasChildProperties()) dataTypes.putProperty("call", callTypes);
 
-			Object ret = WebsocketEndpoint.get().sendMessage(data, dataTypes, false);
+			Object ret = WebsocketEndpoint.get().sendMessage(data, dataTypes, false, FullValueToJSONConverter.INSTANCE);
 			// convert dates back; TODO should this if be removed?; the JSONUtils.fromJSON below should do this anyway
 			if (ret instanceof Long && apiFunction.getReturnType().getType() instanceof DatePropertyType)
 			{

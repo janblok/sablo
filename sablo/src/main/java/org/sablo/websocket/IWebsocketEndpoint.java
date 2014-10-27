@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.sablo.Container;
 import org.sablo.specification.PropertyDescription;
+import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
 
 /**
@@ -56,7 +57,7 @@ public interface IWebsocketEndpoint
 	 * @return if async it will return null; otherwise it will return whatever the client sends back as a response to this message.
 	 * @throws IOException when such an exception occurs.
 	 */
-	Object sendMessage(Map<String, ? > data, PropertyDescription dataTypes, boolean async) throws IOException;
+	Object sendMessage(Map<String, ? > data, PropertyDescription dataTypes, boolean async, IToJSONConverter converter) throws IOException;
 
 	/**
 	 * Just send this text as message, no conversion, no waiting for response.

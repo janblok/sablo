@@ -32,6 +32,7 @@ import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IConvertedPropertyType;
 import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.specification.property.IPropertyType;
+import org.sablo.specification.property.ISupportsGranularUpdates;
 import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.types.TypesRegistry;
 import org.sablo.websocket.TypedData;
@@ -69,7 +70,7 @@ public class JSONUtils
 
 	public static JSONWriter writeDataWithConversions(JSONWriter writer, Map<String, ? > data, PropertyDescription dataTypes) throws JSONException
 	{
-		return writeDataWithConversions(ToJSONConverter.INSTANCE, writer, data, dataTypes);
+		return writeDataWithConversions(FullValueToJSONConverter.INSTANCE, writer, data, dataTypes);
 	}
 
 	public static JSONWriter writeDataWithConversions(IToJSONConverter converter, JSONWriter writer, Map<String, ? > data, PropertyDescription dataTypes)
@@ -95,7 +96,7 @@ public class JSONUtils
 
 	public static String writeDataWithConversions(Map<String, ? > data, PropertyDescription dataTypes) throws JSONException
 	{
-		return writeDataWithConversions(ToJSONConverter.INSTANCE, data, dataTypes);
+		return writeDataWithConversions(FullValueToJSONConverter.INSTANCE, data, dataTypes);
 	}
 
 	public static String writeDataWithConversions(IToJSONConverter converter, Map<String, ? > data, PropertyDescription dataTypes) throws JSONException
@@ -120,16 +121,29 @@ public class JSONUtils
 //	}
 
 	/**
-	 * Shortcut for using {@link ToJSONConverter} directly.
+	 * Shortcut for using {@link FullValueToJSONConverter} directly.
 	 *
 	 * @param key if this value will be part of a JSON object, key is non-null and you MUST do writer.key(...) before adding the converted value. This
 	 * is useful for cases when you don't want the value written at all in resulting JSON in which case you don't write neither key or value. If
 	 * key is null and you want to write the converted value write only the converted value to the writer, ignore the key.
 	 */
-	public static JSONWriter toBrowserJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion clientConversion)
+	public static JSONWriter toBrowserJSONFullValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion clientConversion)
 		throws JSONException, IllegalArgumentException
 	{
-		return JSONUtils.ToJSONConverter.INSTANCE.toJSONValue(writer, key, value, valueType, clientConversion);
+		return JSONUtils.FullValueToJSONConverter.INSTANCE.toJSONValue(writer, key, value, valueType, clientConversion);
+	}
+
+	/**
+	 * Shortcut for using {@link ChangesToJSONConverter} directly.
+	 *
+	 * @param key if this value will be part of a JSON object, key is non-null and you MUST do writer.key(...) before adding the converted value. This
+	 * is useful for cases when you don't want the value written at all in resulting JSON in which case you don't write neither key or value. If
+	 * key is null and you want to write the converted value write only the converted value to the writer, ignore the key.
+	 */
+	public static JSONWriter changesToBrowserJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType,
+		DataConversion clientConversion) throws JSONException, IllegalArgumentException
+	{
+		return JSONUtils.ChangesToJSONConverter.INSTANCE.toJSONValue(writer, key, value, valueType, clientConversion);
 	}
 
 	public static JSONWriter addKeyIfPresent(JSONWriter writer, String key) throws JSONException
@@ -374,10 +388,10 @@ public class JSONUtils
 
 	}
 
-	public static class ToJSONConverter implements IToJSONConverter
+	public static class FullValueToJSONConverter implements IToJSONConverter
 	{
 
-		public static final ToJSONConverter INSTANCE = new ToJSONConverter();
+		public static final FullValueToJSONConverter INSTANCE = new FullValueToJSONConverter();
 
 		@Override
 		public JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion browserConversionMarkers)
@@ -429,6 +443,41 @@ public class JSONUtils
 				log.error("unsupported value type:" + valueType + " for value: " + value, new IllegalArgumentException("unsupported value type for value: " +
 					value));
 			}
+
+			return writer;
+		}
+	}
+
+	public static class ChangesToJSONConverter extends FullValueToJSONConverter
+	{
+
+		public static final ChangesToJSONConverter INSTANCE = new ChangesToJSONConverter();
+
+		@Override
+		public JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion browserConversionMarkers)
+			throws JSONException, IllegalArgumentException
+		{
+			boolean written = false;
+			if (value != null && valueType != null)
+			{
+				IPropertyType< ? > type = valueType.getType();
+				if (type instanceof ISupportsGranularUpdates)
+				{
+					// good, we now know that it can send changes only
+					try
+					{
+						return ((ISupportsGranularUpdates)type).changesToJSON(writer, key, value, browserConversionMarkers);
+					}
+					catch (Exception ex)
+					{
+						log.error("Error while writing changes for value: " + value + " to type: " + type, ex);
+						return writer;
+					}
+				}
+			}
+
+			// for most values that don't support granular updates use full value to JSON
+			if (!written) super.toJSONValue(writer, key, value, valueType, browserConversionMarkers);
 
 			return writer;
 		}

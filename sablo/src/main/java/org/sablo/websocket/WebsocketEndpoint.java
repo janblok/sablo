@@ -35,6 +35,8 @@ import org.sablo.Container;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.utils.JSONUtils;
+import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
+import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -350,10 +352,10 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 		PropertyDescription changesTypes) throws IOException
 	{
 		addServiceCall(serviceName, functionName, arguments, argumentTypes);
-		return sendMessage(changes, changesTypes, false); // will return response from last service call
+		return sendMessage(changes, changesTypes, false, FullValueToJSONConverter.INSTANCE); // will return response from last service call
 	}
 
-	public Object sendMessage(Map<String, ? > data, PropertyDescription dataTypes, boolean async) throws IOException
+	public Object sendMessage(Map<String, ? > data, PropertyDescription dataTypes, boolean async, IToJSONConverter converter) throws IOException
 	{
 		if ((data == null || data.size() == 0) && serviceCalls.size() == 0) return null;
 
@@ -379,7 +381,7 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 		try
 		{
 			if (!messageTypes.hasChildProperties()) messageTypes = null;
-			sendText(JSONUtils.writeDataWithConversions(message, messageTypes));
+			sendText(JSONUtils.writeDataWithConversions(converter, message, messageTypes));
 		}
 		catch (JSONException e)
 		{

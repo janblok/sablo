@@ -99,6 +99,11 @@ public class JSONUtils
 		return writeDataWithConversions(FullValueToJSONConverter.INSTANCE, data, dataTypes);
 	}
 
+	public static String writeChangesWithConversions(Map<String, ? > data, PropertyDescription dataTypes) throws JSONException
+	{
+		return writeDataWithConversions(ChangesToJSONConverter.INSTANCE, data, dataTypes);
+	}
+
 	public static String writeDataWithConversions(IToJSONConverter converter, Map<String, ? > data, PropertyDescription dataTypes) throws JSONException
 	{
 		JSONWriter writer = new JSONStringer().object();

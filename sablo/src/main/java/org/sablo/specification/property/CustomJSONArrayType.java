@@ -28,6 +28,7 @@ import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
+import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
 /**
  * Type for what in spec files you see like 'mytype[]'.
@@ -36,7 +37,8 @@ import org.sablo.websocket.utils.JSONUtils;
  * @author acostescu
  */
 @SuppressWarnings("nls")
-public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> implements IWrapperType<Object, ChangeAwareList<ET, WT>>
+public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> implements IWrapperType<Object, ChangeAwareList<ET, WT>>,
+	ISupportsGranularUpdates<ChangeAwareList<ET, WT>>
 {
 
 	public static final String TYPE_NAME = "JSON_arr";
@@ -270,6 +272,19 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 	@Override
 	public JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, DataConversion conversionMarkers) throws JSONException
 	{
+		return toJSON(writer, key, changeAwareList, conversionMarkers, true, JSONUtils.FullValueToJSONConverter.INSTANCE);
+	}
+
+	@Override
+	public JSONWriter changesToJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, DataConversion conversionMarkers)
+		throws JSONException
+	{
+		return toJSON(writer, key, changeAwareList, conversionMarkers, false, JSONUtils.FullValueToJSONConverter.INSTANCE);
+	}
+
+	protected JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, DataConversion conversionMarkers, boolean fullValue,
+		IToJSONConverter toJSONConverterForFullValue) throws JSONException
+	{
 		JSONUtils.addKeyIfPresent(writer, key);
 		if (changeAwareList != null)
 		{
@@ -279,8 +294,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 			List<WT> wrappedBaseListReadOnly = changeAwareList.getWrappedBaseListForReadOnly();
 			writer.object();
 
-			// TODO send all for now also if we know of no changes - when the separate tagging interface for granular updates vs full updates is added we can send NO_OP again
-			if (changeAwareList.mustSendAll() || (changes.size() == 0 && !changeAwareList.mustSendTypeToClient()))
+			if (changeAwareList.mustSendAll() || fullValue)
 			{
 				// send all (currently we don't support granular updates for add/remove but we could in the future)
 				DataConversion arrayConversionMarkers = new DataConversion();
@@ -289,7 +303,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 				for (int i = 0; i < wrappedBaseListReadOnly.size(); i++)
 				{
 					arrayConversionMarkers.pushNode(String.valueOf(i));
-					JSONUtils.toBrowserJSONValue(writer, null, wrappedBaseListReadOnly.get(i), getCustomJSONTypeDefinition(), arrayConversionMarkers);
+					toJSONConverterForFullValue.toJSONValue(writer, null, wrappedBaseListReadOnly.get(i), getCustomJSONTypeDefinition(), arrayConversionMarkers);
 					arrayConversionMarkers.popNode();
 				}
 				writer.endArray();
@@ -318,7 +332,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 					arrayConversionMarkers.pushNode(String.valueOf(i++));
 					writer.object().key(INDEX).value(idx);
 					arrayConversionMarkers.pushNode(VALUE);
-					JSONUtils.toBrowserJSONValue(writer, VALUE, wrappedBaseListReadOnly.get(idx.intValue()), getCustomJSONTypeDefinition(),
+					JSONUtils.changesToBrowserJSONValue(writer, VALUE, wrappedBaseListReadOnly.get(idx.intValue()), getCustomJSONTypeDefinition(),
 						arrayConversionMarkers);
 					arrayConversionMarkers.popNode();
 					writer.endObject();
@@ -332,11 +346,14 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 					writer.endObject();
 				}
 			}
-			else
-			// changeAwareList.mustSendTypeToClient() is true then
+			else if (changeAwareList.mustSendTypeToClient())
 			{
 				writer.key(CONTENT_VERSION).value(changeAwareList.getListContentVersion());
 				writer.key(INITIALIZE).value(true);
+			}
+			else
+			{
+				writer.key(NO_OP).value(true);
 			}
 			writer.endObject();
 			changeAwareList.clearChanges();
@@ -348,4 +365,5 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 		}
 		return writer;
 	}
+
 }

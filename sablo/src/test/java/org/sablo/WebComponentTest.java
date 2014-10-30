@@ -138,7 +138,7 @@ public class WebComponentTest
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 
-		String msg = JSONUtils.writeDataWithConversions(data, null);
+		String msg = JSONUtils.writeChangesWithConversions(data, null);
 		assertEquals("{\"msg\":{\"background\":\"#000000\",\"name\":\"test\"}}", msg);
 
 		component.putBrowserProperty("background", "#ff0000");

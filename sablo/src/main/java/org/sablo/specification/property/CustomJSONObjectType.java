@@ -30,6 +30,7 @@ import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
+import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
 /**
  * Type for what in spec files you see defined in the types section. (custom javascript object types)
@@ -39,7 +40,8 @@ import org.sablo.websocket.utils.JSONUtils;
  */
 @SuppressWarnings("nls")
 // TODO these ET and WT are improper - as for object type they can represent multiple types (a different set for each child key), but they help to avoid some bugs at compile-time
-public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<String, ET>> implements IWrapperType<Map<String, ET>, ChangeAwareMap<ET, WT>>
+public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<String, ET>> implements IWrapperType<Map<String, ET>, ChangeAwareMap<ET, WT>>,
+	ISupportsGranularUpdates<ChangeAwareMap<ET, WT>>
 {
 
 	public static final String TYPE_NAME = "JSON_obj";
@@ -285,6 +287,19 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 	@Override
 	public JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareMap<ET, WT> changeAwareMap, DataConversion conversionMarkers) throws JSONException
 	{
+		return toJSON(writer, key, changeAwareMap, conversionMarkers, true, JSONUtils.FullValueToJSONConverter.INSTANCE);
+	}
+
+	@Override
+	public JSONWriter changesToJSON(JSONWriter writer, String key, ChangeAwareMap<ET, WT> changeAwareMap, DataConversion conversionMarkers)
+		throws JSONException
+	{
+		return toJSON(writer, key, changeAwareMap, conversionMarkers, false, JSONUtils.FullValueToJSONConverter.INSTANCE);
+	}
+
+	protected JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareMap<ET, WT> changeAwareMap, DataConversion conversionMarkers, boolean fullValue,
+		IToJSONConverter toJSONConverterForFullValue) throws JSONException
+	{
 		JSONUtils.addKeyIfPresent(writer, key);
 		if (changeAwareMap != null)
 		{
@@ -293,8 +308,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 			Set<String> changes = changeAwareMap.getChangedKeys();
 			Map<String, WT> wrappedBaseMap = changeAwareMap.getWrappedBaseMapForReadOnly();
 			writer.object();
-			// TODO send all for now also if we know of no changes - when the separate tagging interface for granular updates vs full updates is added we can send NO_OP again
-			if (changeAwareMap.mustSendAll() || (changes.size() == 0 && !changeAwareMap.mustSendTypeToClient()))
+			if (changeAwareMap.mustSendAll() || fullValue)
 			{
 				// send all (currently we don't support granular updates for remove but we could in the future)
 				DataConversion objConversionMarkers = new DataConversion();
@@ -302,8 +316,8 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 				for (Entry<String, WT> e : wrappedBaseMap.entrySet())
 				{
 					objConversionMarkers.pushNode(e.getKey());
-					JSONUtils.toBrowserJSONValue(writer, e.getKey(), wrappedBaseMap.get(e.getKey()), getCustomJSONTypeDefinition().getProperty(e.getKey()),
-						objConversionMarkers);
+					toJSONConverterForFullValue.toJSONValue(writer, e.getKey(), wrappedBaseMap.get(e.getKey()),
+						getCustomJSONTypeDefinition().getProperty(e.getKey()), objConversionMarkers);
 					objConversionMarkers.popNode();
 				}
 				writer.endObject();
@@ -332,7 +346,8 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 					objConversionMarkers.pushNode(String.valueOf(i++));
 					writer.object().key(KEY).value(k);
 					objConversionMarkers.pushNode(VALUE);
-					JSONUtils.toBrowserJSONValue(writer, VALUE, wrappedBaseMap.get(k), getCustomJSONTypeDefinition().getProperty(k), objConversionMarkers);
+					JSONUtils.changesToBrowserJSONValue(writer, VALUE, wrappedBaseMap.get(k), getCustomJSONTypeDefinition().getProperty(k),
+						objConversionMarkers);
 					objConversionMarkers.popNode();
 					writer.endObject();
 					objConversionMarkers.popNode();
@@ -345,11 +360,14 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 					writer.endObject();
 				}
 			}
-			else
-			// changeAwareMap.mustSendTypeToClient() is true then
+			else if (changeAwareMap.mustSendTypeToClient())
 			{
 				writer.key(CONTENT_VERSION).value(changeAwareMap.getListContentVersion());
 				writer.key(INITIALIZE).value(true);
+			}
+			else
+			{
+				writer.key(NO_OP).value(true);
 			}
 			writer.endObject();
 			changeAwareMap.clearChanges();

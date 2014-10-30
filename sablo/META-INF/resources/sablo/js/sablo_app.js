@@ -55,6 +55,7 @@ angular.module('sabloApp', ['webSocketModule'])
 		   if (Object.getOwnPropertyNames(changes).length > 0) {
 			   sendRequest({cmd:'datapush',formname:formname,beanname:beanname,changes:changes})
 		   }
+		   return changes
 	   };
 
 	   var applyBeanData = function(beanModel, beanData, containerSize, changeNotifier, beanConversionInfo, newConversionInfo, componentScope) {

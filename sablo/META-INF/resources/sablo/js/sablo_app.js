@@ -150,6 +150,10 @@ angular.module('sabloApp', ['webSocketModule'])
 			   var model = {}
 			   var api = {}
 			   
+				// send the special request initial data for this form 
+				// this can also make the form (IFormUI instance) on the server if that is not already done
+				callService('formService', 'initialrequestdata', {formname:formName}, true);
+
 			   // init all the objects for the beans.
 			   state = formStates[formName] = { model: model, api: api, properties: formProperties};
 			   

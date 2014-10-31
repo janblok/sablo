@@ -81,8 +81,10 @@ webSocketModule.factory('$webSocket',
 					}
 
 					// message
-					if (obj.msg && wsSession.onMessageObject) {
-						responseValue = wsSession.onMessageObject(obj.msg, obj.conversions ? obj.conversions.msg : undefined)
+					if (obj.msg) {
+						for (var handler in onMessageObjectHandlers) {
+							responseValue = onMessageObjectHandlers[handler](obj.msg, obj.conversions ? obj.conversions.msg : undefined)
+						}
 					}
 
 				} catch (e) {
@@ -141,6 +143,11 @@ webSocketModule.factory('$webSocket',
 				}
 			}
 
+			var onOpenHandlers = []
+			var onErrorHandlers = []
+			var onCloseHandlers = []
+			var onMessageObjectHandlers = []
+
 			var WebsocketSession = function() {
 
 				// api
@@ -150,23 +157,18 @@ webSocketModule.factory('$webSocket',
 
 				this.callService = callService
 
-				// some default handlers, can be overwritten
-				this.onopen = function() {
-					$log.info('Info: WebSocket connection opened.');
+				this.onopen = function(handler) {
+					onOpenHandlers.push(handler)
 				}
-				this.onerror = function(message) {
-					$log.error('Error: WebSocket on error: ' + message);
+				this.onerror = function(handler) {
+					onErrorHandlers.push(handler)
 				}
-				this.onclose = function(message) {
-					$log.info('Info: WebSocket on close, code: ' + message.code
-							+ ' , reason: ' + message.reason);
+				this.onclose = function(handler) {
+					onCloseHandlers.push(handler)
 				}
-				// This one should be overwritten if you expect other messages
-				// then service calls
-				this.onMessageObject = function(msg, conversionInfo) {
-					$log.error('Error: Received unexpected message: (-' + msg + '-,\n-' + conversionInfo + '-)');
+				this.onMessageObject = function(handler) {
+					onMessageObjectHandlers.push(handler)
 				}
-
 			};
 			
 			var connected = false;
@@ -216,19 +218,22 @@ webSocketModule.factory('$webSocket',
 							}
 							pendingMessages = undefined
 						}
-						if (wsSession.onopen)
-							wsSession.onopen(evt)
+						for (var handler in onOpenHandlers) {
+							onOpenHandlers[handler](evt)
+						}
 					}
 					websocket.onerror = function(evt) {
-						if (wsSession.onerror)
-							wsSession.onerror(evt)
+						for (var handler in onErrorHandlers) {
+							onErrorHandlers[handler](evt)
+						}
 					}
 					websocket.onclose = function(evt) {
 						$rootScope.$apply(function() {
 							connected = false;
 						})
-						if (wsSession.onclose)
-							wsSession.onclose(evt)
+						for (var handler in onCloseHandlers) {
+							onCloseHandlers[handler](evt)
+						}
 					}
 					websocket.onmessage = function(message) {
 						handleMessage(wsSession, message)

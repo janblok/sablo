@@ -26,6 +26,8 @@ import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.IWebsocketEndpoint;
 import org.sablo.websocket.IWebsocketSession;
 import org.sablo.websocket.TypedData;
+import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
+import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,12 +102,12 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 	}
 
 	@Override
-	public Object sendMessage(Map<String, ? > data, PropertyDescription dataType, boolean async) throws IOException
+	public Object sendMessage(Map<String, ? > data, PropertyDescription dataType, boolean async, IToJSONConverter converter) throws IOException
 	{
 		Object retValue = null;
 		for (IWebsocketEndpoint endpoint : session.getRegisteredEnpoints())
 		{
-			Object reply = endpoint.sendMessage(data, dataType, async);
+			Object reply = endpoint.sendMessage(data, dataType, async, converter);
 			retValue = retValue == null ? reply : retValue;
 		}
 		return retValue;
@@ -138,7 +140,7 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 			try
 			{
 				// Call is initiated not from client, flush call otherwise it will only be sent after next client call
-				endpoint.sendMessage(null, null, true);
+				endpoint.sendMessage(null, null, true, FullValueToJSONConverter.INSTANCE);
 			}
 			catch (IOException e)
 			{

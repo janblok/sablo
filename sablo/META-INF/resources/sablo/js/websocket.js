@@ -231,8 +231,6 @@ webSocketModule.factory('$webSocket',
 						$rootScope.$apply(function() {
 							connected = false;
 						})
-						if (wsSession.onclose)
-							wsSession.onclose(evt)
 						for (var handler in onCloseHandlers) {
 							onCloseHandlers[handler](evt)
 						}

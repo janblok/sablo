@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
 import javax.servlet.ServletContext;
 
@@ -29,13 +30,13 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Class responsible for loading the service spec files.
- * 
+ *
  * @author jcompagner
  */
 public class WebServiceSpecProvider
 {
 	private static final Logger log = LoggerFactory.getLogger(WebServiceSpecProvider.class.getCanonicalName());
-	
+
 	private static volatile WebServiceSpecProvider instance;
 
 	public static WebServiceSpecProvider getInstance()
@@ -64,7 +65,7 @@ public class WebServiceSpecProvider
 		}
 		catch (Exception e)
 		{
-			log.error("Exception during init services.properties reading",e);
+			log.error("Exception during init services.properties reading", e);
 		}
 		return instance;
 	}
@@ -74,7 +75,7 @@ public class WebServiceSpecProvider
 	 * @param webComponentBundleNames
 	 * @return the provider
 	 */
-	public static WebServiceSpecProvider init(ServletContext servletContext, String[] webComponentBundleNames) 
+	public static WebServiceSpecProvider init(ServletContext servletContext, String[] webComponentBundleNames)
 	{
 		if (instance == null)
 		{
@@ -93,7 +94,7 @@ public class WebServiceSpecProvider
 					}
 					catch (Exception e)
 					{
-						log.error("Exception during init",e);
+						log.error("Exception during init", e);
 					}
 				}
 			}
@@ -108,7 +109,7 @@ public class WebServiceSpecProvider
 			instance.reader.load();
 		}
 	}
-	
+
 	private WebSpecReader reader;
 
 	private WebServiceSpecProvider(WebSpecReader reader) {
@@ -117,7 +118,7 @@ public class WebServiceSpecProvider
 
 	/**
 	 * get all registered web service specifications.
-	 * 
+	 *
 	 * @return an array of all the specifications
 	 */
 	public WebComponentSpecification[] getWebServiceSpecifications() {
@@ -126,12 +127,28 @@ public class WebServiceSpecProvider
 
 	/**
 	 * get a specification for a specific service.
-	 * 
+	 *
 	 * @param serviceName
 	 */
-	public WebComponentSpecification getWebServiceSpecification(String serviceName) {
+	public WebComponentSpecification getWebServiceSpecification(String serviceName)	{
 		return reader.getWebComponentSpecification(serviceName);
 	}
 
-}
+	/**
+	 * Get a list of all services contained by provided package name
+	 */
+	public List<String> getServicesInPackage(String packageName)
+	{
+		return reader.getPackagesToComponents().get(packageName);
+	}
 
+	/**
+	 * Get the set of all services package names.
+	 * @return
+	 */
+	public Set<String> getPackageNames()
+	{
+		return reader.getPackagesToComponents().keySet();
+	}
+
+}

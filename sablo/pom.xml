@@ -71,6 +71,7 @@
        		     <directory>src/test/java</directory>
                  <includes>
                     <include>**/*.spec</include>
+                     <include>**/*.manifest</include>
                  </includes>
            </resource>
        </resources>

@@ -254,9 +254,6 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		}
 	}
 
-	/**
-	 *
-	 */
 	protected void sendChanges()
 	{
 		try

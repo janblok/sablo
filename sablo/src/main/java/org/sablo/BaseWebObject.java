@@ -66,6 +66,7 @@ public abstract class BaseWebObject
 	 * the changed properties
 	 */
 	private final Set<String> changedProperties = new HashSet<>(3);
+	protected IDirtyPropertyListener dirtyPropertyListener;
 
 	/**
 	 * the event handlers
@@ -79,6 +80,14 @@ public abstract class BaseWebObject
 		this.name = name;
 		this.specification = specification;
 		if (specification == null) throw new IllegalStateException("Cannot work without specification");
+	}
+
+	/**
+	 * Registers a listener that is interested to know when this component has changes to be sent to browser.
+	 */
+	public void setDirtyPropertyListener(IDirtyPropertyListener listener)
+	{
+		this.dirtyPropertyListener = listener;
 	}
 
 	/**
@@ -195,6 +204,9 @@ public abstract class BaseWebObject
 		return new TypedData<Map<String, Object>>(properties, propertyTypes);
 	}
 
+	/**
+	 * Don't call this method unless all changes are already sent to client!
+	 */
 	public void clearChanges()
 	{
 		changedProperties.clear();
@@ -274,7 +286,7 @@ public abstract class BaseWebObject
 
 			if ((oldValue != null && !oldValue.equals(propertyValue)) || (propertyValue != null && !propertyValue.equals(oldValue)))
 			{
-				changedProperties.add(firstPropertyPart);
+				flagPropertyAsDirty(firstPropertyPart);
 				return true;
 			}
 		}
@@ -287,7 +299,7 @@ public abstract class BaseWebObject
 			// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
 			onPropertyChange(firstPropertyPart, null, propertyValue);
 
-			changedProperties.add(firstPropertyPart);
+			flagPropertyAsDirty(firstPropertyPart);
 			return true;
 		}
 		return false;
@@ -371,10 +383,7 @@ public abstract class BaseWebObject
 				@Override
 				public void valueChanged()
 				{
-					flagPropertyChanged(complexPropertyRoot);
-					// this must have happened on the event thread, in which case, after each event is fired, a check for changes happen
-					// if it didn't happen on the event thread something is really wrong, cause then properties might change while
-					// they are being read at the same time by the event thread
+					flagPropertyAsDirty(complexPropertyRoot);
 
 					if (defaultPropertiesUnwrapped.containsKey(complexPropertyRoot))
 					{
@@ -388,12 +397,11 @@ public abstract class BaseWebObject
 		}
 	}
 
-	/**
-	 * @param key
-	 */
-	public void flagPropertyChanged(String key)
+	public void flagPropertyAsDirty(String key)
 	{
 		changedProperties.add(key);
+		if (dirtyPropertyListener != null) dirtyPropertyListener.propertyFlaggedAsDirty(key);
+		// else this is probably a direct form child and when the request is done the form will ask anyway all components for changes
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })

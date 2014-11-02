@@ -143,7 +143,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 
 			try
 			{
-				if (previousChangeAwareList == null || clientReceivedJSON.getInt(CONTENT_VERSION) == previousChangeAwareList.getListContentVersion() + 1)
+				if (previousChangeAwareList == null || clientReceivedJSON.getInt(CONTENT_VERSION) == previousChangeAwareList.getListContentVersion())
 				{
 					if (clientReceivedJSON.has(UPDATES))
 					{
@@ -179,7 +179,6 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 										wrappedBaseListReadOnly.size() + ")");
 								}
 							}
-							previousChangeAwareList.increaseContentVersion();
 						}
 						return previousChangeAwareList;
 					}
@@ -197,9 +196,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 
 					// dropped browser update because server object changed meanwhile;
 					// will send a full update to have the correct value browser-side as well again (currently server side is leading / has more prio because not all server side values might support being recreated from client values)
-					// TODO should this markAllChange be happening if the version is higher client side?
-					// if it is lower then the server value is already send over... (or isn't the server value always already send over and the client just should make sure it doesn't override??)
-					//previousChangeAwareList.markAllChanged();
+					previousChangeAwareList.markAllChanged();
 
 					return previousChangeAwareList;
 				}
@@ -317,7 +314,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 			else if (changes.size() > 0)
 			{
 				// else write changed indexes / granular update:
-				writer.key(CONTENT_VERSION).value(changeAwareList.increaseContentVersion());
+				writer.key(CONTENT_VERSION).value(changeAwareList.getListContentVersion());
 				if (changeAwareList.mustSendTypeToClient())
 				{
 					// updates + mustSendTypeToClient can happen if child elements are also similar - and need to instrument their values client-side when set by reference/completely from browser

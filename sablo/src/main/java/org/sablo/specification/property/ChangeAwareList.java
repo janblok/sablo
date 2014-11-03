@@ -476,7 +476,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	public void clear()
 	{
 		int size = baseList.size();
-		for (int i = size; i >= 0; i--)
+		for (int i = size - 1; i >= 0; i--)
 			remove(i);
 		if (size > 0) markAllChanged();
 	}

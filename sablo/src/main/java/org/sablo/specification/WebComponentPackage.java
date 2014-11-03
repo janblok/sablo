@@ -278,11 +278,12 @@ public class WebComponentPackage
 			JarFile jar = null;
 			try
 			{
+				String pathWithSlashPrefix = path.startsWith("/") ? path : "/" + path;
 				jar = new JarFile(jarFile);
-				JarEntry entry = jar.getJarEntry(path.substring(1)); // strip /
+				JarEntry entry = jar.getJarEntry(pathWithSlashPrefix.substring(1)); // strip /
 				if (entry != null)
 				{
-					return new URL("jar:" + jarFile.toURI().toURL() + "!" + path);
+					return new URL("jar:" + jarFile.toURI().toURL() + "!" + pathWithSlashPrefix);
 				}
 			}
 			catch (IOException e)

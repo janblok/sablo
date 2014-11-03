@@ -83,7 +83,8 @@ webSocketModule.factory('$webSocket',
 					// message
 					if (obj.msg) {
 						for (var handler in onMessageObjectHandlers) {
-							responseValue = onMessageObjectHandlers[handler](obj.msg, obj.conversions ? obj.conversions.msg : undefined)
+							var ret = onMessageObjectHandlers[handler](obj.msg, obj.conversions ? obj.conversions.msg : undefined)
+							if (ret) responseValue = ret;
 						}
 					}
 
@@ -92,14 +93,16 @@ webSocketModule.factory('$webSocket',
 					$log.error(e);
 				} finally {
 					if (obj && obj.smsgid) {
-						// server wants a response
-						var response = {
-							smsgid : obj.smsgid
-						}
-						if (responseValue != undefined) {
-							response.ret = $sabloUtils.convertClientObject(responseValue);
-						}
-						sendMessageObject(response);
+						// server wants a response; responseValue may be a promise
+						$q.when(responseValue).then(function(ret) {
+							var response = {
+									smsgid : obj.smsgid
+							}
+							if (ret != undefined) {
+								response.ret = $sabloUtils.convertClientObject(ret);
+							}
+							sendMessageObject(response);
+						});
 					}
 				}
 			}

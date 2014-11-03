@@ -62,6 +62,8 @@ public class WebComponentSpecification extends PropertyDescription
 
 	private URL serverScript;
 
+	private URL specURL;
+
 	public WebComponentSpecification(String name, String packageName, String displayName, String categoryName, String icon, String definition, JSONArray libs)
 	{
 		super(name, null);
@@ -424,6 +426,24 @@ public class WebComponentSpecification extends PropertyDescription
 	{
 		if (getProperty(dropTargetFieldName) != null && getProperty(dropTargetFieldName).getType() instanceof CustomJSONArrayType< ? , ? >) return true;
 		return false;
+	}
+
+
+	/**
+	 * Get the location of the specFile inside.
+	 * @return
+	 */
+	public URL getSpecURL()
+	{
+		return specURL;
+	}
+
+	/**
+	 * @param url
+	 */
+	public void setSpecURL(URL url)
+	{
+		specURL = url;
 	}
 
 }

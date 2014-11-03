@@ -151,6 +151,7 @@ public class WebComponentPackage
 						try
 						{
 							WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
+							parsed.setSpecURL(reader.getUrlForPath(specpath));
 							// add properties defined by us
 							// TODO this is servoy specific so remove?
 							if (parsed.getProperty("size") == null) parsed.putProperty("size",
@@ -176,6 +177,7 @@ public class WebComponentPackage
 						try
 						{
 							WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
+							parsed.setSpecURL(reader.getUrlForPath(specpath));
 							descriptions.add(parsed);
 						}
 						catch (Exception e)
@@ -223,7 +225,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -234,7 +236,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -269,7 +271,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -326,7 +328,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#reportError(java.lang.String, java.lang.Exception)
 		 */
 		@Override
@@ -356,7 +358,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -367,7 +369,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -402,7 +404,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -470,7 +472,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -481,7 +483,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -508,7 +510,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -552,7 +554,7 @@ public class WebComponentPackage
 
 	/*
 	 * (non-Javadoc)
-	 *
+	 * 
 	 * @see java.lang.Object#toString()
 	 */
 	@Override

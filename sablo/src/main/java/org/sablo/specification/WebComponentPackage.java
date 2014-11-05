@@ -67,6 +67,8 @@ public class WebComponentPackage
 
 		URL getUrlForPath(String path);
 
+		URL getPackageURL();
+
 		/**
 		 * @param specpath
 		 * @param e
@@ -343,6 +345,25 @@ public class WebComponentPackage
 			return "JarPackage: " + jarFile.getAbsolutePath();
 		}
 
+		/*
+		 * (non-Javadoc)
+		 *
+		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#getPackageURL()
+		 */
+		@Override
+		public URL getPackageURL()
+		{
+			try
+			{
+				return jarFile.toURI().toURL();
+			}
+			catch (MalformedURLException e)
+			{
+				log.error("MalformedURL", e);
+			}
+			return null;
+		}
+
 	}
 
 	public static class DirPackageReader implements IPackageReader
@@ -451,6 +472,25 @@ public class WebComponentPackage
 		{
 			return "DirPackage: " + dir.getAbsolutePath();
 		}
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#getPackageURL()
+		 */
+		@Override
+		public URL getPackageURL()
+		{
+			try
+			{
+				return dir.toURI().toURL();
+			}
+			catch (MalformedURLException e)
+			{
+				log.error("MalformedURLException", e);
+			}
+			return null;
+		}
 	}
 
 	public static class WarURLPackageReader implements WebComponentPackage.IPackageReader
@@ -548,6 +588,17 @@ public class WebComponentPackage
 		public void reportError(String specpath, Exception e)
 		{
 			log.error("Cannot parse spec file '" + specpath + "' from package 'WarReeader[ " + urlOfManifest + " ]'. ", e);
+		}
+
+		/*
+		 * (non-Javadoc)
+		 *
+		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#getPackageURL()
+		 */
+		@Override
+		public URL getPackageURL()
+		{
+			return null;
 		}
 	}
 

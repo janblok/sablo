@@ -17,8 +17,10 @@
 package org.sablo.specification;
 
 import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -112,7 +114,8 @@ public class WebServiceSpecProvider
 
 	private WebSpecReader reader;
 
-	private WebServiceSpecProvider(WebSpecReader reader) {
+	private WebServiceSpecProvider(WebSpecReader reader)
+	{
 		this.reader = reader;
 	}
 
@@ -121,7 +124,8 @@ public class WebServiceSpecProvider
 	 *
 	 * @return an array of all the specifications
 	 */
-	public WebComponentSpecification[] getWebServiceSpecifications() {
+	public WebComponentSpecification[] getWebServiceSpecifications()
+	{
 		return reader.getWebComponentSpecifications();
 	}
 
@@ -130,7 +134,8 @@ public class WebServiceSpecProvider
 	 *
 	 * @param serviceName
 	 */
-	public WebComponentSpecification getWebServiceSpecification(String serviceName)	{
+	public WebComponentSpecification getWebServiceSpecification(String serviceName)
+	{
 		return reader.getWebComponentSpecification(serviceName);
 	}
 
@@ -149,6 +154,15 @@ public class WebServiceSpecProvider
 	public Set<String> getPackageNames()
 	{
 		return reader.getPackagesToComponents().keySet();
+	}
+
+	/**
+	 * Get the map of service names to package URLs.
+	 * @return
+	 */
+	public Map<String, URL> getPackagesToURLs()
+	{
+		return reader.getPackagesToURLs();
 	}
 
 }

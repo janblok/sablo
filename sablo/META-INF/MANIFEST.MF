@@ -21,8 +21,8 @@ Bundle-ClassPath: .
 Bundle-Vendor: Servoy
 Bundle-Activator: org.sablo.startup.Activator
 Bundle-ActivationPolicy: lazy
-Import-Package: javax.servlet;version="3.0.0",
- javax.servlet.http;version="3.0.0",
- javax.websocket;version="1.1.0",
+Import-Package: javax.servlet,
+ javax.servlet.http,
+ javax.websocket,
  org.json,
  org.osgi.framework

@@ -163,7 +163,7 @@ angular.module('sabloApp', ['webSocketModule'])
 					   // {"call":{"form":"product","element":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}, // optionally "viewIndex":1 
 					   // "{ conversions: {product: {datatextfield1: {0: "Date"}}} }
 					   var call = msg.call;
-					   getFormState(call.form).then(function(formState) {
+					   return getFormState(call.form).then(function(formState) {
 						   if (call.viewIndex != undefined) {
 							   var funcThis = formState.api[call.bean][call.viewIndex]; 
 							   if (funcThis)

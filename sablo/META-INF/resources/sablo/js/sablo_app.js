@@ -1,5 +1,5 @@
 angular.module('sabloApp', ['webSocketModule'])
-.factory('$sabloInternal', function ($rootScope, $q, $webSocket,$sabloConverters,$sabloUtils) {
+.factory('$sabloApplication', function ($rootScope, $q, $webSocket,$sabloConverters,$sabloUtils) {
 	   // formName:[beanname:{property1:1,property2:"test"}] needs to be synced to and from server
 	   // this holds the form model with all the data, per form is this the "synced" view of the the IFormUI on the server 
 	   // (3 way binding)

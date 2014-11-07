@@ -16,8 +16,10 @@
 
 package org.sablo.specification;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.ServletContext;
@@ -123,6 +125,14 @@ public class WebComponentSpecProvider
 	public Set<String> getPackageNames()
 	{
 		return reader.getPackagesToComponents().keySet();
+	}
+
+	/**
+	 * Get the map of component package names to package URLs.
+	 */
+	public Map<String, URL> getPackagesToURLs()
+	{
+		return reader.getPackagesToURLs();
 	}
 
 	/**

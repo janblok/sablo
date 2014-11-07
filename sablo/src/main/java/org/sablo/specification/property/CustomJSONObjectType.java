@@ -151,7 +151,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 
 			try
 			{
-				if (previousChangeAwareMap == null || clientReceivedJSON.getInt(CONTENT_VERSION) == previousChangeAwareMap.getListContentVersion() + 1)
+				if (previousChangeAwareMap == null || clientReceivedJSON.getInt(CONTENT_VERSION) == previousChangeAwareMap.getListContentVersion())
 				{
 					if (clientReceivedJSON.has(UPDATES))
 					{
@@ -185,7 +185,6 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 										"' of custom JSON Object as it's type is undefined.");
 								}
 							}
-							previousChangeAwareMap.increaseContentVersion();
 						}
 						return previousChangeAwareMap;
 					}
@@ -331,7 +330,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 			else if (changes.size() > 0)
 			{
 				// else write changed indexes / granular update:
-				writer.key(CONTENT_VERSION).value(changeAwareMap.increaseContentVersion());
+				writer.key(CONTENT_VERSION).value(changeAwareMap.getListContentVersion());
 				if (changeAwareMap.mustSendTypeToClient())
 				{
 					// updates + mustSendTypeToClient can happen if child elements are also similar - and need to instrument their values client-side when set by reference/completely from browser

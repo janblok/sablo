@@ -16,6 +16,7 @@
 package org.sablo.specification;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -148,5 +149,19 @@ class WebSpecReader
 	public synchronized Map<String, List<String>> getPackagesToComponents()
 	{
 		return packagesToComponentNames;
+	}
+
+	/**
+	 * Get the map of packages and package URLs.
+	 * @return
+	 */
+	public Map<String, URL> getPackagesToURLs()
+	{
+		Map<String, URL> result = new HashMap<String, URL>();
+		for (IPackageReader reader : packageReaders)
+		{
+			result.put(reader.getPackageName(), reader.getPackageURL());
+		}
+		return result;
 	}
 }

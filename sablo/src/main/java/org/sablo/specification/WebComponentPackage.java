@@ -67,6 +67,8 @@ public class WebComponentPackage
 
 		URL getUrlForPath(String path);
 
+		URL getPackageURL();
+
 		/**
 		 * @param specpath
 		 * @param e
@@ -151,6 +153,7 @@ public class WebComponentPackage
 						try
 						{
 							WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
+							parsed.setSpecURL(reader.getUrlForPath(specpath));
 							// add properties defined by us
 							// TODO this is servoy specific so remove?
 							if (parsed.getProperty("size") == null) parsed.putProperty("size",
@@ -176,6 +179,7 @@ public class WebComponentPackage
 						try
 						{
 							WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
+							parsed.setSpecURL(reader.getUrlForPath(specpath));
 							descriptions.add(parsed);
 						}
 						catch (Exception e)
@@ -223,7 +227,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -234,7 +238,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -269,7 +273,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -278,11 +282,12 @@ public class WebComponentPackage
 			JarFile jar = null;
 			try
 			{
+				String pathWithSlashPrefix = path.startsWith("/") ? path : "/" + path;
 				jar = new JarFile(jarFile);
-				JarEntry entry = jar.getJarEntry(path.substring(1)); // strip /
+				JarEntry entry = jar.getJarEntry(pathWithSlashPrefix.substring(1)); // strip /
 				if (entry != null)
 				{
-					return new URL("jar:" + jarFile.toURI().toURL() + "!" + path);
+					return new URL("jar:" + jarFile.toURI().toURL() + "!" + pathWithSlashPrefix);
 				}
 			}
 			catch (IOException e)
@@ -325,7 +330,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#reportError(java.lang.String, java.lang.Exception)
 		 */
 		@Override
@@ -338,6 +343,25 @@ public class WebComponentPackage
 		public String toString()
 		{
 			return "JarPackage: " + jarFile.getAbsolutePath();
+		}
+
+		/*
+		 * (non-Javadoc)
+		 *
+		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#getPackageURL()
+		 */
+		@Override
+		public URL getPackageURL()
+		{
+			try
+			{
+				return jarFile.toURI().toURL();
+			}
+			catch (MalformedURLException e)
+			{
+				log.error("MalformedURL", e);
+			}
+			return null;
 		}
 
 	}
@@ -355,7 +379,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -366,7 +390,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -401,7 +425,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -448,6 +472,25 @@ public class WebComponentPackage
 		{
 			return "DirPackage: " + dir.getAbsolutePath();
 		}
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#getPackageURL()
+		 */
+		@Override
+		public URL getPackageURL()
+		{
+			try
+			{
+				return dir.toURI().toURL();
+			}
+			catch (MalformedURLException e)
+			{
+				log.error("MalformedURLException", e);
+			}
+			return null;
+		}
 	}
 
 	public static class WarURLPackageReader implements WebComponentPackage.IPackageReader
@@ -469,7 +512,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -480,7 +523,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -507,7 +550,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -546,12 +589,23 @@ public class WebComponentPackage
 		{
 			log.error("Cannot parse spec file '" + specpath + "' from package 'WarReeader[ " + urlOfManifest + " ]'. ", e);
 		}
+
+		/*
+		 * (non-Javadoc)
+		 *
+		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#getPackageURL()
+		 */
+		@Override
+		public URL getPackageURL()
+		{
+			return null;
+		}
 	}
 
 
 	/*
 	 * (non-Javadoc)
-	 *
+	 * 
 	 * @see java.lang.Object#toString()
 	 */
 	@Override

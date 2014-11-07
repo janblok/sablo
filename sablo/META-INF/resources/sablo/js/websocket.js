@@ -7,7 +7,7 @@ var webSocketModule = angular.module('webSocketModule', []);
  * Setup the $webSocket service.
  */
 webSocketModule.factory('$webSocket',
-		function($rootScope, $injector, $log, $q, $services, $sabloConverters, $sabloUtils) {
+		function($rootScope, $injector, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers) {
 
 			var websocket = null
 
@@ -466,7 +466,7 @@ webSocketModule.factory('$webSocket',
 				}
 				
 			};
-		}).factory("$sabloUtils", function($log, $sabloConverters) { 
+		}).factory("$sabloUtils", function($log, $sabloConverters) {
 			 var getCombinedPropertyNames = function(now,prev) {
 			       var fulllist = {}
 		    	   if (prev) {
@@ -531,5 +531,96 @@ webSocketModule.factory('$webSocket',
 					}
 					return value;
 				},
+				
+				/**
+				 * Receives variable arguments. First is the object obj and the others (for example a, b, c) are used
+				 * to return obj[a][b][c] making sure if for example b is not there it returns undefined instead of
+				 * throwing an exception.
+				 */
+				getInDepthProperty: function() {
+					if (arguments.length == 0) return undefined;
+					
+					var ret = arguments[0];
+					var i;
+					for (i = 1; (i < arguments.length) && (ret !== undefined && ret !== null); i++) ret = ret[arguments[i]];
+					if (i < arguments.length) ret = undefined;
+					
+					return ret;
+				},
+
+				getEventArgs: function(args,eventName)
+				{
+					var newargs = []
+					for (var i in args) {
+						var arg = args[i]
+						if (arg && arg.originalEvent) arg = arg.originalEvent;
+						if(arg  instanceof MouseEvent ||arg  instanceof KeyboardEvent){
+							var $event = arg;
+							var eventObj = {}
+							var modifiers = 0;
+							if($event.shiftKey) modifiers = modifiers||$swingModifiers.SHIFT_DOWN_MASK;
+							if($event.metaKey) modifiers = modifiers||$swingModifiers.META_DOWN_MASK;
+							if($event.altKey) modifiers = modifiers|| $swingModifiers.ALT_DOWN_MASK;
+							if($event.ctrlKey) modifiers = modifiers || $swingModifiers.CTRL_DOWN_MASK;
+	
+							eventObj.type = 'event'; 
+							eventObj.eventName = eventName; 
+							eventObj.modifiers = modifiers;
+							eventObj.timestamp = $event.timeStamp;
+							eventObj.x= $event.pageX;
+							eventObj.y= $event.pageY;
+							arg = eventObj
+						}
+						else if (arg instanceof Event || arg instanceof $.Event) {
+							var eventObj = {}
+							eventObj.type = 'event'; 
+							eventObj.eventName = eventName; 
+							eventObj.timestamp = arg.timeStamp;
+							arg = eventObj
+						}
+						newargs.push(arg)
+					}
+					return newargs;
+				},
+				
+				/**
+				 * Receives variable arguments. First is the object obj and the others (for example a, b, c) are used to
+				 * return obj[a][b][c] making sure that if any does not exist or is null (for example b) it will be set to {}.
+				 */
+				getOrCreateInDepthProperty: function() {
+					if (arguments.length == 0) return undefined;
+					
+					var ret = arguments[0];
+					if (ret == undefined || ret === null || arguments.length == 1) return ret;
+					var p;
+					var i;
+					for (i = 1; i < arguments.length; i++) {
+						p = ret;
+						ret = ret[arguments[i]];
+						if (ret === undefined || ret === null) {
+							ret = {};
+							p[arguments[i]] = ret;
+						}
+					}
+					
+					return ret;
+				}
 			}
+		}).value("$swingModifiers" ,{
+		    SHIFT_MASK : 1,
+		    CTRL_MASK : 2,
+		    META_MASK : 4,
+		    ALT_MASK : 8,
+		    ALT_GRAPH_MASK : 32,
+		    BUTTON1_MASK : 16,
+		    BUTTON2_MASK : 8,
+		    META_MASK : 4,
+		    SHIFT_DOWN_MASK : 64,
+		    CTRL_DOWN_MASK : 128,
+		    META_DOWN_MASK : 256,
+		    ALT_DOWN_MASK : 512,
+		    BUTTON1_DOWN_MASK : 1024,
+		    BUTTON2_DOWN_MASK : 2048,
+		    DOWN_MASK : 4096,
+		    ALT_GRAPH_DOWN_MASK : 8192
 		});

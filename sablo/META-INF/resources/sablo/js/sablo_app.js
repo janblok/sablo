@@ -1,5 +1,5 @@
 angular.module('sabloApp', ['webSocketModule'])
-.factory('$sabloInternal', function ($rootScope,$swingModifiers,webStorage,$anchorConstants, $q, $window, $webSocket,$sabloConverters,$sabloUtils,$utils) {
+.factory('$sabloInternal', function ($rootScope, $q, $webSocket,$sabloConverters,$sabloUtils) {
 	   // formName:[beanname:{property1:1,property2:"test"}] needs to be synced to and from server
 	   // this holds the form model with all the data, per form is this the "synced" view of the the IFormUI on the server 
 	   // (3 way binding)
@@ -13,6 +13,21 @@ angular.module('sabloApp', ['webSocketModule'])
 			   var beanModel = formStates[formName].model[beanName];
 			   sendChanges(beanModel, beanModel, formName, beanName);
 		   }
+	   }
+	   
+	   var getFormState = function(name) { 
+		   var defered = null
+		   if (!deferredformStates[name]) {
+			   var defered = $q.defer()
+			   deferredformStates[name] = defered;
+		   } else {
+			   defered = deferredformStates[name]
+		   }
+
+		   if (formStates[name]) {
+			   defered.resolve(formStates[name]); // then handlers are called even if they are applied after it is resolved
+		   }			   
+		   return defered.promise;
 	   }
 
 	   var getComponentChanges = function(now, prev, beanConversionInfo, parentSize, changeNotifier, componentScope) {
@@ -50,8 +65,8 @@ angular.module('sabloApp', ['webSocketModule'])
 	   };
 	   
 	   var sendChanges = function(now, prev, formname, beanname) {
-		   var changes = getComponentChanges(now, prev, $utils.getInDepthProperty(formStatesConversionInfo, formname, beanname),
-				   formStates[formname].layout[beanname], formStates[formname].properties.designSize, getChangeNotifier(formname, beanname), formStates[formname].getScope());
+		   var changes = getComponentChanges(now, prev, $sabloUtils.getInDepthProperty(formStatesConversionInfo, formname, beanname),
+				   formStates[formname].properties.designSize, getChangeNotifier(formname, beanname), formStates[formname].getScope());
 		   if (Object.getOwnPropertyNames(changes).length > 0) {
 			   sendRequest({cmd:'datapush',formname:formname,beanname:beanname,changes:changes})
 		   }
@@ -98,7 +113,95 @@ angular.module('sabloApp', ['webSocketModule'])
 	   
 	   return {
 		   connect : function(context, args) {
-			   return wsSession = $webSocket.connect(context, args)
+			   wsSession = $webSocket.connect(context, args)
+			   wsSession.onMessageObject(function (msg, conversionInfo) {
+				   // data got back from the server
+				   for(var formname in msg.forms) {
+					   // current model
+					   // if the formState is on the server but not here anymore, skip it. 
+					   // this can happen with a refresh on the browser.
+					   if (typeof(formStates[formname]) == 'undefined') continue;
+					   getFormState(formname).then(function (formState) {
+						   var formModel = formState.model;
+						   var newFormData = msg.forms[formname];
+						   var newFormProperties = newFormData['']; // form properties
+						   var newFormConversionInfo = (conversionInfo && conversionInfo.forms && conversionInfo.forms[formname]) ? conversionInfo.forms[formname] : undefined;
+
+						   if(newFormProperties) {
+							   if (newFormConversionInfo && newFormConversionInfo['']) newFormProperties = $sabloConverters.convertFromServerToClient(newFormProperties, newFormConversionInfo[''], formModel[''], formState.getScope());
+							   if (!formModel['']) formModel[''] = {};
+							   for(var p in newFormProperties) {
+								   formModel[''][p] = newFormProperties[p]; 
+							   } 
+						   }
+
+						   var watchesRemoved = formState.removeWatches(newFormData);
+						   try {
+							   for (var beanname in newFormData) {
+								   // copy over the changes, skip for form properties (beanname empty)
+								   if (beanname != '') {
+									   var newBeanConversionInfo = newFormConversionInfo ? newFormConversionInfo[beanname] : undefined;
+									   var beanConversionInfo = newBeanConversionInfo ? $sabloUtils.getOrCreateInDepthProperty(formStatesConversionInfo, formname, beanname) : undefined; // we could do a get instead of undefined, but normally that value is not needed if the new conversion info is undefined
+									   applyBeanData(formModel[beanname], newFormData[beanname], formState.properties.designSize, getChangeNotifier(formname, beanname), beanConversionInfo, newBeanConversionInfo, formState.getScope());
+								   }
+							   }
+							   if(deferredformStates[formname]){
+								   if (typeof(formStates[name]) !== 'undefined') deferredformStates[formname].resolve(formStates[formname])
+								   delete deferredformStates[formname]
+							   }
+						   }
+						   finally {
+							   if (watchesRemoved) {
+								   formState.addWatches(newFormData);
+							   }
+							   else if (msg.initialdatarequest) {
+								   formState.addWatches();
+							   }
+						   }
+					   });
+				   }
+		
+				   if (conversionInfo && conversionInfo.call) msg.call = $sabloConverters.convertFromServerToClient(msg.call, conversionInfo.call, undefined, undefined);
+				   if (msg.call) {
+					   // {"call":{"form":"product","element":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}, // optionally "viewIndex":1 
+					   // "{ conversions: {product: {datatextfield1: {0: "Date"}}} }
+					   var call = msg.call;
+					   return getFormState(call.form).then(function(formState) {
+						   if (call.viewIndex != undefined) {
+							   var funcThis = formState.api[call.bean][call.viewIndex]; 
+							   if (funcThis)
+							   {
+								   var func = funcThis[call.api];
+							   }
+							   else
+							   {
+								   console.warn("cannot call " + call.api + " on " + call.bean + " because viewIndex "+ call.viewIndex +" api is not found")
+							   }
+						   }
+						   else if (call.propertyPath != undefined)
+						   {
+							   // handle nested components; the property path is an array of string or int keys going
+							   // through the form's model starting with the root bean name, then it's properties (that could be nested)
+							   // then maybe nested child properties and so on 
+							   var obj = formState.model;
+							   var pn;
+							   for (pn in call.propertyPath) obj = obj[call.propertyPath[pn]];
+							   var func = obj.api[call.api];
+						   }
+						   else {
+							   var funcThis = formState.api[call.bean];
+							   var func = funcThis[call.api];
+						   }
+						   if (!func) {
+							   console.warn("bean " + call.bean + " did not provide the api: " + call.api)
+							   return null;
+						   }
+						   return func.apply(funcThis, call.args)
+					   });
+				   }
+			   });
+			   
+			   return wsSession
 		   },
 		   
 		   // used by custom property component[] to implement nested component logic
@@ -106,20 +209,7 @@ angular.module('sabloApp', ['webSocketModule'])
 		   getComponentChanges: getComponentChanges,
 		   getChangeNotifier: getChangeNotifier,
 		   
-		   getFormState: function(name) { 
-			   var defered = null
-			   if (!deferredformStates[name]) {
-				   var defered = $q.defer()
-				   deferredformStates[name] = defered;
-			   } else {
-				   defered = deferredformStates[name]
-			   }
-
-			   if (formStates[name]) {
-				   defered.resolve(formStates[name]); // then handlers are called even if they are applied after it is resolved
-			   }			   
-			   return defered.promise;
-		   },
+		   getFormState: getFormState,
 		   
 		   getFormStatesConversionInfo: function() { return formStatesConversionInfo; },
 
@@ -130,16 +220,9 @@ angular.module('sabloApp', ['webSocketModule'])
 		   hasFormstate: function(name) {
 			   return typeof(formStates[name]) !== 'undefined' || typeof(deferredformStates[name]) !== 'undefined'
 		   },
-		   
+
 		   clearformState: function(formName) {
 			   delete formStates[formName];
-		   },
-
-		   cleardeferredformState: function(formname) {
-			   if(deferredformStates[formname]){
-				   if (typeof(formStates[name]) !== 'undefined') deferredformStates[formname].resolve(formStates[formname])
-				   delete deferredformStates[formname]
-			   }
 		   },
 
 		   initFormState: function(formName, beanDatas, formProperties, formScope) {
@@ -171,6 +254,26 @@ angular.module('sabloApp', ['webSocketModule'])
 		   
 		   sendDeferredMessage: function(obj, scope) {
 			   return getSession().sendDeferredMessage(obj, scope)
+		   },
+		   
+		   getExecutor: function(formName) {
+			   return {
+				   on: function(beanName,eventName,property,args,rowId) {
+					   return getFormState(formName).then(function (formState) {
+						   // this is onaction, onfocuslost which is really configured in the html so it really 
+						   // is something that goes to the server
+						   var newargs = $sabloUtils.getEventArgs(args,eventName);
+						   var data = {}
+						   if (property) {
+							   data[property] = formState.model[beanName][property];
+						   }
+						   var cmd = {cmd:'event',formname:formName,beanname:beanName,event:eventName,args:newargs,changes:data}
+						   if (rowId) cmd.rowId = rowId
+						   return getSession().sendDeferredMessage(cmd,formState.getScope())
+					   });
+				   },
+			   }
 		   }
+		   
 	   }
 })

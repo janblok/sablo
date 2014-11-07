@@ -6,13 +6,14 @@ Bundle-Version: 8.0.0.3009
 Export-Package: org.sablo,
  org.sablo.eventthread,
  org.sablo.property.types,
+ org.sablo.services,
  org.sablo.specification,
  org.sablo.specification.property,
  org.sablo.specification.property.types,
+ org.sablo.startup,
  org.sablo.websocket,
  org.sablo.websocket.impl,
- org.sablo.websocket.utils,
- org.sablo.startup
+ org.sablo.websocket.utils
 Require-Bundle: org.junit,
  slf4j.api;bundle-version="1.6.1",
  org.apache.commons.io;bundle-version="2.4.0"

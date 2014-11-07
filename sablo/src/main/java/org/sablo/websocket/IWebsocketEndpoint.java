@@ -50,10 +50,11 @@ public interface IWebsocketEndpoint
 	 * Uses ConversionLocation.BROWSER_UPDATE as conversion location.<br/>
 	 *
 	 * If there are any pending service calls those will be sent to the client/attached to the message as well.
-	 *
+	 * 
 	 * @param data the data to be sent to the client (converted to JSON format where needed).
 	 * @param dataTypes description of the data structure; each key in "data" might have a corresponding child "dataTypes.getProperty(key)" who's type can be used for "to JSON" conversion.
 	 * @param async specifies is the messages should be sent later or right away.
+	 * @param converter converter for values to json.
 	 * @return if async it will return null; otherwise it will return whatever the client sends back as a response to this message.
 	 * @throws IOException when such an exception occurs.
 	 */
@@ -76,7 +77,7 @@ public interface IWebsocketEndpoint
 	 * @param success is this a normal or an error response?
 	 * @throws IOException
 	 */
-	void sendResponse(Object msgId, Object object, PropertyDescription objectType, boolean success) throws IOException;
+	void sendResponse(Object msgId, Object object, PropertyDescription objectType, IToJSONConverter converter, boolean success) throws IOException;
 
 	/**
 	 * Execute a (client/browser) service call asynchronously.

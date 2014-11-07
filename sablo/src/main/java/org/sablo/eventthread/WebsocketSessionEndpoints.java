@@ -26,8 +26,8 @@ import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.IWebsocketEndpoint;
 import org.sablo.websocket.IWebsocketSession;
 import org.sablo.websocket.TypedData;
-import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
+import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,11 +123,11 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 	}
 
 	@Override
-	public void sendResponse(Object msgId, Object object, PropertyDescription objectType, boolean success) throws IOException
+	public void sendResponse(Object msgId, Object object, PropertyDescription objectType, IToJSONConverter converter, boolean success) throws IOException
 	{
 		for (IWebsocketEndpoint endpoint : session.getRegisteredEnpoints())
 		{
-			endpoint.sendResponse(msgId, object, objectType, success);
+			endpoint.sendResponse(msgId, object, objectType, converter, success);
 		}
 	}
 

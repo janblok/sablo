@@ -117,6 +117,7 @@ angular.module('sabloApp', ['webSocketModule'])
 			   wsSession.onMessageObject(function (msg, conversionInfo) {
 				   // data got back from the server
 				   for(var formname in msg.forms) {
+					   // TODO: replace with service call "applyChanges(form, changes)"
 					   // current model
 					   // if the formState is on the server but not here anymore, skip it. 
 					   // this can happen with a refresh on the browser.
@@ -153,9 +154,6 @@ angular.module('sabloApp', ['webSocketModule'])
 						   finally {
 							   if (watchesRemoved) {
 								   formState.addWatches(newFormData);
-							   }
-							   else if (msg.initialdatarequest) {
-								   formState.addWatches();
 							   }
 						   }
 					   });
@@ -235,7 +233,36 @@ angular.module('sabloApp', ['webSocketModule'])
 			   
 				// send the special request initial data for this form 
 				// this can also make the form (IFormUI instance) on the server if that is not already done
-				callService('formService', 'initialrequestdata', {formname:formName}, true);
+			   callService('formService', 'requestData', {formname:formName}, false).then(function (newFormData) {
+
+				   // if the formState is on the server but not here anymore, skip it. 
+				   // this can happen with a refresh on the browser.
+				   var formState = formStates[formName];
+				   if (typeof(formState) == 'undefined') return;
+
+				   var formModel = formState.model;
+				   var newFormProperties = newFormData['']; // form properties
+
+				   if(newFormProperties) {
+					   if (!formModel['']) formModel[''] = {};
+					   for(var p in newFormProperties) {
+						   formModel[''][p] = newFormProperties[p]; 
+					   } 
+				   }
+
+				   for (var beanname in newFormData) {
+					   // copy over the changes, skip for form properties (beanname empty)
+					   if (beanname != '') {
+						   applyBeanData(formModel[beanname], newFormData[beanname], formState.properties.designSize, getChangeNotifier(formName, beanname), null, null, formState.getScope());
+					   }
+				   }
+				   if(deferredformStates[formName]){
+					   if (typeof(formStates[name]) !== 'undefined') deferredformStates[formName].resolve(formStates[formName])
+					   delete deferredformStates[formName]
+				   }
+
+				   formState.addWatches();
+			   });
 
 			   // init all the objects for the beans.
 			   state = formStates[formName] = { model: model, api: api, properties: formProperties};

@@ -141,11 +141,14 @@ angular.module('sabloApp', ['webSocketModule'])
 								   // copy over the changes, skip for form properties (beanname empty)
 								   if (beanname != '') {
 									   var newBeanConversionInfo = newFormConversionInfo ? newFormConversionInfo[beanname] : undefined;
-									   var beanConversionInfo = newBeanConversionInfo ? $utils.getOrCreateInDepthProperty(getFormStatesConversionInfo(), formname, beanname) : undefined; // we could do a get instead of undefined, but normally that value is not needed if the new conversion info is undefined
+									   var beanConversionInfo = newBeanConversionInfo ? $sabloUtils.getOrCreateInDepthProperty(formStatesConversionInfo, formname, beanname) : undefined; // we could do a get instead of undefined, but normally that value is not needed if the new conversion info is undefined
 									   applyBeanData(formModel[beanname], newFormData[beanname], formState.properties.designSize, getChangeNotifier(formname, beanname), beanConversionInfo, newBeanConversionInfo, formState.getScope());
 								   }
 							   }
-							   cleardeferredformState(formname)
+							   if(deferredformStates[formname]){
+								   if (typeof(formStates[name]) !== 'undefined') deferredformStates[formname].resolve(formStates[formname])
+								   delete deferredformStates[formname]
+							   }
 						   }
 						   finally {
 							   if (watchesRemoved) {
@@ -220,13 +223,6 @@ angular.module('sabloApp', ['webSocketModule'])
 
 		   clearformState: function(formName) {
 			   delete formStates[formName];
-		   },
-
-		   cleardeferredformState: function(formname) {
-			   if(deferredformStates[formname]){
-				   if (typeof(formStates[name]) !== 'undefined') deferredformStates[formname].resolve(formStates[formname])
-				   delete deferredformStates[formname]
-			   }
 		   },
 
 		   initFormState: function(formName, beanDatas, formProperties, formScope) {

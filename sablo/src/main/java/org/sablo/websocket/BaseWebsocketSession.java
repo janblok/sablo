@@ -79,12 +79,6 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		return new FormServiceHandler(this);
 	}
 
-	@Override
-	public Container getForm(String formName)
-	{
-		return null;
-	}
-
 	public void registerEndpoint(IWebsocketEndpoint endpoint)
 	{
 		registeredEnpoints.add(endpoint);

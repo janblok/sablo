@@ -16,10 +16,13 @@
 
 package org.sablo.services;
 
+import java.util.Iterator;
 import java.util.Map;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.sablo.Container;
+import org.sablo.WebComponent;
 import org.sablo.websocket.IServerService;
 import org.sablo.websocket.IWebsocketSession;
 import org.sablo.websocket.TypedData;
@@ -64,9 +67,17 @@ public class FormServiceHandler implements IServerService
 			{
 				return requestData(args.optString("formname"));
 			}
+
+			case "dataPush" :
+			{
+				dataPush(args);
+				break;
+			}
+
+			default :
+				log.warn("Method not implemented: '" + methodName + "'");
 		}
 
-		log.warn("Method not implemented: '" + methodName + "'");
 		return null;
 	}
 
@@ -81,6 +92,32 @@ public class FormServiceHandler implements IServerService
 		}
 
 		return form.getAllComponentsProperties();
+	}
+
+	protected void dataPush(JSONObject obj) throws JSONException
+	{
+		JSONObject changes = obj.getJSONObject("changes");
+		if (changes.length() > 0)
+		{
+			String formName = obj.getString("formname");
+
+			Container form = getWebsocketSession().getForm(formName);
+			if (form == null)
+			{
+				log.warn("dataPush for unknown form '" + formName + "'");
+				return;
+			}
+
+			String beanName = obj.optString("beanname");
+
+			WebComponent webComponent = beanName.length() > 0 ? form.getComponent(beanName) : (WebComponent)form;
+			Iterator<String> keys = changes.keys();
+			while (keys.hasNext())
+			{
+				String key = keys.next();
+				webComponent.putBrowserProperty(key, changes.get(key));
+			}
+		}
 	}
 
 }

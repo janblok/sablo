@@ -68,7 +68,7 @@ angular.module('sabloApp', ['webSocketModule'])
 		   var changes = getComponentChanges(now, prev, $sabloUtils.getInDepthProperty(formStatesConversionInfo, formname, beanname),
 				   formStates[formname].properties.designSize, getChangeNotifier(formname, beanname), formStates[formname].getScope());
 		   if (Object.getOwnPropertyNames(changes).length > 0) {
-			   sendRequest({cmd:'datapush',formname:formname,beanname:beanname,changes:changes})
+			   callService('formService', 'dataPush', {formname:formname,beanname:beanname,changes:changes}, true)
 		   }
 		   return changes
 	   };

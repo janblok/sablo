@@ -35,8 +35,8 @@ import org.sablo.Container;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.utils.JSONUtils;
-import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
+import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -285,7 +285,21 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 							{
 								try
 								{
-									WebsocketEndpoint.get().sendResponse(msgId, error == null ? result : error, null, error == null);
+									if (error == null)
+									{
+										Object resultObject = result;
+										PropertyDescription objectType = null;
+										if (result instanceof TypedData)
+										{
+											resultObject = ((TypedData< ? >)result).content;
+											objectType = ((TypedData< ? >)result).contentType;
+										}
+										WebsocketEndpoint.get().sendResponse(msgId, resultObject, objectType, getToJSONConverter(), true);
+									}
+									else
+									{
+										WebsocketEndpoint.get().sendResponse(msgId, error, null, getToJSONConverter(), false);
+									}
 								}
 								catch (IOException e)
 								{
@@ -328,6 +342,14 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 
 	}
 
+	/**
+	 * @return
+	 */
+	protected IToJSONConverter getToJSONConverter()
+	{
+		return FullValueToJSONConverter.INSTANCE;
+	}
+
 	private void addServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes)
 	{
 		// {"services":[{name:serviceName,call:functionName,args:argumentsArray}]}
@@ -352,7 +374,7 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 		PropertyDescription changesTypes) throws IOException
 	{
 		addServiceCall(serviceName, functionName, arguments, argumentTypes);
-		return sendMessage(changes, changesTypes, false, FullValueToJSONConverter.INSTANCE); // will return response from last service call
+		return sendMessage(changes, changesTypes, false, getToJSONConverter()); // will return response from last service call
 	}
 
 	public Object sendMessage(Map<String, ? > data, PropertyDescription dataTypes, boolean async, IToJSONConverter converter) throws IOException
@@ -399,14 +421,22 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 	}
 
 	@Override
-	public void sendResponse(Object msgId, Object object, PropertyDescription objectType, boolean success) throws IOException
+	public void sendResponse(Object msgId, Object object, PropertyDescription objectType, IToJSONConverter converter, boolean success) throws IOException
 	{
 		Map<String, Object> data = new HashMap<>();
+		String key = success ? "ret" : "exception";
+		data.put(key, object);
 		data.put("cmsgid", msgId);
-		data.put(success ? "ret" : "exception", object);
+		PropertyDescription dataTypes = null;
+		if (objectType != null)
+		{
+			dataTypes = AggregatedPropertyType.newAggregatedProperty();
+			dataTypes.putProperty(key, objectType);
+		}
+
 		try
 		{
-			sendText(JSONUtils.writeDataWithConversions(data, objectType));
+			sendText(JSONUtils.writeDataWithConversions(converter, data, dataTypes));
 		}
 		catch (JSONException e)
 		{

@@ -23,6 +23,9 @@ import org.sablo.Container;
 import org.sablo.websocket.IServerService;
 import org.sablo.websocket.IWebsocketSession;
 import org.sablo.websocket.TypedData;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * formService implementation to handle methods at form level.
@@ -32,9 +35,9 @@ import org.sablo.websocket.TypedData;
  */
 public class FormServiceHandler implements IServerService
 {
+	public static final Logger log = LoggerFactory.getLogger(FormServiceHandler.class.getCanonicalName());
 
 	private final IWebsocketSession websocketSession;
-
 
 	/**
 	 * @param baseWebsocketSession
@@ -44,6 +47,13 @@ public class FormServiceHandler implements IServerService
 		this.websocketSession = websocketSession;
 	}
 
+	/**
+	 * @return the websocketSession
+	 */
+	public IWebsocketSession getWebsocketSession()
+	{
+		return websocketSession;
+	}
 
 	@Override
 	public Object executeMethod(String methodName, JSONObject args) throws Exception
@@ -55,18 +65,22 @@ public class FormServiceHandler implements IServerService
 				return requestData(args.optString("formname"));
 			}
 		}
+
+		log.warn("Method not implemented: '" + methodName + "'");
 		return null;
 	}
 
 
-	protected Map<String, Map<String, Object>> requestData(String formName)
+	protected TypedData<Map<String, Map<String, Object>>> requestData(String formName)
 	{
-		Container form = websocketSession.getForm(formName);
+		Container form = getWebsocketSession().getForm(formName);
+		if (form == null)
+		{
+			log.warn("Data requested from unknown form '" + formName + "'");
+			return null;
+		}
 
-		TypedData<Map<String, Map<String, Object>>> properties = form.getAllComponentsProperties();
-
-		// TODO dataconversion (properties.contentType)
-		return properties.content;
+		return form.getAllComponentsProperties();
 	}
 
 }

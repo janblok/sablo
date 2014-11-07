@@ -415,6 +415,11 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 		return (messageId == null) ? null : waitResponse(messageId);
 	}
 
+	public void flush() throws IOException
+	{
+		sendMessage(null, null, true, getToJSONConverter());
+	}
+
 	public void sendMessage(String txt) throws IOException
 	{
 		sendText("{\"msg\":" + txt + '}');

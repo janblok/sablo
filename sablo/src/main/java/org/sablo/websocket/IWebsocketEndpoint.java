@@ -61,11 +61,11 @@ public interface IWebsocketEndpoint
 	Object sendMessage(Map<String, ? > data, PropertyDescription dataTypes, boolean async, IToJSONConverter converter) throws IOException;
 
 	/**
-	 * Just send this text as message, no conversion, no waiting for response.
-	 * @param txt
+	 * Flush outstanding async service calls.
+	 * 
 	 * @throws IOException
 	 */
-	void sendMessage(String txt) throws IOException;
+	void flush() throws IOException;
 
 	/**
 	 * Send a response for a previous request.

@@ -24,6 +24,7 @@ import java.util.Map.Entry;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONString;
 import org.json.JSONStringer;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
@@ -182,12 +183,7 @@ public class JSONUtils
 			addKeyIfPresent(w, key);
 			w = w.value(null); // null is allowed
 		}
-		else if (converted instanceof JSONArray) // TODO are we using JSON object or Map and Lists? ( as internal representation of properties)
-		{
-			addKeyIfPresent(w, key);
-			w = w.value(converted);
-		}
-		else if (converted instanceof JSONObject)
+		else if (converted instanceof JSONArray || converted instanceof JSONObject || converted instanceof JSONString)
 		{
 			addKeyIfPresent(w, key);
 			w = w.value(converted);
@@ -485,6 +481,21 @@ public class JSONUtils
 
 			return writer;
 		}
+	}
+
+	/**
+	 * A JSONStringer that is able to be appended to another JSONWriter directly - without re-parsing the value into a JSONObject for example.
+	 * @author acostescu
+	 */
+	public static class EmbeddableJSONWriter extends JSONStringer implements JSONString
+	{
+
+		@Override
+		public String toJSONString()
+		{
+			return toString();
+		}
+
 	}
 
 }

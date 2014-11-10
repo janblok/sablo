@@ -342,9 +342,6 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 
 	}
 
-	/**
-	 * @return
-	 */
 	protected IToJSONConverter getToJSONConverter()
 	{
 		return FullValueToJSONConverter.INSTANCE;

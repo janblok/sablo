@@ -21,18 +21,23 @@ import java.util.Map;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONStringer;
 import org.sablo.Container;
 import org.sablo.WebComponent;
 import org.sablo.websocket.IServerService;
 import org.sablo.websocket.IWebsocketSession;
 import org.sablo.websocket.TypedData;
+import org.sablo.websocket.utils.JSONUtils;
+import org.sablo.websocket.utils.JSONUtils.EmbeddableJSONWriter;
+import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
+import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
 /**
  * formService implementation to handle methods at form level.
- * 
+ *
  * @author rgansevles
  *
  */
@@ -82,7 +87,7 @@ public class FormServiceHandler implements IServerService
 	}
 
 
-	protected TypedData<Map<String, Map<String, Object>>> requestData(String formName)
+	protected JSONStringer requestData(String formName) throws JSONException
 	{
 		Container form = getWebsocketSession().getForm(formName);
 		if (form == null)
@@ -91,7 +96,27 @@ public class FormServiceHandler implements IServerService
 			return null;
 		}
 
-		return form.getAllComponentsProperties();
+		JSONStringer initialFormData = null;
+		TypedData<Map<String, Map<String, Object>>> allFormPropertiesTyped = form.getAllComponentsProperties();
+		if (allFormPropertiesTyped != null && allFormPropertiesTyped.content != null)
+		{
+			// we will not return form properties typed data directly - instead we send both data and conversions inside this "ifd"
+			// so that on client side the returned value doesn't get converted automatically and then deferr resolve handler that does applyBeanData
+			// is not aware of conversion info; instead we give this entire thing as JSON to the deferr resolve handler in .js and it can do conversions/apply
+			// bean data separately, having all the info that it needs - so also conversion info
+			initialFormData = new EmbeddableJSONWriter();
+			initialFormData.array().object();
+			JSONUtils.writeDataWithConversions(getInitialRequestDataConverter(), initialFormData, allFormPropertiesTyped.content,
+				allFormPropertiesTyped.contentType);
+			initialFormData.endObject().endArray();
+		}
+
+		return initialFormData;
+	}
+
+	protected IToJSONConverter getInitialRequestDataConverter()
+	{
+		return FullValueToJSONConverter.INSTANCE;
 	}
 
 	protected void dataPush(JSONObject obj) throws JSONException

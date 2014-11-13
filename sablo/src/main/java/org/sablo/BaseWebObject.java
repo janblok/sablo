@@ -267,7 +267,7 @@ public abstract class BaseWebObject
 				if (propertyMap == null)
 				{
 					propertyMap = new HashMap<>();
-					map.put(parts[i], propertyMap);
+					map.put(parts[i], wrapPropertyValue(parts[i], null, propertyMap));
 				}
 				map = propertyMap;
 			}

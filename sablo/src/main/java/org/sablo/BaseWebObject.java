@@ -133,12 +133,7 @@ public abstract class BaseWebObject
 	 */
 	public Object getProperty(String propertyName)
 	{
-		Object object = properties.get(propertyName);
-		if (object == null && !properties.containsKey(propertyName))
-		{
-			return defaultPropertiesUnwrapped.get(propertyName);
-		}
-		return unwrapValue(propertyName, object);
+		return unwrapValue(propertyName, getCurrentValue(propertyName));
 	}
 
 	protected Object unwrapValue(String propertyName, Object object)
@@ -238,22 +233,8 @@ public abstract class BaseWebObject
 	 */
 	public boolean setProperty(String propertyName, Object propertyValue)
 	{
-		Object wrappedValue = propertyValue;
-		try
-		{
-			// TODO can the propertyName can contain dots? Or should this be
-			// handled by the type??
-			Object oldValue = getCurrentValue(propertyName);
-			wrappedValue = wrapPropertyValue(propertyName, oldValue, propertyValue);
-		}
-		catch (Exception e)
-		{
-			// TODO change this as part of SVY-6337
-			throw new RuntimeException(e);
-		}
+		Object canBeWrapped = propertyValue;
 
-		// TODO can the propertyName can contain dots? Or should this be handled
-		// by the type?? Remove this code below. (the getProperty doesn't suppor this!)
 		Map<String, Object> map = properties;
 		String firstPropertyPart = propertyName;
 		String lastPropertyPart = propertyName;
@@ -261,27 +242,44 @@ public abstract class BaseWebObject
 		if (parts.length > 1)
 		{
 			firstPropertyPart = parts[0];
+			String path = "";
 			for (int i = 0; i < parts.length - 1; i++)
 			{
-				Map<String, Object> propertyMap = (Map<String, Object>)map.get(parts[i]);
+				path += parts[i];
+				Map<String, Object> propertyMap = (Map<String, Object>)getCurrentValue(path);
 				if (propertyMap == null)
 				{
 					propertyMap = new HashMap<>();
 					map.put(parts[i], wrapPropertyValue(parts[i], null, propertyMap));
 				}
+				path += ".";
 				map = propertyMap;
 			}
 			lastPropertyPart = parts[parts.length - 1];
+		}
+		else
+		{
+			try
+			{
+				Object oldValue = getCurrentValue(propertyName);
+				canBeWrapped = wrapPropertyValue(propertyName, oldValue, propertyValue);
+			}
+			catch (Exception e)
+			{
+				// TODO change this as part of SVY-6337
+				throw new RuntimeException(e);
+			}
 		}
 
 		if (map.containsKey(lastPropertyPart))
 		{
 			// existing property
 			Object oldValue = getProperty(propertyName); // this unwraps it
-			map.put(lastPropertyPart, wrappedValue);
+			map.put(lastPropertyPart, canBeWrapped);
 			propertyValue = getProperty(propertyName); // this is required as a wrap + unwrap might result in a different object then the initial one
 
 			// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
+			// TODO if this is a sub property then we fire here the onproperty change for the top level property with the values of a subproperty..
 			onPropertyChange(firstPropertyPart, oldValue, propertyValue);
 
 			if ((oldValue != null && !oldValue.equals(propertyValue)) || (propertyValue != null && !propertyValue.equals(oldValue)))
@@ -293,7 +291,7 @@ public abstract class BaseWebObject
 		else
 		{
 			// new property
-			map.put(lastPropertyPart, wrappedValue);
+			map.put(lastPropertyPart, canBeWrapped);
 			propertyValue = getProperty(propertyName); // this is required as a wrap + unwrap might result in a different object then the initial one
 
 			// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
@@ -314,15 +312,29 @@ public abstract class BaseWebObject
 	 */
 	private Object getCurrentValue(String propertyName)
 	{
-		Object oldValue = properties.get(propertyName);
-		if (oldValue == null && !properties.containsKey(propertyName))
+		String[] parts = propertyName.split("\\.");
+		String firstProperty = parts[0];
+		Object oldValue = properties.get(firstProperty);
+		if (oldValue == null && !properties.containsKey(firstProperty))
 		{
-			Object defaultProperty = defaultPropertiesUnwrapped.get(propertyName);
+			Object defaultProperty = defaultPropertiesUnwrapped.get(firstProperty);
 			if (defaultProperty != null)
 			{
 				// quickly wrap this value so that it can be used as the oldValue later on.
-				oldValue = wrapPropertyValue(propertyName, null, defaultProperty);
+				oldValue = wrapPropertyValue(firstProperty, null, defaultProperty);
 			}
+		}
+		if (parts.length > 1)
+		{
+			for (int i = 1; i < parts.length; i++)
+			{
+				if (oldValue instanceof Map)
+				{
+					oldValue = ((Map)oldValue).get(parts[i]);
+				}
+			}
+			// this value comes from internal maps, should be wrapped again (current value should always return a wrapped value)
+			oldValue = wrapPropertyValue(propertyName, null, oldValue);
 		}
 		return oldValue;
 	}

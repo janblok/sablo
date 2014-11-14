@@ -1,0 +1,13 @@
+Manifest-Version: 1.0
+
+Name: mylabel/mylabel.spec
+Web-Component: True
+
+Name: mytextfield/mytextfield.spec
+Web-Component: True
+
+Name: mybutton/mybutton.spec
+Web-Component: True
+
+Name: mycounter/mycounter.spec
+Web-Component: True

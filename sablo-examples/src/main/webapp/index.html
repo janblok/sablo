@@ -1,0 +1,21 @@
+<html ng-app="sampleApp" ng-controller="SampleController">
+	<head>
+		<title ng-bind="windowTitle"></title>
+		
+		<!-- 3rd-party libraries -->
+		<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.3.2/angular.js"></script>
+		
+		<!-- sablo libraries -->
+		<script src="sablo/js/websocket.js"></script>
+		<script src="sablo/js/sablo_app.js"></script>
+
+		<!-- application -->
+		<script src="js/sample_app.js"></script>
+		
+		<!-- application forms -->
+		<script src="forms/mainForm.js"></script>
+	</head>
+  <body>
+  	<div ng-include="currentPanel"></div>
+  </body>
+</html>

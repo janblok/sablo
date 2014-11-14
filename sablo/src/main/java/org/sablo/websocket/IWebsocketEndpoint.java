@@ -121,7 +121,7 @@ public interface IWebsocketEndpoint
 	 * Register a container at the websocket for traversal of changes
 	 * @param container
 	 */
-	void regisiterContainer(Container container);
+	void registerContainer(Container container);
 
 	/**
 	 * Get the component changes

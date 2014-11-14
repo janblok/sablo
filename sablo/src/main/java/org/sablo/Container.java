@@ -98,7 +98,7 @@ public abstract class Container extends WebComponent
 
 	public TypedData<Map<String, Map<String, Object>>> getAllComponentsProperties()
 	{
-		WebsocketEndpoint.get().regisiterContainer(this);
+		WebsocketEndpoint.get().registerContainer(this);
 		Map<String, Map<String, Object>> props = new HashMap<String, Map<String, Object>>();
 		PropertyDescription propTypes = AggregatedPropertyType.newAggregatedProperty();
 

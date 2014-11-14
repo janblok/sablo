@@ -165,11 +165,11 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 	}
 
 	@Override
-	public void regisiterContainer(Container container)
+	public void registerContainer(Container container)
 	{
 		for (IWebsocketEndpoint endpoint : session.getRegisteredEnpoints())
 		{
-			endpoint.regisiterContainer(container);
+			endpoint.registerContainer(container);
 		}
 	}
 

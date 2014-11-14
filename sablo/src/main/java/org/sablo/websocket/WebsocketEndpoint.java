@@ -487,7 +487,7 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 	}
 
 	@Override
-	public void regisiterContainer(Container container)
+	public void registerContainer(Container container)
 	{
 		usedContainers.put(container, new Object());
 	}

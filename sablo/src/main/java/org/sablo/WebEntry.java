@@ -65,6 +65,12 @@ public abstract class WebEntry implements Filter
 	 */
 	public abstract String[] getWebComponentBundleNames();
 
+	/**
+	 * Provide all the service bundle names. 
+	 * @return the bundle names
+	 */
+	public abstract String[] getServiceBundleNames();
+
 	@Override
 	public void init(final FilterConfig fc) throws ServletException
 	{
@@ -73,7 +79,7 @@ public abstract class WebEntry implements Filter
 
 		WebComponentSpecProvider.init(fc.getServletContext(), getWebComponentBundleNames());
 
-		WebServiceSpecProvider.init(fc.getServletContext());
+		WebServiceSpecProvider.init(fc.getServletContext(), getServiceBundleNames());
 	}
 
 	/**

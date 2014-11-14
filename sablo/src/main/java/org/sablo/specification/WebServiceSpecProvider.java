@@ -16,12 +16,10 @@
 
 package org.sablo.specification;
 
-import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 
 import javax.servlet.ServletContext;
@@ -52,24 +50,6 @@ public class WebServiceSpecProvider
 	public static synchronized void init(IPackageReader[] locations)
 	{
 		instance = new WebServiceSpecProvider(new WebSpecReader(locations));
-	}
-
-
-	public static WebServiceSpecProvider init(ServletContext servletContext)
-	{
-		try
-		{
-			InputStream is = servletContext.getResourceAsStream("/WEB-INF/services.properties");
-			Properties properties = new Properties();
-			properties.load(is);
-			String[] locations = properties.getProperty("locations").split(";");
-			return init(servletContext, locations);
-		}
-		catch (Exception e)
-		{
-			log.error("Exception during init services.properties reading", e);
-		}
-		return instance;
 	}
 
 	/**
@@ -112,7 +92,7 @@ public class WebServiceSpecProvider
 		}
 	}
 
-	private WebSpecReader reader;
+	private final WebSpecReader reader;
 
 	private WebServiceSpecProvider(WebSpecReader reader)
 	{

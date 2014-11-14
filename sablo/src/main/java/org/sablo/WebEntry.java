@@ -18,6 +18,7 @@ package org.sablo;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URL;
 import java.util.Collection;
 import java.util.Map;
 
@@ -111,28 +112,29 @@ public abstract class WebEntry implements Filter
 	@Override
 	public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException
 	{
-		try
+		HttpServletRequest request = (HttpServletRequest)servletRequest;
+
+		URL indexPageResource = getIndexPageResource(request);
+		if (indexPageResource != null)
 		{
-			HttpServletRequest request = (HttpServletRequest)servletRequest;
-			String uri = request.getRequestURI();
-			if (uri != null && uri.endsWith("index.html"))
-			{
-				((HttpServletResponse)servletResponse).setContentType("text/html");
+			((HttpServletResponse)servletResponse).setContentType("text/html");
 
-				PrintWriter w = servletResponse.getWriter();
-				IndexPageEnhancer.enhance(getClass().getResource("index.html"), request.getContextPath(), getCSSContributions(), getJSContributions(),
-					getVariableSubstitution(), w);
-				w.flush();
-
-				return;
-			}
-
-			filterChain.doFilter(servletRequest, servletResponse);
+			PrintWriter w = servletResponse.getWriter();
+			IndexPageEnhancer.enhance(indexPageResource, request.getContextPath(), getCSSContributions(), getJSContributions(), getVariableSubstitution(), w);
+			w.flush();
+			return;
 		}
-		catch (RuntimeException | Error e)
+
+		filterChain.doFilter(servletRequest, servletResponse);
+	}
+
+	protected URL getIndexPageResource(HttpServletRequest request) throws IOException
+	{
+		if ("/index.html".equals(request.getServletPath()))
 		{
-			throw e;
+			return request.getServletContext().getResource(request.getServletPath());
 		}
+		return null;
 	}
 
 	@Override

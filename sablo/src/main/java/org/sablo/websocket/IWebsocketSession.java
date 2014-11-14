@@ -83,6 +83,7 @@ public interface IWebsocketSession
 	 * Handle an incoming message.
 	 * @param obj
 	 */
+	// TODO: remove this, all when messages are done via service calls
 	public void handleMessage(JSONObject obj);
 
 	/**

@@ -118,11 +118,12 @@ public abstract class BaseWebObject
 	public Object executeEvent(String eventType, Object[] args)
 	{
 		IEventHandler handler = getEventHandler(eventType);
-		if (handler != null)
+		if (handler == null)
 		{
-			return handler.executeEvent(args);
+			log.warn("Unknown event '" + eventType + "' for component " + this);
+			return null;
 		}
-		return null;
+		return handler.executeEvent(args);
 	}
 
 	/**
@@ -507,6 +508,11 @@ public abstract class BaseWebObject
 	public IEventHandler removeEventHandler(String event)
 	{
 		return eventHandlers.remove(event);
+	}
+
+	public boolean hasEvent(String event)
+	{
+		return eventHandlers.containsKey(event);
 	}
 
 	/**

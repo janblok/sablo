@@ -19,6 +19,7 @@ package org.sablo.services;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
@@ -79,6 +80,12 @@ public class FormServiceHandler implements IServerService
 				break;
 			}
 
+			case "executeEvent" :
+			{
+				dataPush(args);
+				return executeEvent(args);
+			}
+
 			default :
 				log.warn("Method not implemented: '" + methodName + "'");
 		}
@@ -86,6 +93,40 @@ public class FormServiceHandler implements IServerService
 		return null;
 	}
 
+
+	/**
+	 * @param args
+	 * @throws Exception 
+	 */
+	protected Object executeEvent(JSONObject obj) throws Exception
+	{
+		String formName = obj.getString("formname");
+
+		Container form = getWebsocketSession().getForm(formName);
+		if (form == null)
+		{
+			log.warn("executeEvent for unknown form '" + formName + "'");
+			return null;
+		}
+
+		String beanName = obj.optString("beanname");
+		WebComponent webComponent = form.getComponent(beanName);
+		if (webComponent == null)
+		{
+			log.warn("executeEvent for unknown bean '" + beanName + "' on form '" + formName + "'");
+			return null;
+		}
+
+		JSONArray jsargs = obj.getJSONArray("args");
+		String eventType = obj.getString("event");
+		Object[] args = new Object[jsargs == null ? 0 : jsargs.length()];
+		for (int i = 0; jsargs != null && i < jsargs.length(); i++)
+		{
+			args[i] = jsargs.get(i);
+		}
+
+		return webComponent.executeEvent(eventType, args);
+	}
 
 	protected JSONStringer requestData(String formName) throws JSONException
 	{
@@ -144,5 +185,4 @@ public class FormServiceHandler implements IServerService
 			}
 		}
 	}
-
 }

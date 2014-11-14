@@ -311,11 +311,11 @@ angular.module('sabloApp', ['webSocketModule'])
 						   if (property) {
 							   data[property] = formState.model[beanName][property];
 						   }
-						   var cmd = {cmd:'event',formname:formName,beanname:beanName,event:eventName,args:newargs,changes:data}
+						   var cmd = {formname:formName,beanname:beanName,event:eventName,args:newargs,changes:data}
 						   if (rowId) cmd.rowId = rowId
-						   return getSession().sendDeferredMessage(cmd,formState.getScope())
+						   return callService('formService', 'executeEvent', cmd, false)
 					   });
-				   },
+				   }
 			   }
 		   }
 		   

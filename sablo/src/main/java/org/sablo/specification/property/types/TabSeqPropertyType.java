@@ -17,8 +17,9 @@ package org.sablo.specification.property.types;
 
 
 /**
+ * This simple int combined with the client-side svy-tabseq directive can help you build complex
+ * tab sequences in the browser.
  * @author jcompagner
- *
  */
 public class TabSeqPropertyType extends DefaultPropertyType<Integer>
 {
@@ -39,6 +40,6 @@ public class TabSeqPropertyType extends DefaultPropertyType<Integer>
 	@Override
 	public Integer defaultValue()
 	{
-		return Integer.valueOf(-1);
+		return Integer.valueOf(0);
 	}
 }

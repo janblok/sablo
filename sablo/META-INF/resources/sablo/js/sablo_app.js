@@ -321,3 +321,202 @@ angular.module('sabloApp', ['webSocketModule'])
 		   
 	   }
 })
+
+// IMPORTANT: always add a svy-tabseq directive with svy-tabseq-config="{root: true}" to $rootScope element
+// - when svy-tabseq-config="{container: true}" is used (same for 'root: true'), no real tabindex property will be set on the DOM element, it's only for grouping child svy-tabseq
+// - this directive requires full jquery to be loaded before angular.js; jQuery lite that ships with angular doesn't
+// have trigger() that bubbles up; if needed that could be implemented using triggerHandler, going from parent to parent
+// - note: -2 means an element and it's children should be skipped by tabsequence
+.directive('svyTabseq',  ['$parse', function ($parse) {
+	return {
+		restrict: 'A',
+
+		controller: function($scope, $element, $attrs) {
+			// called by angular in parents first then in children
+			var designTabSeq = $parse($attrs.svyTabseq)($scope);
+			if (!designTabSeq) designTabSeq = 0;
+			var config = $parse($attrs.svyTabseqConfig)($scope);
+
+			var designChildIndexToArrayPosition = {};
+			var designChildTabSeq = []; // contains ordered numbers that will be keys in 'runtimeChildIndexes'; can have duplicates
+			var runtimeChildIndexes = {}; // map designChildIndex[i] -> runtimeIndex for child or designChildIndex[i] -> [runtimeIndex1, runtimeIndex2] in case there are multiple equal design time indexes
+			var runtimeIndex; // initialized a bit lower
+			var initializing = true;
+
+			function recalculateChildRuntimeIndexesStartingAt (posInDesignArray /*inclusive*/, triggeredByParent) {
+				if (designTabSeq == -2) return;
+				if (posInDesignArray === 0) updateCurrentDomElTabIndex();
+
+				var recalculateStartIndex = runtimeIndex.startIndex;
+				if (posInDesignArray > 0 && posInDesignArray - 1 < designChildTabSeq.length) {
+					var runtimeCI = runtimeChildIndexes[designChildTabSeq[posInDesignArray - 1]]; // this can be an array in case of multiple equal design indexes being siblings
+					recalculateStartIndex = runtimeCI.push ? runtimeCI[runtimeCI.length-1].nextAvailableIndex : runtimeCI.nextAvailableIndex;
+				}
+
+				for (var i = posInDesignArray; i < designChildTabSeq.length; i++) {
+					var childRuntimeIndex = runtimeChildIndexes[designChildTabSeq[i]];
+					if (childRuntimeIndex.push) {
+						// multiple equal design time indexes as siblings
+						for (var k in childRuntimeIndex) {
+							childRuntimeIndex[k].startIndex = recalculateStartIndex;
+							childRuntimeIndex[k].recalculateChildRuntimeIndexesStartingAt(0, true); // call recalculate on whole child; normally it only makes sense for same index siblings if they are not themselfes containers, just apply the given value
+						}
+						recalculateStartIndex = childRuntimeIndex[childRuntimeIndex.length - 1].nextAvailableIndex;
+					} else {
+						childRuntimeIndex.startIndex = recalculateStartIndex;
+						childRuntimeIndex.recalculateChildRuntimeIndexesStartingAt(0, true); // call recalculate on whole child
+						recalculateStartIndex = childRuntimeIndex.nextAvailableIndex;
+					}
+				}
+
+				if (initializing) initializing = undefined; // it's now considered initialized as first runtime index caluculation is done
+
+				var ownTabIndexBump = hasOwnTabIndex() ? 1 : 0;
+				var parentRecalculateNeeded = (runtimeIndex.nextAvailableIndex < recalculateStartIndex + ownTabIndexBump);
+				var reservedGap = (config && config.reservedGap) ? config.reservedGap : 0;
+				runtimeIndex.nextAvailableIndex = recalculateStartIndex + reservedGap + ownTabIndexBump;
+
+				// if this container now needs more tab indexes then it was reserved; a recalculate on parent needs to be triggered in this case
+				if (parentRecalculateNeeded && !triggeredByParent) $element.parent().trigger("recalculatePSTS", [designTabSeq]);
+			}
+			runtimeIndex = { startIndex: -1, nextAvailableIndex: -1, recalculateChildRuntimeIndexesStartingAt: recalculateChildRuntimeIndexesStartingAt };
+
+			updateCurrentDomElTabIndex(); // -1 runtime initially for all (in case some node in the tree has -2 design (skip) and children have >= 0, at runtime all children should be excluded as wel)
+
+			function hasOwnTabIndex() {
+				return (!config || !(config.container || config.root));
+			}
+			
+			function updateCurrentDomElTabIndex() {
+				if (hasOwnTabIndex()) {
+					$element.attr('tabIndex', runtimeIndex.startIndex);
+				}
+			}
+
+			// handle event: Child Servoy Tab Sequence registered
+			$element.on("registerCSTS", registerChildHandler);
+					
+			function registerChildHandler(event, designChildIndex, runtimeChildIndex) {
+				if (designTabSeq == -2 || designChildIndex == -2) return false;
+
+				// insert it sorted
+				var posInDesignArray = 0;
+				for (var tz = 0; tz < designChildTabSeq.length && designChildTabSeq[tz] < designChildIndex; tz++) {
+					posInDesignArray = tz + 1;
+				}
+				if (posInDesignArray === designChildTabSeq.length || designChildTabSeq[posInDesignArray] > designChildIndex) {
+					designChildTabSeq.splice(posInDesignArray, 0, designChildIndex);
+
+					// always keep in designChildIndexToArrayPosition[i] the first occurrance of design index i in the sorted designChildTabSeq array
+					for (var tz = posInDesignArray; tz < designChildTabSeq.length; tz++) {
+						designChildIndexToArrayPosition[designChildTabSeq[tz]] = tz;
+					}
+					runtimeChildIndexes[designChildIndex] = runtimeChildIndex;
+				} else {
+					// its == that means that we have dupliate design indexes; we treat this special - all same design index children as a list in one runtime index array cell
+					if (! runtimeChildIndexes[designChildIndex].push) {
+						runtimeChildIndexes[designChildIndex] = [runtimeChildIndexes[designChildIndex]];
+					}
+					runtimeChildIndexes[designChildIndex].push(runtimeChildIndex);
+				}
+
+				return false;
+			}
+
+			$element.on("unregisterCSTS", unregisterChildHandler);
+					
+			function unregisterChildHandler(event, designChildIndex, runtimeChildIndex) {
+				if (designTabSeq == -2 || designChildIndex == -2) return false;
+
+				var posInDesignArray = designChildIndexToArrayPosition[designChildIndex];
+				if (angular.isDefined(posInDesignArray)) {
+					var keyInRuntimeArray = designChildTabSeq[posInDesignArray];
+					var multipleEqualDesignValues = runtimeChildIndexes[keyInRuntimeArray].push;
+					if (!multipleEqualDesignValues) {
+						delete designChildIndexToArrayPosition[designChildIndex];
+						for (var tmp in designChildIndexToArrayPosition) {
+							if (designChildIndexToArrayPosition[tmp] > posInDesignArray) designChildIndexToArrayPosition[tmp]--;
+						}
+						designChildTabSeq.splice(posInDesignArray, 1);
+						delete runtimeChildIndexes[keyInRuntimeArray];
+					} else {
+						runtimeChildIndexes[keyInRuntimeArray].splice(runtimeChildIndexes[keyInRuntimeArray].indexOf(runtimeChildIndex), 1);
+						if (runtimeChildIndexes[keyInRuntimeArray].length == 1) runtimeChildIndexes[keyInRuntimeArray] = runtimeChildIndexes[keyInRuntimeArray][0];
+					}
+				}
+				return false;
+			}
+
+			// handle event: child tree was now linked or some child needs extra indexes; runtime indexes can be computed starting at the given child;
+			// recalculate Parent Servoy Tab Sequence
+			$element.on("recalculatePSTS", recalculateIndexesHandler);
+					
+			function recalculateIndexesHandler(event, designChildIndex, initialRootRecalculate) {
+				if (designTabSeq == -2 || designChildIndex == -2) return false;
+
+				if (!initializing) {
+					// a new child is ready/linked; recalculate tab indexes for it and after it
+					recalculateChildRuntimeIndexesStartingAt(designChildIndexToArrayPosition[designChildIndex], false);
+				} else if (initialRootRecalculate) {
+					// this is $rootScope (one $parent extra cause the directive creates it); we always assume a svyTabseq directive is bound to it;
+					// now that it is linked we can do initial calculation of tre
+					runtimeIndex.startIndex = runtimeIndex.nextAvailableIndex = 1;
+					recalculateChildRuntimeIndexesStartingAt(0, true);
+				} // else wait for parent tabSeq directives to get linked as well
+				
+				return false;
+			}
+
+			var deregisterAttrObserver = $scope.$watch($attrs.svyTabseq, function (newDesignTabSeq) {
+				if (designTabSeq !== newDesignTabSeq && !(config && config.root)) {
+					if (designTabSeq != -2) $element.parent().trigger("unregisterCSTS", [designTabSeq, runtimeIndex]);
+					designTabSeq = newDesignTabSeq;
+					if (!designTabSeq) designTabSeq = 0;
+					runtimeIndex.startIndex = -1;
+					runtimeIndex.nextAvailableIndex = -1;
+					initializing = true;
+					
+					if (designTabSeq != -2) {
+						$element.parent().trigger("registerCSTS", [designTabSeq, runtimeIndex]);
+						$element.parent().trigger("recalculatePSTS", [designTabSeq]);
+					}
+				}
+			});
+
+			if (designTabSeq != -2 && !(config && config.root)) {
+				$element.parent().trigger("registerCSTS", [designTabSeq, runtimeIndex]);
+
+				var deregDestroy = $scope.$on("$destroy", destroyHandler); // I don't use here $element.on("$destroy"... because uigrid reuses it's row divs, and that event gets called but the DOM element continues to be used, just changes tabIndex attribute... and the this directive's controller/link doesn't get called again 
+						
+				function destroyHandler(event) {
+					// unregister current tabSeq from parent tabSeq container
+					$element.parent().trigger("unregisterCSTS", [designTabSeq, runtimeIndex]);
+					
+					// clean-up listeners
+					$element.off("registerCSTS", registerChildHandler);
+					$element.off("unregisterCSTS", unregisterChildHandler);
+					$element.off("recalculatePSTS", recalculateIndexesHandler);
+					deregDestroy();
+					deregisterAttrObserver();
+					
+					return false;
+				}
+			}
+		},
+
+		link: function (scope, element, attrs) {
+			// called by angular in children first, then in parents
+			var config = $parse(attrs.svyTabseqConfig)(scope);
+
+			// check to see if this is the top-most tabSeq container
+			if (config && config.root) {
+				// it's root tab seq container (so no parent); just emit on self to do initial tree calculation
+				element.trigger("recalculatePSTS", [0, true]);
+			} else {
+				var designTabSeq = $parse(attrs.svyTabseq)(scope);
+				if (designTabSeq != -2) element.parent().trigger("recalculatePSTS", [designTabSeq ? designTabSeq : 0]);
+			}
+		}
+
+	};
+}])

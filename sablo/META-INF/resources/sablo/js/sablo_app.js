@@ -479,6 +479,8 @@ angular.module('sabloApp', ['webSocketModule'])
 					if (designTabSeq != -2) {
 						$element.parent().trigger("registerCSTS", [designTabSeq, runtimeIndex]);
 						$element.parent().trigger("recalculatePSTS", [designTabSeq]);
+					} else {
+						updateCurrentDomElTabIndex(); // -1 runtime
 					}
 				}
 			});

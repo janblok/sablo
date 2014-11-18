@@ -379,10 +379,6 @@ angular.module('sabloApp', ['webSocketModule'])
 				// if this container now needs more tab indexes then it was reserved; a recalculate on parent needs to be triggered in this case
 				if (parentRecalculateNeeded && !triggeredByParent) $element.parent().trigger("recalculatePSTS", [designTabSeq]);
 			}
-			runtimeIndex = { startIndex: -1, nextAvailableIndex: -1, recalculateChildRuntimeIndexesStartingAt: recalculateChildRuntimeIndexesStartingAt };
-
-			updateCurrentDomElTabIndex(); // -1 runtime initially for all (in case some node in the tree has -2 design (skip) and children have >= 0, at runtime all children should be excluded as wel)
-
 			function hasOwnTabIndex() {
 				return (!config || !(config.container || config.root));
 			}
@@ -393,9 +389,10 @@ angular.module('sabloApp', ['webSocketModule'])
 				}
 			}
 
+			runtimeIndex = { startIndex: -1, nextAvailableIndex: -1, recalculateChildRuntimeIndexesStartingAt: recalculateChildRuntimeIndexesStartingAt };
+			updateCurrentDomElTabIndex(); // -1 runtime initially for all (in case some node in the tree has -2 design (skip) and children have >= 0, at runtime all children should be excluded as wel)
+
 			// handle event: Child Servoy Tab Sequence registered
-			$element.on("registerCSTS", registerChildHandler);
-					
 			function registerChildHandler(event, designChildIndex, runtimeChildIndex) {
 				if (designTabSeq == -2 || designChildIndex == -2) return false;
 
@@ -422,9 +419,8 @@ angular.module('sabloApp', ['webSocketModule'])
 
 				return false;
 			}
-
-			$element.on("unregisterCSTS", unregisterChildHandler);
-					
+			$element.on("registerCSTS", registerChildHandler);
+			
 			function unregisterChildHandler(event, designChildIndex, runtimeChildIndex) {
 				if (designTabSeq == -2 || designChildIndex == -2) return false;
 
@@ -446,11 +442,10 @@ angular.module('sabloApp', ['webSocketModule'])
 				}
 				return false;
 			}
+			$element.on("unregisterCSTS", unregisterChildHandler);
 
 			// handle event: child tree was now linked or some child needs extra indexes; runtime indexes can be computed starting at the given child;
 			// recalculate Parent Servoy Tab Sequence
-			$element.on("recalculatePSTS", recalculateIndexesHandler);
-					
 			function recalculateIndexesHandler(event, designChildIndex, initialRootRecalculate) {
 				if (designTabSeq == -2 || designChildIndex == -2) return false;
 
@@ -466,6 +461,7 @@ angular.module('sabloApp', ['webSocketModule'])
 				
 				return false;
 			}
+			$element.on("recalculatePSTS", recalculateIndexesHandler);
 
 			var deregisterAttrObserver = $scope.$watch($attrs.svyTabseq, function (newDesignTabSeq) {
 				if (designTabSeq !== newDesignTabSeq && !(config && config.root)) {
@@ -488,8 +484,6 @@ angular.module('sabloApp', ['webSocketModule'])
 			if (designTabSeq != -2 && !(config && config.root)) {
 				$element.parent().trigger("registerCSTS", [designTabSeq, runtimeIndex]);
 
-				var deregDestroy = $scope.$on("$destroy", destroyHandler); // I don't use here $element.on("$destroy"... because uigrid reuses it's row divs, and that event gets called but the DOM element continues to be used, just changes tabIndex attribute... and the this directive's controller/link doesn't get called again 
-						
 				function destroyHandler(event) {
 					// unregister current tabSeq from parent tabSeq container
 					$element.parent().trigger("unregisterCSTS", [designTabSeq, runtimeIndex]);
@@ -503,6 +497,7 @@ angular.module('sabloApp', ['webSocketModule'])
 					
 					return false;
 				}
+				var deregDestroy = $scope.$on("$destroy", destroyHandler); // I don't use here $element.on("$destroy"... because uigrid reuses it's row divs, and that event gets called but the DOM element continues to be used, just changes tabIndex attribute... and the this directive's controller/link doesn't get called again 
 			}
 		},
 

@@ -18,6 +18,7 @@ package org.sablo.specification.property.types;
 import java.awt.Insets;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IDataConverterContext;
@@ -47,8 +48,22 @@ public class InsetsPropertyType extends DefaultPropertyType<Insets> implements I
 	@Override
 	public Insets fromJSON(Object newValue, Insets previousValue, IDataConverterContext dataConverterContext)
 	{
-		// TODO
-		return null;
+		int top = 0;
+		int right = 0;
+		int bottom = 0;
+		int left = 0;
+		if (newValue instanceof JSONObject)
+		{
+			String paddingTop = ((JSONObject)newValue).optString("paddingTop", "0px");
+			top = Integer.parseInt(paddingTop.substring(0, paddingTop.length() - 2));
+			String paddingLeft = ((JSONObject)newValue).optString("paddingLeft", "0px");
+			left = Integer.parseInt(paddingLeft.substring(0, paddingLeft.length() - 2));
+			String paddingBottom = ((JSONObject)newValue).optString("paddingBottom", "0px");
+			bottom = Integer.parseInt(paddingBottom.substring(0, paddingBottom.length() - 2));
+			String paddingRight = ((JSONObject)newValue).optString("paddingRight", "0px");
+			right = Integer.parseInt(paddingRight.substring(0, paddingRight.length() - 2));
+		}
+		return new Insets(top, left, bottom, right);
 	}
 
 

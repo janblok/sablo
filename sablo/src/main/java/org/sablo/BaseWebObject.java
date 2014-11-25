@@ -197,7 +197,7 @@ public abstract class BaseWebObject
 		}
 		if (!propertyTypes.hasChildProperties()) propertyTypes = null;
 
-		return new TypedData<Map<String, Object>>(properties, propertyTypes);
+		return new TypedData<Map<String, Object>>(Collections.unmodifiableMap(properties), propertyTypes);
 	}
 
 	/**

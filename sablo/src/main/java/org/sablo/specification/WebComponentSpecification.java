@@ -72,6 +72,18 @@ public class WebComponentSpecification extends PropertyDescription
 		this.libraries = libs != null ? libs : new JSONArray();
 	}
 
+	public WebComponentSpecification(String name, String packageName, String displayName, String categoryName, String icon, String definition, JSONArray libs,
+		Object configObject)
+	{
+		super(name, null, configObject);
+		this.packageName = packageName;
+		this.displayName = displayName;
+		this.categoryName = categoryName;
+		this.icon = icon;
+		this.definition = definition;
+		this.libraries = libs != null ? libs : new JSONArray();
+	}
+
 
 	/**
 	 * @param serverScript the serverScript to set
@@ -175,7 +187,7 @@ public class WebComponentSpecification extends PropertyDescription
 		}
 		// first check the local onces.
 		IPropertyType< ? > t = foundTypes.get(property);
-			if (t == null) t = TypesRegistry.getType(property);
+		if (t == null) t = TypesRegistry.getType(property);
 		return new ParsedProperty(t, isArray);
 	}
 

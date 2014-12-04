@@ -18,9 +18,11 @@ package org.sablo.specification;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -38,6 +40,7 @@ class WebSpecReader
 	private static final Logger log = LoggerFactory.getLogger(WebSpecReader.class.getCanonicalName());
 
 	private final Map<String, WebComponentSpecification> cachedDescriptions = new HashMap<>();
+	private final Map<String, List<WebComponentSpecification>> cachedLayoutDescriptions = new TreeMap<>();
 	private final Map<String, List<String>> packagesToComponentNames = new HashMap<>();
 
 	private final IPackageReader[] packageReaders;
@@ -118,11 +121,21 @@ class WebSpecReader
 			{
 				log.error("Cannot read web component specs from package: " + p.getName(), e); //$NON-NLS-1$
 			}
+			try
+			{
+				List<WebComponentSpecification> layoutDescriptions = p.getLayoutDescriptions();
+				if (layoutDescriptions.size() > 0) cachedLayoutDescriptions.put(p.getPackageName(), layoutDescriptions);
+			}
+			catch (IOException e)
+			{
+				log.error("Cannot read web component specs from package: " + p.getName(), e); //$NON-NLS-1$
+			}
 		}
 	}
 
 	private void cache(String packageName, List<WebComponentSpecification> webComponentDescriptions)
 	{
+		if (webComponentDescriptions.size() == 0) return;
 		if (packagesToComponentNames.get(packageName) == null) packagesToComponentNames.put(packageName, new ArrayList<String>());
 		List<String> currentPackageComponents = packagesToComponentNames.get(packageName);
 		for (WebComponentSpecification desc : webComponentDescriptions)
@@ -144,6 +157,14 @@ class WebSpecReader
 	public synchronized WebComponentSpecification[] getWebComponentSpecifications()
 	{
 		return cachedDescriptions.values().toArray(new WebComponentSpecification[cachedDescriptions.size()]);
+	}
+
+	/**
+	 * @return
+	 */
+	public Map<String, List<WebComponentSpecification>> getLayoutSpecifications()
+	{
+		return Collections.unmodifiableMap(cachedLayoutDescriptions);
 	}
 
 	public synchronized Map<String, List<String>> getPackagesToComponents()

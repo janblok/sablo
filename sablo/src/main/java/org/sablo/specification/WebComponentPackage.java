@@ -78,7 +78,6 @@ public class WebComponentPackage
 	}
 
 	private IPackageReader reader;
-	private List<WebComponentSpecification> cachedDescriptions; // probably useful for developer inthe future
 
 	public WebComponentPackage(IPackageReader reader)
 	{
@@ -138,61 +137,93 @@ public class WebComponentPackage
 
 	public List<WebComponentSpecification> getWebComponentDescriptions() throws IOException
 	{
-		if (cachedDescriptions == null)
+		ArrayList<WebComponentSpecification> descriptions = new ArrayList<>();
+		Manifest mf = reader.getManifest();
+
+		if (mf != null)
 		{
-			ArrayList<WebComponentSpecification> descriptions = new ArrayList<>();
-			Manifest mf = reader.getManifest();
-
-			if (mf != null)
+			for (String specpath : getWebEntrySpecNames(mf, "Web-Component"))
 			{
-				for (String specpath : getWebEntrySpecNames(mf, "Web-Component"))
+				String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
+				if (specfileContent != null)
 				{
-					String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
-					if (specfileContent != null)
+					try
 					{
-						try
-						{
-							WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
-							parsed.setSpecURL(reader.getUrlForPath(specpath));
-							// add properties defined by us
-							// TODO this is servoy specific so remove?
-							if (parsed.getProperty("size") == null) parsed.putProperty("size",
-								new PropertyDescription("size", TypesRegistry.getType(DimensionPropertyType.TYPE_NAME)));
-							if (parsed.getProperty("location") == null) parsed.putProperty("location",
-								new PropertyDescription("location", TypesRegistry.getType(PointPropertyType.TYPE_NAME)));
-							if (parsed.getProperty("anchors") == null) parsed.putProperty("anchors",
-								new PropertyDescription("anchors", TypesRegistry.getType(IntPropertyType.TYPE_NAME)));
-							descriptions.add(parsed);
-						}
-						catch (Exception e)
-						{
-							reader.reportError(specpath, e);
-						}
+						WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
+						parsed.setSpecURL(reader.getUrlForPath(specpath));
+						// add properties defined by us
+						// TODO this is servoy specific so remove?
+						if (parsed.getProperty("size") == null) parsed.putProperty("size",
+							new PropertyDescription("size", TypesRegistry.getType(DimensionPropertyType.TYPE_NAME)));
+						if (parsed.getProperty("location") == null) parsed.putProperty("location",
+							new PropertyDescription("location", TypesRegistry.getType(PointPropertyType.TYPE_NAME)));
+						if (parsed.getProperty("anchors") == null) parsed.putProperty("anchors",
+							new PropertyDescription("anchors", TypesRegistry.getType(IntPropertyType.TYPE_NAME)));
+						descriptions.add(parsed);
 					}
-				}
-
-				for (String specpath : getWebEntrySpecNames(mf, "Web-Service"))
-				{
-					String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
-					if (specfileContent != null)
+					catch (Exception e)
 					{
-						try
-						{
-							WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
-							parsed.setSpecURL(reader.getUrlForPath(specpath));
-							descriptions.add(parsed);
-						}
-						catch (Exception e)
-						{
-							reader.reportError(specpath, e);
-						}
+						reader.reportError(specpath, e);
 					}
 				}
 			}
-			cachedDescriptions = descriptions;
-			reader = null;
+
+			for (String specpath : getWebEntrySpecNames(mf, "Web-Service"))
+			{
+				String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
+				if (specfileContent != null)
+				{
+					try
+					{
+						WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
+						parsed.setSpecURL(reader.getUrlForPath(specpath));
+						descriptions.add(parsed);
+					}
+					catch (Exception e)
+					{
+						reader.reportError(specpath, e);
+					}
+				}
+			}
 		}
-		return cachedDescriptions;
+		return descriptions;
+	}
+
+	/**
+	 * @return
+	 * @throws IOException
+	 */
+	public List<WebComponentSpecification> getLayoutDescriptions() throws IOException
+	{
+		ArrayList<WebComponentSpecification> descriptions = new ArrayList<>();
+		Manifest mf = reader.getManifest();
+		for (String specpath : getWebEntrySpecNames(mf, "Web-Layout"))
+		{
+			String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
+			if (specfileContent != null)
+			{
+				try
+				{
+					WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
+					parsed.setSpecURL(reader.getUrlForPath(specpath));
+					if (parsed.getDefinition() != null)
+					{
+						String jsonConfig = reader.readTextFile(parsed.getDefinition(), Charset.forName("UTF8"));
+						if (jsonConfig != null)
+						{
+							parsed = new WebComponentSpecification(parsed.getName(), parsed.getPackageName(), parsed.getDisplayName(),
+								parsed.getCategoryName(), parsed.getIcon(), parsed.getDefinition(), parsed.getLibraries(), jsonConfig);
+						}
+					}
+					descriptions.add(parsed);
+				}
+				catch (Exception e)
+				{
+					reader.reportError(specpath, e);
+				}
+			}
+		}
+		return descriptions;
 	}
 
 	private static List<String> getWebEntrySpecNames(Manifest mf, String attributeName)
@@ -212,7 +243,6 @@ public class WebComponentPackage
 	public void dispose()
 	{
 		reader = null;
-		cachedDescriptions = null;
 	}
 
 	public static class JarPackageReader implements IPackageReader
@@ -613,4 +643,5 @@ public class WebComponentPackage
 	{
 		return "WebComponnetPackage: " + getPackageName();
 	}
+
 }

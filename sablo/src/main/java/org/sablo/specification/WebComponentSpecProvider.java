@@ -120,6 +120,16 @@ public class WebComponentSpecProvider
 	}
 
 	/**
+	 * get all registered layout component specifications.
+	 *
+	 * @return an array of all the specifications
+	 */
+	public Map<String, List<WebComponentSpecification>> getLayoutSpecifications()
+	{
+		return reader.getLayoutSpecifications();
+	}
+
+	/**
 	 * Get a list of all packages that contain web component specification
 	 */
 	public Set<String> getPackageNames()

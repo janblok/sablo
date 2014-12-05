@@ -367,7 +367,8 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 					clientDataConversions.popNode();
 					w.endObject();
 
-					return false;
+					w.endObject();
+					return true;
 				}
 			}, false, FullValueToJSONConverter.INSTANCE);
 

@@ -15,6 +15,12 @@ angular.module('mybutton',[]).directive('mybutton', ['$window',function($window)
 			$scope.onClick = function onClick(event) {
 				$scope.handlers.callEvent('pushed');
 			};
+			$scope.onClick2 = function onClick(event) {
+				$scope.handlers.callEvent('pushed2');
+			};
+			$scope.onClick3 = function onClick(event) {
+				$scope.handlers.callEvent('pushed3');
+			};
 		},
 		templateUrl: 'mycomp/mybutton/mybutton.html',
 		replace: true

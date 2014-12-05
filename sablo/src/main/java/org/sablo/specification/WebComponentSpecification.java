@@ -18,8 +18,10 @@ package org.sablo.specification;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -115,9 +117,12 @@ public class WebComponentSpecification extends PropertyDescription
 	/**
 	 * @param hndlrs
 	 */
-	protected final void putAllHandlers(Map<String, PropertyDescription> hndlrs)
+	protected final void putAllHandlers(Collection<PropertyDescription> hndlrs)
 	{
-		handlers.putAll(hndlrs);
+		for (PropertyDescription h : hndlrs)
+		{
+			handlers.put(h.getName(), h);
+		}
 	}
 
 	/**
@@ -126,6 +131,11 @@ public class WebComponentSpecification extends PropertyDescription
 	public Map<String, PropertyDescription> getHandlers()
 	{
 		return Collections.unmodifiableMap(handlers);
+	}
+
+	public PropertyDescription getHandler(String handlerName)
+	{
+		return handlers.get(handlerName);
 	}
 
 	public WebComponentApiDefinition getApiFunction(String apiFunctionName)
@@ -166,7 +176,7 @@ public class WebComponentSpecification extends PropertyDescription
 	@Override
 	public Set<String> getAllPropertiesNames()
 	{
-		Set<String> names = super.getAllPropertiesNames();
+		Set<String> names = new HashSet<>(super.getAllPropertiesNames());
 		names.addAll(handlers.keySet());
 		return names;
 	}
@@ -185,7 +195,7 @@ public class WebComponentSpecification extends PropertyDescription
 			isArray = true;
 			property = property.substring(0, property.length() - 2);
 		}
-		// first check the local onces.
+		// first check the local ones.
 		IPropertyType< ? > t = foundTypes.get(property);
 		if (t == null) t = TypesRegistry.getType(property);
 		return new ParsedProperty(t, isArray);
@@ -253,8 +263,7 @@ public class WebComponentSpecification extends PropertyDescription
 							if (param.has("optional")) isOptional = true;
 
 							ParsedProperty pp = spec.parsePropertyString(param.getString("type"));
-							PropertyDescription desc = new PropertyDescription(paramName, pp.type, Boolean.valueOf(pp.array)); // hmm why not set the array field instead of configObject here?
-							desc.setOptional(isOptional);
+							PropertyDescription desc = new PropertyDescription(paramName, pp.type, null, Boolean.valueOf(pp.array), null, null, isOptional); // hmm why not set the array field instead of configObject here?
 							def.addParameter(desc);
 						}
 					}
@@ -328,7 +337,7 @@ public class WebComponentSpecification extends PropertyDescription
 		}
 	}
 
-	private Map<String, PropertyDescription> parseProperties(String propKey, JSONObject json) throws JSONException
+	private Collection<PropertyDescription> parseProperties(String propKey, JSONObject json) throws JSONException
 	{
 		Map<String, PropertyDescription> pds = new HashMap<>();
 		if (json.has(propKey))
@@ -339,7 +348,7 @@ public class WebComponentSpecification extends PropertyDescription
 			{
 				String key = itk.next();
 				Object value = jsonProps.get(key);
-				IPropertyType type = null;
+				IPropertyType< ? > type = null;
 				boolean isArray = false;
 				JSONObject configObject = null;
 				Object defaultValue = null;
@@ -385,16 +394,15 @@ public class WebComponentSpecification extends PropertyDescription
 						// a config for the element type can be specified like this: { type: 'myprop[]', a: ..., b: ..., elementConfig: {...} } and we could give that to the elementDescription instead
 						JSONObject elementConfig = configObject != null ? configObject.optJSONObject(CustomJSONArrayType.ELEMENT_CONFIG_KEY) : null;
 						PropertyDescription elementDescription = new PropertyDescription("", type, scope, elementConfig != null
-							? type.parseConfig(elementConfig) : null, defaultValue, values);
+							? type.parseConfig(elementConfig) : null, defaultValue, values, false);
 						type = TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, elementDescription);
 					}
 
-					Object config = type.parseConfig(configObject);
-					pds.put(key, new PropertyDescription(key, type, scope, config, defaultValue, values));
+					pds.put(key, new PropertyDescription(key, type, scope, type.parseConfig(configObject), defaultValue, values, false));
 				}
 			}
 		}
-		return pds;
+		return pds.values();
 	}
 
 
@@ -442,5 +450,4 @@ public class WebComponentSpecification extends PropertyDescription
 	{
 		specURL = url;
 	}
-
 }

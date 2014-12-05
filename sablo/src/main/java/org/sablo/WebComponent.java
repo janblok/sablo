@@ -16,6 +16,7 @@
 
 package org.sablo;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -87,6 +88,7 @@ public class WebComponent extends BaseWebObject
 	 */
 	public boolean isVisible()
 	{
+		// RAGTEST
 		Boolean v = (Boolean)properties.get("visible");
 		return v == null || v.booleanValue();
 	}
@@ -98,6 +100,7 @@ public class WebComponent extends BaseWebObject
 	 */
 	public void setVisible(boolean v)
 	{
+		// RAGTEST
 		properties.put("visible", v);
 	}
 
@@ -148,7 +151,7 @@ public class WebComponent extends BaseWebObject
 	{
 		PropertyDescription parameterTypes = null;
 		final List<PropertyDescription> types = apiFunc.getParameters();
-		if (types != null && types.size() > 0)
+		if (types.size() > 0)
 		{
 			parameterTypes = new PropertyDescription("", AggregatedPropertyType.INSTANCE)
 			{
@@ -157,7 +160,9 @@ public class WebComponent extends BaseWebObject
 				{
 					Map<String, PropertyDescription> map = new HashMap<String, PropertyDescription>();
 					for (int i = 0; i < types.size(); i++)
+					{
 						map.put(String.valueOf(i), types.get(i));
+					}
 					return map;
 				}
 
@@ -170,17 +175,20 @@ public class WebComponent extends BaseWebObject
 					}
 					catch (NumberFormatException e)
 					{
-						return null;
+						return super.getProperty(name);
 					}
 				}
 
 				@Override
-				public Set<String> getAllPropertiesNames()
+				public Collection<String> getAllPropertiesNames()
 				{
 					Set<String> s = new HashSet<String>();
-					for (int i = 0; i < types.size() - 1; i++)
+					for (int i = 0; i < types.size(); i++)
+					{
 						s.add(String.valueOf(i));
-					return super.getAllPropertiesNames();
+					}
+					s.addAll(super.getAllPropertiesNames());
+					return s;
 				}
 			};
 		}

@@ -80,6 +80,11 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		return new FormServiceHandler(this);
 	}
 
+	public boolean isValid()
+	{
+		return true;
+	}
+
 	public void registerEndpoint(IWebsocketEndpoint endpoint)
 	{
 		registeredEnpoints.add(endpoint);

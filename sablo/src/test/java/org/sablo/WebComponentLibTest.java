@@ -20,6 +20,7 @@ import java.util.HashMap;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
@@ -29,6 +30,8 @@ import org.sablo.specification.WebServiceSpecProvider;
  * @author jcompagner
  *
  */
+@Ignore
+//RAGTEST
 public class WebComponentLibTest
 {
 

@@ -183,7 +183,7 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 		{
 			TypedData<Map<String, Map<String, Map<String, Object>>>> endPointComponentChanges = endpoint.getAllComponentsChanges();
 			changes.putAll(endPointComponentChanges.content);
-			if (endPointComponentChanges.contentType != null) changeTypes.putAll(endPointComponentChanges.contentType.getProperties());
+			if (endPointComponentChanges.contentType != null) changeTypes.putAll(endPointComponentChanges.contentType.getProperties().values());
 		}
 		if (!changeTypes.hasChildProperties()) changeTypes = null;
 

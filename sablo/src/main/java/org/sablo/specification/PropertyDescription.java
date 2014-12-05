@@ -17,13 +17,12 @@
 package org.sablo.specification;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import org.sablo.specification.property.CustomJSONPropertyType;
 import org.sablo.specification.property.ICustomType;
@@ -38,32 +37,37 @@ public class PropertyDescription
 	private final String name;
 	private final IPropertyType< ? > type;
 	private final Object config;
-//	private final boolean array;
-	private boolean optional = false; // currently only used in the context of an api function parameter
+	private final boolean optional;
 	private final Object defaultValue;
 	private final List<Object> values;
 	private String scope = null;
 
 	//case of nested type
+	// TODO: make properties final and remove put* calls so PropertyDescription is immutable
 	private Map<String, PropertyDescription> properties = null;
 
 
 	public PropertyDescription(String name, IPropertyType< ? > type)
 	{
-		this(name, type, null, null);
+		this(name, type, null, null, null, null, false);
 	}
 
 	public PropertyDescription(String name, IPropertyType< ? > type, Object config)
 	{
-		this(name, type, config, null);
+		this(name, type, null, config, null, null, false);
 	}
 
-	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Object defaultValue)
-	{
-		this(name, type, null, config, defaultValue, null);
-	}
-
-	public PropertyDescription(String name, IPropertyType< ? > type, String scope, Object config, Object defaultValue, List<Object> values)
+	/**
+	 * 
+	 * @param name
+	 * @param type
+	 * @param scope
+	 * @param config
+	 * @param defaultValue
+	 * @param values
+	 * @param optional only used for api arguments
+	 */
+	public PropertyDescription(String name, IPropertyType< ? > type, String scope, Object config, Object defaultValue, List<Object> values, boolean optional)
 	{
 		this.name = name;
 		this.type = type;
@@ -71,23 +75,25 @@ public class PropertyDescription
 		this.defaultValue = defaultValue;
 		this.values = values;
 		this.scope = scope;
+		this.optional = optional;
 	}
 
-	public Map<String, PropertyDescription> getProperties(IPropertyType pt)
+	public Collection<PropertyDescription> getProperties(IPropertyType< ? > pt)
 	{
-		if (properties != null)
+		if (properties == null)
 		{
-			Map<String, PropertyDescription> filtered = new HashMap<>(4);
-			for (PropertyDescription pd : properties.values())
-			{
-				if (pd.getType() == pt)
-				{
-					filtered.put(pd.getName(), pd);
-				}
-			}
-			return filtered;
+			return Collections.emptyList();
 		}
-		return Collections.EMPTY_MAP;
+
+		List<PropertyDescription> filtered = new ArrayList<>(4);
+		for (PropertyDescription pd : properties.values())
+		{
+			if (pd.getType() == pt)
+			{
+				filtered.add(pd);
+			}
+		}
+		return filtered;
 	}
 
 	public boolean hasChildProperties()
@@ -95,15 +101,14 @@ public class PropertyDescription
 		return properties != null && !properties.isEmpty();
 	}
 
-	public Set<String> getAllPropertiesNames()
+	public Collection<String> getAllPropertiesNames()
 	{
 		if (properties != null)
 		{
-			return new HashSet<String>(properties.keySet());
+			return Collections.unmodifiableCollection(properties.keySet());
 		}
-		return Collections.EMPTY_SET;
+		return Collections.emptySet();
 	}
-
 
 	public String getName()
 	{
@@ -132,14 +137,9 @@ public class PropertyDescription
 
 	public List<Object> getValues()
 	{
-		return values == null ? null : new ArrayList<Object>(values);
+		return values == null ? Collections.emptyList() : Collections.unmodifiableList(values);
 	}
 
-//	public boolean isArray()
-//	{
-//		return array;
-//	}
-//
 	@Override
 	public int hashCode()
 	{
@@ -184,53 +184,55 @@ public class PropertyDescription
 		return optional;
 	}
 
-	public void setOptional(boolean optional)
-	{
-		this.optional = optional;
-	}
-
-
-	public PropertyDescription putProperty(String name, PropertyDescription type)
+	// TODO: move to constructor so PropertyDescription is immutable
+	public PropertyDescription putProperty(String propname, PropertyDescription proptype)
 	{
 		if (properties == null) properties = new HashMap<>();
-		if (type == null) properties.remove(name);
-		properties.put(name, type);
+		if (proptype == null) properties.remove(propname);
+		else properties.put(proptype.getName(), proptype);
 		return this;
 	}
 
-	public PropertyDescription getProperty(String name)
+	public PropertyDescription getProperty(String propname)
 	{
 		if (properties != null)
 		{
-			PropertyDescription propertyDescription = properties.get(name);
-			if (propertyDescription != null) return propertyDescription;
-			int indexOfDot = name.indexOf('.');
+			PropertyDescription propertyDescription = properties.get(propname);
+			if (propertyDescription != null)
+			{
+				return propertyDescription;
+			}
+			int indexOfDot = propname.indexOf('.');
 			if (indexOfDot >= 0)
 			{
 				// this must be a custom type then
-				propertyDescription = properties.get(name.substring(0, indexOfDot));
+				propertyDescription = properties.get(propname.substring(0, indexOfDot));
 				PropertyDescription typeSpec = ((ICustomType< ? >)propertyDescription.getType()).getCustomJSONTypeDefinition();
-				return typeSpec.getProperty(name.substring(indexOfDot + 1));
+				return typeSpec.getProperty(propname.substring(indexOfDot + 1));
 			}
 		}
 		else if (type instanceof CustomJSONPropertyType)
 		{
-			return ((CustomJSONPropertyType< ? >)type).getCustomJSONTypeDefinition().getProperty(name);
+			return ((CustomJSONPropertyType< ? >)type).getCustomJSONTypeDefinition().getProperty(propname);
 		}
 		return null;
 	}
 
+	// TODO: move to constructor so PropertyDescription is immutable
 	public Map<String, PropertyDescription> getProperties()
 	{
 		if (properties != null) return Collections.unmodifiableMap(properties);
-		return Collections.EMPTY_MAP;
+		return Collections.emptyMap();
 	}
 
-	public void putAll(Map<String, PropertyDescription> map)
+	public void putAll(Collection<PropertyDescription> props)
 	{
-		properties = new HashMap<>(map);
+		properties = new HashMap<>(props.size());
+		for (PropertyDescription prop : props)
+		{
+			properties.put(prop.getName(), prop);
+		}
 	}
-
 
 	@Override
 	public String toString()
@@ -246,12 +248,10 @@ public class PropertyDescription
 
 	public String toStringWholeTree()
 	{
-		StringBuffer b = new StringBuffer(100);
-		toStringWholeTree(b, 2);
-		return b.toString();
+		return toStringWholeTree(new StringBuilder(100), 2).toString();
 	}
 
-	public void toStringWholeTree(StringBuffer b, int level)
+	public StringBuilder toStringWholeTree(StringBuilder b, int level)
 	{
 		b.append(toString(false));
 		if (properties != null)
@@ -268,12 +268,15 @@ public class PropertyDescription
 		{
 			b.append(" (no nested child properties)");
 		}
+		return b;
 	}
 
-	protected void addSpaces(StringBuffer b, int level)
+	private static void addSpaces(StringBuilder b, int level)
 	{
 		for (int i = 0; i < level * 2; i++)
+		{
 			b.append(' ');
+		}
 	}
 
 }

@@ -15,18 +15,20 @@
  */
 package org.sablo.specification.property.types;
 
+import org.json.JSONObject;
+
 
 /**
- * @author jcompagner
+ * @author rgansevles
  *
  */
-public class BytePropertyType extends DefaultPropertyType<Byte>
+public class EnablePropertyType extends DefaultPropertyType<Boolean>
 {
 
-	public static final BytePropertyType INSTANCE = new BytePropertyType();
-	public static final String TYPE_NAME = "byte";
+	public static final EnablePropertyType INSTANCE = new EnablePropertyType();
+	public static final String TYPE_NAME = "enable";
 
-	protected BytePropertyType()
+	private EnablePropertyType()
 	{
 	}
 
@@ -37,8 +39,15 @@ public class BytePropertyType extends DefaultPropertyType<Byte>
 	}
 
 	@Override
-	public Byte defaultValue()
+	public Boolean defaultValue()
 	{
-		return Byte.valueOf((byte)0);
+		return Boolean.TRUE;
 	}
+
+	@Override
+	public ForentriesConfig parseConfig(JSONObject json)
+	{
+		return ForentriesConfig.parse(json);
+	}
+
 }

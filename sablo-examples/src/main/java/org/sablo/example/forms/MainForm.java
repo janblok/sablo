@@ -62,7 +62,29 @@ public class MainForm extends Container
 				theLabel.setProperty("text", textvalue);
 				// call a function on an element
 				theCounter.invokeApi("increment", new Object[] { 2 });
+				
+				theButton.setProperty("itsenabled", Boolean.FALSE);
 
+				return null;
+			}
+		});
+		
+		theButton.addEventHandler("pushed2", new IEventHandler()
+		{
+			@Override
+			public Object executeEvent(Object[] args)
+			{
+				System.err.println("I was pushed2!");
+				return null;
+			}
+		});
+		
+		theButton.addEventHandler("pushed3", new IEventHandler()
+		{
+			@Override
+			public Object executeEvent(Object[] args)
+			{
+				System.err.println("I was pushed3!");
 				return null;
 			}
 		});

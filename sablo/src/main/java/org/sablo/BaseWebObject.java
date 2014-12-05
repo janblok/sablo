@@ -35,6 +35,7 @@ import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.ISmartPropertyValue;
 import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.types.AggregatedPropertyType;
+import org.sablo.specification.property.types.EnablePropertyType;
 import org.sablo.websocket.TypedData;
 import org.sablo.websocket.utils.JSONUtils;
 import org.slf4j.Logger;
@@ -117,6 +118,11 @@ public abstract class BaseWebObject
 	 */
 	public Object executeEvent(String eventType, Object[] args)
 	{
+		if (!isEnabled(eventType))
+		{
+			throw new IllegalComponentAccessException("Disabled", getName(), eventType);
+		}
+
 		IEventHandler handler = getEventHandler(eventType);
 		if (handler == null)
 		{
@@ -124,6 +130,24 @@ public abstract class BaseWebObject
 			return null;
 		}
 		return handler.executeEvent(args);
+	}
+
+	/**
+	 * RAGTEST doc
+	 * @param eventType
+	 * @return
+	 */
+	protected boolean isEnabled(String eventType)
+	{
+		// RAGTEST met for.....
+		for (PropertyDescription prop : specification.getProperties(EnablePropertyType.INSTANCE))
+		{
+			if (!Boolean.TRUE.equals(getProperty(prop.getName())))
+			{
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/**
@@ -319,6 +343,20 @@ public abstract class BaseWebObject
 		if (oldValue == null && !properties.containsKey(firstProperty))
 		{
 			Object defaultProperty = defaultPropertiesUnwrapped.get(firstProperty);
+			if (defaultProperty == null && !defaultPropertiesUnwrapped.containsKey(firstProperty))
+			{
+				// default value based o 
+				PropertyDescription propertyDesc = specification.getProperty(firstProperty);
+				if (propertyDesc != null)
+				{
+					defaultProperty = propertyDesc.getDefaultValue();
+					if (defaultProperty == null && propertyDesc.getType() != null)
+					{
+						defaultProperty = propertyDesc.getType().defaultValue();
+					}
+				}
+			}
+
 			if (defaultProperty != null)
 			{
 				// quickly wrap this value so that it can be used as the oldValue later on.
@@ -401,7 +439,7 @@ public abstract class BaseWebObject
 					if (defaultPropertiesUnwrapped.containsKey(complexPropertyRoot))
 					{
 						// something changed in this 'smart' property - so it no longer represents the default value; remove
-						// it from default values (as the value referece is the same but the content changed) and put it in properties map
+						// it from default values (as the value reference is the same but the content changed) and put it in properties map
 						properties.put(complexPropertyRoot, newValue);
 						defaultPropertiesUnwrapped.remove(complexPropertyRoot);
 					}

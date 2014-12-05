@@ -211,6 +211,7 @@ public class WebComponentPackage
 						String jsonConfig = reader.readTextFile(parsed.getDefinition(), Charset.forName("UTF8"));
 						if (jsonConfig != null)
 						{
+							// RAGTEST layout config parsed?
 							parsed = new WebComponentSpecification(parsed.getName(), parsed.getPackageName(), parsed.getDisplayName(),
 								parsed.getCategoryName(), parsed.getIcon(), parsed.getDefinition(), parsed.getLibraries(), jsonConfig);
 						}
@@ -377,7 +378,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#getPackageURL()
 		 */
 		@Override
@@ -622,7 +623,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#getPackageURL()
 		 */
 		@Override

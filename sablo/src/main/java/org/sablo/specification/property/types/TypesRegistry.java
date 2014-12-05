@@ -64,6 +64,7 @@ public class TypesRegistry
 		addType(ValuesPropertyType.INSTANCE);
 		addType(ComponentDefPropertyType.INSTANCE);
 		addType(BytePropertyType.INSTANCE);
+		addType(ScrollbarsPropertyType.INSTANCE);
 
 		addTypeFactory(CustomJSONArrayType.TYPE_NAME, new CustomJSONArrayTypeFactory());
 		addTypeFactory(CustomJSONObjectType.TYPE_NAME, new CustomJSONObjectTypeFactory());

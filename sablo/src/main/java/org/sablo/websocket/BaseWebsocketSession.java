@@ -247,10 +247,11 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 					contentHasBeenWritten = true;
 				}
 				String childName = service.getName();
-				w.key(childName);
+				w.key(childName).object();
 				clientDataConversions.pushNode(childName);
 				JSONUtils.writeData(converter, w, changes.content, changes.contentType, clientDataConversions, (BaseWebObject)service);
 				clientDataConversions.popNode();
+				w.endObject();
 			}
 		}
 		if (contentHasBeenWritten) w.endObject();
@@ -398,7 +399,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see org.sablo.websocket.IWebsocketSession#handleMessage(org.json.JSONObject)
 	 */
 	@Override

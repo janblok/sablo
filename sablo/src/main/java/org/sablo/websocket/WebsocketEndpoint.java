@@ -389,7 +389,7 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 				if (data != null && data.size() > 0)
 				{
 					JSONUtils.addKeyIfPresent(w, keyInParent);
-					converter.toJSONValue(w, keyInParent, data, dataTypes, clientDataConversions, null);
+					converter.toJSONValue(w, null, data, dataTypes, clientDataConversions, null);
 				}
 				return false;
 			}

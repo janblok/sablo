@@ -57,7 +57,8 @@ public class DimensionPropertyType extends DefaultPropertyType<Dimension> implem
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, Dimension object, DataConversion clientConversion) throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Dimension object, DataConversion clientConversion, IDataConverterContext dataConverterContext)
+		throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
 		return writer.object().key("width").value(object.getWidth()).key("height").value(object.getHeight()).endObject();

@@ -62,7 +62,7 @@ public class WebComponent extends BaseWebObject
 
 	/**
 	 * Finds the first container parent of this component of the given class.
-	 * 
+	 *
 	 * @param <Z> type of parent
 	 * @param c class to search for
 	 * @return First container parent that is an instance of the given class, or null if none can be
@@ -109,6 +109,7 @@ public class WebComponent extends BaseWebObject
 		{
 			parent.remove(this);
 		}
+		dirtyPropertyListener = null;
 	}
 
 	/**

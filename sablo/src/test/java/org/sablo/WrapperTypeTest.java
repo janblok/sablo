@@ -99,7 +99,8 @@ public class WrapperTypeTest
 		}
 
 		@Override
-		public JSONWriter toJSON(JSONWriter writer, String key, MyWrapper object, DataConversion clientConversion) throws JSONException
+		public JSONWriter toJSON(JSONWriter writer, String key, MyWrapper object, DataConversion clientConversion, IDataConverterContext dataConverterContext)
+			throws JSONException
 		{
 			JSONUtils.addKeyIfPresent(writer, key);
 			writer.object();
@@ -154,17 +155,17 @@ public class WrapperTypeTest
 		TypedData<Map<String, Object>> properties = component.getProperties();
 		data.put("msg", properties.content);
 
-		String msg = JSONUtils.writeDataWithConversions(data, AggregatedPropertyType.newAggregatedProperty().putProperty("msg", properties.contentType));
+		String msg = JSONUtils.writeDataWithConversions(data, AggregatedPropertyType.newAggregatedProperty().putProperty("msg", properties.contentType), null);
 		assertEquals("{\"msg\":{\"somepropp\":{\"string\":\"test\",\"counter\":1},\"name\":\"test\"}}", msg);
 
 		component.putBrowserProperty("somepropp", "tester");
 
-		assertTrue(component.getRawProperties().get("somepropp") instanceof MyWrapper);
+		assertTrue(component.getRawPropertiesWithoutDefaults().get("somepropp") instanceof MyWrapper);
 
 		assertEquals("tester", component.getProperty("somepropp"));
 
 		component.putBrowserProperty("somepropp", new JSONObject("{\"string\":\"test\"}"));
-		assertTrue(component.getRawProperties().get("somepropp") instanceof MyWrapper);
+		assertTrue(component.getRawPropertiesWithoutDefaults().get("somepropp") instanceof MyWrapper);
 
 		assertEquals("test", component.getProperty("somepropp"));
 	}

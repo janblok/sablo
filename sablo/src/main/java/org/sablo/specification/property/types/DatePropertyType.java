@@ -61,7 +61,8 @@ public class DatePropertyType extends DefaultPropertyType<Date> implements IClas
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, Date value, DataConversion clientConversion) throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Date value, DataConversion clientConversion, IDataConverterContext dataConverterContext)
+		throws JSONException
 	{
 		if (clientConversion != null) clientConversion.convert("Date");
 		JSONUtils.addKeyIfPresent(writer, key);

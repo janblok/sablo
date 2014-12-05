@@ -37,7 +37,7 @@ public interface IPropertyConverter<JT>
 	 *
 	 * @param newJSONValue the JSON received from browser (can be whole value or just updates).
 	 * @param previousValue the previous value of this property as available in the component.
-	 * @param dataConverterContext context
+	 * @param dataConverterContext runtime context
 	 * @return the new sablo value for this property to be put in component.
 	 */
 	JT fromJSON(Object newJSONValue, JT previousSabloValue, IDataConverterContext dataConverterContext);
@@ -55,9 +55,11 @@ public interface IPropertyConverter<JT>
 	 * @param fullValue if true, a full value is requested from the property, as if no other value was previously available client side; if false, then
 	 * only changes are requested. For most types this flag can be ignored and the whole value sent. It is only useful for types that can send granular
 	 * updates and have their own JSON protocol (for example object and array types are implemented to support this).
+	 * @param dataConverterContext runtime context
 	 * @return the writer for cascaded usage.
 	 * @throws JSONException if a JSON exception happens.
 	 */
-	JSONWriter toJSON(JSONWriter writer, String key, JT sabloValue, DataConversion clientConversion) throws JSONException;
+	JSONWriter toJSON(JSONWriter writer, String key, JT sabloValue, DataConversion clientConversion, IDataConverterContext dataConverterContext)
+		throws JSONException;
 
 }

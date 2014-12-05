@@ -17,15 +17,16 @@
 package org.sablo.eventthread;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 
+import org.json.JSONException;
+import org.json.JSONWriter;
 import org.sablo.Container;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.property.types.AggregatedPropertyType;
+import org.sablo.websocket.IToJSONWriter;
 import org.sablo.websocket.IWebsocketEndpoint;
 import org.sablo.websocket.IWebsocketSession;
-import org.sablo.websocket.TypedData;
+import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +56,7 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see org.sablo.websocket.IWebsocketEndpoint#getWindowId()
 	 */
 	@Override
@@ -67,7 +68,7 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see org.sablo.websocket.IWebsocketEndpoint#setWindowId(java.lang.String)
 	 */
 	@Override
@@ -107,6 +108,19 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 		for (IWebsocketEndpoint endpoint : session.getRegisteredEnpoints())
 		{
 			Object reply = endpoint.sendMessage(data, dataType, async, converter);
+			retValue = retValue == null ? reply : retValue;
+		}
+		return retValue;
+	}
+
+	@Override
+	public Object sendMessage(IToJSONWriter dataWriter, boolean async, IToJSONConverter converter) throws IOException
+	{
+		// TODO here we could write the data only once and send it to all endpoints
+		Object retValue = null;
+		for (IWebsocketEndpoint endpoint : session.getRegisteredEnpoints())
+		{
+			Object reply = endpoint.sendMessage(dataWriter, async, converter);
 			retValue = retValue == null ? reply : retValue;
 		}
 		return retValue;
@@ -174,20 +188,23 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 	}
 
 	@Override
-	public TypedData<Map<String, Map<String, Map<String, Object>>>> getAllComponentsChanges()
+	public boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter converter, DataConversion clientDataConversions)
+		throws JSONException
 	{
-		Map<String, Map<String, Map<String, Object>>> changes = new HashMap<>(8);
-		PropertyDescription changeTypes = AggregatedPropertyType.newAggregatedProperty();
+		boolean contentHasBeenWritten = false;
+		String keyToAddIfChanges = keyInParent;
 
 		for (IWebsocketEndpoint endpoint : session.getRegisteredEnpoints())
 		{
-			TypedData<Map<String, Map<String, Map<String, Object>>>> endPointComponentChanges = endpoint.getAllComponentsChanges();
-			changes.putAll(endPointComponentChanges.content);
-			if (endPointComponentChanges.contentType != null) changeTypes.putAll(endPointComponentChanges.contentType.getProperties());
+			boolean endpointChangesFound = endpoint.writeAllComponentsChanges(w, keyToAddIfChanges, converter, clientDataConversions);
+			if (endpointChangesFound)
+			{
+				keyToAddIfChanges = null;
+				contentHasBeenWritten = true;
+			}
 		}
-		if (!changeTypes.hasChildProperties()) changeTypes = null;
 
-		return new TypedData<Map<String, Map<String, Map<String, Object>>>>(changes, changeTypes);
+		return contentHasBeenWritten;
 	}
 
 	@Override

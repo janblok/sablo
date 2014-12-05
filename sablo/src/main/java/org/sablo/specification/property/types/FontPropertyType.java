@@ -77,7 +77,8 @@ public class FontPropertyType extends DefaultPropertyType<Font> implements IClas
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter w, String key, Font font, DataConversion clientConversion) throws JSONException
+	public JSONWriter toJSON(JSONWriter w, String key, Font font, DataConversion clientConversion, IDataConverterContext dataConverterContext)
+		throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(w, key);
 		w.object();

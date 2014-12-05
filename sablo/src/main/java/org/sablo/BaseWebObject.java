@@ -134,7 +134,7 @@ public abstract class BaseWebObject
 	 */
 	public Object getProperty(String propertyName)
 	{
-		return unwrapValue(propertyName, getCurrentValue(propertyName));
+		return unwrapValue(propertyName, getRawPropertyValue(propertyName));
 	}
 
 	protected Object unwrapValue(String propertyName, Object object)
@@ -182,7 +182,7 @@ public abstract class BaseWebObject
 	/**
 	 * DO NOT USE THIS METHOD; when possible please use {@link #getProperty(String)}, {@link #getProperties()} or {@link #getAllPropertyNames(boolean)} instead.
 	 */
-	public Map<String, Object> getRawProperties()
+	public Map<String, Object> getRawPropertiesWithoutDefaults()
 	{
 		return properties;
 	}
@@ -219,7 +219,7 @@ public abstract class BaseWebObject
 	{
 		Object oldUnwrappedV = getProperty(propertyName);
 		defaultPropertiesUnwrapped.put(propertyName, propertyValue);
-		Object newUnwrappedV = unwrapValue(propertyName, getCurrentValue(propertyName)); // a default value wrap/unwrap might result in a different value
+		Object newUnwrappedV = unwrapValue(propertyName, getRawPropertyValue(propertyName)); // a default value wrap/unwrap might result in a different value
 		if (newUnwrappedV != propertyValue) defaultPropertiesUnwrapped.put(propertyName, newUnwrappedV);
 
 		if (newUnwrappedV != oldUnwrappedV) onPropertyChange(propertyName, oldUnwrappedV, newUnwrappedV);
@@ -247,7 +247,7 @@ public abstract class BaseWebObject
 			for (int i = 0; i < parts.length - 1; i++)
 			{
 				path += parts[i];
-				Map<String, Object> propertyMap = (Map<String, Object>)getCurrentValue(path);
+				Map<String, Object> propertyMap = (Map<String, Object>)getRawPropertyValue(path);
 				if (propertyMap == null)
 				{
 					propertyMap = new HashMap<>();
@@ -262,7 +262,7 @@ public abstract class BaseWebObject
 		{
 			try
 			{
-				Object oldValue = getCurrentValue(propertyName);
+				Object oldValue = getRawPropertyValue(propertyName);
 				canBeWrapped = wrapPropertyValue(propertyName, oldValue, propertyValue);
 			}
 			catch (Exception e)
@@ -306,12 +306,9 @@ public abstract class BaseWebObject
 
 	/**
 	 * Gets the current value from the properties, if not set then it fallbacks to the default properties (which it then wraps)
-	 *
-	 * @param propertyName
-	 * @return
-	 * @throws JSONException
+	 * DO NOT USE THIS METHOD; when possible please use {@link #getProperty(String)}, {@link #getProperties()} or {@link #getAllPropertyNames(boolean)} instead.
 	 */
-	private Object getCurrentValue(String propertyName)
+	public Object getRawPropertyValue(String propertyName)
 	{
 		String[] parts = propertyName.split("\\.");
 		String firstProperty = parts[0];
@@ -350,7 +347,7 @@ public abstract class BaseWebObject
 	 */
 	public void putBrowserProperty(String propertyName, Object propertyValue) throws JSONException
 	{
-		Object oldWrappedValue = getCurrentValue(propertyName);
+		Object oldWrappedValue = getRawPropertyValue(propertyName);
 		Object newWrappedValue = convertValueFromJSON(propertyName, oldWrappedValue, propertyValue);
 		properties.put(propertyName, newWrappedValue);
 
@@ -451,31 +448,12 @@ public abstract class BaseWebObject
 	 */
 	private Object convertValueFromJSON(String propertyName, Object previousComponentValue, Object newJSONValue) throws JSONException
 	{
-		if (newJSONValue == null || newJSONValue == JSONObject.NULL) return null;
+		if (newJSONValue == JSONObject.NULL) newJSONValue = null;
 
 		PropertyDescription propertyDesc = specification.getProperty(propertyName);
 		Object value = propertyDesc != null ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDesc, new DataConverterContext(propertyDesc,
 			this)) : null;
-		return value != null && value != newJSONValue ? value : convertPropertyValue(propertyName, previousComponentValue, newJSONValue);
-	}
-
-	/**
-	 * Allow for subclasses to do conversions, by default it just ask for the
-	 * type to do the conversion to Java
-	 *
-	 * @param propertyName
-	 *            the property name
-	 * @param oldValue
-	 *            the old val
-	 * @param newValue
-	 *            the new val
-	 * @param sourceOfValue
-	 * @return the converted value
-	 * @throws JSONException
-	 */
-	protected Object convertPropertyValue(String propertyName, Object oldValue, Object newValue) throws JSONException
-	{
-		return newValue;
+		return value;
 	}
 
 	/**

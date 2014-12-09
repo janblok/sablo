@@ -223,6 +223,32 @@ public class WebComponentPackage
 				}
 			}
 		}
+		for (String specpath : getWebEntrySpecNames(mf, "Web-Composite"))
+		{
+			String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
+			if (specfileContent != null)
+			{
+				try
+				{
+					WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
+					parsed.setSpecURL(reader.getUrlForPath(specpath));
+					if (parsed.getDefinition() != null)
+					{
+						String jsonConfig = reader.readTextFile(parsed.getDefinition(), Charset.forName("UTF8"));
+						if (jsonConfig != null)
+						{
+							parsed = new WebComponentSpecification(parsed.getName(), parsed.getPackageName(), parsed.getDisplayName(),
+								parsed.getCategoryName(), parsed.getIcon(), parsed.getDefinition(), parsed.getLibraries(), jsonConfig);
+						}
+					}
+					descriptions.add(parsed);
+				}
+				catch (Exception e)
+				{
+					reader.reportError(specpath, e);
+				}
+			}
+		}
 		return descriptions;
 	}
 
@@ -257,7 +283,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -268,7 +294,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -303,7 +329,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -360,7 +386,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#reportError(java.lang.String, java.lang.Exception)
 		 */
 		@Override
@@ -377,7 +403,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#getPackageURL()
 		 */
 		@Override
@@ -409,7 +435,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -420,7 +446,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -455,7 +481,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -505,7 +531,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#getPackageURL()
 		 */
 		@Override
@@ -542,7 +568,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -553,7 +579,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -580,7 +606,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -622,7 +648,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#getPackageURL()
 		 */
 		@Override
@@ -635,7 +661,7 @@ public class WebComponentPackage
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see java.lang.Object#toString()
 	 */
 	@Override

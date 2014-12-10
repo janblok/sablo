@@ -37,6 +37,7 @@ import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.ISupportsGranularUpdates;
 import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.types.TypesRegistry;
+import org.sablo.websocket.IToJSONWriter;
 import org.sablo.websocket.TypedData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -531,6 +532,56 @@ public class JSONUtils
 			return writer.toString();
 		}
 
+	}
+
+	/**
+	 * Interface for easy grouping of typed content to be written to JSON.
+	 * @author acostescu
+	 */
+	public static interface IJSONStringWithConversions extends JSONString
+	{
+
+		DataConversion getDataConversions();
+
+	}
+
+	/**
+	 * Class for easy grouping of typed content to be written to JSON.
+	 * @author acostescu
+	 */
+	public static class JSONStringWithConversions implements IJSONStringWithConversions
+	{
+
+		protected final String jsonString;
+		protected final DataConversion dataConversions;
+
+		public JSONStringWithConversions(String jsonString, DataConversion dataConversions)
+		{
+			this.jsonString = jsonString;
+			this.dataConversions = dataConversions;
+		}
+
+		@Override
+		public String toJSONString()
+		{
+			return jsonString;
+		}
+
+		@Override
+		public DataConversion getDataConversions()
+		{
+			return dataConversions;
+		}
+	}
+
+	// TODO this can be moved to JSONUtils if we remove the "Pair" dependency
+	public static IJSONStringWithConversions writeToJSONString(IToJSONWriter toJSONWriter, IToJSONConverter converter) throws JSONException
+	{
+		EmbeddableJSONWriter rowData = new EmbeddableJSONWriter();
+		DataConversion clientConversionInfo = new DataConversion();
+
+		toJSONWriter.writeJSONContent(rowData, null, converter, clientConversionInfo);
+		return new JSONStringWithConversions(rowData.toJSONString(), clientConversionInfo);
 	}
 
 }

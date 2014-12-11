@@ -31,9 +31,11 @@ import javax.websocket.Session;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
+import org.json.JSONWriter;
 import org.sablo.Container;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.types.AggregatedPropertyType;
+import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
@@ -122,7 +124,7 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 
 	private final AtomicInteger nextMessageId = new AtomicInteger(0);
 	private final Map<Integer, List<Object>> pendingMessages = new HashMap<>();
-	private final List<Map<String, Object>> serviceCalls = new ArrayList<>();
+	private final List<Map<String, ? >> serviceCalls = new ArrayList<>();
 	private final PropertyDescription serviceCallTypes = AggregatedPropertyType.newAggregatedProperty();
 
 	public WebsocketEndpoint(String endpointType)
@@ -374,42 +376,73 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 		return sendMessage(changes, changesTypes, false, getToJSONConverter()); // will return response from last service call
 	}
 
-	public Object sendMessage(Map<String, ? > data, PropertyDescription dataTypes, boolean async, IToJSONConverter converter) throws IOException
+	public Object sendMessage(final Map<String, ? > data, final PropertyDescription dataTypes, boolean async, IToJSONConverter converter) throws IOException
 	{
-		if ((data == null || data.size() == 0) && serviceCalls.size() == 0) return null;
+		final Integer messageId[] = null;
+		return sendMessage((data == null || data.size() == 0) ? null : new IToJSONWriter()
+		{
 
-		Map<String, Object> message = new HashMap<>();
-		PropertyDescription messageTypes = AggregatedPropertyType.newAggregatedProperty();
-		if (data != null && data.size() > 0)
-		{
-			message.put("msg", data);
-			if (dataTypes != null) messageTypes.putProperty("msg", dataTypes);
-		}
-		if (serviceCalls.size() > 0)
-		{
-			message.put("services", serviceCalls);
-			if (serviceCallTypes != null) messageTypes.putProperty("services", serviceCallTypes);
-		}
+			@Override
+			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter converter, DataConversion clientDataConversions)
+				throws JSONException
+			{
+				if (data != null && data.size() > 0)
+				{
+					JSONUtils.addKeyIfPresent(w, keyInParent);
+					converter.toJSONValue(w, null, data, dataTypes, clientDataConversions, null);
+				}
+				return false;
+			}
 
-		Integer messageId = null;
-		if (!async)
-		{
-			message.put("smsgid", messageId = new Integer(nextMessageId.incrementAndGet()));
-		}
+		}, async, converter);
+	}
+
+	public Object sendMessage(IToJSONWriter dataWriter, boolean async, IToJSONConverter converter) throws IOException
+	{
+		if (dataWriter == null && serviceCalls.size() == 0) return null;
 
 		try
 		{
-			if (!messageTypes.hasChildProperties()) messageTypes = null;
-			sendText(JSONUtils.writeDataWithConversions(converter, message, messageTypes));
+			boolean hasContentToSend = false;
+			JSONStringer w = new JSONStringer();
+			w.object();
+			DataConversion clientDataConversions = new DataConversion();
+
+			if (dataWriter != null)
+			{
+				clientDataConversions.pushNode("msg");
+				hasContentToSend = dataWriter.writeJSONContent(w, "msg", converter, clientDataConversions) || hasContentToSend;
+				clientDataConversions.popNode();
+			}
+			if (serviceCalls.size() > 0)
+			{
+				hasContentToSend = true;
+				clientDataConversions.pushNode("services");
+				converter.toJSONValue(w, "services", serviceCalls, serviceCallTypes, clientDataConversions, null);
+				clientDataConversions.popNode();
+			}
+
+			Integer messageId = null;
+
+			if (hasContentToSend)
+			{
+				if (!async)
+				{
+					w.key("smsgid").value(messageId = new Integer(nextMessageId.incrementAndGet()));
+				}
+				JSONUtils.writeClientConversions(w, clientDataConversions);
+				w.endObject();
+
+				sendText(w.toString());
+				serviceCalls.clear();
+			}
+
+			return (messageId == null) ? null : waitResponse(messageId);
 		}
 		catch (JSONException e)
 		{
 			throw new IOException(e);
 		}
-
-		serviceCalls.clear();
-
-		return (messageId == null) ? null : waitResponse(messageId);
 	}
 
 	public void flush() throws IOException
@@ -438,7 +471,7 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 
 		try
 		{
-			sendText(JSONUtils.writeDataWithConversions(converter, data, dataTypes));
+			sendText(JSONUtils.writeDataWithConversions(converter, data, dataTypes, null));
 		}
 		catch (JSONException e)
 		{
@@ -493,26 +526,29 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 	}
 
 	@Override
-	public synchronized TypedData<Map<String, Map<String, Map<String, Object>>>> getAllComponentsChanges()
+	public synchronized boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter converter, DataConversion clientDataConversions)
+		throws JSONException
 	{
-		Map<String, Map<String, Map<String, Object>>> changes = new HashMap<>(8);
-		PropertyDescription changeTypes = AggregatedPropertyType.newAggregatedProperty();
+		boolean contentHasBeenWritten = false;
 
 		for (Container fc : usedContainers.keySet())
 		{
-			if (fc.isVisible())
+			if (fc.isVisible() && fc.isChanged())
 			{
-				TypedData<Map<String, Map<String, Object>>> formChanges = fc.getAllComponentsChanges();
-				if (formChanges.content.size() > 0)
+				if (!contentHasBeenWritten)
 				{
-					changes.put(fc.getName(), formChanges.content);
-					if (formChanges.contentType != null) changeTypes.putProperty(fc.getName(), formChanges.contentType);
+					JSONUtils.addKeyIfPresent(w, keyInParent);
+					w.object();
+					contentHasBeenWritten = true;
 				}
+				String containerName = fc.getName();
+				clientDataConversions.pushNode(containerName);
+				fc.writeAllComponentsChanges(w, containerName, converter, clientDataConversions);
+				clientDataConversions.popNode();
 			}
 		}
-		if (!changeTypes.hasChildProperties()) changeTypes = null;
-
-		return new TypedData<Map<String, Map<String, Map<String, Object>>>>(changes, changeTypes);
+		if (contentHasBeenWritten) w.endObject();
+		return contentHasBeenWritten;
 	}
 
 	@Override

@@ -68,7 +68,8 @@ public class InsetsPropertyType extends DefaultPropertyType<Insets> implements I
 
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, Insets i, DataConversion clientConversion) throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Insets i, DataConversion clientConversion, IDataConverterContext dataConverterContext)
+		throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
 		writer.object();

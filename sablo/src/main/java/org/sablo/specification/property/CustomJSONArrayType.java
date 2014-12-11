@@ -25,6 +25,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
+import org.sablo.BaseWebObject;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
@@ -267,20 +268,21 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, DataConversion conversionMarkers) throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, DataConversion conversionMarkers,
+		IDataConverterContext dataConverterContext) throws JSONException
 	{
-		return toJSON(writer, key, changeAwareList, conversionMarkers, true, JSONUtils.FullValueToJSONConverter.INSTANCE);
+		return toJSON(writer, key, changeAwareList, conversionMarkers, true, JSONUtils.FullValueToJSONConverter.INSTANCE, dataConverterContext.getWebObject());
 	}
 
 	@Override
-	public JSONWriter changesToJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, DataConversion conversionMarkers)
-		throws JSONException
+	public JSONWriter changesToJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, DataConversion conversionMarkers,
+		IDataConverterContext dataConverterContext) throws JSONException
 	{
-		return toJSON(writer, key, changeAwareList, conversionMarkers, false, JSONUtils.FullValueToJSONConverter.INSTANCE);
+		return toJSON(writer, key, changeAwareList, conversionMarkers, false, JSONUtils.FullValueToJSONConverter.INSTANCE, dataConverterContext.getWebObject());
 	}
 
 	protected JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, DataConversion conversionMarkers, boolean fullValue,
-		IToJSONConverter toJSONConverterForFullValue) throws JSONException
+		IToJSONConverter toJSONConverterForFullValue, BaseWebObject webObject) throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
 		if (changeAwareList != null)
@@ -300,7 +302,8 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 				for (int i = 0; i < wrappedBaseListReadOnly.size(); i++)
 				{
 					arrayConversionMarkers.pushNode(String.valueOf(i));
-					toJSONConverterForFullValue.toJSONValue(writer, null, wrappedBaseListReadOnly.get(i), getCustomJSONTypeDefinition(), arrayConversionMarkers);
+					toJSONConverterForFullValue.toJSONValue(writer, null, wrappedBaseListReadOnly.get(i), getCustomJSONTypeDefinition(),
+						arrayConversionMarkers, webObject);
 					arrayConversionMarkers.popNode();
 				}
 				writer.endArray();
@@ -330,7 +333,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 					writer.object().key(INDEX).value(idx);
 					arrayConversionMarkers.pushNode(VALUE);
 					JSONUtils.changesToBrowserJSONValue(writer, VALUE, wrappedBaseListReadOnly.get(idx.intValue()), getCustomJSONTypeDefinition(),
-						arrayConversionMarkers);
+						arrayConversionMarkers, webObject);
 					arrayConversionMarkers.popNode();
 					writer.endObject();
 					arrayConversionMarkers.popNode();

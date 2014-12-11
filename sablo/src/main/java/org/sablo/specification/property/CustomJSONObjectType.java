@@ -27,6 +27,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
+import org.sablo.BaseWebObject;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
@@ -284,20 +285,21 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareMap<ET, WT> changeAwareMap, DataConversion conversionMarkers) throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareMap<ET, WT> changeAwareMap, DataConversion conversionMarkers,
+		IDataConverterContext dataConverterContext) throws JSONException
 	{
-		return toJSON(writer, key, changeAwareMap, conversionMarkers, true, JSONUtils.FullValueToJSONConverter.INSTANCE);
+		return toJSON(writer, key, changeAwareMap, conversionMarkers, true, JSONUtils.FullValueToJSONConverter.INSTANCE, dataConverterContext.getWebObject());
 	}
 
 	@Override
-	public JSONWriter changesToJSON(JSONWriter writer, String key, ChangeAwareMap<ET, WT> changeAwareMap, DataConversion conversionMarkers)
-		throws JSONException
+	public JSONWriter changesToJSON(JSONWriter writer, String key, ChangeAwareMap<ET, WT> changeAwareMap, DataConversion conversionMarkers,
+		IDataConverterContext dataConverterContext) throws JSONException
 	{
-		return toJSON(writer, key, changeAwareMap, conversionMarkers, false, JSONUtils.FullValueToJSONConverter.INSTANCE);
+		return toJSON(writer, key, changeAwareMap, conversionMarkers, false, JSONUtils.FullValueToJSONConverter.INSTANCE, dataConverterContext.getWebObject());
 	}
 
 	protected JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareMap<ET, WT> changeAwareMap, DataConversion conversionMarkers, boolean fullValue,
-		IToJSONConverter toJSONConverterForFullValue) throws JSONException
+		IToJSONConverter toJSONConverterForFullValue, BaseWebObject webObject) throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
 		if (changeAwareMap != null)
@@ -316,7 +318,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 				{
 					objConversionMarkers.pushNode(e.getKey());
 					toJSONConverterForFullValue.toJSONValue(writer, e.getKey(), wrappedBaseMap.get(e.getKey()),
-						getCustomJSONTypeDefinition().getProperty(e.getKey()), objConversionMarkers);
+						getCustomJSONTypeDefinition().getProperty(e.getKey()), objConversionMarkers, webObject);
 					objConversionMarkers.popNode();
 				}
 				writer.endObject();
@@ -346,7 +348,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 					writer.object().key(KEY).value(k);
 					objConversionMarkers.pushNode(VALUE);
 					JSONUtils.changesToBrowserJSONValue(writer, VALUE, wrappedBaseMap.get(k), getCustomJSONTypeDefinition().getProperty(k),
-						objConversionMarkers);
+						objConversionMarkers, webObject);
 					objConversionMarkers.popNode();
 					writer.endObject();
 					objConversionMarkers.popNode();

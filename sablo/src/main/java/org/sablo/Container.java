@@ -22,11 +22,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.sablo.specification.PropertyDescription;
+import org.json.JSONException;
+import org.json.JSONWriter;
 import org.sablo.specification.WebComponentSpecification;
-import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.TypedData;
 import org.sablo.websocket.WebsocketEndpoint;
+import org.sablo.websocket.utils.DataConversion;
+import org.sablo.websocket.utils.JSONUtils;
+import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
 /**
  * Container object is a component that can contain other components.
@@ -35,22 +38,50 @@ import org.sablo.websocket.WebsocketEndpoint;
 public abstract class Container extends WebComponent
 {
 	protected final Map<String, WebComponent> components = new HashMap<>();
+	protected boolean changed;
 
 	public Container(String name, WebComponentSpecification spec)
 	{
 		super(name, spec);
 	}
 
+	/**
+	 * Called when it changes or any of it's children change.
+	 */
+	protected void markAsChanged()
+	{
+		changed = true;
+	}
+
+	public boolean isChanged()
+	{
+		return changed;
+	}
+
 	public void add(WebComponent component)
 	{
-		components.put(component.getName(), component);
+		WebComponent old = components.put(component.getName(), component);
+		if (old != null)
+		{ // should never happen I think
+			old.parent = null;
+			old.setDirtyPropertyListener(null);
+		}
 		component.parent = this;
+		component.setDirtyPropertyListener(new IDirtyPropertyListener()
+		{
+			@Override
+			public void propertyFlaggedAsDirty(String propertyName)
+			{
+				markAsChanged();
+			}
+		});
 	}
 
 	public void remove(WebComponent component)
 	{
 		components.remove(component.getName());
 		component.parent = null;
+		component.setDirtyPropertyListener(null);
 	}
 
 	public WebComponent getComponent(String name)
@@ -74,47 +105,66 @@ public abstract class Container extends WebComponent
 		components.clear();
 	}
 
-	public TypedData<Map<String, Map<String, Object>>> getAllComponentsChanges()
+	public boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter converter, DataConversion clientDataConversions)
+		throws JSONException
 	{
-		Map<String, Map<String, Object>> props = new HashMap<String, Map<String, Object>>(8);
-		PropertyDescription propTypes = AggregatedPropertyType.newAggregatedProperty();
-
+		changed = false;
 		ArrayList<WebComponent> allComponents = new ArrayList<WebComponent>();
 		allComponents.add(this); // add the container itself
 		allComponents.addAll(getComponents());
 
+		boolean contentHasBeenWritten = false;
 		for (WebComponent wc : allComponents)
 		{
 			TypedData<Map<String, Object>> changes = wc.getChanges();
 			if (changes.content.size() > 0)
 			{
-				props.put(wc == this ? "" : wc.getName(), changes.content); //$NON-NLS-1$
-				if (changes.contentType != null) propTypes.putProperty(wc == this ? "" : wc.getName(), changes.contentType);
+				if (!contentHasBeenWritten)
+				{
+					JSONUtils.addKeyIfPresent(w, keyInParent);
+					w.object();
+					contentHasBeenWritten = true;
+				}
+				String childName = wc == this ? "" : wc.getName();
+				w.key(childName).object();
+				clientDataConversions.pushNode(childName);
+				JSONUtils.writeData(converter, w, changes.content, changes.contentType, clientDataConversions, wc);
+				clientDataConversions.popNode();
+				w.endObject();
 			}
 		}
-		if (!propTypes.hasChildProperties()) propTypes = null;
-		return new TypedData<Map<String, Map<String, Object>>>(props, propTypes);
+		if (contentHasBeenWritten) w.endObject();
+		changed = false;
+		return contentHasBeenWritten;
 	}
 
-	public TypedData<Map<String, Map<String, Object>>> getAllComponentsProperties()
+	public boolean writeAllComponentsProperties(JSONWriter w, IToJSONConverter converter) throws JSONException
 	{
 		WebsocketEndpoint.get().registerContainer(this);
-		Map<String, Map<String, Object>> props = new HashMap<String, Map<String, Object>>();
-		PropertyDescription propTypes = AggregatedPropertyType.newAggregatedProperty();
+		DataConversion clientDataConversions = new DataConversion();
 
 		ArrayList<WebComponent> allComponents = new ArrayList<WebComponent>();
 		allComponents.add(this); // add the form itself
 		allComponents.addAll(getComponents());
 
+		boolean contentHasBeenWritten = false;
 		for (WebComponent wc : allComponents)
 		{
 			TypedData<Map<String, Object>> changes = wc.getProperties();
 			wc.clearChanges();
-			String name = (wc == this ? "" : wc.getName());
-			props.put(name, changes.content);
-			if (changes.contentType != null) propTypes.putProperty(name, changes.contentType);
+			String childName = (wc == this ? "" : wc.getName());
+			if (changes.content.size() > 0)
+			{
+				w.key(childName).object();
+				contentHasBeenWritten = true;
+				clientDataConversions.pushNode(childName);
+				JSONUtils.writeData(converter, w, changes.content, changes.contentType, clientDataConversions, wc);
+				clientDataConversions.popNode();
+				w.endObject();
+			}
 		}
-		if (!propTypes.hasChildProperties()) propTypes = null;
-		return new TypedData<Map<String, Map<String, Object>>>(props, propTypes);
+		JSONUtils.writeClientConversions(w, clientDataConversions);
+		changed = false;
+		return contentHasBeenWritten;
 	}
 }

@@ -26,7 +26,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONWriter;
+import org.sablo.BaseWebObject;
 import org.sablo.Container;
 import org.sablo.IChangeListener;
 import org.sablo.WebComponent;
@@ -40,9 +43,11 @@ import org.sablo.specification.property.DataConverterContext;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.specification.property.types.DatePropertyType;
 import org.sablo.websocket.impl.ClientService;
+import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.JSONUtils.ChangesToJSONConverter;
 import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
+import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -231,22 +236,31 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		return new ClientService(name, WebServiceSpecProvider.getInstance().getWebServiceSpecification(name));
 	}
 
-	public TypedData<Map<String, Map<String, Object>>> getServiceChanges()
+	public boolean writeAllServicesChanges(JSONWriter w, String keyInParent, IToJSONConverter converter, DataConversion clientDataConversions)
+		throws JSONException
 	{
-		Map<String, Map<String, Object>> changes = new HashMap<>();
-		PropertyDescription changeTypes = AggregatedPropertyType.newAggregatedProperty();
-
+		boolean contentHasBeenWritten = false;
 		for (IClientService service : services.values())
 		{
-			TypedData<Map<String, Object>> serviceChanges = service.getChanges();
-			if (!serviceChanges.content.isEmpty())
+			TypedData<Map<String, Object>> changes = service.getChanges();
+			if (changes.content.size() > 0)
 			{
-				changes.put(service.getName(), serviceChanges.content);
-				if (serviceChanges.contentType != null) changeTypes.putProperty(service.getName(), serviceChanges.contentType);
+				if (!contentHasBeenWritten)
+				{
+					JSONUtils.addKeyIfPresent(w, keyInParent);
+					w.object();
+					contentHasBeenWritten = true;
+				}
+				String childName = service.getName();
+				w.key(childName).object();
+				clientDataConversions.pushNode(childName);
+				JSONUtils.writeData(converter, w, changes.content, changes.contentType, clientDataConversions, (BaseWebObject)service);
+				clientDataConversions.popNode();
+				w.endObject();
 			}
 		}
-		if (!changeTypes.hasChildProperties()) changeTypes = null;
-		return new TypedData<Map<String, Map<String, Object>>>(changes, changeTypes);
+		if (contentHasBeenWritten) w.endObject();
+		return contentHasBeenWritten;
 	}
 
 	public void startHandlingEvent()
@@ -275,27 +289,31 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		try
 		{
 			proccessChanges = true;
-			// TODO this should be changed, because if there are multiple end-points then 1 end-point will get the changes of a form (and flag everything as not changed)
-			// so the other end point will not see those changes if it would show the same form...
-			// i guess the session should have all the containers (like it has all the services) and then the endpoint should just cherry pick what it will send.
-			TypedData<Map<String, Map<String, Map<String, Object>>>> allFormChanges = WebsocketEndpoint.get().getAllComponentsChanges();
-			TypedData<Map<String, Map<String, Object>>> serviceChanges = getServiceChanges();
-			Map<String, Object> data = new HashMap<>(3);
-			PropertyDescription dataTypes = AggregatedPropertyType.newAggregatedProperty();
 
-			if (!allFormChanges.content.isEmpty())
-			{
-				data.put("forms", allFormChanges.content);
-				if (allFormChanges.contentType != null) dataTypes.putProperty("forms", allFormChanges.contentType);
-			}
-			if (!serviceChanges.content.isEmpty())
-			{
-				data.put("services", serviceChanges.content);
-				if (serviceChanges.contentType != null) dataTypes.putProperty("services", serviceChanges.contentType);
-			}
-			// TOOD see above comment, this should not send to the currently active end-point, but to all end-points
+			// TODO this should not send to the currently active end-point, but to each of all end-points their own changes...
 			// so that any change from 1 end-point request ends up in all the end points.
-			WebsocketEndpoint.get().sendMessage(data, dataTypes, true, ChangesToJSONConverter.INSTANCE); // uses ConversionLocation.BROWSER_UPDATE
+			WebsocketEndpoint.get().sendMessage(new IToJSONWriter()
+			{
+				@Override
+				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter converter, DataConversion clientDataConversions)
+					throws JSONException
+				{
+					JSONUtils.addKeyIfPresent(w, keyInParent);
+					w.object();
+
+					clientDataConversions.pushNode("forms");
+					boolean changesFound = WebsocketEndpoint.get().writeAllComponentsChanges(w, "forms", ChangesToJSONConverter.INSTANCE, clientDataConversions);
+					clientDataConversions.popNode();
+
+					clientDataConversions.pushNode("services");
+					changesFound = writeAllServicesChanges(w, "services", ChangesToJSONConverter.INSTANCE, clientDataConversions) || changesFound;
+					clientDataConversions.popNode();
+
+					w.endObject();
+
+					return changesFound;
+				}
+			}, true, ChangesToJSONConverter.INSTANCE);
 		}
 		catch (IOException e)
 		{
@@ -307,44 +325,59 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		}
 	}
 
-
 	public Object invokeApi(WebComponent receiver, WebComponentApiDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes)
 	{
 		return invokeApi(receiver, apiFunction, arguments, argumentTypes, null);
 	}
 
-	protected Object invokeApi(WebComponent receiver, WebComponentApiDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes,
-		Map<String, Object> callContributions)
+	protected Object invokeApi(final WebComponent receiver, final WebComponentApiDefinition apiFunction, final Object[] arguments,
+		final PropertyDescription argumentTypes, final Map<String, Object> callContributions)
 	{
 		// {"call":{"form":"product","bean":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}}
 		try
 		{
-			TypedData<Map<String, Map<String, Map<String, Object>>>> changes = WebsocketEndpoint.get().getAllComponentsChanges();
-			Map<String, Object> data = new HashMap<>();
-			PropertyDescription dataTypes = AggregatedPropertyType.newAggregatedProperty();
-			data.put("forms", changes.content);
-			if (changes.contentType != null) dataTypes.putProperty("forms", changes.contentType);
-
-			Map<String, Object> call = new HashMap<>();
-			PropertyDescription callTypes = AggregatedPropertyType.newAggregatedProperty();
-			if (callContributions != null) call.putAll(callContributions);
-			Container topContainer = receiver.getParent();
-			while (topContainer != null && topContainer.getParent() != null)
+			Object ret = WebsocketEndpoint.get().sendMessage(new IToJSONWriter()
 			{
-				topContainer = topContainer.getParent();
-			}
-			call.put("form", topContainer.getName());
-			call.put("bean", receiver.getName());
-			call.put("api", apiFunction.getName());
-			if (arguments != null && arguments.length > 0)
-			{
-				call.put("args", arguments);
-				if (argumentTypes != null) callTypes.putProperty("args", argumentTypes);
-			}
-			data.put("call", call);
-			if (!callTypes.hasChildProperties()) dataTypes.putProperty("call", callTypes);
+				@Override
+				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter converter, DataConversion clientDataConversions)
+					throws JSONException
+				{
+					JSONUtils.addKeyIfPresent(w, keyInParent);
+					w.object();
 
-			Object ret = WebsocketEndpoint.get().sendMessage(data, dataTypes, false, FullValueToJSONConverter.INSTANCE);
+					clientDataConversions.pushNode("forms");
+					WebsocketEndpoint.get().writeAllComponentsChanges(w, "forms", converter, clientDataConversions);
+					clientDataConversions.popNode();
+
+					Map<String, Object> call = new HashMap<>();
+					PropertyDescription callTypes = AggregatedPropertyType.newAggregatedProperty();
+					if (callContributions != null) call.putAll(callContributions);
+					Container topContainer = receiver.getParent();
+					while (topContainer != null && topContainer.getParent() != null)
+					{
+						topContainer = topContainer.getParent();
+					}
+					call.put("form", topContainer.getName());
+					call.put("bean", receiver.getName());
+					call.put("api", apiFunction.getName());
+					if (arguments != null && arguments.length > 0)
+					{
+						call.put("args", arguments);
+						if (argumentTypes != null) callTypes.putProperty("args", argumentTypes);
+					}
+
+					w.key("call").object();
+					clientDataConversions.pushNode("call");
+					JSONUtils.writeData(converter, w, call, callTypes, clientDataConversions, receiver);
+					clientDataConversions.popNode();
+					w.endObject();
+
+					w.endObject();
+					return true;
+				}
+			}, false, FullValueToJSONConverter.INSTANCE);
+
+
 			// convert dates back; TODO should this if be removed?; the JSONUtils.fromJSON below should do this anyway
 			if (ret instanceof Long && apiFunction.getReturnType().getType() instanceof DatePropertyType)
 			{
@@ -372,7 +405,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see org.sablo.websocket.IWebsocketSession#handleMessage(org.json.JSONObject)
 	 */
 	@Override

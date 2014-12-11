@@ -17,18 +17,15 @@
 package org.sablo.services;
 
 import java.util.Iterator;
-import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.json.JSONStringer;
+import org.json.JSONString;
 import org.sablo.Container;
 import org.sablo.WebComponent;
 import org.sablo.websocket.IServerService;
 import org.sablo.websocket.IWebsocketSession;
-import org.sablo.websocket.TypedData;
-import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.JSONUtils.EmbeddableJSONWriter;
 import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
@@ -96,7 +93,7 @@ public class FormServiceHandler implements IServerService
 
 	/**
 	 * @param args
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	protected Object executeEvent(JSONObject obj) throws Exception
 	{
@@ -128,7 +125,7 @@ public class FormServiceHandler implements IServerService
 		return webComponent.executeEvent(eventType, args);
 	}
 
-	protected JSONStringer requestData(String formName) throws JSONException
+	protected JSONString requestData(String formName) throws JSONException
 	{
 		Container form = getWebsocketSession().getForm(formName);
 		if (form == null)
@@ -137,22 +134,15 @@ public class FormServiceHandler implements IServerService
 			return null;
 		}
 
-		JSONStringer initialFormData = null;
-		TypedData<Map<String, Map<String, Object>>> allFormPropertiesTyped = form.getAllComponentsProperties();
-		if (allFormPropertiesTyped != null && allFormPropertiesTyped.content != null)
-		{
-			// we will not return form properties typed data directly - instead we send both data and conversions inside this "ifd"
-			// so that on client side the returned value doesn't get converted automatically and then deferr resolve handler that does applyBeanData
-			// is not aware of conversion info; instead we give this entire thing as JSON to the deferr resolve handler in .js and it can do conversions/apply
-			// bean data separately, having all the info that it needs - so also conversion info
-			initialFormData = new EmbeddableJSONWriter();
-			initialFormData.array().object();
-			JSONUtils.writeDataWithConversions(getInitialRequestDataConverter(), initialFormData, allFormPropertiesTyped.content,
-				allFormPropertiesTyped.contentType);
-			initialFormData.endObject().endArray();
-		}
+		EmbeddableJSONWriter initialFormDataWriter = new EmbeddableJSONWriter();
 
-		return initialFormData;
+		initialFormDataWriter.array().object();
+		boolean dataWasWritten = form.writeAllComponentsProperties(initialFormDataWriter, getInitialRequestDataConverter());
+		initialFormDataWriter.endObject().endArray();
+
+		if (!dataWasWritten) initialFormDataWriter = null;
+
+		return initialFormDataWriter;
 	}
 
 	protected IToJSONConverter getInitialRequestDataConverter()

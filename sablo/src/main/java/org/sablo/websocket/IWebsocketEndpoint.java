@@ -19,8 +19,11 @@ package org.sablo.websocket;
 import java.io.IOException;
 import java.util.Map;
 
+import org.json.JSONException;
+import org.json.JSONWriter;
 import org.sablo.Container;
 import org.sablo.specification.PropertyDescription;
+import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
 
@@ -50,7 +53,7 @@ public interface IWebsocketEndpoint
 	 * Uses ConversionLocation.BROWSER_UPDATE as conversion location.<br/>
 	 *
 	 * If there are any pending service calls those will be sent to the client/attached to the message as well.
-	 * 
+	 *
 	 * @param data the data to be sent to the client (converted to JSON format where needed).
 	 * @param dataTypes description of the data structure; each key in "data" might have a corresponding child "dataTypes.getProperty(key)" who's type can be used for "to JSON" conversion.
 	 * @param async specifies is the messages should be sent later or right away.
@@ -61,8 +64,15 @@ public interface IWebsocketEndpoint
 	Object sendMessage(Map<String, ? > data, PropertyDescription dataTypes, boolean async, IToJSONConverter converter) throws IOException;
 
 	/**
+	 * Same as {@link #sendMessage(Map, PropertyDescription, boolean, IToJSONConverter)}, but instead of giving data as java maps and property descriptions
+	 * it simply uses a 'dataWriter' to write directly the data to JSON.
+	 * @throws IOException
+	 */
+	Object sendMessage(IToJSONWriter dataWriter, boolean async, IToJSONConverter converter) throws IOException;
+
+	/**
 	 * Flush outstanding async service calls.
-	 * 
+	 *
 	 * @throws IOException
 	 */
 	void flush() throws IOException;
@@ -124,10 +134,10 @@ public interface IWebsocketEndpoint
 	void registerContainer(Container container);
 
 	/**
-	 * Get the component changes
-	 * @return the changes for all registered Containers.
+	 * Writes as JSON changes from all components of all registered Containers.
+	 * @param keyInParent a key (can be null in which case it should be ignored) that must be appended to 'w' initially if this method call writes content to it. If the method returns false, nothing should be written to the writer...
 	 */
-	TypedData<Map<String, Map<String, Map<String, Object>>>> getAllComponentsChanges();
+	boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter converter, DataConversion clientDataConversions) throws JSONException;
 
 	/**
 	 * Get the websocket session

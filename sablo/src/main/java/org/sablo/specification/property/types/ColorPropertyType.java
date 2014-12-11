@@ -115,7 +115,8 @@ public class ColorPropertyType extends DefaultPropertyType<Color> implements ICl
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, Color c, DataConversion clientConversion) throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Color c, DataConversion clientConversion, IDataConverterContext dataConverterContext)
+		throws JSONException
 	{
 		if (c != null)
 		{

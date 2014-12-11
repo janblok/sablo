@@ -47,6 +47,7 @@ public interface ISupportsGranularUpdates<JT> extends IPropertyConverter<JT>
 	 * @return the writer for cascaded usage.
 	 * @throws JSONException if a JSON exception happens.
 	 */
-	JSONWriter changesToJSON(JSONWriter writer, String key, JT sabloValue, DataConversion clientConversion) throws JSONException;
+	JSONWriter changesToJSON(JSONWriter writer, String key, JT sabloValue, DataConversion clientConversion, IDataConverterContext dataConverterContext)
+		throws JSONException;
 
 }

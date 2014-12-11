@@ -27,6 +27,7 @@ import org.json.JSONObject;
 import org.json.JSONString;
 import org.json.JSONStringer;
 import org.json.JSONWriter;
+import org.sablo.BaseWebObject;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.DataConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
@@ -36,6 +37,7 @@ import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.ISupportsGranularUpdates;
 import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.types.TypesRegistry;
+import org.sablo.websocket.IToJSONWriter;
 import org.sablo.websocket.TypedData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,46 +71,60 @@ public class JSONUtils
 		}
 	}
 
-	public static JSONWriter writeDataWithConversions(JSONWriter writer, Map<String, ? > data, PropertyDescription dataTypes) throws JSONException
-	{
-		return writeDataWithConversions(FullValueToJSONConverter.INSTANCE, writer, data, dataTypes);
-	}
-
-	public static JSONWriter writeDataWithConversions(IToJSONConverter converter, JSONWriter writer, Map<String, ? > data, PropertyDescription dataTypes)
+	public static JSONWriter writeDataWithConversions(JSONWriter writer, Map<String, ? > data, PropertyDescription dataTypes, BaseWebObject webObject)
 		throws JSONException
 	{
+		return writeDataWithConversions(FullValueToJSONConverter.INSTANCE, writer, data, dataTypes, webObject);
+	}
+
+	public static JSONWriter writeDataWithConversions(IToJSONConverter converter, JSONWriter writer, Map<String, ? > data, PropertyDescription dataTypes,
+		BaseWebObject webObject) throws JSONException
+	{
 		DataConversion dataConversion = new DataConversion();
+		writeData(converter, writer, data, dataTypes, dataConversion, webObject);
+		writeClientConversions(writer, dataConversion);
+
+		return writer;
+	}
+
+	public static DataConversion writeData(IToJSONConverter converter, JSONWriter writer, Map<String, ? > data, PropertyDescription dataTypes,
+		DataConversion dataConversion, BaseWebObject webObject) throws JSONException
+	{
 		for (Entry<String, ? > entry : data.entrySet())
 		{
 			dataConversion.pushNode(entry.getKey());
-			converter.toJSONValue(writer, entry.getKey(), entry.getValue(), dataTypes != null ? dataTypes.getProperty(entry.getKey()) : null, dataConversion);
+			converter.toJSONValue(writer, entry.getKey(), entry.getValue(), dataTypes != null ? dataTypes.getProperty(entry.getKey()) : null, dataConversion,
+				webObject);
 			dataConversion.popNode();
 		}
+		return dataConversion;
+	}
 
-		if (dataConversion.getConversions().size() > 0)
+	public static void writeClientConversions(JSONWriter writer, DataConversion dataConversion) throws JSONException
+	{
+		if (dataConversion != null && dataConversion.getConversions().size() > 0)
 		{
 			writer.key("conversions").object();
 			writeConversions(writer, dataConversion.getConversions());
 			writer.endObject();
 		}
-
-		return writer;
 	}
 
-	public static String writeDataWithConversions(Map<String, ? > data, PropertyDescription dataTypes) throws JSONException
+	public static String writeDataWithConversions(Map<String, ? > data, PropertyDescription dataTypes, BaseWebObject webObject) throws JSONException
 	{
-		return writeDataWithConversions(FullValueToJSONConverter.INSTANCE, data, dataTypes);
+		return writeDataWithConversions(FullValueToJSONConverter.INSTANCE, data, dataTypes, webObject);
 	}
 
-	public static String writeChangesWithConversions(Map<String, ? > data, PropertyDescription dataTypes) throws JSONException
+	public static String writeChangesWithConversions(Map<String, ? > data, PropertyDescription dataTypes, BaseWebObject webObject) throws JSONException
 	{
-		return writeDataWithConversions(ChangesToJSONConverter.INSTANCE, data, dataTypes);
+		return writeDataWithConversions(ChangesToJSONConverter.INSTANCE, data, dataTypes, webObject);
 	}
 
-	public static String writeDataWithConversions(IToJSONConverter converter, Map<String, ? > data, PropertyDescription dataTypes) throws JSONException
+	public static String writeDataWithConversions(IToJSONConverter converter, Map<String, ? > data, PropertyDescription dataTypes, BaseWebObject webObject)
+		throws JSONException
 	{
 		JSONWriter writer = new JSONStringer().object();
-		writeDataWithConversions(converter, writer, data, dataTypes);
+		writeDataWithConversions(converter, writer, data, dataTypes, webObject);
 		return writer.endObject().toString();
 	}
 
@@ -133,10 +149,10 @@ public class JSONUtils
 	 * is useful for cases when you don't want the value written at all in resulting JSON in which case you don't write neither key or value. If
 	 * key is null and you want to write the converted value write only the converted value to the writer, ignore the key.
 	 */
-	public static JSONWriter toBrowserJSONFullValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion clientConversion)
-		throws JSONException, IllegalArgumentException
+	public static JSONWriter toBrowserJSONFullValue(JSONWriter writer, String key, Object value, PropertyDescription valueType,
+		DataConversion clientConversion, BaseWebObject webObject) throws JSONException, IllegalArgumentException
 	{
-		return JSONUtils.FullValueToJSONConverter.INSTANCE.toJSONValue(writer, key, value, valueType, clientConversion);
+		return JSONUtils.FullValueToJSONConverter.INSTANCE.toJSONValue(writer, key, value, valueType, clientConversion, webObject);
 	}
 
 	/**
@@ -147,9 +163,9 @@ public class JSONUtils
 	 * key is null and you want to write the converted value write only the converted value to the writer, ignore the key.
 	 */
 	public static JSONWriter changesToBrowserJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType,
-		DataConversion clientConversion) throws JSONException, IllegalArgumentException
+		DataConversion clientConversion, BaseWebObject webObject) throws JSONException, IllegalArgumentException
 	{
-		return JSONUtils.ChangesToJSONConverter.INSTANCE.toJSONValue(writer, key, value, valueType, clientConversion);
+		return JSONUtils.ChangesToJSONConverter.INSTANCE.toJSONValue(writer, key, value, valueType, clientConversion, webObject);
 	}
 
 	public static JSONWriter addKeyIfPresent(JSONWriter writer, String key) throws JSONException
@@ -173,7 +189,7 @@ public class JSONUtils
 	 * @throws IllegalArgumentException if the given object could not be written to JSON for some reason.
 	 */
 	public static boolean defaultToJSONValue(IToJSONConverter toJSONConverter, JSONWriter w, String key, Object value, PropertyDescription valueType,
-		DataConversion clientConversion) throws JSONException, IllegalArgumentException
+		DataConversion clientConversion, BaseWebObject webObject) throws JSONException, IllegalArgumentException
 	{
 		// there is no clear conversion; see if we find a primitive/default or Class based conversion
 		Object converted = value;
@@ -196,7 +212,7 @@ public class JSONUtils
 			for (int i = 0; i < lst.size(); i++)
 			{
 				if (clientConversion != null) clientConversion.pushNode(String.valueOf(i));
-				toJSONConverter.toJSONValue(w, null, lst.get(i), getArrayElementType(valueType, i), clientConversion);
+				toJSONConverter.toJSONValue(w, null, lst.get(i), getArrayElementType(valueType, i), clientConversion, webObject);
 				if (clientConversion != null) clientConversion.popNode();
 			}
 			w.endArray();
@@ -209,7 +225,7 @@ public class JSONUtils
 			for (int i = 0; i < array.length; i++)
 			{
 				if (clientConversion != null) clientConversion.pushNode(String.valueOf(i));
-				toJSONConverter.toJSONValue(w, null, array[i], getArrayElementType(valueType, i), clientConversion);
+				toJSONConverter.toJSONValue(w, null, array[i], getArrayElementType(valueType, i), clientConversion, webObject);
 				if (clientConversion != null) clientConversion.popNode();
 			}
 			w.endArray();
@@ -234,13 +250,13 @@ public class JSONUtils
 					w.key(keys[0]);
 					w.object();
 					toJSONConverter.toJSONValue(w, keys[1], entry.getValue(), valueType != null ? valueType.getProperty(entry.getKey()) : null,
-						clientConversion);
+						clientConversion, webObject);
 					w.endObject();
 				}// END TODO REMOVE
 				else
 				{
 					toJSONConverter.toJSONValue(w, entry.getKey(), entry.getValue(), valueType != null ? valueType.getProperty(entry.getKey()) : null,
-						clientConversion);
+						clientConversion, webObject);
 				}
 				if (clientConversion != null) clientConversion.popNode();
 			}
@@ -249,7 +265,7 @@ public class JSONUtils
 		else if (converted instanceof JSONWritable)
 		{
 			TypedData<Map<String, Object>> dm = ((JSONWritable)converted).toMap();
-			toJSONConverter.toJSONValue(w, key, dm.content, dm.contentType, clientConversion);
+			toJSONConverter.toJSONValue(w, key, dm.content, dm.contentType, clientConversion, webObject);
 		}
 		// best-effort to still find a way to write data and convert if needed follows
 		else if (converted instanceof Integer || converted instanceof Long)
@@ -310,7 +326,7 @@ public class JSONUtils
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static Object fromJSON(Object oldValue, Object newValue, PropertyDescription desc, IDataConverterContext dataConversionContext) throws JSONException
 	{
-		if (newValue == null || newValue == JSONObject.NULL) return null;
+		if (newValue == JSONObject.NULL) newValue = null;
 		if (desc != null)
 		{
 			IPropertyType< ? > type = desc.getType();
@@ -384,8 +400,8 @@ public class JSONUtils
 		 * @param toDestinationType TODO remove this
 		 * @return the JSON writer for easily continuing the write process in the caller.
 		 */
-		JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion clientConversion)
-			throws JSONException, IllegalArgumentException;
+		JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion clientConversion,
+			BaseWebObject webObject) throws JSONException, IllegalArgumentException;
 
 	}
 
@@ -395,8 +411,8 @@ public class JSONUtils
 		public static final FullValueToJSONConverter INSTANCE = new FullValueToJSONConverter();
 
 		@Override
-		public JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion browserConversionMarkers)
-			throws JSONException, IllegalArgumentException
+		public JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion browserConversionMarkers,
+			BaseWebObject webObject) throws JSONException, IllegalArgumentException
 		{
 			if (value != null && valueType != null)
 			{
@@ -406,7 +422,8 @@ public class JSONUtils
 					// good, we now know that it needs special conversion
 					try
 					{
-						return ((IConvertedPropertyType)type).toJSON(writer, key, value, browserConversionMarkers);
+						return ((IConvertedPropertyType)type).toJSON(writer, key, value, browserConversionMarkers, new DataConverterContext(valueType,
+							webObject));
 					}
 					catch (Exception ex)
 					{
@@ -419,7 +436,7 @@ public class JSONUtils
 					// good, we now know that it needs special conversion
 					try
 					{
-						return ((IWrapperType)type).toJSON(writer, key, value, browserConversionMarkers);
+						return ((IWrapperType)type).toJSON(writer, key, value, browserConversionMarkers, new DataConverterContext(valueType, webObject));
 					}
 					catch (Exception ex)
 					{
@@ -433,10 +450,10 @@ public class JSONUtils
 			IClassPropertyType<Object> classType = (IClassPropertyType<Object>)(value == null ? null : TypesRegistry.getType(value.getClass()));
 			if (classType != null)
 			{
-				return classType.toJSON(writer, key, value, browserConversionMarkers);
+				return classType.toJSON(writer, key, value, browserConversionMarkers, new DataConverterContext(valueType, webObject));
 			}
 
-			if (!defaultToJSONValue(this, writer, key, value, valueType, browserConversionMarkers))
+			if (!defaultToJSONValue(this, writer, key, value, valueType, browserConversionMarkers, webObject))
 			{
 				// addKeyIfPresent(w, key);
 				// w = w.value(new JSONObject("{}"));
@@ -455,8 +472,8 @@ public class JSONUtils
 		public static final ChangesToJSONConverter INSTANCE = new ChangesToJSONConverter();
 
 		@Override
-		public JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion browserConversionMarkers)
-			throws JSONException, IllegalArgumentException
+		public JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion browserConversionMarkers,
+			BaseWebObject webObject) throws JSONException, IllegalArgumentException
 		{
 			if (value != null && valueType != null)
 			{
@@ -466,7 +483,8 @@ public class JSONUtils
 					// good, we now know that it can send changes only
 					try
 					{
-						return ((ISupportsGranularUpdates)type).changesToJSON(writer, key, value, browserConversionMarkers);
+						return ((ISupportsGranularUpdates)type).changesToJSON(writer, key, value, browserConversionMarkers, new DataConverterContext(valueType,
+							webObject));
 					}
 					catch (Exception ex)
 					{
@@ -477,7 +495,7 @@ public class JSONUtils
 			}
 
 			// for most values that don't support granular updates use full value to JSON
-			super.toJSONValue(writer, key, value, valueType, browserConversionMarkers);
+			super.toJSONValue(writer, key, value, valueType, browserConversionMarkers, webObject);
 
 			return writer;
 		}
@@ -490,12 +508,80 @@ public class JSONUtils
 	public static class EmbeddableJSONWriter extends JSONStringer implements JSONString
 	{
 
+		public EmbeddableJSONWriter()
+		{
+			this(false);
+		}
+
+		/**
+		 * @param hackForValueOnly if you really need to write directly a value (not array or object) initially, this should be true. It simulates
+		 * an open object initially without writing anything to the underlying StringBuffer.
+		 */
+		public EmbeddableJSONWriter(boolean hackForValueOnly)
+		{
+			super();
+			if (hackForValueOnly) this.mode = 'o'; // simulate being in an object already without anything written to char buffer
+		}
+
+		/**
+		 * If 'hackForValueOnly' is used this method should be called only once!
+		 */
 		@Override
 		public String toJSONString()
 		{
-			return toString();
+			return writer.toString();
 		}
 
+	}
+
+	/**
+	 * Interface for easy grouping of typed content to be written to JSON.
+	 * @author acostescu
+	 */
+	public static interface IJSONStringWithConversions extends JSONString
+	{
+
+		DataConversion getDataConversions();
+
+	}
+
+	/**
+	 * Class for easy grouping of typed content to be written to JSON.
+	 * @author acostescu
+	 */
+	public static class JSONStringWithConversions implements IJSONStringWithConversions
+	{
+
+		protected final String jsonString;
+		protected final DataConversion dataConversions;
+
+		public JSONStringWithConversions(String jsonString, DataConversion dataConversions)
+		{
+			this.jsonString = jsonString;
+			this.dataConversions = dataConversions;
+		}
+
+		@Override
+		public String toJSONString()
+		{
+			return jsonString;
+		}
+
+		@Override
+		public DataConversion getDataConversions()
+		{
+			return dataConversions;
+		}
+	}
+
+	// TODO this can be moved to JSONUtils if we remove the "Pair" dependency
+	public static IJSONStringWithConversions writeToJSONString(IToJSONWriter toJSONWriter, IToJSONConverter converter) throws JSONException
+	{
+		EmbeddableJSONWriter rowData = new EmbeddableJSONWriter();
+		DataConversion clientConversionInfo = new DataConversion();
+
+		toJSONWriter.writeJSONContent(rowData, null, converter, clientConversionInfo);
+		return new JSONStringWithConversions(rowData.toJSONString(), clientConversionInfo);
 	}
 
 }

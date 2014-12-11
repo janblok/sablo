@@ -49,7 +49,7 @@ public class TypesTest
 		dim.width = 10;
 
 		JSONStringer writer = new JSONStringer();
-		type.toJSON(writer, null, dim, null);
+		type.toJSON(writer, null, dim, null, null);
 
 		String json = writer.toString();
 
@@ -78,7 +78,7 @@ public class TypesTest
 		point.y = 10;
 
 		JSONStringer writer = new JSONStringer();
-		type.toJSON(writer, null, point, null);
+		type.toJSON(writer, null, point, null, null);
 
 		String json = writer.toString();
 

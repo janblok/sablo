@@ -64,6 +64,7 @@ public class TypesRegistry
 		addType(ValuesPropertyType.INSTANCE);
 		addType(ComponentDefPropertyType.INSTANCE);
 		addType(BytePropertyType.INSTANCE);
+		addType(ScrollbarsPropertyType.INSTANCE);
 
 		addTypeFactory(CustomJSONArrayType.TYPE_NAME, new CustomJSONArrayTypeFactory());
 		addTypeFactory(CustomJSONObjectType.TYPE_NAME, new CustomJSONObjectTypeFactory());
@@ -144,14 +145,14 @@ public class TypesRegistry
 		IPropertyType< ? > previous = types.put(type.getName(), type);
 		if (previous != null)
 		{
-			log.info("there was already a type for typename " + type.getName() + ": " + previous + " replaced by: " + type);
+			log.trace("there was already a type for typename " + type.getName() + ": " + previous + " replaced by: " + type);
 		}
 		if (type instanceof IClassPropertyType)
 		{
 			previous = typesByClass.put(((IClassPropertyType< ? >)type).getTypeClass(), (IClassPropertyType< ? >)type);
 			if (previous != null)
 			{
-				log.info("there was already a type for type class " + ((IClassPropertyType< ? >)type).getTypeClass() + ": " + previous + " replaced by: " +
+				log.trace("there was already a type for type class " + ((IClassPropertyType< ? >)type).getTypeClass() + ": " + previous + " replaced by: " +
 					type);
 			}
 		}
@@ -162,7 +163,7 @@ public class TypesRegistry
 		IPropertyTypeFactory< ? , ? > previous = typeFactories.put(typeName, factory);
 		if (previous != null)
 		{
-			log.info("there was already a type factory for typename " + typeName + ": " + previous + " replaced by: " + factory);
+			log.trace("there was already a type factory for typename " + typeName + ": " + previous + " replaced by: " + factory);
 		}
 	}
 

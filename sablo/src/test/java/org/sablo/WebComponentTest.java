@@ -100,7 +100,7 @@ public class WebComponentTest
 
 		assertTrue(component.setProperty("size", new Dimension(10, 10)));
 
-		Map<String, Object> properties = component.getRawProperties();
+		Map<String, Object> properties = component.getRawPropertiesWithoutDefaults();
 		assertNotNull(properties.get("size"));
 
 		assertEquals(new Dimension(10, 10), properties.get("size"));
@@ -109,11 +109,11 @@ public class WebComponentTest
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 
-		String msg = JSONUtils.writeDataWithConversions(data, null);
+		String msg = JSONUtils.writeDataWithConversions(data, null, null);
 		assertEquals("{\"msg\":{\"name\":\"test\",\"size\":{\"width\":10,\"height\":10}}}", msg);
 
 		component.putBrowserProperty("size", new JSONObject("{\"width\":20,\"height\":20}"));
-		properties = component.getRawProperties();
+		properties = component.getRawPropertiesWithoutDefaults();
 		assertNotNull(properties.get("size"));
 
 		assertEquals(new Dimension(20, 20), properties.get("size"));
@@ -132,7 +132,7 @@ public class WebComponentTest
 
 		assertTrue(component.setProperty("background", Color.black));
 
-		Map<String, Object> properties = component.getRawProperties();
+		Map<String, Object> properties = component.getRawPropertiesWithoutDefaults();
 		assertNotNull(properties.get("background"));
 
 		assertEquals(Color.black, properties.get("background"));
@@ -141,11 +141,11 @@ public class WebComponentTest
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 
-		String msg = JSONUtils.writeChangesWithConversions(data, null);
+		String msg = JSONUtils.writeChangesWithConversions(data, null, null);
 		assertEquals("{\"msg\":{\"background\":\"#000000\",\"name\":\"test\"}}", msg);
 
 		component.putBrowserProperty("background", "#ff0000");
-		properties = component.getRawProperties();
+		properties = component.getRawPropertiesWithoutDefaults();
 		assertNotNull(properties.get("background"));
 
 		assertEquals(Color.red, properties.get("background"));
@@ -164,7 +164,7 @@ public class WebComponentTest
 
 		assertTrue(component.setProperty("font", new Font("SansSerif", Font.BOLD, 12)));
 
-		Map<String, Object> properties = component.getRawProperties();
+		Map<String, Object> properties = component.getRawPropertiesWithoutDefaults();
 		assertNotNull(properties.get("font"));
 
 		assertEquals(new Font("SansSerif", Font.BOLD, 12), properties.get("font"));
@@ -173,11 +173,11 @@ public class WebComponentTest
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 
-		String msg = JSONUtils.writeDataWithConversions(data, null);
+		String msg = JSONUtils.writeDataWithConversions(data, null, null);
 		assertEquals("{\"msg\":{\"font\":{\"fontWeight\":\"bold\",\"fontSize\":\"12px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"},\"name\":\"test\"}}", msg);
 
 		component.putBrowserProperty("font", new JSONObject("{\"italic\":\"italic\",\"fontSize\":\"10px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"}"));
-		properties = component.getRawProperties();
+		properties = component.getRawPropertiesWithoutDefaults();
 		assertNotNull(properties.get("font"));
 
 		Font font = (Font)component.getProperty("font");
@@ -200,7 +200,7 @@ public class WebComponentTest
 
 		assertTrue(component.setProperty("location", new Point(10, 10)));
 
-		Map<String, Object> properties = component.getRawProperties();
+		Map<String, Object> properties = component.getRawPropertiesWithoutDefaults();
 		assertNotNull(properties.get("location"));
 
 		assertEquals(new Point(10, 10), properties.get("location"));
@@ -209,11 +209,11 @@ public class WebComponentTest
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 
-		String msg = JSONUtils.writeDataWithConversions(data, null);
+		String msg = JSONUtils.writeDataWithConversions(data, null, null);
 		assertEquals("{\"msg\":{\"location\":{\"x\":10,\"y\":10},\"name\":\"test\"}}", msg);
 
 		component.putBrowserProperty("location", new JSONObject("{\"x\":20,\"y\":20}"));
-		properties = component.getRawProperties();
+		properties = component.getRawPropertiesWithoutDefaults();
 		assertNotNull(properties.get("location"));
 
 		assertEquals(new Point(20, 20), properties.get("location"));
@@ -235,7 +235,7 @@ public class WebComponentTest
 
 		assertTrue(component.setProperty("atype", customType));
 
-		Map<String, Object> properties = component.getRawProperties();
+		Map<String, Object> properties = component.getRawPropertiesWithoutDefaults();
 		assertNotNull(properties.get("atype"));
 
 		assertEquals(customType, properties.get("atype"));
@@ -244,12 +244,12 @@ public class WebComponentTest
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 
-		String msg = JSONUtils.writeDataWithConversions(data, null);
+		String msg = JSONUtils.writeDataWithConversions(data, null, null);
 		assertEquals("{\"msg\":{\"atype\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"},\"name\":\"test\"}}", msg);
 
 		component.putBrowserProperty("atype", new JSONObject(
 			"{\"vEr\":1,\"v\":{\"name\":\"myname\",\"active\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}}"));
-		properties = component.getRawProperties();
+		properties = component.getRawPropertiesWithoutDefaults();
 		assertNotNull(properties.get("atype"));
 		assertSame(properties.get("atype"), component.getProperty("atype"));
 
@@ -262,7 +262,7 @@ public class WebComponentTest
 		// for now we dont allow it..
 		component.putBrowserProperty("atype", new JSONObject(
 			"{\"vEr\":2,\"v\":{\"name\":\"myname\",\"notintype\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}}"));
-		properties = component.getRawProperties();
+		properties = component.getRawPropertiesWithoutDefaults();
 		assertNotNull(properties.get("atype"));
 		assertSame(properties.get("atype"), component.getProperty("atype"));
 
@@ -312,7 +312,7 @@ public class WebComponentTest
 		PropertyDescription messageTypes = AggregatedPropertyType.newAggregatedProperty();
 		messageTypes.putProperty("msg", properties.contentType);
 
-		String msg = JSONUtils.writeDataWithConversions(data, messageTypes);
+		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, null);
 		assertEquals(
 			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"conversions\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"conversions\":{\"msg\":{\"types\":\"JSON_arr\"}}}",
 			msg);

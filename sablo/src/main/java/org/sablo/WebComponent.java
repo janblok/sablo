@@ -48,6 +48,7 @@ public class WebComponent extends BaseWebObject
 	public WebComponent(String name, WebComponentSpecification spec)
 	{
 		super(name, spec);
+		parent.markAsChanged();
 	}
 
 	/**
@@ -58,6 +59,18 @@ public class WebComponent extends BaseWebObject
 	public final Container getParent()
 	{
 		return parent;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see org.sablo.BaseWebObject#flagPropertyAsDirty(java.lang.String)
+	 */
+	@Override
+	public void flagPropertyAsDirty(String key)
+	{
+		super.flagPropertyAsDirty(key);
+		if (parent != null) parent.markAsChanged();
 	}
 
 	/**
@@ -109,7 +122,6 @@ public class WebComponent extends BaseWebObject
 		{
 			parent.remove(this);
 		}
-		dirtyPropertyListener = null;
 	}
 
 	/**

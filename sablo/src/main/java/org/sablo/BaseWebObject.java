@@ -66,7 +66,6 @@ public abstract class BaseWebObject
 	 * the changed properties
 	 */
 	private final Set<String> changedProperties = new HashSet<>(3);
-	protected IDirtyPropertyListener dirtyPropertyListener;
 
 	/**
 	 * the event handlers
@@ -80,14 +79,6 @@ public abstract class BaseWebObject
 		this.name = name;
 		this.specification = specification;
 		if (specification == null) throw new IllegalStateException("Cannot work without specification");
-	}
-
-	/**
-	 * Registers a listener that is interested to know when this component has changes to be sent to browser.
-	 */
-	public void setDirtyPropertyListener(IDirtyPropertyListener listener)
-	{
-		this.dirtyPropertyListener = listener;
 	}
 
 	/**
@@ -410,7 +401,6 @@ public abstract class BaseWebObject
 	public void flagPropertyAsDirty(String key)
 	{
 		changedProperties.add(key);
-		if (dirtyPropertyListener != null) dirtyPropertyListener.propertyFlaggedAsDirty(key);
 		// else this is probably a direct form child and when the request is done the form will ask anyway all components for changes
 	}
 

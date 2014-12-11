@@ -48,7 +48,6 @@ public class WebComponent extends BaseWebObject
 	public WebComponent(String name, WebComponentSpecification spec)
 	{
 		super(name, spec);
-		parent.markAsChanged();
 	}
 
 	/**
@@ -63,7 +62,7 @@ public class WebComponent extends BaseWebObject
 
 	/*
 	 * (non-Javadoc)
-	 *
+	 * 
 	 * @see org.sablo.BaseWebObject#flagPropertyAsDirty(java.lang.String)
 	 */
 	@Override

@@ -25,8 +25,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
@@ -195,9 +197,9 @@ public class WebComponentPackage
 	 * @return
 	 * @throws IOException
 	 */
-	public List<WebComponentSpecification> getLayoutDescriptions() throws IOException
+	public Map<String, WebLayoutSpecification> getLayoutDescriptions() throws IOException
 	{
-		ArrayList<WebComponentSpecification> descriptions = new ArrayList<>();
+		Map<String, WebLayoutSpecification> descriptions = new HashMap<>();
 		Manifest mf = reader.getManifest();
 		for (String specpath : getWebEntrySpecNames(mf, "Web-Layout"))
 		{
@@ -206,18 +208,10 @@ public class WebComponentPackage
 			{
 				try
 				{
-					WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
+					WebLayoutSpecification parsed = WebLayoutSpecification.parseLayoutSpec(specfileContent, reader.getPackageName(), reader);
 					parsed.setSpecURL(reader.getUrlForPath(specpath));
-					if (parsed.getDefinition() != null)
-					{
-						String jsonConfig = reader.readTextFile(parsed.getDefinition(), Charset.forName("UTF8"));
-						if (jsonConfig != null)
-						{
-							parsed = new WebComponentSpecification(parsed.getName(), parsed.getPackageName(), parsed.getDisplayName(),
-								parsed.getCategoryName(), parsed.getIcon(), parsed.getDefinition(), parsed.getLibraries(), jsonConfig);
-						}
-					}
-					descriptions.add(parsed);
+
+					descriptions.put(parsed.getName(), parsed);
 				}
 				catch (Exception e)
 				{
@@ -232,18 +226,9 @@ public class WebComponentPackage
 			{
 				try
 				{
-					WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
+					WebLayoutSpecification parsed = WebLayoutSpecification.parseLayoutSpec(specfileContent, reader.getPackageName(), reader);
 					parsed.setSpecURL(reader.getUrlForPath(specpath));
-					if (parsed.getDefinition() != null)
-					{
-						String jsonConfig = reader.readTextFile(parsed.getDefinition(), Charset.forName("UTF8"));
-						if (jsonConfig != null)
-						{
-							parsed = new WebComponentSpecification(parsed.getName(), parsed.getPackageName(), parsed.getDisplayName(),
-								parsed.getCategoryName(), parsed.getIcon(), parsed.getDefinition(), parsed.getLibraries(), jsonConfig);
-						}
-					}
-					descriptions.add(parsed);
+					descriptions.put(parsed.getName(), parsed);
 				}
 				catch (Exception e)
 				{

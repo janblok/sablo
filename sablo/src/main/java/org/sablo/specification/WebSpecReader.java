@@ -40,7 +40,7 @@ class WebSpecReader
 	private static final Logger log = LoggerFactory.getLogger(WebSpecReader.class.getCanonicalName());
 
 	private final Map<String, WebComponentSpecification> cachedDescriptions = new HashMap<>();
-	private final Map<String, List<WebComponentSpecification>> cachedLayoutDescriptions = new TreeMap<>();
+	private final Map<String, Map<String, WebLayoutSpecification>> cachedLayoutDescriptions = new TreeMap<>();
 	private final Map<String, List<String>> packagesToComponentNames = new HashMap<>();
 
 	private final IPackageReader[] packageReaders;
@@ -123,7 +123,7 @@ class WebSpecReader
 			}
 			try
 			{
-				List<WebComponentSpecification> layoutDescriptions = p.getLayoutDescriptions();
+				Map<String, WebLayoutSpecification> layoutDescriptions = p.getLayoutDescriptions();
 				if (layoutDescriptions.size() > 0) cachedLayoutDescriptions.put(p.getPackageName(), layoutDescriptions);
 			}
 			catch (IOException e)
@@ -162,7 +162,7 @@ class WebSpecReader
 	/**
 	 * @return
 	 */
-	public Map<String, List<WebComponentSpecification>> getLayoutSpecifications()
+	public Map<String, Map<String, WebLayoutSpecification>> getLayoutSpecifications()
 	{
 		return Collections.unmodifiableMap(cachedLayoutDescriptions);
 	}

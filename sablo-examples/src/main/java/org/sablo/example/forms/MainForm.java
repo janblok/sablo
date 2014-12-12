@@ -51,7 +51,7 @@ public class MainForm extends Container
 		theCounter.setProperty("n", Integer.valueOf(99));
 
 		add(theButton = new WebComponent("mybutton", "thebutton"));
-		theButton.addEventHandler("pushed", new IEventHandler()
+		theButton.addEventHandler("onClick", new IEventHandler()
 		{
 			@Override
 			public Object executeEvent(Object[] args)
@@ -63,23 +63,25 @@ public class MainForm extends Container
 				// call a function on an element
 				theCounter.invokeApi("increment", new Object[] { 2 });
 				
-				theButton.setProperty("itsenabled", Boolean.FALSE);
+//				theButton.setProperty("itsenabled", Boolean.FALSE);
+				theTextField.setProperty("readOnly", Boolean.TRUE);
 
 				return null;
 			}
 		});
 		
-		theButton.addEventHandler("pushed2", new IEventHandler()
+		theButton.addEventHandler("onClick2", new IEventHandler()
 		{
 			@Override
 			public Object executeEvent(Object[] args)
 			{
 				System.err.println("I was pushed2!");
+				theButton.setProperty("itsenabled2", Boolean.FALSE);
 				return null;
 			}
 		});
 		
-		theButton.addEventHandler("pushed3", new IEventHandler()
+		theButton.addEventHandler("onClick3", new IEventHandler()
 		{
 			@Override
 			public Object executeEvent(Object[] args)

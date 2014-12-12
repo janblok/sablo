@@ -106,7 +106,7 @@ public abstract class Container extends WebComponent
 		boolean contentHasBeenWritten = false;
 		for (WebComponent wc : allComponents)
 		{
-			TypedData<Map<String, Object>> changes = wc.getChanges();
+			TypedData<Map<String, Object>> changes = wc.getAndClearChanges();
 			if (changes.content.size() > 0)
 			{
 				if (!contentHasBeenWritten)
@@ -140,6 +140,7 @@ public abstract class Container extends WebComponent
 		boolean contentHasBeenWritten = false;
 		for (WebComponent wc : allComponents)
 		{
+			// RAGTEST visible check
 			TypedData<Map<String, Object>> changes = wc.getProperties();
 			wc.clearChanges();
 			String childName = (wc == this ? "" : wc.getName());

@@ -95,25 +95,16 @@ public class WebComponent extends BaseWebObject
 		return null;
 	}
 
-	/**
-	 * @return
-	 */
-	public boolean isVisible()
+	@Override
+	protected void checkProtection(String eventType)
 	{
-		// RAGTEST
-		Boolean v = (Boolean)properties.get("visible");
-		return v == null || v.booleanValue();
-	}
+		super.checkProtection(eventType);
 
-	/**
-	 * Register as visible
-	 *
-	 * @return
-	 */
-	public void setVisible(boolean v)
-	{
-		// RAGTEST
-		properties.put("visible", v);
+		// Check if container is not protected or invisible
+		if (parent != null)
+		{
+			parent.checkProtection(null);
+		}
 	}
 
 	@Override

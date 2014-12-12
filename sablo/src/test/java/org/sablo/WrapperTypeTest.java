@@ -73,6 +73,12 @@ public class WrapperTypeTest
 		}
 
 		@Override
+		public boolean isProtecting()
+		{
+			return false;
+		}
+
+		@Override
 		public String unwrap(MyWrapper value)
 		{
 			return value.string;

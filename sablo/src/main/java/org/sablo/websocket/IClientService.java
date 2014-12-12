@@ -85,7 +85,7 @@ public interface IClientService
 	 *
 	 * @return map of property->value & the type information for those values to be converted to JSON.
 	 */
-	public TypedData<Map<String, Object>> getChanges();
+	public TypedData<Map<String, Object>> getAndClearChanges();
 
 	/**
 	 * get the name of this service.

@@ -51,4 +51,10 @@ public interface IPropertyType<T>
 
 	public T defaultValue();
 
+	/**
+	 * RAGTEST doc: have to be boolean types
+	 * @return
+	 */
+	boolean isProtecting();
+
 }

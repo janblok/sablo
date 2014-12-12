@@ -5,7 +5,7 @@ angular.module('sampleApp').controller("mainForm", function($scope, $window, $sa
 	var formName = 'mainForm';
 	
     var beans = {
-			thelabel: 	 { text : 'Initial value' },
+			thelabel: 	 { text : 'Initial value', p:false },
 			thebutton: 	 { text: 'push me'  },
 			thetextfield: 	 { value : 'should be replaced with server data' },
 			thecounter: 	 { n: 3 }
@@ -18,11 +18,14 @@ angular.module('sampleApp').controller("mainForm", function($scope, $window, $sa
 		};
 	}
 	
-	// TODO: to sablo_app
+	// TODO: to sablo_app, generate from spec file based on componentts in form
 	$scope.handlers = {
-			thebutton: {callEvent:getExecutor('thebutton')}
+			thebutton: {
+				onClick: function (event) { getExecutor('thebutton')('onClick', [event]); },
+				onClick2: function (event) { getExecutor('thebutton')('onClick2', [event]); },
+				onClick3: function (event) { getExecutor('thebutton')('onClick3', [event]); }
+			}
 	};
-	
 
 	var formProperties = {"designSize":{"width":640,"height":480},"size":{"width":640,"height":480}};
 	

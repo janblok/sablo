@@ -16,31 +16,43 @@
 package org.sablo.specification.property.types;
 
 import org.json.JSONObject;
-import org.sablo.specification.property.IPropertyType;
+
 
 /**
- * @author jcompagner
+ * @author rgansevles
  *
  */
-public abstract class DefaultPropertyType<T> implements IPropertyType<T>
+public class ProtectedPropertyType extends DefaultPropertyType<Boolean>
 {
 
-	@Override
-	public Object parseConfig(JSONObject config)
+	public static final ProtectedPropertyType INSTANCE = new ProtectedPropertyType();
+	public static final String TYPE_NAME = "protected";
+
+	private ProtectedPropertyType()
 	{
-		return null; // RAGTEST check waar dit gebruikt wordt :: config;
 	}
 
 	@Override
-	public T defaultValue()
+	public String getName()
 	{
-		return null;
+		return TYPE_NAME;
+	}
+
+	@Override
+	public Boolean defaultValue()
+	{
+		return Boolean.FALSE;
+	}
+
+	@Override
+	public ProtectedConfig parseConfig(JSONObject json)
+	{
+		return ProtectedConfig.parse(json, true);
 	}
 
 	@Override
 	public boolean isProtecting()
 	{
-		return false;
+		return true;
 	}
-
 }

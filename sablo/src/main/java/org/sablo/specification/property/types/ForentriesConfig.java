@@ -25,18 +25,19 @@ import org.json.JSONObject;
 
 /**
  * RAGTEST doc
+ * 
+ * TODO: validate if for-entries refer to existing properties
+ * 
  * @author rgansevles
  *
  */
 public class ForentriesConfig
 {
+	public static final ForentriesConfig DEFAULT = null;
 
 	private final Collection<String> entries;
 
-	/**
-	 * @param array
-	 */
-	public ForentriesConfig(Collection<String> entries)
+	private ForentriesConfig(Collection<String> entries)
 	{
 		this.entries = entries;
 	}
@@ -57,19 +58,23 @@ public class ForentriesConfig
 	{
 		if (json == null)
 		{
-			return null;
+			return DEFAULT;
 		}
 
 		String forString = json.optString("for", null);
 		if (forString == null)
 		{
-			return null;
+			return DEFAULT;
 		}
 
 		List<String> entries = new ArrayList<>();
 		for (String f : forString.split(","))
 		{
-			entries.add(f.trim());
+			String trimmed = f.trim();
+			if (trimmed.length() > 0)
+			{
+				entries.add(trimmed);
+			}
 		}
 
 		return new ForentriesConfig(entries);

@@ -4,6 +4,7 @@
 	"definition": "mycomp/mytextfield/mytextfield.js",
 	"model":
 	{
-		 "value" : "string"
+		 "value" : "string",
+		 "readOnly": "protected"
 	}
 }

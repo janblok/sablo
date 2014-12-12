@@ -18,6 +18,7 @@ package org.sablo.specification.property;
 
 import org.json.JSONObject;
 import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.property.types.DefaultPropertyType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +26,7 @@ import org.slf4j.LoggerFactory;
  * Property types that are defined in JSON spec files.
  * @author acostescu
  */
-public abstract class CustomJSONPropertyType<T> implements ICustomType<T>
+public abstract class CustomJSONPropertyType<T> extends DefaultPropertyType<T> implements ICustomType<T>
 {
 
 	protected static final Logger log = LoggerFactory.getLogger(IPropertyType.class.getCanonicalName());
@@ -74,12 +75,6 @@ public abstract class CustomJSONPropertyType<T> implements ICustomType<T>
 	public Object parseConfig(JSONObject config)
 	{
 		return config;
-	}
-
-	@Override
-	public T defaultValue()
-	{
-		return null;
 	}
 
 }

@@ -5,9 +5,8 @@
 	"model":
 	{
 		 "text" : "string",
-         "itsenabled": "enable",
-         "itsenabled2": { "type": "enable", "for": "onClick, onClick3" },
-         "txtro": { "type": "readonly", "for": "text" },
+         "itsenabled": "visible",
+         "itsenabled2": { "type": "protected", "blockingOn": false, "default": true, "for": "onClick, onClick3" },
          "bla1": "int",
          "bla2": { "type": "int", "default": 5 }
 	},

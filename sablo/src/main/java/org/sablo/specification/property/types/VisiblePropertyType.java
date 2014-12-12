@@ -22,13 +22,13 @@ import org.json.JSONObject;
  * @author rgansevles
  *
  */
-public class EnablePropertyType extends DefaultPropertyType<Boolean>
+public class VisiblePropertyType extends DefaultPropertyType<Boolean>
 {
 
-	public static final EnablePropertyType INSTANCE = new EnablePropertyType();
-	public static final String TYPE_NAME = "enable";
+	public static final VisiblePropertyType INSTANCE = new VisiblePropertyType();
+	public static final String TYPE_NAME = "visible";
 
-	private EnablePropertyType()
+	private VisiblePropertyType()
 	{
 	}
 
@@ -45,9 +45,19 @@ public class EnablePropertyType extends DefaultPropertyType<Boolean>
 	}
 
 	@Override
-	public ForentriesConfig parseConfig(JSONObject json)
+	public ProtectedConfig parseConfig(JSONObject json)
 	{
-		return ForentriesConfig.parse(json);
+		if (json == null)
+		{
+			return ProtectedConfig.DEFAULTBLOCKING_FALSE;
+		}
+
+		return new ProtectedConfig(ForentriesConfig.parse(json), false);
 	}
 
+	@Override
+	public boolean isProtecting()
+	{
+		return true;
+	}
 }

@@ -15,6 +15,7 @@
  */
 package org.sablo;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,7 +36,8 @@ import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.ISmartPropertyValue;
 import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.types.AggregatedPropertyType;
-import org.sablo.specification.property.types.EnablePropertyType;
+import org.sablo.specification.property.types.ProtectedConfig;
+import org.sablo.specification.property.types.VisiblePropertyType;
 import org.sablo.websocket.TypedData;
 import org.sablo.websocket.utils.JSONUtils;
 import org.slf4j.Logger;
@@ -107,13 +109,15 @@ public abstract class BaseWebObject
 	 * @param args
 	 * @return
 	 */
-	public Object executeEvent(String eventType, Object[] args)
+	public final Object executeEvent(String eventType, Object[] args)
 	{
-		if (!isEnabled(eventType))
-		{
-			throw new IllegalComponentAccessException("Disabled", getName(), eventType);
-		}
+		checkProtection(eventType);
 
+		return doExecuteEvent(eventType, args);
+	}
+
+	protected Object doExecuteEvent(String eventType, Object[] args)
+	{
 		IEventHandler handler = getEventHandler(eventType);
 		if (handler == null)
 		{
@@ -123,22 +127,123 @@ public abstract class BaseWebObject
 		return handler.executeEvent(args);
 	}
 
+	public final boolean isVisible()
+	{
+		return isVisible(null);
+	}
+
 	/**
 	 * RAGTEST doc
 	 * @param eventType
 	 * @return
 	 */
-	protected boolean isEnabled(String eventType)
+	public final boolean isVisible(String eventType)
 	{
-		// RAGTEST met for.....
-		for (PropertyDescription prop : specification.getProperties(EnablePropertyType.INSTANCE))
+		for (PropertyDescription prop : specification.getProperties(VisiblePropertyType.INSTANCE))
 		{
-			if (!Boolean.TRUE.equals(getProperty(prop.getName())))
+			if (Boolean.FALSE.equals(getProperty(prop.getName())))
 			{
+				Object config = prop.getConfig();
+				if (config instanceof ProtectedConfig && ((ProtectedConfig)config).getForEntries() != null)
+				{
+					Collection<String> forEntries = (((ProtectedConfig)config).getForEntries()).getEntries();
+					if (forEntries != null && forEntries.size() > 0 && (eventType == null || !forEntries.contains(eventType)))
+					{
+						// specific enable-property, not for this eventType
+						continue;
+					}
+				}
+
+				// general protected property or specific for this eventType
 				return false;
 			}
 		}
+
 		return true;
+	}
+
+	public final void setVisible(boolean visible)
+	{
+		boolean set = false;
+		for (PropertyDescription prop : specification.getProperties(VisiblePropertyType.INSTANCE))
+		{
+			Object config = prop.getConfig();
+			if (config instanceof ProtectedConfig && ((ProtectedConfig)config).getForEntries() != null)
+			{
+				Collection<String> forEntries = (((ProtectedConfig)config).getForEntries()).getEntries();
+				if (forEntries != null && forEntries.size() > 0)
+				{
+					// specific enable-property, skip
+					continue;
+				}
+			}
+
+			setProperty(prop.getName(), Boolean.valueOf(visible));
+			set = true;
+		}
+
+		if (!set)
+		{
+			log.warn("Could not set component '" + getName() + "' visibility to " + visible + ", no visibility property found");
+		}
+	}
+
+	/**
+	 * RAGTEST doc
+	 * @param eventType
+	 * @return
+	 */
+	protected void checkProtection(String eventType)
+	{
+		for (PropertyDescription prop : specification.getProperties().values())
+		{
+			if (prop.getType().isProtecting())
+			{
+				Object config = prop.getConfig();
+
+				// visible default true, so block on false by default
+				// protected default false, so block on true by default
+				boolean blockingOn = Boolean.FALSE.equals(prop.getType().defaultValue());
+				if (config instanceof ProtectedConfig)
+				{
+					blockingOn = ((ProtectedConfig)config).getBlockingOn();
+				}
+
+				if (Boolean.valueOf(blockingOn).equals(getProperty(prop.getName())))
+				{
+					if (config instanceof ProtectedConfig && ((ProtectedConfig)config).getForEntries() != null)
+					{
+						Collection<String> forEntries = (((ProtectedConfig)config).getForEntries()).getEntries();
+						if (forEntries != null && forEntries.size() > 0 && (eventType == null || !forEntries.contains(eventType)))
+						{
+							// specific enable-property, not for this eventType
+							continue;
+						}
+					}
+
+					// general protected property or specific for this eventType
+					throw new IllegalComponentAccessException(prop.getType().getName(), getName(), eventType);
+				}
+			}
+		}
+
+		// ok
+	}
+
+	/**
+	 * RAGTEST doc
+	 * @param eventType
+	 * @return
+	 */
+	protected void checkForProtectedProperty(String propName)
+	{
+		PropertyDescription property = specification.getProperty(propName);
+		if (property != null && property.getType().isProtecting())
+		{
+			throw new IllegalComponentAccessException("protecting", getName(), propName);
+		}
+
+		// ok
 	}
 
 	/**
@@ -174,7 +279,7 @@ public abstract class BaseWebObject
 		return !changedProperties.isEmpty();
 	}
 
-	public TypedData<Map<String, Object>> getChanges()
+	public TypedData<Map<String, Object>> getAndClearChanges()
 	{
 		if (changedProperties.size() > 0)
 		{
@@ -374,15 +479,26 @@ public abstract class BaseWebObject
 	 * @param propertyValue
 	 *            can be a JSONObject or array or primitive.
 	 */
-	public void putBrowserProperty(String propertyName, Object propertyValue) throws JSONException
+	public final void putBrowserProperty(String propertyName, Object propertyValue) throws JSONException
+	{
+		checkProtection(propertyName);
+
+		checkForProtectedProperty(propertyName);
+
+		doPutBrowserProperty(propertyName, propertyValue);
+	}
+
+	protected void doPutBrowserProperty(String propertyName, Object propertyValue) throws JSONException
 	{
 		Object oldWrappedValue = getRawPropertyValue(propertyName);
 		Object newWrappedValue = convertValueFromJSON(propertyName, oldWrappedValue, propertyValue);
 		properties.put(propertyName, newWrappedValue);
 
 		// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
-		if (oldWrappedValue != newWrappedValue) onPropertyChange(propertyName, unwrapValue(propertyName, oldWrappedValue),
-			unwrapValue(propertyName, newWrappedValue));
+		if (oldWrappedValue != newWrappedValue)
+		{
+			onPropertyChange(propertyName, unwrapValue(propertyName, oldWrappedValue), unwrapValue(propertyName, newWrappedValue));
+		}
 	}
 
 	/**
@@ -503,6 +619,7 @@ public abstract class BaseWebObject
 
 	public void addEventHandler(String event, IEventHandler handler)
 	{
+		// RAGTEST check in spec op handler
 		eventHandlers.put(event, handler);
 	}
 

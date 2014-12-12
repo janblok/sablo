@@ -64,24 +64,14 @@ public abstract class Container extends WebComponent
 		if (old != null)
 		{ // should never happen I think
 			old.parent = null;
-			old.setDirtyPropertyListener(null);
 		}
 		component.parent = this;
-		component.setDirtyPropertyListener(new IDirtyPropertyListener()
-		{
-			@Override
-			public void propertyFlaggedAsDirty(String propertyName)
-			{
-				markAsChanged();
-			}
-		});
 	}
 
 	public void remove(WebComponent component)
 	{
 		components.remove(component.getName());
 		component.parent = null;
-		component.setDirtyPropertyListener(null);
 	}
 
 	public WebComponent getComponent(String name)

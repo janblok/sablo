@@ -61,6 +61,18 @@ public class WebComponent extends BaseWebObject
 		return parent;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.sablo.BaseWebObject#flagPropertyAsDirty(java.lang.String)
+	 */
+	@Override
+	public void flagPropertyAsDirty(String key)
+	{
+		super.flagPropertyAsDirty(key);
+		if (parent != null) parent.markAsChanged();
+	}
+
 	/**
 	 * Finds the first container parent of this component of the given class.
 	 *
@@ -112,7 +124,6 @@ public class WebComponent extends BaseWebObject
 		{
 			parent.remove(this);
 		}
-		dirtyPropertyListener = null;
 	}
 
 	/**

@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.dltk.javascript.ast.Comment;
 import org.json.JSONObject;
 
 /**
@@ -32,6 +33,7 @@ public class WebComponentApiDefinition
 	private final List<PropertyDescription> parameters = new ArrayList<>();
 	private PropertyDescription returnType;
 	private JSONObject customConfigOptions;
+	private Comment documentation;
 
 	public WebComponentApiDefinition(String name)
 	{
@@ -77,5 +79,18 @@ public class WebComponentApiDefinition
 	public String toString()
 	{
 		return "WebComponentApiDefinition[name:" + name + ",returnType:" + returnType + ", parameters:" + parameters + "]";
+	}
+
+	/**
+	 * @param documentation
+	 */
+	public void setDoc(Comment documentation)
+	{
+		this.documentation = documentation;
+	}
+
+	public Comment getDoc()
+	{
+		return documentation;
 	}
 }

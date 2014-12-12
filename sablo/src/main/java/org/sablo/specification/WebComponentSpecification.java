@@ -25,6 +25,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.dltk.ast.ASTNode;
+import org.eclipse.dltk.javascript.ast.AbstractNavigationVisitor;
+import org.eclipse.dltk.javascript.ast.BinaryOperation;
+import org.eclipse.dltk.javascript.ast.CallExpression;
+import org.eclipse.dltk.javascript.ast.FunctionStatement;
+import org.eclipse.dltk.javascript.ast.ObjectInitializer;
+import org.eclipse.dltk.javascript.ast.PropertyExpression;
+import org.eclipse.dltk.javascript.ast.PropertyInitializer;
+import org.eclipse.dltk.javascript.ast.ReturnStatement;
+import org.eclipse.dltk.javascript.ast.Script;
+import org.eclipse.dltk.javascript.parser.JavaScriptParser;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -443,4 +454,60 @@ public class WebComponentSpecification extends PropertyDescription
 		specURL = url;
 	}
 
+	/**
+	 * Extract the docs for angular client side apis.
+	 * @param readTextFile
+	 */
+	public void parseApi(String source)
+	{
+		if (source != null)
+		{
+			JavaScriptParser parser = new JavaScriptParser();
+			Script script = parser.parse(source, null);
+			script.visitAll(new AbstractNavigationVisitor<ASTNode>()
+			{
+				@Override
+				public ASTNode visitBinaryOperation(BinaryOperation node)
+				{
+					if (node.getOperationText().trim().equals("=") && node.getLeftExpression() instanceof PropertyExpression &&
+						((PropertyExpression)node.getLeftExpression()).toString().startsWith("$scope.api"))
+					{
+						WebComponentApiDefinition api = apis.get(((PropertyExpression)node.getLeftExpression()).getProperty().toString());
+						if (api != null)
+						{
+							api.setDoc(node.getDocumentation());
+						}
+					}
+					return super.visitBinaryOperation(node);
+				}
+
+
+				/*
+				 * (non-Javadoc)
+				 * 
+				 * @see org.eclipse.dltk.javascript.ast.AbstractNavigationVisitor#visitObjectInitializer(org.eclipse.dltk.javascript.ast.ObjectInitializer)
+				 */
+				@Override
+				public ASTNode visitObjectInitializer(ObjectInitializer node)
+				{
+					ReturnStatement ret = node.getAncestor(ReturnStatement.class);
+					CallExpression call = null;
+					if (ret != null && (call = ret.getAncestor(CallExpression.class)) != null && call.getExpression().toString().endsWith(".factory"))
+					{
+						PropertyInitializer[] initializers = node.getPropertyInitializers();
+						for (PropertyInitializer initializer : initializers)
+						{
+							WebComponentApiDefinition api = apis.get(initializer.getNameAsString());
+							if (api != null && initializer.getValue() instanceof FunctionStatement)
+							{
+								api.setDoc(initializer.getName().getDocumentation());
+							}
+						}
+					}
+					return super.visitObjectInitializer(node);
+				}
+
+			});
+		}
+	}
 }

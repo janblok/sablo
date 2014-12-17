@@ -24,7 +24,9 @@ import org.json.JSONObject;
 import org.json.JSONString;
 import org.sablo.Container;
 import org.sablo.WebComponent;
-import org.sablo.websocket.IServerService;
+import org.sablo.eventthread.IEventDispatcher;
+import org.sablo.websocket.IEventDispatchAwareServerService;
+import org.sablo.websocket.IWebsocketEndpoint;
 import org.sablo.websocket.IWebsocketSession;
 import org.sablo.websocket.utils.JSONUtils.EmbeddableJSONWriter;
 import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
@@ -39,9 +41,16 @@ import org.slf4j.LoggerFactory;
  * @author rgansevles
  *
  */
-public class FormServiceHandler implements IServerService
+public class FormServiceHandler implements IEventDispatchAwareServerService
 {
 	public static final Logger log = LoggerFactory.getLogger(FormServiceHandler.class.getCanonicalName());
+
+	/**
+	 * In order not to generate a deadlock between potential sync service call to client (that waits on client for form to get it's initial data
+	 * and occupies the event dispatch thread on the server) and a initial form data request (service call to server) that wants to execute on the
+	 * event dispatch thread, these initial form data requests will have a higher execution level then {@link IWebsocketEndpoint#EVENT_LEVEL_SYNC_API_CALL}.
+	 */
+	public static final int EVENT_LEVEL_INITIAL_FORM_DATA_REQUEST = 1000;
 
 	private final IWebsocketSession websocketSession;
 
@@ -174,5 +183,11 @@ public class FormServiceHandler implements IServerService
 				webComponent.putBrowserProperty(key, changes.get(key));
 			}
 		}
+	}
+
+	@Override
+	public int getMethodEventThreadLevel(String methodName, JSONObject arguments)
+	{
+		return "requestData".equals(methodName) ? EVENT_LEVEL_INITIAL_FORM_DATA_REQUEST : IEventDispatcher.EVENT_LEVEL_DEFAULT;
 	}
 }

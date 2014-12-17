@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 public class EventDispatcher implements Runnable, IEventDispatcher
 {
 	private static final Logger log = LoggerFactory.getLogger(EventDispatcher.class.getCanonicalName());
-	
+
 	private final ConcurrentMap<Object, Event> suspendedEvents = new ConcurrentHashMap<Object, Event>();
 
 	private final List<Event> events = new ArrayList<Event>();
@@ -44,6 +44,8 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 	private volatile boolean exit = false;
 
 	private volatile Thread scriptThread = null;
+
+	private int currentMinEventLevel = EVENT_LEVEL_DEFAULT;
 
 	private final IWebsocketSession session;
 
@@ -57,12 +59,15 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		scriptThread = Thread.currentThread();
 		while (!exit)
 		{
-			dispatch();
+			dispatch(EVENT_LEVEL_DEFAULT);
 		}
 	}
 
-	private void dispatch()
+	private void dispatch(int minEventLevelToDispatch)
 	{
+		currentMinEventLevel = minEventLevelToDispatch;
+
+		int i;
 		try
 		{
 			Event event = null;
@@ -70,11 +75,16 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 			{
 				while (event == null)
 				{
-					if (events.size() > 0)
+					i = 0;
+					while (event == null && i < events.size())
 					{
-						event = events.remove(0);
+						event = events.get(i);
+						if (event.getEventLevel() < minEventLevelToDispatch) event = null;
+						else events.remove(i);
+
+						i++;
 					}
-					else
+					if (event == null)
 					{
 						events.wait();
 					}
@@ -94,7 +104,7 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		}
 		catch (Throwable t)
 		{
-			log.error("Exception in dispatch",t);
+			log.error("Exception in dispatch()", t);
 		}
 	}
 
@@ -104,22 +114,26 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		return scriptThread == Thread.currentThread();
 	}
 
-	/**
-	 * @param event
-	 */
 	@Override
 	public void addEvent(Runnable event)
 	{
-		
-		if (isEventDispatchThread())
+		addEvent(event, IEventDispatcher.EVENT_LEVEL_DEFAULT);
+	}
+
+	@Override
+	public void addEvent(Runnable event, int eventLevel)
+	{
+
+		if (isEventDispatchThread() && currentMinEventLevel <= eventLevel)
 		{
-			createEvent(event).execute();
+			// we can execute it right away
+			createEvent(event, eventLevel).execute();
 		}
 		else
 		{
 			synchronized (events)
 			{
-				events.add(createEvent(event));
+				events.add(createEvent(event, eventLevel));
 				events.notifyAll();
 				// non-blocking
 //				while (!(event.isExecuted() || event.isSuspended() || event.isExecutingInBackground()))
@@ -137,18 +151,18 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		}
 	}
 
-	/**
-	 * @param event
-	 * @return
-	 */
-	protected Event createEvent(Runnable event) {
-		return new Event(session,event);
+	protected Event createEvent(Runnable event, int eventLevel)
+	{
+		return new Event(session, event, eventLevel);
 	}
 
-	/**
-	 * @param object
-	 */
-	public void suspend(Object object)
+	public void suspend(Object suspendID)
+	{
+		suspend(suspendID, EVENT_LEVEL_DEFAULT);
+	}
+
+	@Override
+	public void suspend(Object suspendID, int minEventLevelToDispatch)
 	{
 		// TODO should this one be called in the execute event thread, should an check be done??
 		if (!isEventDispatchThread())
@@ -159,24 +173,36 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		Event event = stack.getLast();
 		if (event != null)
 		{
-			suspendedEvents.put(object, event);
+			suspendedEvents.put(suspendID, event);
 			event.willSuspend();
 			synchronized (events)
 			{
 				events.notifyAll();
 
 			}
-			while (suspendedEvents.containsKey(object) && !exit)
+
+			// if we were already dispatching in a higher currentMinEventLevel, use that one instead of "minEventLevelToDispatch"
+			int dispatchEventLevel = Math.max(minEventLevelToDispatch, currentMinEventLevel);
+
+			int oldMinEventLevel = currentMinEventLevel;
+			try
 			{
-				dispatch();
+				while (suspendedEvents.containsKey(suspendID) && !exit)
+				{
+					dispatch(dispatchEventLevel);
+				}
+			}
+			finally
+			{
+				currentMinEventLevel = oldMinEventLevel;
 			}
 			event.willResume();
 		}
 	}
 
-	public void resume(Object object)
+	public void resume(Object eventKey)
 	{
-		suspendedEvents.remove(object);
+		suspendedEvents.remove(eventKey);
 	}
 
 	private void addEmptyEvent()
@@ -184,7 +210,7 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		synchronized (events)
 		{
 			// add a nop event so that the dispatcher is triggered.
-			events.add(new Event(session, null));
+			events.add(new Event(session, null, EVENT_LEVEL_DEFAULT));
 			events.notifyAll();
 		}
 	}
@@ -194,4 +220,5 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		exit = true;
 		addEmptyEvent();
 	}
+
 }

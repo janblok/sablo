@@ -42,12 +42,14 @@ public class Event
 
 	private final IWebsocketEndpoint currentEndpoint;
 	private final IWebsocketSession session;
+	private final int eventLevel;
 
-
-	public Event(IWebsocketSession session, Runnable runnable)
+	public Event(IWebsocketSession session, Runnable runnable, int eventLevel)
 	{
 		this.session = session;
 		this.runnable = runnable;
+		this.eventLevel = eventLevel;
+
 		if (WebsocketEndpoint.exists())
 		{
 			currentEndpoint = WebsocketEndpoint.get();
@@ -57,6 +59,11 @@ public class Event
 			// this is a runnable added to the event thread from a none request thread
 			currentEndpoint = null;
 		}
+	}
+
+	public int getEventLevel()
+	{
+		return eventLevel;
 	}
 
 	/**

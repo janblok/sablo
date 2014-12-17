@@ -33,6 +33,7 @@ import org.json.JSONObject;
 import org.json.JSONStringer;
 import org.json.JSONWriter;
 import org.sablo.Container;
+import org.sablo.eventthread.IEventDispatcher;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.utils.DataConversion;
@@ -246,13 +247,21 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 			obj = new JSONObject(message);
 			if (obj.has("smsgid"))
 			{
-				// response message
-				synchronized (pendingMessages)
+				wsSession.getEventDispatcher().addEvent(new Runnable()
 				{
-					List<Object> ret = pendingMessages.get(new Integer(obj.getInt("smsgid")));
-					if (ret != null) ret.add(obj.opt("ret"));
-					pendingMessages.notifyAll();
-				}
+
+					@Override
+					public void run()
+					{
+						// response message
+						Integer suspendID = new Integer(obj.optInt("smsgid"));
+						List<Object> ret = pendingMessages.remove(suspendID);
+						if (ret != null) ret.add(obj.opt("ret"));
+
+						wsSession.getEventDispatcher().resume(suspendID);
+					}
+
+				}, IWebsocketEndpoint.EVENT_LEVEL_SYNC_API_CALL);
 				return;
 			}
 
@@ -264,6 +273,11 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 
 				if (service != null)
 				{
+					final String methodName = obj.optString("methodname");
+					final JSONObject arguments = obj.optJSONObject("args");
+					int eventLevel = (service instanceof IEventDispatchAwareServerService)
+						? ((IEventDispatchAwareServerService)service).getMethodEventThreadLevel(methodName, arguments) : IEventDispatcher.EVENT_LEVEL_DEFAULT;
+
 					wsSession.getEventDispatcher().addEvent(new Runnable()
 					{
 
@@ -274,7 +288,7 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 							String error = null;
 							try
 							{
-								result = service.executeMethod(obj.optString("methodname"), obj.optJSONObject("args"));
+								result = service.executeMethod(methodName, arguments);
 							}
 							catch (Exception e)
 							{
@@ -309,7 +323,7 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 								}
 							}
 						}
-					});
+					}, eventLevel);
 				}
 				else
 				{
@@ -495,23 +509,10 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 	protected Object waitResponse(Integer messageId) throws IOException
 	{
 		List<Object> ret = new ArrayList<>(1);
-		synchronized (pendingMessages)
-		{
-			pendingMessages.put(messageId, ret);
-			while (ret.size() == 0) // TODO are fail-safes/timeouts needed here in case client browser gets closed or confused?
-			{
-				try
-				{
-					pendingMessages.wait();
-				}
-				catch (InterruptedException e)
-				{
-					// ignore
-				}
-			}
-			pendingMessages.remove(messageId);
-			return ret.get(0);
-		}
+		pendingMessages.put(messageId, ret);
+		wsSession.getEventDispatcher().suspend(messageId, EVENT_LEVEL_SYNC_API_CALL); // TODO are fail-safes/timeouts needed here in case client browser gets closed or confused?
+
+		return ret.get(0);
 	}
 
 	public boolean hasSession()

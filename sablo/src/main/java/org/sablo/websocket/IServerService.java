@@ -30,4 +30,5 @@ public interface IServerService
 	 * @return
 	 */
 	public Object executeMethod(String methodName, JSONObject args) throws Exception;
+
 }

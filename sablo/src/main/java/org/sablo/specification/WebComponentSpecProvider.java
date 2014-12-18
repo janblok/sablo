@@ -124,7 +124,7 @@ public class WebComponentSpecProvider
 	 *
 	 * @return an array of all the specifications
 	 */
-	public Map<String, List<WebComponentSpecification>> getLayoutSpecifications()
+	public Map<String, Map<String, WebLayoutSpecification>> getLayoutSpecifications()
 	{
 		return reader.getLayoutSpecifications();
 	}

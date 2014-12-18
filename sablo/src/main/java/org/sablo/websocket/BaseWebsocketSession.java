@@ -403,11 +403,6 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		return null;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see org.sablo.websocket.IWebsocketSession#handleMessage(org.json.JSONObject)
-	 */
 	@Override
 	public void handleMessage(JSONObject obj)
 	{

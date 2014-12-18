@@ -57,11 +57,13 @@ public class WebComponentSpecification extends PropertyDescription
 	private final String icon;
 	private final String packageName;
 
-	private Map<String, IPropertyType< ? >> foundTypes;
+	private final Map<String, IPropertyType< ? >> foundTypes;
 
 	private URL serverScript;
 
 	private URL specURL;
+
+	private URL definitionURL;
 
 	public WebComponentSpecification(String name, String packageName, String displayName, String categoryName, String icon, String definition, JSONArray libs)
 	{
@@ -72,6 +74,7 @@ public class WebComponentSpecification extends PropertyDescription
 		this.icon = icon;
 		this.definition = definition;
 		this.libraries = libs != null ? libs : new JSONArray();
+		this.foundTypes = new HashMap<>();
 	}
 
 	public WebComponentSpecification(String name, String packageName, String displayName, String categoryName, String icon, String definition, JSONArray libs,
@@ -84,6 +87,7 @@ public class WebComponentSpecification extends PropertyDescription
 		this.icon = icon;
 		this.definition = definition;
 		this.libraries = libs != null ? libs : new JSONArray();
+		this.foundTypes = new HashMap<>();
 	}
 
 
@@ -297,7 +301,6 @@ public class WebComponentSpecification extends PropertyDescription
 	void parseTypes(JSONObject json) throws JSONException
 	{
 		String specName = json.optString("name", null);
-		foundTypes = new HashMap<>();
 		if (json.has("types"))
 		{
 			JSONObject jsonObject = json.getJSONObject("types");
@@ -337,7 +340,7 @@ public class WebComponentSpecification extends PropertyDescription
 		}
 	}
 
-	private Collection<PropertyDescription> parseProperties(String propKey, JSONObject json) throws JSONException
+	protected Collection<PropertyDescription> parseProperties(String propKey, JSONObject json) throws JSONException
 	{
 		Map<String, PropertyDescription> pds = new HashMap<>();
 		if (json.has(propKey))
@@ -449,5 +452,18 @@ public class WebComponentSpecification extends PropertyDescription
 	public void setSpecURL(URL url)
 	{
 		specURL = url;
+	}
+
+	/**
+	 * @param url
+	 */
+	public void setDefinitionFileURL(URL url)
+	{
+		definitionURL = url;
+	}
+
+	public URL getDefinitionURL()
+	{
+		return definitionURL;
 	}
 }

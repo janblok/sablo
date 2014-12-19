@@ -110,6 +110,12 @@ public class WrapperTypeTest
 			return writer;
 		}
 
+		@Override
+		public boolean isProtecting()
+		{
+			return false;
+		}
+
 	}
 
 	public class MyWrapper

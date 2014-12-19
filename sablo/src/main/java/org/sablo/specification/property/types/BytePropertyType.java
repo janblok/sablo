@@ -39,6 +39,6 @@ public class BytePropertyType extends DefaultPropertyType<Byte>
 	@Override
 	public Byte defaultValue()
 	{
-		return null;
+		return Byte.valueOf((byte)0);
 	}
 }

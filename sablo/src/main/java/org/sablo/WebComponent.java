@@ -16,6 +16,7 @@
 
 package org.sablo;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -60,16 +61,12 @@ public class WebComponent extends BaseWebObject
 		return parent;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.sablo.BaseWebObject#flagPropertyAsDirty(java.lang.String)
-	 */
 	@Override
-	public void flagPropertyAsDirty(String key)
+	public boolean flagPropertyAsDirty(String key, boolean dirty)
 	{
-		super.flagPropertyAsDirty(key);
-		if (parent != null) parent.markAsChanged();
+		boolean modified = super.flagPropertyAsDirty(key, dirty);
+		if (dirty && modified && parent != null) parent.markAsChanged();
+		return modified;
 	}
 
 	/**
@@ -94,23 +91,16 @@ public class WebComponent extends BaseWebObject
 		return null;
 	}
 
-	/**
-	 * @return
-	 */
-	public boolean isVisible()
+	@Override
+	protected void checkProtection(String eventType)
 	{
-		Boolean v = (Boolean)properties.get("visible");
-		return v == null || v.booleanValue();
-	}
+		super.checkProtection(eventType);
 
-	/**
-	 * Register as visible
-	 *
-	 * @return
-	 */
-	public void setVisible(boolean v)
-	{
-		properties.put("visible", v);
+		// Check if container is not protected or invisible
+		if (parent != null)
+		{
+			parent.checkProtection(null);
+		}
 	}
 
 	@Override
@@ -160,7 +150,7 @@ public class WebComponent extends BaseWebObject
 	{
 		PropertyDescription parameterTypes = null;
 		final List<PropertyDescription> types = apiFunc.getParameters();
-		if (types != null && types.size() > 0)
+		if (types.size() > 0)
 		{
 			parameterTypes = new PropertyDescription("", AggregatedPropertyType.INSTANCE)
 			{
@@ -169,7 +159,9 @@ public class WebComponent extends BaseWebObject
 				{
 					Map<String, PropertyDescription> map = new HashMap<String, PropertyDescription>();
 					for (int i = 0; i < types.size(); i++)
+					{
 						map.put(String.valueOf(i), types.get(i));
+					}
 					return map;
 				}
 
@@ -182,17 +174,20 @@ public class WebComponent extends BaseWebObject
 					}
 					catch (NumberFormatException e)
 					{
-						return null;
+						return super.getProperty(name);
 					}
 				}
 
 				@Override
-				public Set<String> getAllPropertiesNames()
+				public Collection<String> getAllPropertiesNames()
 				{
 					Set<String> s = new HashSet<String>();
-					for (int i = 0; i < types.size() - 1; i++)
+					for (int i = 0; i < types.size(); i++)
+					{
 						s.add(String.valueOf(i));
-					return super.getAllPropertiesNames();
+					}
+					s.addAll(super.getAllPropertiesNames());
+					return s;
 				}
 			};
 		}

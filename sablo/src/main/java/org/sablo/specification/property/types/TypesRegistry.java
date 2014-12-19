@@ -68,6 +68,9 @@ public class TypesRegistry
 
 		addTypeFactory(CustomJSONArrayType.TYPE_NAME, new CustomJSONArrayTypeFactory());
 		addTypeFactory(CustomJSONObjectType.TYPE_NAME, new CustomJSONObjectTypeFactory());
+
+		addType(ProtectedPropertyType.INSTANCE);
+		addType(VisiblePropertyType.INSTANCE);
 	}
 
 

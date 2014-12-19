@@ -13,40 +13,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.sablo.specification.property.types;
 
-import org.sablo.specification.PropertyDescription;
+import org.json.JSONObject;
+
 
 /**
- * Property type that is only used to aggregate other property types through a {@link PropertyDescription}'s child properties - at runtime.
+ * @author rgansevles
  *
- * @author acostescu
  */
-public class AggregatedPropertyType extends DefaultPropertyType<Object>
+public class ProtectedPropertyType extends DefaultPropertyType<Boolean>
 {
 
-	public static AggregatedPropertyType INSTANCE = new AggregatedPropertyType();
+	public static final ProtectedPropertyType INSTANCE = new ProtectedPropertyType();
+	public static final String TYPE_NAME = "protected";
 
-	public static PropertyDescription newAggregatedProperty()
-	{
-		return new PropertyDescription("", AggregatedPropertyType.INSTANCE)
-		{
-			@Override
-			public String toString()
-			{
-				return super.toString(true);
-			}
-		};
-	}
-
-	private AggregatedPropertyType()
+	private ProtectedPropertyType()
 	{
 	}
 
 	@Override
 	public String getName()
 	{
-		return "AggregatedProperty"; //$NON-NLS-1$
+		return TYPE_NAME;
+	}
+
+	@Override
+	public Boolean defaultValue()
+	{
+		return Boolean.FALSE;
+	}
+
+	@Override
+	public ProtectedConfig parseConfig(JSONObject json)
+	{
+		return ProtectedConfig.parse(json, true);
+	}
+
+	@Override
+	public boolean isProtecting()
+	{
+		return true;
 	}
 }

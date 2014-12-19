@@ -46,17 +46,19 @@ public class MainForm extends Container
 
 		add(theTextField = new WebComponent("mytextfield", "thetextfield"));
 		theTextField.setProperty("value", "changeme");
+		theTextField.setVisible(false);
 
 		add(theCounter = new WebComponent("mycounter", "thecounter"));
 		theCounter.setProperty("n", Integer.valueOf(99));
 
 		add(theButton = new WebComponent("mybutton", "thebutton"));
-		theButton.addEventHandler("pushed", new IEventHandler()
+		theButton.addEventHandler("onClick", new IEventHandler()
 		{
 			@Override
 			public Object executeEvent(Object[] args)
 			{
-				System.err.println("I was pushed!");
+				System.err.println("I was pushed! theTextField = "+theTextField.isVisible());
+				theTextField.setVisible(!theTextField.isVisible());
 				// copy value from text field to label, will be automatically synchronised to browser
 				Object textvalue = theTextField.getProperty("value");
 				theLabel.setProperty("text", textvalue);

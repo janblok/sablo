@@ -52,7 +52,7 @@ public class ClientService extends BaseWebObject implements IClientService
 	@Override
 	public Object executeServiceCall(String functionName, Object[] arguments) throws IOException
 	{
-		TypedData<Map<String, Object>> serviceChanges = getChanges();
+		TypedData<Map<String, Object>> serviceChanges = getAndClearChanges();
 		Object retValue = WebsocketEndpoint.get().executeServiceCall(name, functionName, arguments, getParameterTypes(functionName),
 			serviceChanges.content.isEmpty() ? null : Collections.singletonMap("services", Collections.singletonMap(getName(), serviceChanges.content)),
 			serviceChanges.contentType);

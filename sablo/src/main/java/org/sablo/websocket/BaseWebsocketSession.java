@@ -85,6 +85,11 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		return new FormServiceHandler(this);
 	}
 
+	public boolean isValid()
+	{
+		return true;
+	}
+
 	public void registerEndpoint(IWebsocketEndpoint endpoint)
 	{
 		registeredEnpoints.add(endpoint);
@@ -237,7 +242,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		boolean contentHasBeenWritten = false;
 		for (IClientService service : services.values())
 		{
-			TypedData<Map<String, Object>> changes = service.getChanges();
+			TypedData<Map<String, Object>> changes = service.getAndClearChanges();
 			if (changes.content.size() > 0)
 			{
 				if (!contentHasBeenWritten)

@@ -40,11 +40,6 @@ public class HelloWorldWebsocketSession extends BaseWebsocketSession
 		super(uuid);
 	}
 
-	public boolean isValid()
-	{
-		return true;
-	}
-
 	@Override
 	public Container getForm(String formName)
 	{

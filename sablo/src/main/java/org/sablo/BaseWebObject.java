@@ -15,6 +15,7 @@
  */
 package org.sablo;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +36,8 @@ import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.ISmartPropertyValue;
 import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.types.AggregatedPropertyType;
+import org.sablo.specification.property.types.ProtectedConfig;
+import org.sablo.specification.property.types.VisiblePropertyType;
 import org.sablo.websocket.TypedData;
 import org.sablo.websocket.utils.JSONUtils;
 import org.slf4j.Logger;
@@ -106,7 +109,14 @@ public abstract class BaseWebObject
 	 * @param args
 	 * @return
 	 */
-	public Object executeEvent(String eventType, Object[] args)
+	public final Object executeEvent(String eventType, Object[] args)
+	{
+		checkProtection(eventType);
+
+		return doExecuteEvent(eventType, args);
+	}
+
+	protected Object doExecuteEvent(String eventType, Object[] args)
 	{
 		IEventHandler handler = getEventHandler(eventType);
 		if (handler == null)
@@ -115,6 +125,133 @@ public abstract class BaseWebObject
 			return null;
 		}
 		return handler.executeEvent(args);
+	}
+
+	public final boolean isVisible()
+	{
+		return isVisible(null);
+	}
+
+	/**
+	 * Determine visibility on properties of type VisiblePropertyType.INSTANCE.
+	 * 
+	 * @param property check properties that have for defined for this  when null, check for component-level visibility.
+	 */
+	public final boolean isVisible(String property)
+	{
+		for (PropertyDescription prop : specification.getProperties(VisiblePropertyType.INSTANCE))
+		{
+			if (Boolean.FALSE.equals(getProperty(prop.getName())))
+			{
+				Object config = prop.getConfig();
+				if (config instanceof ProtectedConfig && ((ProtectedConfig)config).getForEntries() != null)
+				{
+					Collection<String> forEntries = (((ProtectedConfig)config).getForEntries()).getEntries();
+					if (forEntries != null && forEntries.size() > 0 && (property == null || !forEntries.contains(property)))
+					{
+						// specific enable-property, not for this eventType
+						continue;
+					}
+				}
+
+				// general protected property or specific for this eventType
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	public final void setVisible(boolean visible)
+	{
+		boolean set = false;
+		for (PropertyDescription prop : specification.getProperties(VisiblePropertyType.INSTANCE))
+		{
+			Object config = prop.getConfig();
+			if (config instanceof ProtectedConfig && ((ProtectedConfig)config).getForEntries() != null)
+			{
+				Collection<String> forEntries = (((ProtectedConfig)config).getForEntries()).getEntries();
+				if (forEntries != null && forEntries.size() > 0)
+				{
+					// specific enable-property, skip
+					continue;
+				}
+			}
+
+			setProperty(prop.getName(), Boolean.valueOf(visible));
+			set = true;
+		}
+
+		if (!set)
+		{
+			log.warn("Could not set component '" + getName() + "' visibility to " + visible + ", no visibility property found");
+		}
+	}
+
+	public boolean isVisibilityProperty(String propertyName)
+	{
+		PropertyDescription description = specification.getProperty(propertyName);
+		return description != null && description.getType() == VisiblePropertyType.INSTANCE;
+	}
+
+	/**
+	 * Check protection of property.
+	 * Validate if component or not visible or protected by another poperty.
+	 * 
+	 * @throws IllegalComponentAccessException when property is protected
+	 */
+	protected void checkProtection(String property)
+	{
+		for (PropertyDescription prop : specification.getProperties().values())
+		{
+			if (prop.getType().isProtecting())
+			{
+				Object config = prop.getConfig();
+
+				// visible default true, so block on false by default
+				// protected default false, so block on true by default
+				boolean blockingOn = Boolean.FALSE.equals(prop.getType().defaultValue());
+				if (config instanceof ProtectedConfig)
+				{
+					blockingOn = ((ProtectedConfig)config).getBlockingOn();
+				}
+
+				if (Boolean.valueOf(blockingOn).equals(getProperty(prop.getName())))
+				{
+					if (config instanceof ProtectedConfig && ((ProtectedConfig)config).getForEntries() != null)
+					{
+						Collection<String> forEntries = (((ProtectedConfig)config).getForEntries()).getEntries();
+						if (forEntries != null && forEntries.size() > 0 && (property == null || !forEntries.contains(property)))
+						{
+							// specific enable-property, not for this eventType
+							continue;
+						}
+					}
+
+					// general protected property or specific for this eventType
+					throw new IllegalComponentAccessException(prop.getType().getName(), getName(), property);
+				}
+			}
+		}
+
+		// ok
+	}
+
+	/**
+	 * Check if the property is protected, i.e. it cannot be set from the client.
+	 * 
+	 * @param propName
+	 * @throws IllegalComponentAccessException when property is protected
+	 */
+	protected void checkForProtectedProperty(String propName)
+	{
+		PropertyDescription property = specification.getProperty(propName);
+		if (property != null && property.getType().isProtecting())
+		{
+			throw new IllegalComponentAccessException("protecting", getName(), propName);
+		}
+
+		// ok
 	}
 
 	/**
@@ -150,27 +287,39 @@ public abstract class BaseWebObject
 		return !changedProperties.isEmpty();
 	}
 
-	public TypedData<Map<String, Object>> getChanges()
+	/**
+	 * Get the changes of this component, clear changes.
+	 * When the component is not visible, only the visibility-properties are returned and cleared from the changes.
+	 * 
+	 */
+	public TypedData<Map<String, Object>> getAndClearChanges()
 	{
-		if (changedProperties.size() > 0)
+		if (changedProperties.isEmpty())
 		{
-			Map<String, Object> changes = new HashMap<>();
-			PropertyDescription changeTypes = AggregatedPropertyType.newAggregatedProperty();
-			for (String propertyName : changedProperties)
+			return new TypedData<>(Collections.<String, Object> emptyMap(), null);
+		}
+
+		boolean visible = isVisible();
+		Map<String, Object> changes = new HashMap<>();
+		PropertyDescription changeTypes = AggregatedPropertyType.newAggregatedProperty();
+		for (String propertyName : changedProperties.toArray(new String[changedProperties.size()]))
+		{
+			if (visible || isVisibilityProperty(propertyName))
 			{
+				flagPropertyAsDirty(propertyName, false);
 				changes.put(propertyName, properties.get(propertyName));
 				PropertyDescription t = specification.getProperty(propertyName);
 				if (t != null) changeTypes.putProperty(propertyName, t);
 			}
-			if (!changeTypes.hasChildProperties()) changeTypes = null;
-			changedProperties.clear();
-			return new TypedData<Map<String, Object>>(changes, changeTypes);
 		}
-		Map<String, Object> em = Collections.emptyMap();
-		return new TypedData<>(em, null);
+
+		return new TypedData<Map<String, Object>>(changes, changeTypes.hasChildProperties() ? changeTypes : null);
+
 	}
 
 	/**
+	 * For testing only.
+	 * 
 	 * DO NOT USE THIS METHOD; when possible please use {@link #getProperty(String)}, {@link #getProperties()} or {@link #getAllPropertyNames(boolean)} instead.
 	 */
 	public Map<String, Object> getRawPropertiesWithoutDefaults()
@@ -276,7 +425,7 @@ public abstract class BaseWebObject
 
 			if ((oldValue != null && !oldValue.equals(propertyValue)) || (propertyValue != null && !propertyValue.equals(oldValue)))
 			{
-				flagPropertyAsDirty(firstPropertyPart);
+				flagPropertyAsDirty(firstPropertyPart, true);
 				return true;
 			}
 		}
@@ -289,7 +438,7 @@ public abstract class BaseWebObject
 			// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
 			onPropertyChange(firstPropertyPart, null, propertyValue);
 
-			flagPropertyAsDirty(firstPropertyPart);
+			flagPropertyAsDirty(firstPropertyPart, true);
 			return true;
 		}
 		return false;
@@ -307,6 +456,20 @@ public abstract class BaseWebObject
 		if (oldValue == null && !properties.containsKey(firstProperty))
 		{
 			Object defaultProperty = defaultPropertiesUnwrapped.get(firstProperty);
+			if (defaultProperty == null && !defaultPropertiesUnwrapped.containsKey(firstProperty))
+			{
+				// default value based o 
+				PropertyDescription propertyDesc = specification.getProperty(firstProperty);
+				if (propertyDesc != null)
+				{
+					defaultProperty = propertyDesc.getDefaultValue();
+					if (defaultProperty == null && propertyDesc.getType() != null)
+					{
+						defaultProperty = propertyDesc.getType().defaultValue();
+					}
+				}
+			}
+
 			if (defaultProperty != null)
 			{
 				// quickly wrap this value so that it can be used as the oldValue later on.
@@ -336,15 +499,26 @@ public abstract class BaseWebObject
 	 * @param propertyValue
 	 *            can be a JSONObject or array or primitive.
 	 */
-	public void putBrowserProperty(String propertyName, Object propertyValue) throws JSONException
+	public final void putBrowserProperty(String propertyName, Object propertyValue) throws JSONException
+	{
+		checkProtection(propertyName);
+
+		checkForProtectedProperty(propertyName);
+
+		doPutBrowserProperty(propertyName, propertyValue);
+	}
+
+	protected void doPutBrowserProperty(String propertyName, Object propertyValue) throws JSONException
 	{
 		Object oldWrappedValue = getRawPropertyValue(propertyName);
 		Object newWrappedValue = convertValueFromJSON(propertyName, oldWrappedValue, propertyValue);
 		properties.put(propertyName, newWrappedValue);
 
 		// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
-		if (oldWrappedValue != newWrappedValue) onPropertyChange(propertyName, unwrapValue(propertyName, oldWrappedValue),
-			unwrapValue(propertyName, newWrappedValue));
+		if (oldWrappedValue != newWrappedValue)
+		{
+			onPropertyChange(propertyName, unwrapValue(propertyName, oldWrappedValue), unwrapValue(propertyName, newWrappedValue));
+		}
 	}
 
 	/**
@@ -384,12 +558,12 @@ public abstract class BaseWebObject
 				@Override
 				public void valueChanged()
 				{
-					flagPropertyAsDirty(complexPropertyRoot);
+					flagPropertyAsDirty(complexPropertyRoot, true);
 
 					if (defaultPropertiesUnwrapped.containsKey(complexPropertyRoot))
 					{
 						// something changed in this 'smart' property - so it no longer represents the default value; remove
-						// it from default values (as the value referece is the same but the content changed) and put it in properties map
+						// it from default values (as the value reference is the same but the content changed) and put it in properties map
 						properties.put(complexPropertyRoot, newValue);
 						defaultPropertiesUnwrapped.remove(complexPropertyRoot);
 					}
@@ -398,10 +572,9 @@ public abstract class BaseWebObject
 		}
 	}
 
-	public void flagPropertyAsDirty(String key)
+	public boolean flagPropertyAsDirty(String key, boolean dirty)
 	{
-		changedProperties.add(key);
-		// else this is probably a direct form child and when the request is done the form will ask anyway all components for changes
+		return dirty ? changedProperties.add(key) : changedProperties.remove(key);
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -463,9 +636,14 @@ public abstract class BaseWebObject
 		return allValKeys;
 	}
 
-	public void addEventHandler(String event, IEventHandler handler)
+	public void addEventHandler(String handlerName, IEventHandler handler)
 	{
-		eventHandlers.put(event, handler);
+		if (specification.getHandler(handlerName) == null)
+		{
+			throw new IllegalArgumentException("Handler for component '" + getName() + "' not found in component specification '" + specification.getName() +
+				"' : handler '" + handlerName + "'");
+		}
+		eventHandlers.put(handlerName, handler);
 	}
 
 	public IEventHandler getEventHandler(String event)

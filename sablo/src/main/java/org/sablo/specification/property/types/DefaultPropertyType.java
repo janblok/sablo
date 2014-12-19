@@ -28,13 +28,19 @@ public abstract class DefaultPropertyType<T> implements IPropertyType<T>
 	@Override
 	public Object parseConfig(JSONObject config)
 	{
-		return config;
+		return null;
 	}
 
 	@Override
 	public T defaultValue()
 	{
 		return null;
+	}
+
+	@Override
+	public boolean isProtecting()
+	{
+		return false;
 	}
 
 }

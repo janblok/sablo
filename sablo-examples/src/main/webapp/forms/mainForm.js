@@ -18,11 +18,12 @@ angular.module('sampleApp').controller("mainForm", function($scope, $window, $sa
 		};
 	}
 	
-	// TODO: to sablo_app
+	// TODO: to sablo_app, generate from spec file based on componentts in form
 	$scope.handlers = {
-			thebutton: {callEvent:getExecutor('thebutton')}
+			thebutton: {
+				onClick: function (event) { getExecutor('thebutton')('onClick', [event]); }
+			}
 	};
-	
 
 	var formProperties = {"designSize":{"width":640,"height":480},"size":{"width":640,"height":480}};
 	

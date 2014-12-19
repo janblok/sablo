@@ -28,7 +28,7 @@ public abstract class DefaultPropertyType<T> implements IPropertyType<T>
 	@Override
 	public Object parseConfig(JSONObject config)
 	{
-		return null; // RAGTEST check waar dit gebruikt wordt :: config;
+		return null;
 	}
 
 	@Override

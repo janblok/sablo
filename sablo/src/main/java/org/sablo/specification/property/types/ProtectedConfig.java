@@ -19,7 +19,7 @@ package org.sablo.specification.property.types;
 import org.json.JSONObject;
 
 /**
- * RAGTEST doc
+ * Property configuration for protected types.
  * 
  * TODO: validate if for-entries refer to existing properties
  * 
@@ -35,7 +35,7 @@ public class ProtectedConfig
 
 	private final boolean blockingOn;
 
-	ProtectedConfig(ForentriesConfig forEntries, boolean blockingOn)
+	protected ProtectedConfig(ForentriesConfig forEntries, boolean blockingOn)
 	{
 		this.forEntries = forEntries;
 		this.blockingOn = blockingOn;

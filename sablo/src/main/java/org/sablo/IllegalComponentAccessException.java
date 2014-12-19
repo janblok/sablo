@@ -17,7 +17,8 @@
 package org.sablo;
 
 /**
- * RAGTEST doc
+ * Exception or illegalaccess to a component.
+ * 
  * @author rgansevles
  *
  */
@@ -26,13 +27,13 @@ public class IllegalComponentAccessException extends RuntimeException
 
 	private final String accessType;
 	private final String componentName;
-	private final String eventType;
+	private final String property;
 
-	public IllegalComponentAccessException(String accessType, String componentName, String eventType)
+	public IllegalComponentAccessException(String accessType, String componentName, String property)
 	{
 		this.accessType = accessType;
 		this.componentName = componentName;
-		this.eventType = eventType;
+		this.property = property;
 	}
 
 	/**
@@ -52,17 +53,17 @@ public class IllegalComponentAccessException extends RuntimeException
 	}
 
 	/**
-	 * @return the eventType
-	 */
-	public String getEventType()
+	* @return the property
+	*/
+	public String getProperty()
 	{
-		return eventType;
+		return property;
 	}
 
 	@Override
 	public String getMessage()
 	{
-		return new StringBuilder("Access to component ").append(getComponentName()).append(" eventType ").append(getEventType()).append(" denied (").append(
+		return new StringBuilder("Access to component ").append(getComponentName()).append(" property ").append(getProperty()).append(" denied (").append(
 			getAccessType()).append(")").toString();
 	}
 }

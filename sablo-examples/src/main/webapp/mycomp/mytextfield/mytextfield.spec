@@ -5,6 +5,7 @@
 	"model":
 	{
 		 "value" : "string",
-		 "readOnly": "protected"
+		 "readOnly": "protected", 
+		 "vis": "visible"
 	}
 }

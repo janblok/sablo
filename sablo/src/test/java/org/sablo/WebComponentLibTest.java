@@ -31,7 +31,6 @@ import org.sablo.specification.WebServiceSpecProvider;
  *
  */
 @Ignore
-//RAGTEST
 public class WebComponentLibTest
 {
 

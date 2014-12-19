@@ -24,7 +24,7 @@ import java.util.List;
 import org.json.JSONObject;
 
 /**
- * RAGTEST doc
+ * Configure for-entries in properties
  * 
  * TODO: validate if for-entries refer to existing properties
  * 

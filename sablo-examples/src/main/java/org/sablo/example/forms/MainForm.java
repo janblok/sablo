@@ -46,6 +46,7 @@ public class MainForm extends Container
 
 		add(theTextField = new WebComponent("mytextfield", "thetextfield"));
 		theTextField.setProperty("value", "changeme");
+		theTextField.setVisible(false);
 
 		add(theCounter = new WebComponent("mycounter", "thecounter"));
 		theCounter.setProperty("n", Integer.valueOf(99));
@@ -56,37 +57,14 @@ public class MainForm extends Container
 			@Override
 			public Object executeEvent(Object[] args)
 			{
-				System.err.println("I was pushed!");
+				System.err.println("I was pushed! theTextField = "+theTextField.isVisible());
+				theTextField.setVisible(!theTextField.isVisible());
 				// copy value from text field to label, will be automatically synchronised to browser
 				Object textvalue = theTextField.getProperty("value");
 				theLabel.setProperty("text", textvalue);
 				// call a function on an element
 				theCounter.invokeApi("increment", new Object[] { 2 });
-				
-//				theButton.setProperty("itsenabled", Boolean.FALSE);
-				theTextField.setProperty("readOnly", Boolean.TRUE);
 
-				return null;
-			}
-		});
-		
-		theButton.addEventHandler("onClick2", new IEventHandler()
-		{
-			@Override
-			public Object executeEvent(Object[] args)
-			{
-				System.err.println("I was pushed2!");
-				theButton.setProperty("itsenabled2", Boolean.FALSE);
-				return null;
-			}
-		});
-		
-		theButton.addEventHandler("onClick3", new IEventHandler()
-		{
-			@Override
-			public Object executeEvent(Object[] args)
-			{
-				System.err.println("I was pushed3!");
 				return null;
 			}
 		});

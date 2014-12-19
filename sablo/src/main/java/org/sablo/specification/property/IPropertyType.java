@@ -52,8 +52,8 @@ public interface IPropertyType<T>
 	public T defaultValue();
 
 	/**
-	 * RAGTEST doc: have to be boolean types
-	 * @return
+	 * Defines whether this property can only be set the server, updates from client will be ignored.
+	 * Used for protected and visible properties.
 	 */
 	boolean isProtecting();
 

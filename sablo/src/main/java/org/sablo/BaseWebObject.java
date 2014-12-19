@@ -133,11 +133,11 @@ public abstract class BaseWebObject
 	}
 
 	/**
-	 * RAGTEST doc
-	 * @param eventType
-	 * @return
+	 * Determine visibility on properties of type VisiblePropertyType.INSTANCE.
+	 * 
+	 * @param property check properties that have for defined for this  when null, check for component-level visibility.
 	 */
-	public final boolean isVisible(String eventType)
+	public final boolean isVisible(String property)
 	{
 		for (PropertyDescription prop : specification.getProperties(VisiblePropertyType.INSTANCE))
 		{
@@ -147,7 +147,7 @@ public abstract class BaseWebObject
 				if (config instanceof ProtectedConfig && ((ProtectedConfig)config).getForEntries() != null)
 				{
 					Collection<String> forEntries = (((ProtectedConfig)config).getForEntries()).getEntries();
-					if (forEntries != null && forEntries.size() > 0 && (eventType == null || !forEntries.contains(eventType)))
+					if (forEntries != null && forEntries.size() > 0 && (property == null || !forEntries.contains(property)))
 					{
 						// specific enable-property, not for this eventType
 						continue;
@@ -188,12 +188,19 @@ public abstract class BaseWebObject
 		}
 	}
 
+	public boolean isVisibilityProperty(String propertyName)
+	{
+		PropertyDescription description = specification.getProperty(propertyName);
+		return description != null && description.getType() == VisiblePropertyType.INSTANCE;
+	}
+
 	/**
-	 * RAGTEST doc
-	 * @param eventType
-	 * @return
+	 * Check protection of property.
+	 * Validate if component or not visible or protected by another poperty.
+	 * 
+	 * @throws IllegalComponentAccessException when property is protected
 	 */
-	protected void checkProtection(String eventType)
+	protected void checkProtection(String property)
 	{
 		for (PropertyDescription prop : specification.getProperties().values())
 		{
@@ -214,7 +221,7 @@ public abstract class BaseWebObject
 					if (config instanceof ProtectedConfig && ((ProtectedConfig)config).getForEntries() != null)
 					{
 						Collection<String> forEntries = (((ProtectedConfig)config).getForEntries()).getEntries();
-						if (forEntries != null && forEntries.size() > 0 && (eventType == null || !forEntries.contains(eventType)))
+						if (forEntries != null && forEntries.size() > 0 && (property == null || !forEntries.contains(property)))
 						{
 							// specific enable-property, not for this eventType
 							continue;
@@ -222,7 +229,7 @@ public abstract class BaseWebObject
 					}
 
 					// general protected property or specific for this eventType
-					throw new IllegalComponentAccessException(prop.getType().getName(), getName(), eventType);
+					throw new IllegalComponentAccessException(prop.getType().getName(), getName(), property);
 				}
 			}
 		}
@@ -231,9 +238,10 @@ public abstract class BaseWebObject
 	}
 
 	/**
-	 * RAGTEST doc
-	 * @param eventType
-	 * @return
+	 * Check if the property is protected, i.e. it cannot be set from the client.
+	 * 
+	 * @param propName
+	 * @throws IllegalComponentAccessException when property is protected
 	 */
 	protected void checkForProtectedProperty(String propName)
 	{
@@ -279,27 +287,39 @@ public abstract class BaseWebObject
 		return !changedProperties.isEmpty();
 	}
 
+	/**
+	 * Get the changes of this component, clear changes.
+	 * When the component is not visible, only the visibility-properties are returned and cleared from the changes.
+	 * 
+	 */
 	public TypedData<Map<String, Object>> getAndClearChanges()
 	{
-		if (changedProperties.size() > 0)
+		if (changedProperties.isEmpty())
 		{
-			Map<String, Object> changes = new HashMap<>();
-			PropertyDescription changeTypes = AggregatedPropertyType.newAggregatedProperty();
-			for (String propertyName : changedProperties)
+			return new TypedData<>(Collections.<String, Object> emptyMap(), null);
+		}
+
+		boolean visible = isVisible();
+		Map<String, Object> changes = new HashMap<>();
+		PropertyDescription changeTypes = AggregatedPropertyType.newAggregatedProperty();
+		for (String propertyName : changedProperties.toArray(new String[changedProperties.size()]))
+		{
+			if (visible || isVisibilityProperty(propertyName))
 			{
+				flagPropertyAsDirty(propertyName, false);
 				changes.put(propertyName, properties.get(propertyName));
 				PropertyDescription t = specification.getProperty(propertyName);
 				if (t != null) changeTypes.putProperty(propertyName, t);
 			}
-			if (!changeTypes.hasChildProperties()) changeTypes = null;
-			changedProperties.clear();
-			return new TypedData<Map<String, Object>>(changes, changeTypes);
 		}
-		Map<String, Object> em = Collections.emptyMap();
-		return new TypedData<>(em, null);
+
+		return new TypedData<Map<String, Object>>(changes, changeTypes.hasChildProperties() ? changeTypes : null);
+
 	}
 
 	/**
+	 * For testing only.
+	 * 
 	 * DO NOT USE THIS METHOD; when possible please use {@link #getProperty(String)}, {@link #getProperties()} or {@link #getAllPropertyNames(boolean)} instead.
 	 */
 	public Map<String, Object> getRawPropertiesWithoutDefaults()
@@ -405,7 +425,7 @@ public abstract class BaseWebObject
 
 			if ((oldValue != null && !oldValue.equals(propertyValue)) || (propertyValue != null && !propertyValue.equals(oldValue)))
 			{
-				flagPropertyAsDirty(firstPropertyPart);
+				flagPropertyAsDirty(firstPropertyPart, true);
 				return true;
 			}
 		}
@@ -418,7 +438,7 @@ public abstract class BaseWebObject
 			// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
 			onPropertyChange(firstPropertyPart, null, propertyValue);
 
-			flagPropertyAsDirty(firstPropertyPart);
+			flagPropertyAsDirty(firstPropertyPart, true);
 			return true;
 		}
 		return false;
@@ -538,7 +558,7 @@ public abstract class BaseWebObject
 				@Override
 				public void valueChanged()
 				{
-					flagPropertyAsDirty(complexPropertyRoot);
+					flagPropertyAsDirty(complexPropertyRoot, true);
 
 					if (defaultPropertiesUnwrapped.containsKey(complexPropertyRoot))
 					{
@@ -552,10 +572,9 @@ public abstract class BaseWebObject
 		}
 	}
 
-	public void flagPropertyAsDirty(String key)
+	public boolean flagPropertyAsDirty(String key, boolean dirty)
 	{
-		changedProperties.add(key);
-		// else this is probably a direct form child and when the request is done the form will ask anyway all components for changes
+		return dirty ? changedProperties.add(key) : changedProperties.remove(key);
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -617,10 +636,14 @@ public abstract class BaseWebObject
 		return allValKeys;
 	}
 
-	public void addEventHandler(String event, IEventHandler handler)
+	public void addEventHandler(String handlerName, IEventHandler handler)
 	{
-		// RAGTEST check in spec op handler
-		eventHandlers.put(event, handler);
+		if (specification.getHandler(handlerName) == null)
+		{
+			throw new IllegalArgumentException("Handler for component '" + getName() + "' not found in component specification '" + specification.getName() +
+				"' : handler '" + handlerName + "'");
+		}
+		eventHandlers.put(handlerName, handler);
 	}
 
 	public IEventHandler getEventHandler(String event)

@@ -41,6 +41,7 @@ import org.sablo.websocket.utils.JSONUtils;
  * @author jcompagner
  *
  */
+@SuppressWarnings("nls")
 public class WrapperTypeTest
 {
 

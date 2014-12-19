@@ -110,6 +110,7 @@ public class PropertyDescription
 		return Collections.emptySet();
 	}
 
+
 	public String getName()
 	{
 		return name;
@@ -184,12 +185,11 @@ public class PropertyDescription
 		return optional;
 	}
 
-	// TODO: move to constructor so PropertyDescription is immutable
 	public PropertyDescription putProperty(String propname, PropertyDescription proptype)
 	{
 		if (properties == null) properties = new HashMap<>();
 		if (proptype == null) properties.remove(propname);
-		else properties.put(proptype.getName(), proptype);
+		properties.put(propname, proptype);
 		return this;
 	}
 
@@ -225,14 +225,11 @@ public class PropertyDescription
 		return Collections.emptyMap();
 	}
 
-	public void putAll(Collection<PropertyDescription> props)
+	public void putAll(Map<String, PropertyDescription> map)
 	{
-		properties = new HashMap<>(props.size());
-		for (PropertyDescription prop : props)
-		{
-			properties.put(prop.getName(), prop);
-		}
+		properties = new HashMap<>(map);
 	}
+
 
 	@Override
 	public String toString()
@@ -276,7 +273,7 @@ public class PropertyDescription
 		for (int i = 0; i < level * 2; i++)
 		{
 			b.append(' ');
-		}
+	}
 	}
 
 }

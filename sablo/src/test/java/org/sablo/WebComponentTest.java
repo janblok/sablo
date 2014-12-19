@@ -46,9 +46,9 @@ import org.sablo.websocket.utils.JSONUtils;
  * @author jcompagner
  *
  */
+@SuppressWarnings("nls")
 public class WebComponentTest
 {
-
 	/**
 	 * @throws java.lang.Exception
 	 */
@@ -88,8 +88,7 @@ public class WebComponentTest
 	public void testDimension() throws JSONException
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
-		// TODO should this be null or the default value???
-		assertNull(component.getProperty("size"));
+		assertEquals(new Dimension(0, 0), component.getProperty("size"));
 
 		// put in something illegal
 		component.setProperty("size", Color.black);
@@ -188,8 +187,7 @@ public class WebComponentTest
 	public void testPoint() throws JSONException
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
-		// TODO should this be null or the default value???
-		assertNull(component.getProperty("location"));
+		assertEquals(new Point(0, 0), component.getProperty("location"));
 
 		// put in something illegal
 		component.setProperty("location", Color.black);

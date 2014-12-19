@@ -18,7 +18,6 @@ package org.sablo.specification;
 
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -121,12 +120,9 @@ public class WebComponentSpecification extends PropertyDescription
 	/**
 	 * @param hndlrs
 	 */
-	protected final void putAllHandlers(Collection<PropertyDescription> hndlrs)
+	protected final void putAllHandlers(Map<String, PropertyDescription> hndlrs)
 	{
-		for (PropertyDescription h : hndlrs)
-		{
-			handlers.put(h.getName(), h);
-		}
+		handlers.putAll(hndlrs);
 	}
 
 	/**
@@ -340,7 +336,7 @@ public class WebComponentSpecification extends PropertyDescription
 		}
 	}
 
-	protected Collection<PropertyDescription> parseProperties(String propKey, JSONObject json) throws JSONException
+	protected Map<String, PropertyDescription> parseProperties(String propKey, JSONObject json) throws JSONException
 	{
 		Map<String, PropertyDescription> pds = new HashMap<>();
 		if (json.has(propKey))
@@ -405,7 +401,7 @@ public class WebComponentSpecification extends PropertyDescription
 				}
 			}
 		}
-		return pds.values();
+		return pds;
 	}
 
 

@@ -6,7 +6,8 @@ angular.module('sabloApp', ['webSocketModule'])
 	   var formStates = {};
 	   var formStatesConversionInfo = {};
 	   
-	   var deferredformStates = {};
+	   var deferredFormStates = {};
+	   var deferredFormStatesWithData = {};
 	   var getChangeNotifier = function(formName, beanName) {
 		   return function() {
 			   // will be called by the custom property when it needs to send changes server size
@@ -15,20 +16,33 @@ angular.module('sabloApp', ['webSocketModule'])
 		   }
 	   }
 	   
-	   var getFormState = function(name) { 
+	   /*
+	    * Some code is interested in form state immediately after it's loaded/initialized (needsInitialData = false) in which case only some template values might be
+	    * available and some code is interested in using form state only after it got the initialData (via "requestData"'s response) from server (needsInitialData = true)
+	    */
+	   var getFormStateImpl = function(name, needsInitialData) { 
 		   var defered = null
-		   if (!deferredformStates[name]) {
+		   var deferredStates = (needsInitialData ? deferredFormStates : deferredFormStatesWithData);
+		   if (!deferredStates[name]) {
 			   var defered = $q.defer()
-			   deferredformStates[name] = defered;
+			   deferredStates[name] = defered;
 		   } else {
-			   defered = deferredformStates[name]
+			   defered = deferredStates[name]
 		   }
 
-		   if (formStates[name] && !formStates[name].initializing) {
+		   if (formStates[name] && !(formStates[name].initializing && needsInitialData)) {
 			   defered.resolve(formStates[name]); // then handlers are called even if they are applied after it is resolved
-			   delete deferredformStates[name];
+			   delete deferredStates[name];
 		   }			   
 		   return defered.promise;
+	   }
+
+	   var getFormState = function(name) { 
+		   return getFormStateImpl(name, false);
+	   }
+
+	   var getFormStateWithData = function(name) { 
+		   return getFormStateImpl(name, true);
 	   }
 
 	   var getComponentChanges = function(now, prev, beanConversionInfo, parentSize, changeNotifier, componentScope) {
@@ -213,14 +227,16 @@ angular.module('sabloApp', ['webSocketModule'])
 		   
 		   getFormState: getFormState,
 		   
+		   getFormStateWithData: getFormStateWithData,
+		   
 		   getFormStatesConversionInfo: function() { return formStatesConversionInfo; },
 
-		   hasFormstateLoaded: function(name) {
-			  return typeof(formStates[name]) !== 'undefined'
+		   hasFormState: function(name) {
+			  return typeof(formStates[name]) !== 'undefined';
 		   },
 		   
-		   hasFormstate: function(name) {
-			   return typeof(formStates[name]) !== 'undefined' || typeof(deferredformStates[name]) !== 'undefined'
+		   hasFormStateWithData: function(name) {
+			   return typeof(formStates[name]) !== 'undefined' && !formStates[name].initializing;
 		   },
 
 		   clearformState: function(formName) {
@@ -272,11 +288,18 @@ angular.module('sabloApp', ['webSocketModule'])
 				   formState.addWatches();
 				   delete formState.initializing;
 				   
-				   if(deferredformStates[formName]){
-					   if (typeof(formStates[formName]) !== 'undefined') deferredformStates[formName].resolve(formStates[formName])
-					   delete deferredformStates[formName]
+				   if (deferredFormStatesWithData[formName]) {
+					   if (typeof(formStates[formName]) !== 'undefined') deferredFormStatesWithData[formName].resolve(formStates[formName]);
+					   delete deferredFormStatesWithData[formName];
 				   }
-				   if(requestDataCallback) {
+				   
+				   if (deferredFormStates[formName]) {
+					   // this should never happen cause at this point that deferr should be executed and removed
+					   if (typeof(formStates[formName]) !== 'undefined') deferredFormStates[formName].resolve(formStates[formName]);
+					   delete deferredFormStates[formName];
+				   }
+
+				   if (requestDataCallback) {
 					   requestDataCallback(initialFormData);
 				   }
 			   });
@@ -287,6 +310,11 @@ angular.module('sabloApp', ['webSocketModule'])
 			   for(var beanName in beanDatas) {
 				   model[beanName] = {};
 				   api[beanName] = {};
+			   }
+			   
+			   if (deferredFormStates[formName]) {
+				   if (typeof(formStates[formName]) !== 'undefined') deferredFormStates[formName].resolve(formStates[formName]);
+				   delete deferredFormStates[formName];
 			   }
 			   
 			   return state;
@@ -303,7 +331,7 @@ angular.module('sabloApp', ['webSocketModule'])
 		   getExecutor: function(formName) {
 			   return {
 				   on: function(beanName,eventName,property,args,rowId) {
-					   return getFormState(formName).then(function (formState) {
+					   return getFormStateWithData(formName).then(function (formState) {
 						   // this is onaction, onfocuslost which is really configured in the html so it really 
 						   // is something that goes to the server
 						   var newargs = $sabloUtils.getEventArgs(args,eventName);

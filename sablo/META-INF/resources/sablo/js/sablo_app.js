@@ -371,8 +371,17 @@ angular.module('sabloApp', ['webSocketModule'])
 			var runtimeIndex; // initialized a bit lower
 			var initializing = true;
 
-			function recalculateChildRuntimeIndexesStartingAt (posInDesignArray /*inclusive*/, triggeredByParent) {
+			function recalculateChildRuntimeIndexesStartingAt(posInDesignArray /*inclusive*/, triggeredByParent) {
 				if (designTabSeq == -2) return;
+
+				if (designTabSeq == 0) {
+					// this element doesn't set any tabIndex attribute (default behavior)
+					runtimeIndex.nextAvailableIndex = runtimeIndex.startIndex;
+					runtimeIndex.startIndex = 0;
+				} else if (runtimeIndex.startIndex === 0) {
+					runtimeIndex.nextAvailableIndex = 0;
+				}
+
 				if (posInDesignArray === 0) updateCurrentDomElTabIndex();
 
 				var recalculateStartIndex = runtimeIndex.startIndex;
@@ -399,24 +408,34 @@ angular.module('sabloApp', ['webSocketModule'])
 
 				if (initializing) initializing = undefined; // it's now considered initialized as first runtime index caluculation is done
 
-				var ownTabIndexBump = hasOwnTabIndex() ? 1 : 0;
-				var parentRecalculateNeeded = (runtimeIndex.nextAvailableIndex < recalculateStartIndex + ownTabIndexBump);
-				var reservedGap = (config && config.reservedGap) ? config.reservedGap : 0;
-				runtimeIndex.nextAvailableIndex = recalculateStartIndex + reservedGap + ownTabIndexBump;
+				var parentRecalculateNeeded;
+				if (runtimeIndex.startIndex !== 0) {
+					var ownTabIndexBump = hasOwnTabIndex() ? 1 : 0;
+					parentRecalculateNeeded = (runtimeIndex.nextAvailableIndex < recalculateStartIndex + ownTabIndexBump);
+					var reservedGap = (config && config.reservedGap) ? config.reservedGap : 0;
+					runtimeIndex.nextAvailableIndex = recalculateStartIndex + reservedGap + ownTabIndexBump;
+				} else {
+					// start index 0 means default (no tabIndex attr. set)
+					parentRecalculateNeeded = false;
+				}
 
 				// if this container now needs more tab indexes then it was reserved; a recalculate on parent needs to be triggered in this case
 				if (parentRecalculateNeeded && !triggeredByParent) $element.parent().trigger("recalculatePSTS", [designTabSeq]);
 			}
+			
 			function hasOwnTabIndex() {
 				return (!config || !(config.container || config.root));
 			}
 			
 			function updateCurrentDomElTabIndex() {
 				if (hasOwnTabIndex()) {
-					$element.attr('tabIndex', runtimeIndex.startIndex);
+					if (runtimeIndex.startIndex !== 0) $element.attr('tabIndex', runtimeIndex.startIndex);
+					else $element.removeAttr('tabIndex');
 				}
 			}
 
+			// runtime index -1 == SKIP focus traversal in browser
+			// runtime index  0 == DEFAULT == design tab seq 0 (not tabIndex attr set to element or it's children)
 			runtimeIndex = { startIndex: -1, nextAvailableIndex: -1, recalculateChildRuntimeIndexesStartingAt: recalculateChildRuntimeIndexesStartingAt };
 			updateCurrentDomElTabIndex(); // -1 runtime initially for all (in case some node in the tree has -2 design (skip) and children have >= 0, at runtime all children should be excluded as wel)
 
@@ -502,7 +521,7 @@ angular.module('sabloApp', ['webSocketModule'])
 					
 					if (designTabSeq != -2) {
 						$element.parent().trigger("registerCSTS", [designTabSeq, runtimeIndex]);
-						$element.parent().trigger("recalculatePSTS", [designTabSeq]);
+						$element.parent().trigger("recalculatePSTS", [designTabSeq]); // here we could send [0] instead of [designTabSeq] - it would potentially calculate more but start again from first parent available index, not higher index (the end user behavior being the same)
 					} else {
 						updateCurrentDomElTabIndex(); // -1 runtime
 					}

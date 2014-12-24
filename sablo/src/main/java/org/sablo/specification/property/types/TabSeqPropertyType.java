@@ -27,7 +27,7 @@ public class TabSeqPropertyType extends DefaultPropertyType<Integer>
 	public static final TabSeqPropertyType INSTANCE = new TabSeqPropertyType();
 	public static final String TYPE_NAME = "tabseq";
 
-	private TabSeqPropertyType()
+	protected TabSeqPropertyType()
 	{
 	}
 

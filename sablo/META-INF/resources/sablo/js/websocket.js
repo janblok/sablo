@@ -348,7 +348,10 @@ webSocketModule.factory('$webSocket',
 	 		            				serviceData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier(changeNotifier);
 	 		            			}
 	 		            			serviceScopesConversionInfo[servicename][key] = conversionInfo[servicename][key];
+	 		            		} else if (angular.isDefined(serviceScopesConversionInfo[servicename]) && angular.isDefined(serviceScopesConversionInfo[servicename][key])) {
+	 		            			delete serviceScopesConversionInfo[servicename][key];
 	 		            		}
+	 		            		
 	 		            		serviceScope.model[key] = serviceData[key];
 	 		             	}
 	 		            }
@@ -600,6 +603,28 @@ webSocketModule.factory('$webSocket',
 						if (ret === undefined || ret === null) {
 							ret = {};
 							p[arguments[i]] = ret;
+						}
+					}
+					
+					return ret;
+				},
+				
+				/**
+				 * Receives variable arguments. First is the object obj and the others (for example a, b, c) are used to
+				 * return obj[a][b][c] making sure that if any does not exist or is null it will just return null/undefined instead of erroring out.
+				 */
+				getInDepthProperty: function() {
+					if (arguments.length == 0) return undefined;
+					
+					var ret = arguments[0];
+					if (ret == undefined || ret === null || arguments.length == 1) return ret;
+					var p;
+					var i;
+					for (i = 1; i < arguments.length; i++) {
+						p = ret;
+						ret = ret[arguments[i]];
+						if (ret === undefined || ret === null) {
+							return i == arguments.length - 1 ? ret : undefined;
 						}
 					}
 					

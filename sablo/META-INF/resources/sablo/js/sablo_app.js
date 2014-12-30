@@ -105,7 +105,7 @@ angular.module('sabloApp', ['webSocketModule'])
 					   beanData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier(changeNotifier);
 				   }
 				   beanConversionInfo[key] = newConversionInfo[key];
-			   }
+			   } else if (beanConversionInfo && angular.isDefined(beanConversionInfo[key])) delete beanConversionInfo[key]; // this prop. no longer has conversion info!
 
 			   // also make location and size available in model
 			   beanModel[key] = beanData[key];
@@ -204,7 +204,7 @@ angular.module('sabloApp', ['webSocketModule'])
 							   // copy over the changes, skip for form properties (beanname empty)
 							   if (beanname != '') {
 								   var newBeanConversionInfo = newFormConversionInfo ? newFormConversionInfo[beanname] : undefined;
-								   var beanConversionInfo = newBeanConversionInfo ? $sabloUtils.getOrCreateInDepthProperty(formStatesConversionInfo, formname, beanname) : undefined; // we could do a get instead of undefined, but normally that value is not needed if the new conversion info is undefined
+								   var beanConversionInfo = newBeanConversionInfo ? $sabloUtils.getOrCreateInDepthProperty(formStatesConversionInfo, formname, beanname) : $sabloUtils.getInDepthProperty(formStatesConversionInfo, formname, beanname);
 								   applyBeanData(formModel[beanname], newFormData[beanname], formState.properties.designSize, getChangeNotifier(formname, beanname), beanConversionInfo, newBeanConversionInfo, formState.getScope());
 							   }
 						   }
@@ -279,7 +279,7 @@ angular.module('sabloApp', ['webSocketModule'])
 						   // copy over the initialData, skip for form properties (beanname empty) as they were already dealt with
 						   if (beanname != '') {
 							   var initialBeanConversionInfo = conversionInfo ? conversionInfo[beanname] : undefined;
-							   var beanConversionInfo = initialBeanConversionInfo ? $sabloUtils.getOrCreateInDepthProperty(formStatesConversionInfo, formName, beanname) : undefined; // we could do a get instead of undefined, but normally that value is not needed if the new conversion info is undefined
+							   var beanConversionInfo = initialBeanConversionInfo ? $sabloUtils.getOrCreateInDepthProperty(formStatesConversionInfo, formName, beanname) : $sabloUtils.getInDepthProperty(formStatesConversionInfo, formName, beanname);
 							   applyBeanData(formModel[beanname], initialFormData[beanname], formState.properties.designSize, getChangeNotifier(formName, beanname), beanConversionInfo, initialBeanConversionInfo, formState.getScope());
 						   }
 					   }
@@ -564,3 +564,21 @@ angular.module('sabloApp', ['webSocketModule'])
 
 	};
 }])
+.run(function ($sabloConverters) {
+	// Date type -----------------------------------------------
+	$sabloConverters.registerCustomPropertyHandler('Date', {
+		fromServerToClient: function (serverJSONValue, currentClientValue) {
+			return typeof (serverJSONValue) === "number" ? new Date(serverJSONValue) : serverJSONValue;
+		},
+
+		fromClientToServer: function(newClientData, oldClientData) {
+			if(!newClientData) return null;
+			
+			var r = newClientData;
+			if(typeof newClientData == 'string') r = new Date(newClientData);
+			if (isNaN(r.getTime())) throw new Error("Invalid date/time value: " + newClientData);
+			return r.getTime();
+		}
+	});
+	// other small types can be added here
+});

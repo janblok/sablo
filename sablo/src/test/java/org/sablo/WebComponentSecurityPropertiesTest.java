@@ -21,6 +21,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
 import org.junit.Test;
@@ -89,6 +90,10 @@ public class WebComponentSecurityPropertiesTest
 			"\n{" + //
 			"\n   \"astr\": \"string\"" + //
 			"\n  ,\"vis\": \"visible\"" + //
+			"\n}," + //
+			"\n\"handlers\":" + //
+			"\n{" + //
+			"\n   \"callme\": \"function\"" + //
 			"\n}" + //
 			"\n}"; // 
 
@@ -110,6 +115,10 @@ public class WebComponentSecurityPropertiesTest
 			"\n{" + //
 			"\n   \"astr\": \"string\"" + //
 			"\n  ,\"vis\": { \"type\": \"visible\" }" + // slightly different spec from previous test, still uses defaults
+			"\n}," + //
+			"\n\"handlers\":" + //
+			"\n{" + //
+			"\n   \"callme\": \"function\"" + //
 			"\n}" + //
 			"\n}"; // 
 
@@ -122,9 +131,26 @@ public class WebComponentSecurityPropertiesTest
 
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 
+		final AtomicInteger called = new AtomicInteger(0);
+
+		testcomponent.addEventHandler("callme", new IEventHandler()
+		{
+			@Override
+			public Object executeEvent(Object[] args)
+			{
+				called.addAndGet(1);
+				return null;
+			}
+		});
+
 		// default visible
 		assertTrue(testcomponent.isVisible());
 		assertEquals(Boolean.TRUE, testcomponent.getProperty("vis"));
+
+		// call function
+		assertEquals(0, called.intValue());
+		testcomponent.executeEvent("callme", null);
+		assertEquals(1, called.intValue());
 
 		// set via setVisible
 		testcomponent.setVisible(false);
@@ -163,6 +189,15 @@ public class WebComponentSecurityPropertiesTest
 
 		// check protection of properties when component is invisible
 		testcomponent = new WebComponent("testcomponent", "test");
+		testcomponent.addEventHandler("callme", new IEventHandler()
+		{
+			@Override
+			public Object executeEvent(Object[] args)
+			{
+				called.addAndGet(1);
+				return null;
+			}
+		});
 
 		testcomponent.putBrowserProperty("astr", "aap");
 		assertEquals("aap", testcomponent.getProperty("astr"));
@@ -182,10 +217,30 @@ public class WebComponentSecurityPropertiesTest
 
 		assertEquals("aap", testcomponent.getProperty("astr"));
 
+		// cannot call function of invisible component
+		assertEquals(1, called.intValue());
+		try
+		{
+			testcomponent.executeEvent("callme", null);
+			fail("can call function on invisible component from client!");
+		}
+		catch (IllegalComponentAccessException e)
+		{
+			// expected
+			assertEquals("callme", e.getProperty());
+		}
+		assertEquals(1, called.intValue());
+
+
 		testcomponent.setVisible(true);
 
 		testcomponent.putBrowserProperty("astr", "mies");
 		assertEquals("mies", testcomponent.getProperty("astr"));
+
+		// call function
+		assertEquals(1, called.intValue());
+		testcomponent.executeEvent("callme", null);
+		assertEquals(2, called.intValue());
 	}
 
 	@Test
@@ -319,6 +374,10 @@ public class WebComponentSecurityPropertiesTest
 			"\n{" + //
 			"\n   \"aint\": \"int\"" + //
 			"\n  ,\"prot\": \"protected\"" + //
+			"\n}," + //
+			"\n\"handlers\":" + //
+			"\n{" + //
+			"\n   \"callme\": \"function\"" + //
 			"\n}" + //
 			"\n}"; // 
 
@@ -340,6 +399,10 @@ public class WebComponentSecurityPropertiesTest
 			"\n{" + //
 			"\n   \"aint\": \"int\"" + //
 			"\n  ,\"prot\": { \"type\": \"protected\" }" + // slightly different spec from previous test, still uses defaults
+			"\n}," + //
+			"\n\"handlers\":" + //
+			"\n{" + //
+			"\n   \"callme\": \"function\"" + //
 			"\n}" + //
 			"\n}"; // 
 
@@ -420,6 +483,10 @@ public class WebComponentSecurityPropertiesTest
 			"\n{" + //
 			"\n   \"aint\": \"int\"" + //
 			"\n  ,\"prot\": { \"type\": \"protected\", \"default\": true, \"blockingOn\": false  }" + //
+			"\n}," + //
+			"\n\"handlers\":" + //
+			"\n{" + //
+			"\n   \"callme\": \"function\"" + //
 			"\n}" + //
 			"\n}"; // 
 
@@ -438,6 +505,19 @@ public class WebComponentSecurityPropertiesTest
 
 		// cannot set via putBrowserProperty
 		testcomponent = new WebComponent("testcomponent", "test");
+
+		final AtomicInteger called = new AtomicInteger(0);
+
+		testcomponent.addEventHandler("callme", new IEventHandler()
+		{
+			@Override
+			public Object executeEvent(Object[] args)
+			{
+				called.addAndGet(1);
+				return null;
+			}
+		});
+
 		try
 		{
 			testcomponent.putBrowserProperty("prot", Boolean.FALSE);
@@ -449,10 +529,26 @@ public class WebComponentSecurityPropertiesTest
 			assertEquals("prot", e.getProperty());
 		}
 
+		// call function
+		assertEquals(0, called.intValue());
+		testcomponent.executeEvent("callme", null);
+		assertEquals(1, called.intValue());
+
+
 		assertEquals(Boolean.TRUE, testcomponent.getProperty("prot"));
 
 		// check protection, blocking on false
 		testcomponent = new WebComponent("testcomponent", "test");
+		testcomponent.addEventHandler("callme", new IEventHandler()
+		{
+			@Override
+			public Object executeEvent(Object[] args)
+			{
+				called.addAndGet(1);
+				return null;
+			}
+		});
+
 
 		testcomponent.putBrowserProperty("aint", new Integer(1));
 		assertEquals(new Integer(1), testcomponent.getProperty("aint"));
@@ -475,9 +571,29 @@ public class WebComponentSecurityPropertiesTest
 		testcomponent.setProperty("aint", new Integer(3));
 		assertEquals(new Integer(3), testcomponent.getProperty("aint"));
 
+		// cannot call function on protected element
+		assertEquals(1, called.intValue());
+		try
+		{
+			testcomponent.executeEvent("callme", null);
+			fail("can call function on invisible component from client!");
+		}
+		catch (IllegalComponentAccessException e)
+		{
+			// expected
+			assertEquals("callme", e.getProperty());
+		}
+		assertEquals(1, called.intValue());
+
+		// unprotect
 		testcomponent.setProperty("prot", Boolean.TRUE);
 		testcomponent.putBrowserProperty("aint", new Integer(4));
 		assertEquals(new Integer(4), testcomponent.getProperty("aint"));
+
+		// call function
+		assertEquals(1, called.intValue());
+		testcomponent.executeEvent("callme", null);
+		assertEquals(2, called.intValue());
 	}
 
 	/*

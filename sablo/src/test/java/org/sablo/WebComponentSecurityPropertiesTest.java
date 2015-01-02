@@ -669,4 +669,124 @@ public class WebComponentSecurityPropertiesTest
 		assertEquals(new Integer(33), testcomponent.getProperty("aint3"));
 	}
 
+	/*
+	 * Test protected property for specific handler
+	 */
+	@Test
+	public void testProtectedFunction() throws Exception
+	{
+		String testcomponentspec = "{" + //
+			"\n\"name\": \"testcomponent\"," + //
+			"\n\"displayName\": \"Test Component\"," + //
+			"\n\"definition\": \"testcomponent.js\"," + //
+			"\n\"libraries\": []," + //
+			"\n\"model\":" + //
+			"\n{" + //
+			"\n   \"aint\": \"int\"" + //
+			"\n  ,\"protcallme1\": { \"type\": \"protected\", \"for\": \"callme1\" }" + //
+			"\n}," + //
+			"\n\"handlers\":" + //
+			"\n{" + //
+			"\n   \"callme1\": \"function\"" + //
+			"\n  ,\"callme2\": \"function\"" + //
+			"\n}" + //
+			"\n}"; // 
+
+		doTestProtectedFunction(testcomponentspec, true);
+	}
+
+	@Test
+	public void testInvisibleFunction() throws Exception
+	{
+		String testcomponentspec = "{" + //
+			"\n\"name\": \"testcomponent\"," + //
+			"\n\"displayName\": \"Test Component\"," + //
+			"\n\"definition\": \"testcomponent.js\"," + //
+			"\n\"libraries\": []," + //
+			"\n\"model\":" + //
+			"\n{" + //
+			"\n   \"aint\": \"int\"" + //
+			"\n  ,\"protcallme1\": { \"type\": \"visible\", \"for\": \"callme1\" }" + //
+			"\n}," + //
+			"\n\"handlers\":" + //
+			"\n{" + //
+			"\n   \"callme1\": \"function\"" + //
+			"\n  ,\"callme2\": \"function\"" + //
+			"\n}" + //
+			"\n}"; // 
+
+		doTestProtectedFunction(testcomponentspec, false);
+	}
+
+	private void doTestProtectedFunction(String testcomponentspec, boolean blockingOn)
+	{
+		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+
+		WebComponent testcomponent = new WebComponent("testcomponent", "test");
+
+		final AtomicInteger called1 = new AtomicInteger(0);
+		testcomponent.addEventHandler("callme1", new IEventHandler()
+		{
+			@Override
+			public Object executeEvent(Object[] args)
+			{
+				called1.addAndGet(1);
+				return null;
+			}
+		});
+
+		final AtomicInteger called2 = new AtomicInteger(0);
+		testcomponent.addEventHandler("callme2", new IEventHandler()
+		{
+			@Override
+			public Object executeEvent(Object[] args)
+			{
+				called2.addAndGet(1);
+				return null;
+			}
+		});
+
+		// call function
+		assertEquals(0, called1.intValue());
+		testcomponent.executeEvent("callme1", null);
+		assertEquals(1, called1.intValue());
+
+		assertEquals(0, called2.intValue());
+		testcomponent.executeEvent("callme2", null);
+		assertEquals(1, called2.intValue());
+
+		// protect the method
+		testcomponent.setProperty("protcallme1", Boolean.valueOf(blockingOn));
+
+		// call function
+		assertEquals(1, called1.intValue());
+		try
+		{
+			testcomponent.executeEvent("callme1", null);
+			fail("can call protected function on from client!");
+		}
+		catch (IllegalComponentAccessException e)
+		{
+			// expected
+			assertEquals("callme1", e.getProperty());
+		}
+		assertEquals(1, called1.intValue());
+
+		assertEquals(1, called2.intValue());
+		testcomponent.executeEvent("callme2", null);
+		assertEquals(2, called2.intValue());
+
+		// unprotect the method
+		testcomponent.setProperty("protcallme1", Boolean.valueOf(!blockingOn));
+
+		// call function
+		assertEquals(1, called1.intValue());
+		testcomponent.executeEvent("callme1", null);
+		assertEquals(2, called1.intValue());
+
+		assertEquals(2, called2.intValue());
+		testcomponent.executeEvent("callme2", null);
+		assertEquals(3, called2.intValue());
+	}
+
 }

@@ -18,8 +18,9 @@ package org.sablo;
 import java.io.InputStream;
 import java.util.HashMap;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
@@ -35,17 +36,17 @@ public class WebComponentLibTest
 	/**
 	 * @throws java.lang.Exception
 	 */
-	@Before
-	public void setUp() throws Exception
+	@BeforeClass
+	public static void setUp() throws Exception
 	{
-		InputStream is = getClass().getResourceAsStream("lib.manifest");
+		InputStream is = WebComponentLibTest.class.getResourceAsStream("lib.manifest");
 		byte[] bytes = new byte[is.available()];
 		is.read(bytes);
 		String manifest = new String(bytes);
 		is.close();
 
 		HashMap<String, String> components = new HashMap<>();
-		is = getClass().getResourceAsStream("lib1.spec");
+		is = WebComponentLibTest.class.getResourceAsStream("lib1.spec");
 		bytes = new byte[is.available()];
 		is.read(bytes);
 		String comp = new String(bytes);
@@ -53,7 +54,7 @@ public class WebComponentLibTest
 
 		components.put("lib1.spec", comp);
 
-		is = getClass().getResourceAsStream("lib2.spec");
+		is = WebComponentLibTest.class.getResourceAsStream("lib2.spec");
 		bytes = new byte[is.available()];
 		is.read(bytes);
 		comp = new String(bytes);
@@ -64,6 +65,12 @@ public class WebComponentLibTest
 		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(manifest, components) });
 
 		WebServiceSpecProvider.init(new IPackageReader[0]);
+	}
+
+	@AfterClass
+	public static void tearDown()
+	{
+		WebComponentSpecProvider.disposeInstance();
 	}
 
 	@Test

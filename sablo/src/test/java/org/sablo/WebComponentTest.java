@@ -32,7 +32,8 @@ import java.util.Map;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
@@ -52,16 +53,16 @@ public class WebComponentTest
 	/**
 	 * @throws java.lang.Exception
 	 */
-	@Before
-	public void setUp() throws Exception
+	@BeforeClass
+	public static void setUp() throws Exception
 	{
-		InputStream is = getClass().getResourceAsStream("WebComponentTest.manifest");
+		InputStream is = WebComponentTest.class.getResourceAsStream("WebComponentTest.manifest");
 		byte[] bytes = new byte[is.available()];
 		is.read(bytes);
 		String manifest = new String(bytes);
 		is.close();
 
-		is = getClass().getResourceAsStream("WebComponentTest-mycomponent.spec");
+		is = WebComponentTest.class.getResourceAsStream("WebComponentTest-mycomponent.spec");
 		bytes = new byte[is.available()];
 		is.read(bytes);
 		String comp = new String(bytes);
@@ -72,11 +73,16 @@ public class WebComponentTest
 		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(manifest, components) });
 	}
 
+	@AfterClass
+	public static void tearDown()
+	{
+		WebComponentSpecProvider.disposeInstance();
+	}
+
 	@Test
 	public void testNotExistingProperty()
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
-		// TODO should this be null or the default value???
 		assertNull(component.getProperty("doesnotexisits"));
 
 		component.setProperty("doesnotexisits", "test");

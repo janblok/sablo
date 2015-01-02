@@ -196,7 +196,7 @@ public abstract class BaseWebObject
 
 	/**
 	 * Check protection of property.
-	 * Validate if component or not visible or protected by another poperty.
+	 * Validate if component or not visible or protected by another property.
 	 * 
 	 * @throws IllegalComponentAccessException when property is protected
 	 */

@@ -43,6 +43,11 @@ public class WebComponentSpecProvider
 		return instance;
 	}
 
+	public static void disposeInstance()
+	{
+		instance = null;
+	}
+
 	/**
 	 * @param array
 	 */

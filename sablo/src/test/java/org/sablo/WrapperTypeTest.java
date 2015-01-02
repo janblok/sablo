@@ -25,7 +25,8 @@ import java.util.Map;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
@@ -49,7 +50,7 @@ public class WrapperTypeTest
 	 * @author jcompagner
 	 *
 	 */
-	public class MyWrapperType implements IWrapperType<String, MyWrapper>
+	public static class MyWrapperType implements IWrapperType<String, MyWrapper>
 	{
 
 		@Override
@@ -119,7 +120,7 @@ public class WrapperTypeTest
 
 	}
 
-	public class MyWrapper
+	public static class MyWrapper
 	{
 		private String string;
 		private int counter;
@@ -128,18 +129,18 @@ public class WrapperTypeTest
 	/**
 	 * @throws java.lang.Exception
 	 */
-	@Before
-	public void setUp() throws Exception
+	@BeforeClass
+	public static void setUp() throws Exception
 	{
 
 		TypesRegistry.addType(new MyWrapperType());
-		InputStream is = getClass().getResourceAsStream("WebComponentTest.manifest");
+		InputStream is = WrapperTypeTest.class.getResourceAsStream("WebComponentTest.manifest");
 		byte[] bytes = new byte[is.available()];
 		is.read(bytes);
 		String manifest = new String(bytes);
 		is.close();
 
-		is = getClass().getResourceAsStream("WrapperTypeTest-mycomponent.spec");
+		is = WrapperTypeTest.class.getResourceAsStream("WrapperTypeTest-mycomponent.spec");
 		bytes = new byte[is.available()];
 		is.read(bytes);
 		String comp = new String(bytes);
@@ -148,6 +149,12 @@ public class WrapperTypeTest
 		HashMap<String, String> components = new HashMap<>();
 		components.put("mycomponent.spec", comp);
 		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(manifest, components) });
+	}
+
+	@AfterClass
+	public static void tearDown()
+	{
+		WebComponentSpecProvider.disposeInstance();
 	}
 
 	@Test

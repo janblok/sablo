@@ -186,6 +186,122 @@ public class WebComponentSecurityPropertiesTest
 		assertEquals("mies", testcomponent.getProperty("astr"));
 	}
 
+	@Test
+	public void testComponentVisibileWithFor() throws Exception
+	{
+		String testcomponentspec = "{" + //
+			"\n\"name\": \"testcomponent\"," + //
+			"\n\"displayName\": \"Test Component\"," + //
+			"\n\"definition\": \"testcomponent.js\"," + //
+			"\n\"libraries\": []," + //
+			"\n\"model\":" + //
+			"\n{" + //
+			"\n   \"astr1\": \"string\"" + //
+			"\n  ,\"astr2\": \"string\"" + //
+			"\n  ,\"vis\": \"visible\"" + //
+			"\n  ,\"visforastr2\": { \"type\": \"visible\", \"for\": \"astr2\" }" + //	
+			"\n}" + //
+			"\n}"; // 
+
+		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+
+		WebComponent testcomponent = new WebComponent("testcomponent", "test");
+
+		// default visible
+		assertTrue(testcomponent.isVisible());
+		assertEquals(Boolean.TRUE, testcomponent.getProperty("vis"));
+		assertEquals(Boolean.TRUE, testcomponent.getProperty("visforastr2"));
+
+		// set via setVisible
+		testcomponent.setVisible(false);
+		assertFalse(testcomponent.isVisible());
+		assertEquals(Boolean.FALSE, testcomponent.getProperty("vis"));
+		assertEquals(Boolean.TRUE, testcomponent.getProperty("visforastr2")); // not set because it is not a component-global prop (for is defined)
+
+		testcomponent.setVisible(true);
+		assertTrue(testcomponent.isVisible());
+		assertEquals(Boolean.TRUE, testcomponent.getProperty("vis"));
+		assertEquals(Boolean.TRUE, testcomponent.getProperty("visforastr2"));
+
+		// set via property
+		testcomponent = new WebComponent("testcomponent", "test");
+
+		testcomponent.setProperty("visforastr2", Boolean.FALSE);
+		assertTrue(testcomponent.isVisible()); // does not affect global visibility
+
+		testcomponent.setProperty("vis", Boolean.FALSE);
+		assertFalse(testcomponent.isVisible());
+		assertEquals(Boolean.FALSE, testcomponent.getProperty("vis"));
+
+		testcomponent.setProperty("vis", Boolean.TRUE);
+		assertTrue(testcomponent.isVisible());
+		assertEquals(Boolean.TRUE, testcomponent.getProperty("vis"));
+
+		// check protection of selective visibility fields
+		testcomponent = new WebComponent("testcomponent", "test");
+		try
+		{
+			testcomponent.putBrowserProperty("visforastr2", Boolean.FALSE);
+			fail("visibility property is not protected!");
+		}
+		catch (IllegalComponentAccessException e)
+		{
+			// expected
+			assertEquals("visforastr2", e.getProperty());
+		}
+
+		testcomponent.putBrowserProperty("astr1", "the");
+		testcomponent.putBrowserProperty("astr2", "quick");
+
+		assertEquals("the", testcomponent.getProperty("astr1"));
+		assertEquals("quick", testcomponent.getProperty("astr2"));
+
+		// astr2 becomes invisible
+		testcomponent.setProperty("visforastr2", Boolean.FALSE);
+
+		testcomponent.putBrowserProperty("astr1", "brown");
+		try
+		{
+			testcomponent.putBrowserProperty("astr2", "fox");
+			fail("can set protected property from client!");
+		}
+		catch (IllegalComponentAccessException e)
+		{
+			// expected
+			assertEquals("astr2", e.getProperty());
+		}
+
+		assertEquals("brown", testcomponent.getProperty("astr1")); // modified
+		assertEquals("quick", testcomponent.getProperty("astr2")); // not modified
+
+		testcomponent.setVisible(true); // does not affect subprops
+
+		testcomponent.putBrowserProperty("astr1", "jumps");
+
+		try
+		{
+			testcomponent.putBrowserProperty("astr2", "over");
+			fail("can set protected property from client!");
+		}
+		catch (IllegalComponentAccessException e)
+		{
+			// expected
+			assertEquals("astr2", e.getProperty());
+		}
+
+		assertEquals("jumps", testcomponent.getProperty("astr1")); // not modified
+		assertEquals("quick", testcomponent.getProperty("astr2")); // modified
+
+		// astr2 becomes visible again
+		testcomponent.setProperty("visforastr2", Boolean.TRUE);
+
+		testcomponent.putBrowserProperty("astr1", "lazy");
+		testcomponent.putBrowserProperty("astr2", "dog");
+
+		assertEquals("lazy", testcomponent.getProperty("astr1")); // modified
+		assertEquals("dog", testcomponent.getProperty("astr2")); // modified
+	}
+
 	/*
 	 * Test protected property with defaults: (value: false, blockingOn: true)
 	 */

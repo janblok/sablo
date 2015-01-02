@@ -149,13 +149,12 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 			}
 			if (sd.contentType != null) serviceDataTypes.putProperty(entry.getKey(), sd.contentType);
 		}
-		if (!serviceDataTypes.hasChildProperties()) serviceDataTypes = null;
 		if (serviceData.size() > 0)
 		{
 			data.put("services", serviceData);
 		}
 		PropertyDescription dataTypes = null;
-		if (serviceDataTypes != null)
+		if (serviceDataTypes.hasChildProperties())
 		{
 			dataTypes = AggregatedPropertyType.newAggregatedProperty();
 			dataTypes.putProperty("services", serviceDataTypes);

@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.json.JSONException;
 import org.json.JSONWriter;
@@ -120,8 +119,7 @@ public abstract class Container extends WebComponent
 
 		if (keyInParent != null)
 		{
-			JSONUtils.addKeyIfPresent(w, keyInParent);
-			w.object();
+			w.key(keyInParent).object();
 		}
 
 		w.key(nodeName).object();
@@ -138,59 +136,14 @@ public abstract class Container extends WebComponent
 		WebsocketEndpoint.get().registerContainer(this);
 
 		DataConversion clientDataConversions = new DataConversion();
-		boolean contentHasBeenWritten = writeComponentProperties(w, converter, this, "", clientDataConversions);
+		boolean contentHasBeenWritten = writeComponentProperties(w, converter, "", clientDataConversions);
 		for (WebComponent wc : getComponents())
 		{
-			contentHasBeenWritten = writeComponentProperties(w, converter, wc, wc.getName(), clientDataConversions) || contentHasBeenWritten;
+			contentHasBeenWritten = wc.writeComponentProperties(w, converter, wc.getName(), clientDataConversions) || contentHasBeenWritten;
 		}
 
 		JSONUtils.writeClientConversions(w, clientDataConversions);
 		changed = false;
 		return contentHasBeenWritten;
-	}
-
-	protected boolean writeComponentProperties(JSONWriter w, IToJSONConverter converter, WebComponent wc, String nodeName, DataConversion clientDataConversions)
-		throws JSONException
-	{
-		TypedData<Map<String, Object>> wcProperties = wc.getProperties();
-		if (wcProperties.content.isEmpty())
-		{
-			return false;
-		}
-
-		w.key(nodeName).object();
-		clientDataConversions.pushNode(nodeName);
-
-		Map<String, Object> data;
-		if (wc.isVisible())
-		{
-			// write all properties
-			data = wcProperties.content;
-			wc.clearChanges();
-		}
-		else
-		{
-			// only write visibility properties
-			data = new HashMap<>();
-			for (Entry<String, Object> entry : wcProperties.content.entrySet())
-			{
-				if (wc.isVisibilityProperty(entry.getKey()))
-				{
-					data.put(entry.getKey(), entry.getValue());
-					wc.flagPropertyAsDirty(entry.getKey(), false);
-				}
-				else
-				{
-					// will be sent as changed when component becomes visible
-					wc.flagPropertyAsDirty(entry.getKey(), true);
-				}
-			}
-		}
-
-		JSONUtils.writeData(converter, w, data, wcProperties.contentType, clientDataConversions, wc);
-		clientDataConversions.popNode();
-		w.endObject();
-
-		return true;
 	}
 }

@@ -28,6 +28,8 @@ import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
 
 /**
+ * Test protected and visibility properties.
+ * 
  * @author rgansevles
  *
  */

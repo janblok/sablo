@@ -26,7 +26,7 @@ import org.sablo.specification.PropertyDescription;
 public class AggregatedPropertyType extends DefaultPropertyType<Object>
 {
 
-	public static AggregatedPropertyType INSTANCE = new AggregatedPropertyType();
+	public static final AggregatedPropertyType INSTANCE = new AggregatedPropertyType();
 
 	public static PropertyDescription newAggregatedProperty()
 	{

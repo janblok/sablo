@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebComponentSpecification;
@@ -39,7 +40,9 @@ import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.specification.property.types.ProtectedConfig;
 import org.sablo.specification.property.types.VisiblePropertyType;
 import org.sablo.websocket.TypedData;
+import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
+import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +53,9 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BaseWebObject
 {
+	static final TypedData<Map<String, Object>> EMPTY_PROPERTIES = new TypedData<Map<String, Object>>(Collections.<String, Object> emptyMap(), null);
+
+
 	private static final Logger log = LoggerFactory.getLogger(BaseWebObject.class.getCanonicalName());
 
 
@@ -149,12 +155,12 @@ public abstract class BaseWebObject
 					Collection<String> forEntries = (((ProtectedConfig)config).getForEntries()).getEntries();
 					if (forEntries != null && forEntries.size() > 0 && (property == null || !forEntries.contains(property)))
 					{
-						// specific enable-property, not for this eventType
+						// specific visibility-property, not for this property
 						continue;
 					}
 				}
 
-				// general protected property or specific for this eventType
+				// general visibility-property or specific for this property
 				return false;
 			}
 		}
@@ -223,12 +229,12 @@ public abstract class BaseWebObject
 						Collection<String> forEntries = (((ProtectedConfig)config).getForEntries()).getEntries();
 						if (forEntries != null && forEntries.size() > 0 && (property == null || !forEntries.contains(property)))
 						{
-							// specific enable-property, not for this eventType
+							// specific enable-property, not for this property
 							continue;
 						}
 					}
 
-					// general protected property or specific for this eventType
+					// general protected property or specific for this property
 					throw new IllegalComponentAccessException(prop.getType().getName(), getName(), property);
 				}
 			}
@@ -284,7 +290,15 @@ public abstract class BaseWebObject
 
 	public boolean hasChanges()
 	{
-		return !changedProperties.isEmpty();
+		for (String propertyName : changedProperties)
+		{
+			if (isVisible(propertyName) || isVisibilityProperty(propertyName))
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -296,25 +310,39 @@ public abstract class BaseWebObject
 	{
 		if (changedProperties.isEmpty())
 		{
-			return new TypedData<>(Collections.<String, Object> emptyMap(), null);
+			return EMPTY_PROPERTIES;
 		}
 
-		boolean visible = isVisible();
-		Map<String, Object> changes = new HashMap<>();
-		PropertyDescription changeTypes = AggregatedPropertyType.newAggregatedProperty();
+		Map<String, Object> changes = null;
+		PropertyDescription changeTypes = null;
 		for (String propertyName : changedProperties.toArray(new String[changedProperties.size()]))
 		{
-			if (visible || isVisibilityProperty(propertyName))
+			if (isVisible(propertyName) || isVisibilityProperty(propertyName))
 			{
 				flagPropertyAsDirty(propertyName, false);
+				if (changes == null)
+				{
+					changes = new HashMap<>();
+				}
 				changes.put(propertyName, properties.get(propertyName));
 				PropertyDescription t = specification.getProperty(propertyName);
-				if (t != null) changeTypes.putProperty(propertyName, t);
+				if (t != null)
+				{
+					if (changeTypes == null)
+					{
+						changeTypes = AggregatedPropertyType.newAggregatedProperty();
+					}
+					changeTypes.putProperty(propertyName, t);
+				}
 			}
 		}
 
-		return new TypedData<Map<String, Object>>(changes, changeTypes.hasChildProperties() ? changeTypes : null);
+		if (changes == null)
+		{
+			return EMPTY_PROPERTIES;
+		}
 
+		return new TypedData<Map<String, Object>>(changes, changeTypes);
 	}
 
 	/**
@@ -322,22 +350,26 @@ public abstract class BaseWebObject
 	 * 
 	 * DO NOT USE THIS METHOD; when possible please use {@link #getProperty(String)}, {@link #getProperties()} or {@link #getAllPropertyNames(boolean)} instead.
 	 */
-	public Map<String, Object> getRawPropertiesWithoutDefaults()
+	Map<String, Object> getRawPropertiesWithoutDefaults()
 	{
 		return properties;
 	}
 
 	public TypedData<Map<String, Object>> getProperties()
 	{
+		if (properties.isEmpty())
+		{
+			return EMPTY_PROPERTIES;
+		}
+
 		PropertyDescription propertyTypes = AggregatedPropertyType.newAggregatedProperty();
 		for (Entry<String, Object> p : properties.entrySet())
 		{
 			PropertyDescription t = specification.getProperty(p.getKey());
 			if (t != null) propertyTypes.putProperty(p.getKey(), t);
 		}
-		if (!propertyTypes.hasChildProperties()) propertyTypes = null;
 
-		return new TypedData<Map<String, Object>>(Collections.unmodifiableMap(properties), propertyTypes);
+		return new TypedData<Map<String, Object>>(Collections.unmodifiableMap(properties), propertyTypes.hasChildProperties() ? propertyTypes : null);
 	}
 
 	/**
@@ -372,6 +404,7 @@ public abstract class BaseWebObject
 	 * @param propertyValue
 	 * @return true is was change
 	 */
+	@SuppressWarnings("nls")
 	public boolean setProperty(String propertyName, Object propertyValue)
 	{
 		Object canBeWrapped = propertyValue;
@@ -448,6 +481,7 @@ public abstract class BaseWebObject
 	 * Gets the current value from the properties, if not set then it fallbacks to the default properties (which it then wraps)
 	 * DO NOT USE THIS METHOD; when possible please use {@link #getProperty(String)}, {@link #getProperties()} or {@link #getAllPropertyNames(boolean)} instead.
 	 */
+	@SuppressWarnings("nls")
 	public Object getRawPropertyValue(String propertyName)
 	{
 		String[] parts = propertyName.split("\\.");
@@ -577,20 +611,53 @@ public abstract class BaseWebObject
 		return dirty ? changedProperties.add(key) : changedProperties.remove(key);
 	}
 
+	protected boolean writeComponentProperties(JSONWriter w, IToJSONConverter converter, String nodeName, DataConversion clientDataConversions)
+		throws JSONException
+	{
+		TypedData<Map<String, Object>> typedProperties = getProperties();
+		if (typedProperties.content.isEmpty())
+		{
+			return false;
+		}
+
+		w.key(nodeName).object();
+		clientDataConversions.pushNode(nodeName);
+
+		// only write properties that are visible, always write visibility properties
+		Map<String, Object> data = new HashMap<>();
+		for (Entry<String, Object> entry : typedProperties.content.entrySet())
+		{
+			String propertyName = entry.getKey();
+			if (isVisibilityProperty(propertyName) || isVisible(propertyName))
+			{
+				data.put(propertyName, entry.getValue());
+				flagPropertyAsDirty(propertyName, false);
+			}
+			else
+			{
+				// will be sent as changed when component becomes visible
+				flagPropertyAsDirty(propertyName, true);
+			}
+		}
+
+		JSONUtils.writeData(converter, w, data, typedProperties.contentType, clientDataConversions, this);
+		clientDataConversions.popNode();
+		w.endObject();
+
+		return true;
+	}
+
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private Object wrapPropertyValue(String propertyName, Object oldValue, Object newValue)
 	{
 		PropertyDescription propertyDesc = specification.getProperty(propertyName);
 		IPropertyType<Object> type = propertyDesc != null ? (IPropertyType<Object>)propertyDesc.getType() : null;
 		Object object = (type instanceof IWrapperType) ? ((IWrapperType)type).wrap(newValue, oldValue, new DataConverterContext(propertyDesc, this)) : newValue;
-		if (type instanceof IClassPropertyType && object != null)
+		if (type instanceof IClassPropertyType && object != null && !((IClassPropertyType< ? >)type).getTypeClass().isAssignableFrom(object.getClass()))
 		{
-			if (!((IClassPropertyType< ? >)type).getTypeClass().isAssignableFrom(object.getClass()))
-			{
-				log.info("property: " + propertyName + " of component " + getName() + " set with value: " + newValue + " which is not of type: " +
-					((IClassPropertyType< ? >)type).getTypeClass());
-				return null;
-			}
+			log.info("property: " + propertyName + " of component " + getName() + " set with value: " + newValue + " which is not of type: " +
+				((IClassPropertyType< ? >)type).getTypeClass());
+			return null;
 		}
 		return object;
 	}

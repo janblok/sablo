@@ -39,7 +39,7 @@ public class ForentriesConfig
 
 	private ForentriesConfig(Collection<String> entries)
 	{
-		this.entries = entries;
+		this.entries = Collections.unmodifiableCollection(entries);
 	}
 
 	/**
@@ -47,13 +47,14 @@ public class ForentriesConfig
 	 */
 	public Collection<String> getEntries()
 	{
-		return Collections.unmodifiableCollection(entries);
+		return entries;
 	}
 
 	/**
 	 * @param json
 	 * @return
 	 */
+	@SuppressWarnings("nls")
 	public static ForentriesConfig parse(JSONObject json)
 	{
 		if (json == null)
@@ -75,6 +76,11 @@ public class ForentriesConfig
 			{
 				entries.add(trimmed);
 			}
+		}
+
+		if (entries.size() == 0)
+		{
+			return DEFAULT;
 		}
 
 		return new ForentriesConfig(entries);

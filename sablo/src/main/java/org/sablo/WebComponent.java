@@ -170,7 +170,12 @@ public class WebComponent extends BaseWebObject
 				{
 					try
 					{
-						return types.get(Integer.parseInt(name));
+						int index = Integer.parseInt(name);
+						if (index < types.size())
+						{
+							return types.get(index);
+						}
+						return null;
 					}
 					catch (NumberFormatException e)
 					{

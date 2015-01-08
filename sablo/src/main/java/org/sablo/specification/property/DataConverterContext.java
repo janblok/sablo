@@ -22,23 +22,58 @@ import org.sablo.specification.PropertyDescription;
  * Context for data converters
  * @author gboros
  */
-public class DataConverterContext implements IDataConverterContext {
+public class DataConverterContext implements IDataConverterContext
+{
 
-	private PropertyDescription propertyDescription;
-	private BaseWebObject webObject;
-	
-	public DataConverterContext(PropertyDescription propertyDescription, BaseWebObject webObject) {
+	private final PropertyDescription propertyDescription;
+	private final BaseWebObject webObject;
+
+	public DataConverterContext(PropertyDescription propertyDescription, BaseWebObject webObject)
+	{
 		this.propertyDescription = propertyDescription;
 		this.webObject = webObject;
 	}
-	
+
 	@Override
-	public PropertyDescription getPropertyDescription() {
+	public PropertyDescription getPropertyDescription()
+	{
 		return propertyDescription;
 	}
 
 	@Override
-	public BaseWebObject getWebObject() {
+	public BaseWebObject getWebObject()
+	{
 		return webObject;
 	}
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((propertyDescription == null) ? 0 : propertyDescription.hashCode());
+		result = prime * result + ((webObject == null) ? 0 : webObject.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj)
+	{
+		if (this == obj) return true;
+		if (obj == null) return false;
+		if (getClass() != obj.getClass()) return false;
+		DataConverterContext other = (DataConverterContext)obj;
+		if (propertyDescription == null)
+		{
+			if (other.propertyDescription != null) return false;
+		}
+		else if (!propertyDescription.equals(other.propertyDescription)) return false;
+		if (webObject == null)
+		{
+			if (other.webObject != null) return false;
+		}
+		else if (!webObject.equals(other.webObject)) return false;
+		return true;
+	}
+
 }

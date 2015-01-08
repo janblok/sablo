@@ -188,8 +188,8 @@ public class JSONUtils
 	 * @return true if the given value could be written using default logic and false otherwise.
 	 * @throws IllegalArgumentException if the given object could not be written to JSON for some reason.
 	 */
-	public static boolean defaultToJSONValue(IToJSONConverter toJSONConverter, JSONWriter w, String key, Object value, PropertyDescription valueType,
-		DataConversion clientConversion, BaseWebObject webObject) throws JSONException, IllegalArgumentException
+	public static <ContextObject> boolean defaultToJSONValue(IToJSONConverter<ContextObject> toJSONConverter, JSONWriter w, String key, Object value,
+		PropertyDescription valueType, DataConversion clientConversion, ContextObject contextObject) throws JSONException, IllegalArgumentException
 	{
 		// there is no clear conversion; see if we find a primitive/default or Class based conversion
 		Object converted = value;
@@ -212,7 +212,7 @@ public class JSONUtils
 			for (int i = 0; i < lst.size(); i++)
 			{
 				if (clientConversion != null) clientConversion.pushNode(String.valueOf(i));
-				toJSONConverter.toJSONValue(w, null, lst.get(i), getArrayElementType(valueType, i), clientConversion, webObject);
+				toJSONConverter.toJSONValue(w, null, lst.get(i), getArrayElementType(valueType, i), clientConversion, contextObject);
 				if (clientConversion != null) clientConversion.popNode();
 			}
 			w.endArray();
@@ -225,7 +225,7 @@ public class JSONUtils
 			for (int i = 0; i < array.length; i++)
 			{
 				if (clientConversion != null) clientConversion.pushNode(String.valueOf(i));
-				toJSONConverter.toJSONValue(w, null, array[i], getArrayElementType(valueType, i), clientConversion, webObject);
+				toJSONConverter.toJSONValue(w, null, array[i], getArrayElementType(valueType, i), clientConversion, contextObject);
 				if (clientConversion != null) clientConversion.popNode();
 			}
 			w.endArray();
@@ -250,13 +250,13 @@ public class JSONUtils
 					w.key(keys[0]);
 					w.object();
 					toJSONConverter.toJSONValue(w, keys[1], entry.getValue(), valueType != null ? valueType.getProperty(entry.getKey()) : null,
-						clientConversion, webObject);
+						clientConversion, contextObject);
 					w.endObject();
 				}// END TODO REMOVE
 				else
 				{
 					toJSONConverter.toJSONValue(w, entry.getKey(), entry.getValue(), valueType != null ? valueType.getProperty(entry.getKey()) : null,
-						clientConversion, webObject);
+						clientConversion, contextObject);
 				}
 				if (clientConversion != null) clientConversion.popNode();
 			}
@@ -265,7 +265,7 @@ public class JSONUtils
 		else if (converted instanceof JSONWritable)
 		{
 			TypedData<Map<String, Object>> dm = ((JSONWritable)converted).toMap();
-			toJSONConverter.toJSONValue(w, key, dm.content, dm.contentType, clientConversion, webObject);
+			toJSONConverter.toJSONValue(w, key, dm.content, dm.contentType, clientConversion, contextObject);
 		}
 		// best-effort to still find a way to write data and convert if needed follows
 		else if (converted instanceof Integer || converted instanceof Long)
@@ -386,7 +386,7 @@ public class JSONUtils
 		TypedData<Map<String, Object>> toMap();
 	}
 
-	public static interface IToJSONConverter
+	public static interface IToJSONConverter<ContextType>
 	{
 		/**
 		 * Converts from a value to JSON form (that can be sent to the browser) and writes to "writer".
@@ -397,15 +397,15 @@ public class JSONUtils
 		 * @param value the value to be converted and written.
 		 * @param valueType the type of the property as described in the spec file
 		 * @param clientConversion client conversion markers that can be set and if set will be used client side to interpret the data properly.
-		 * @param toDestinationType TODO remove this
+		 * @param context an object representing a state that the conversions of this type might need.
 		 * @return the JSON writer for easily continuing the write process in the caller.
 		 */
-		JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion clientConversion,
-			BaseWebObject webObject) throws JSONException, IllegalArgumentException;
+		JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion clientConversion, ContextType context)
+			throws JSONException, IllegalArgumentException;
 
 	}
 
-	public static class FullValueToJSONConverter implements IToJSONConverter
+	public static class FullValueToJSONConverter implements IToJSONConverter<BaseWebObject>
 	{
 
 		public static final FullValueToJSONConverter INSTANCE = new FullValueToJSONConverter();

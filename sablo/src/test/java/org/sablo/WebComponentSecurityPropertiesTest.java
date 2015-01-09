@@ -17,6 +17,7 @@ package org.sablo;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -25,8 +26,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
 import org.junit.Test;
+import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
+import org.sablo.specification.WebComponentSpecification;
+import org.sablo.specification.property.types.DimensionPropertyType;
+import org.sablo.specification.property.types.ProtectedConfig;
+import org.sablo.specification.property.types.ProtectedPropertyType;
+import org.sablo.specification.property.types.VisiblePropertyType;
 
 /**
  * Test protected and visibility properties.
@@ -787,6 +794,194 @@ public class WebComponentSecurityPropertiesTest
 		assertEquals(2, called2.intValue());
 		testcomponent.executeEvent("callme2", null);
 		assertEquals(3, called2.intValue());
+	}
+
+	@Test
+	public void testProtectedContainer() throws Exception
+	{
+		String testcomponentspec = "{" + //
+			"\n\"name\": \"testcomponent\"," + //
+			"\n\"displayName\": \"Test Component\"," + //
+			"\n\"definition\": \"testcomponent.js\"," + //
+			"\n\"libraries\": []," + //
+			"\n\"model\":" + //
+			"\n{" + //
+			"\n   \"aint\": \"int\"" + //
+			"\n}," + //
+			"\n\"handlers\":" + //
+			"\n{" + //
+			"\n   \"callme\": \"function\"" + //
+			"\n}" + //
+			"\n}"; // 
+
+		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+
+		WebComponentSpecification formSpec = new WebComponentSpecification("form_spec", "", "", null, null, "", null);
+		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
+		formSpec.putProperty("prot", new PropertyDescription("prot", ProtectedPropertyType.INSTANCE, ProtectedConfig.DEFAULTBLOCKING_TRUE));
+
+		Container form = new Container("form", formSpec)
+		{
+		};
+
+		WebComponent testcomponent = new WebComponent("testcomponent", "test");
+		form.add(testcomponent);
+
+		final AtomicInteger called = new AtomicInteger(0);
+		testcomponent.addEventHandler("callme", new IEventHandler()
+		{
+			@Override
+			public Object executeEvent(Object[] args)
+			{
+				called.addAndGet(1);
+				return null;
+			}
+		});
+
+		// call function
+		assertEquals(0, called.intValue());
+		testcomponent.executeEvent("callme", null);
+		assertEquals(1, called.intValue());
+
+		// set a property
+		testcomponent.putBrowserProperty("aint", new Integer(1));
+		assertEquals(new Integer(1), testcomponent.getProperty("aint"));
+
+		// protect form
+		form.setProperty("prot", Boolean.TRUE);
+
+		// call function
+		assertEquals(1, called.intValue());
+		try
+		{
+			testcomponent.executeEvent("callme", null);
+			fail("can call function on invisble form on from client!");
+		}
+		catch (IllegalComponentAccessException e)
+		{
+			// expected
+			assertNull(e.getProperty());
+		}
+		assertEquals(1, called.intValue());
+
+		// set a property
+		try
+		{
+			testcomponent.putBrowserProperty("aint", new Integer(11));
+			fail("can set property on invisble form on from client!");
+		}
+		catch (IllegalComponentAccessException e)
+		{
+			// expected
+			assertNull(e.getProperty());
+		}
+		assertEquals(new Integer(1), testcomponent.getProperty("aint"));
+
+		// make form visible again
+		form.setProperty("prot", Boolean.FALSE);
+
+		// call function
+		assertEquals(1, called.intValue());
+		testcomponent.executeEvent("callme", null);
+		assertEquals(2, called.intValue());
+
+		// set a property
+		testcomponent.putBrowserProperty("aint", new Integer(111));
+		assertEquals(new Integer(111), testcomponent.getProperty("aint"));
+	}
+
+	@Test
+	public void testInvisibleContainer() throws Exception
+	{
+		String testcomponentspec = "{" + //
+			"\n\"name\": \"testcomponent\"," + //
+			"\n\"displayName\": \"Test Component\"," + //
+			"\n\"definition\": \"testcomponent.js\"," + //
+			"\n\"libraries\": []," + //
+			"\n\"model\":" + //
+			"\n{" + //
+			"\n   \"aint\": \"int\"" + //
+			"\n}," + //
+			"\n\"handlers\":" + //
+			"\n{" + //
+			"\n   \"callme\": \"function\"" + //
+			"\n}" + //
+			"\n}"; // 
+
+		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+
+		WebComponentSpecification formSpec = new WebComponentSpecification("form_spec", "", "", null, null, "", null);
+		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
+		formSpec.putProperty("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
+
+		Container form = new Container("form", formSpec)
+		{
+		};
+
+		WebComponent testcomponent = new WebComponent("testcomponent", "test");
+		form.add(testcomponent);
+
+		final AtomicInteger called = new AtomicInteger(0);
+		testcomponent.addEventHandler("callme", new IEventHandler()
+		{
+			@Override
+			public Object executeEvent(Object[] args)
+			{
+				called.addAndGet(1);
+				return null;
+			}
+		});
+
+		// call function
+		assertEquals(0, called.intValue());
+		testcomponent.executeEvent("callme", null);
+		assertEquals(1, called.intValue());
+
+		// set a property
+		testcomponent.putBrowserProperty("aint", new Integer(1));
+		assertEquals(new Integer(1), testcomponent.getProperty("aint"));
+
+		// set form invisible
+		form.setVisible(false);
+
+		// call function
+		assertEquals(1, called.intValue());
+		try
+		{
+			testcomponent.executeEvent("callme", null);
+			fail("can call function on invisble form on from client!");
+		}
+		catch (IllegalComponentAccessException e)
+		{
+			// expected
+			assertNull(e.getProperty());
+		}
+		assertEquals(1, called.intValue());
+
+		// set a property
+		try
+		{
+			testcomponent.putBrowserProperty("aint", new Integer(11));
+			fail("can set property on invisble form on from client!");
+		}
+		catch (IllegalComponentAccessException e)
+		{
+			// expected
+			assertNull(e.getProperty());
+		}
+		assertEquals(new Integer(1), testcomponent.getProperty("aint"));
+
+		// make form visible again
+		form.setVisible(true);
+
+		// call function
+		assertEquals(1, called.intValue());
+		testcomponent.executeEvent("callme", null);
+		assertEquals(2, called.intValue());
+
+		// set a property
+		testcomponent.putBrowserProperty("aint", new Integer(111));
+		assertEquals(new Integer(111), testcomponent.getProperty("aint"));
 	}
 
 }

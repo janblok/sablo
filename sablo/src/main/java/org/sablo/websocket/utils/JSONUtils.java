@@ -77,24 +77,24 @@ public class JSONUtils
 		return writeDataWithConversions(FullValueToJSONConverter.INSTANCE, writer, data, dataTypes, webObject);
 	}
 
-	public static JSONWriter writeDataWithConversions(IToJSONConverter converter, JSONWriter writer, Map<String, ? > data, PropertyDescription dataTypes,
-		BaseWebObject webObject) throws JSONException
+	public static <ContextT> JSONWriter writeDataWithConversions(IToJSONConverter<ContextT> converter, JSONWriter writer, Map<String, ? > data,
+		PropertyDescription dataTypes, ContextT contextObject) throws JSONException
 	{
 		DataConversion dataConversion = new DataConversion();
-		writeData(converter, writer, data, dataTypes, dataConversion, webObject);
+		writeData(converter, writer, data, dataTypes, dataConversion, contextObject);
 		writeClientConversions(writer, dataConversion);
 
 		return writer;
 	}
 
-	public static DataConversion writeData(IToJSONConverter converter, JSONWriter writer, Map<String, ? > data, PropertyDescription dataTypes,
-		DataConversion dataConversion, BaseWebObject webObject) throws JSONException
+	public static <ContextT> DataConversion writeData(IToJSONConverter<ContextT> converter, JSONWriter writer, Map<String, ? > data,
+		PropertyDescription dataTypes, DataConversion dataConversion, ContextT contextObject) throws JSONException
 	{
 		for (Entry<String, ? > entry : data.entrySet())
 		{
 			dataConversion.pushNode(entry.getKey());
 			converter.toJSONValue(writer, entry.getKey(), entry.getValue(), dataTypes != null ? dataTypes.getProperty(entry.getKey()) : null, dataConversion,
-				webObject);
+				contextObject);
 			dataConversion.popNode();
 		}
 		return dataConversion;
@@ -120,11 +120,11 @@ public class JSONUtils
 		return writeDataWithConversions(ChangesToJSONConverter.INSTANCE, data, dataTypes, webObject);
 	}
 
-	public static String writeDataWithConversions(IToJSONConverter converter, Map<String, ? > data, PropertyDescription dataTypes, BaseWebObject webObject)
-		throws JSONException
+	public static <ContextT> String writeDataWithConversions(IToJSONConverter<ContextT> converter, Map<String, ? > data, PropertyDescription dataTypes,
+		ContextT contextObject) throws JSONException
 	{
 		JSONWriter writer = new JSONStringer().object();
-		writeDataWithConversions(converter, writer, data, dataTypes, webObject);
+		writeDataWithConversions(converter, writer, data, dataTypes, contextObject);
 		return writer.endObject().toString();
 	}
 

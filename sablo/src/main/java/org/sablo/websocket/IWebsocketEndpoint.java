@@ -69,14 +69,14 @@ public interface IWebsocketEndpoint
 	 * @return if async it will return null; otherwise it will return whatever the client sends back as a response to this message.
 	 * @throws IOException when such an exception occurs.
 	 */
-	Object sendMessage(Map<String, ? > data, PropertyDescription dataTypes, boolean async, IToJSONConverter converter) throws IOException;
+	<ContextT> Object sendMessage(Map<String, ? > data, PropertyDescription dataTypes, boolean async, IToJSONConverter<ContextT> converter) throws IOException;
 
 	/**
 	 * Same as {@link #sendMessage(Map, PropertyDescription, boolean, IToJSONConverter)}, but instead of giving data as java maps and property descriptions
 	 * it simply uses a 'dataWriter' to write directly the data to JSON.
 	 * @throws IOException
 	 */
-	Object sendMessage(IToJSONWriter dataWriter, boolean async, IToJSONConverter converter) throws IOException;
+	<ContextT> Object sendMessage(IToJSONWriter<ContextT> dataWriter, boolean async, IToJSONConverter<ContextT> converter) throws IOException;
 
 	/**
 	 * Flush outstanding async service calls.

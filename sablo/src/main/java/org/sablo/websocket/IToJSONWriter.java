@@ -26,13 +26,13 @@ import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
  *
  * @author acostescu
  */
-public interface IToJSONWriter
+public interface IToJSONWriter<ContextT>
 {
 
 	/**
 	 * Writes as JSON changes from all components of all registered Containers.
 	 * @param keyInParent a key (can be null in which case it should be ignored) that must be appended to 'w' initially if this method call writes content to it. If the method returns false, nothing should be written to the writer...
 	 */
-	boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter converter, DataConversion clientDataConversions) throws JSONException;
+	boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<ContextT> converter, DataConversion clientDataConversions) throws JSONException;
 
 }

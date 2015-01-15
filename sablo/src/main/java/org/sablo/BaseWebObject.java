@@ -140,7 +140,7 @@ public abstract class BaseWebObject
 
 	/**
 	 * Determine visibility on properties of type VisiblePropertyType.INSTANCE.
-	 * 
+	 *
 	 * @param property check properties that have for defined for this  when null, check for component-level visibility.
 	 */
 	public final boolean isVisible(String property)
@@ -203,10 +203,10 @@ public abstract class BaseWebObject
 	/**
 	 * Check protection of property.
 	 * Validate if component or not visible or protected by another property.
-	 * 
+	 *
 	 * @throws IllegalComponentAccessException when property is protected
 	 */
-	protected void checkProtection(String property)
+	public void checkProtection(String property)
 	{
 		for (PropertyDescription prop : specification.getProperties().values())
 		{
@@ -245,11 +245,11 @@ public abstract class BaseWebObject
 
 	/**
 	 * Check if the property is protected, i.e. it cannot be set from the client.
-	 * 
+	 *
 	 * @param propName
 	 * @throws IllegalComponentAccessException when property is protected
 	 */
-	protected void checkForProtectedProperty(String propName)
+	public void checkForProtectedProperty(String propName)
 	{
 		PropertyDescription property = specification.getProperty(propName);
 		if (property != null && property.getType().isProtecting())
@@ -304,7 +304,7 @@ public abstract class BaseWebObject
 	/**
 	 * Get the changes of this component, clear changes.
 	 * When the component is not visible, only the visibility-properties are returned and cleared from the changes.
-	 * 
+	 *
 	 */
 	public TypedData<Map<String, Object>> getAndClearChanges()
 	{
@@ -347,7 +347,7 @@ public abstract class BaseWebObject
 
 	/**
 	 * For testing only.
-	 * 
+	 *
 	 * DO NOT USE THIS METHOD; when possible please use {@link #getProperty(String)}, {@link #getProperties()} or {@link #getAllPropertyNames(boolean)} instead.
 	 */
 	Map<String, Object> getRawPropertiesWithoutDefaults()
@@ -492,7 +492,7 @@ public abstract class BaseWebObject
 			Object defaultProperty = defaultPropertiesUnwrapped.get(firstProperty);
 			if (defaultProperty == null && !defaultPropertiesUnwrapped.containsKey(firstProperty))
 			{
-				// default value based o 
+				// default value based o
 				PropertyDescription propertyDesc = specification.getProperty(firstProperty);
 				if (propertyDesc != null)
 				{

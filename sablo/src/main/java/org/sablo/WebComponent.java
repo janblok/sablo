@@ -92,7 +92,7 @@ public class WebComponent extends BaseWebObject
 	}
 
 	@Override
-	protected void checkProtection(String eventType)
+	public void checkProtection(String eventType)
 	{
 		super.checkProtection(eventType);
 

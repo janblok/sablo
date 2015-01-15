@@ -291,11 +291,11 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 
 			// TODO this should not send to the currently active end-point, but to each of all end-points their own changes...
 			// so that any change from 1 end-point request ends up in all the end points.
-			WebsocketEndpoint.get().sendMessage(new IToJSONWriter()
+			WebsocketEndpoint.get().sendMessage(new IToJSONWriter<BaseWebObject>()
 			{
 				@Override
-				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter converter, DataConversion clientDataConversions)
-					throws JSONException
+				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<BaseWebObject> converter,
+					DataConversion clientDataConversions) throws JSONException
 				{
 					JSONUtils.addKeyIfPresent(w, keyInParent);
 					w.object();
@@ -335,11 +335,11 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		// {"call":{"form":"product","bean":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}}
 		try
 		{
-			Object ret = WebsocketEndpoint.get().sendMessage(new IToJSONWriter()
+			Object ret = WebsocketEndpoint.get().sendMessage(new IToJSONWriter<BaseWebObject>()
 			{
 				@Override
-				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter converter, DataConversion clientDataConversions)
-					throws JSONException
+				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<BaseWebObject> converter,
+					DataConversion clientDataConversions) throws JSONException
 				{
 					JSONUtils.addKeyIfPresent(w, keyInParent);
 					w.object();

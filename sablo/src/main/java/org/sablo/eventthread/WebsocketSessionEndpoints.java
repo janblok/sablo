@@ -54,11 +54,6 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 		this.session = session;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see org.sablo.websocket.IWebsocketEndpoint#getWindowId()
-	 */
 	@Override
 	public String getWindowId()
 	{
@@ -66,11 +61,6 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 		return null;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see org.sablo.websocket.IWebsocketEndpoint#setWindowId(java.lang.String)
-	 */
 	@Override
 	public void setWindowId(String windowId)
 	{
@@ -102,7 +92,8 @@ public class WebsocketSessionEndpoints implements IWebsocketEndpoint
 	}
 
 	@Override
-	public Object sendMessage(Map<String, ? > data, PropertyDescription dataType, boolean async, IToJSONConverter converter) throws IOException
+	public <ContextT> Object sendMessage(Map<String, ? > data, PropertyDescription dataType, boolean async, IToJSONConverter<ContextT> converter)
+		throws IOException
 	{
 		Object retValue = null;
 		for (IWebsocketEndpoint endpoint : session.getRegisteredEnpoints())

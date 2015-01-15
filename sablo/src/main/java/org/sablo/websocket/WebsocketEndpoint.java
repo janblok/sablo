@@ -32,6 +32,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
 import org.json.JSONWriter;
+import org.sablo.BaseWebObject;
 import org.sablo.Container;
 import org.sablo.eventthread.IEventDispatcher;
 import org.sablo.specification.PropertyDescription;
@@ -358,7 +359,7 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 
 	}
 
-	protected IToJSONConverter getToJSONConverter()
+	protected IToJSONConverter<BaseWebObject> getToJSONConverter()
 	{
 		return FullValueToJSONConverter.INSTANCE;
 	}
@@ -390,14 +391,14 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 		return sendMessage(changes, changesTypes, false, getToJSONConverter()); // will return response from last service call
 	}
 
-	public Object sendMessage(final Map<String, ? > data, final PropertyDescription dataTypes, boolean async, IToJSONConverter converter) throws IOException
+	public <ContextT> Object sendMessage(final Map<String, ? > data, final PropertyDescription dataTypes, boolean async, IToJSONConverter<ContextT> converter)
+		throws IOException
 	{
-		final Integer messageId[] = null;
-		return sendMessage((data == null || data.size() == 0) ? null : new IToJSONWriter()
+		return sendMessage((data == null || data.size() == 0) ? null : new IToJSONWriter<ContextT>()
 		{
 
 			@Override
-			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter converter, DataConversion clientDataConversions)
+			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<ContextT> converter, DataConversion clientDataConversions)
 				throws JSONException
 			{
 				if (data != null && data.size() > 0)

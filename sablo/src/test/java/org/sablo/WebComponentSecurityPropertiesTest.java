@@ -619,7 +619,7 @@ public class WebComponentSecurityPropertiesTest
 			"\n   \"aint1\": \"int\"" + //
 			"\n  ,\"aint2\": \"int\"" + //
 			"\n  ,\"aint3\": \"int\"" + //
-			"\n  ,\"prot\": { \"type\": \"protected\", \"default\": true, \"blockingOn\": false, \"for\": \"aint1, aint3\" }" + //
+			"\n  ,\"prot\": { \"type\": \"protected\", \"default\": true, \"blockingOn\": false, \"for\": [\"aint1\", \"aint3\"] }" + //
 			"\n}" + //
 			"\n}"; // 
 

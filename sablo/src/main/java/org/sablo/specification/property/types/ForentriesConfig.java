@@ -17,10 +17,12 @@
 package org.sablo.specification.property.types;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
@@ -62,23 +64,28 @@ public class ForentriesConfig
 			return DEFAULT;
 		}
 
-		String forString = json.optString("for", null);
-		if (forString == null)
-		{
-			return DEFAULT;
-		}
+		Object forObject = json.opt("for");
 
-		List<String> entries = new ArrayList<>();
-		for (String f : forString.split(","))
+		List<String> entries = null;
+		if (forObject instanceof String && forObject.toString().trim().length() > 0)
 		{
-			String trimmed = f.trim();
-			if (trimmed.length() > 0)
+			entries = Arrays.asList(forObject.toString().trim());
+		}
+		else if (forObject instanceof JSONArray)
+		{
+			JSONArray array = (JSONArray)forObject;
+			entries = new ArrayList<>(array.length());
+			for (int i = 0; i < array.length(); i++)
 			{
-				entries.add(trimmed);
+				Object entry = array.opt(i);
+				if (entry != null && entry.toString().trim().length() > 0)
+				{
+					entries.add(entry.toString().trim());
+				}
 			}
 		}
 
-		if (entries.size() == 0)
+		if (entries == null || entries.size() == 0)
 		{
 			return DEFAULT;
 		}

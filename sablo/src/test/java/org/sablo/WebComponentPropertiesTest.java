@@ -16,14 +16,19 @@
 package org.sablo;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
 
@@ -52,6 +57,7 @@ public class WebComponentPropertiesTest
 			"\n{" + //
 			"\n   \"abool\": \"boolean\"" + //
 			"\n  ,\"aint\": \"int\"" + //
+			"\n  ,\"tagged\": {\"type\": \"int\", \"tags\": {\"special\": 42}}" + //
 			"\n}" + //
 			"\n}"; // 
 
@@ -113,6 +119,42 @@ public class WebComponentPropertiesTest
 
 		testcomponent.putBrowserProperty("aint", new Integer(-42));
 		assertEquals(new Integer(-42), testcomponent.getProperty("aint"));
+	}
+
+	@Test
+	public void testPropertyTags()
+	{
+		WebComponent testcomponent = new WebComponent("testcomponent", "test");
+
+		assertFalse(testcomponent.getSpecification().getProperty("aint").hasTag(null));
+		assertNull(testcomponent.getSpecification().getProperty("aint").getTag(null));
+
+		assertFalse(testcomponent.getSpecification().getProperty("aint").hasTag("bladiebla"));
+		assertNull(testcomponent.getSpecification().getProperty("aint").getTag("bladiebla"));
+
+		assertFalse(testcomponent.getSpecification().getProperty("aint").hasTag("special"));
+		assertNull(testcomponent.getSpecification().getProperty("aint").getTag("special"));
+
+		assertFalse(testcomponent.getSpecification().getProperty("tagged").hasTag("bladiebla"));
+		assertNull(testcomponent.getSpecification().getProperty("tagged").getTag("bladiebla"));
+
+		assertTrue(testcomponent.getSpecification().getProperty("tagged").hasTag("special"));
+		assertEquals(new Integer(42), testcomponent.getSpecification().getProperty("tagged").getTag("special"));
+	}
+
+	@Test
+	public void testTaggedProperty()
+	{
+		WebComponent testcomponent = new WebComponent("testcomponent", "test");
+
+		assertTrue(testcomponent.getSpecification().getTaggedProperties(null).isEmpty());
+		assertTrue(testcomponent.getSpecification().getTaggedProperties("bladiebla").isEmpty());
+
+		Collection<PropertyDescription> specialComponents = testcomponent.getSpecification().getTaggedProperties("special");
+		assertNotNull(specialComponents);
+		assertEquals(1, specialComponents.size());
+		assertEquals("tagged", specialComponents.iterator().next().getName());
+		assertEquals(new Integer(42), specialComponents.iterator().next().getTag("special"));
 	}
 
 }

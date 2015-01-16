@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.json.JSONObject;
 import org.sablo.specification.property.CustomJSONPropertyType;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
@@ -41,6 +42,7 @@ public class PropertyDescription
 	private final Object defaultValue;
 	private final List<Object> values;
 	private String scope = null;
+	private final JSONObject tags;
 
 	//case of nested type
 	// TODO: make properties final and remove put* calls so PropertyDescription is immutable
@@ -49,12 +51,12 @@ public class PropertyDescription
 
 	public PropertyDescription(String name, IPropertyType< ? > type)
 	{
-		this(name, type, null, null, null, null, false);
+		this(name, type, null, null, null, null, null, false);
 	}
 
 	public PropertyDescription(String name, IPropertyType< ? > type, Object config)
 	{
-		this(name, type, null, config, null, null, false);
+		this(name, type, null, config, null, null, null, false);
 	}
 
 	/**
@@ -65,9 +67,11 @@ public class PropertyDescription
 	 * @param config
 	 * @param defaultValue
 	 * @param values
+	 * @param tags 
 	 * @param optional only used for api arguments
 	 */
-	public PropertyDescription(String name, IPropertyType< ? > type, String scope, Object config, Object defaultValue, List<Object> values, boolean optional)
+	public PropertyDescription(String name, IPropertyType< ? > type, String scope, Object config, Object defaultValue, List<Object> values, JSONObject tags,
+		boolean optional)
 	{
 		this.name = name;
 		this.type = type;
@@ -75,6 +79,7 @@ public class PropertyDescription
 		this.defaultValue = defaultValue;
 		this.values = values;
 		this.scope = scope;
+		this.tags = tags;
 		this.optional = optional;
 	}
 
@@ -89,6 +94,24 @@ public class PropertyDescription
 		for (PropertyDescription pd : properties.values())
 		{
 			if (pd.getType() == pt)
+			{
+				filtered.add(pd);
+			}
+		}
+		return filtered;
+	}
+
+	public Collection<PropertyDescription> getTaggedProperties(String tag)
+	{
+		if (properties == null)
+		{
+			return Collections.emptyList();
+		}
+
+		List<PropertyDescription> filtered = new ArrayList<>(4);
+		for (PropertyDescription pd : properties.values())
+		{
+			if (pd.hasTag(tag))
 			{
 				filtered.add(pd);
 			}
@@ -139,6 +162,16 @@ public class PropertyDescription
 	public List<Object> getValues()
 	{
 		return values == null ? Collections.emptyList() : Collections.unmodifiableList(values);
+	}
+
+	public Object getTag(String tag)
+	{
+		return tags == null ? null : tags.opt(tag);
+	}
+
+	public boolean hasTag(String tag)
+	{
+		return tags != null && tags.has(tag);
 	}
 
 	@Override
@@ -273,7 +306,7 @@ public class PropertyDescription
 		for (int i = 0; i < level * 2; i++)
 		{
 			b.append(' ');
-	}
+		}
 	}
 
 }

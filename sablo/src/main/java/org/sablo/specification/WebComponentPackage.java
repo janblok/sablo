@@ -25,11 +25,14 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -77,6 +80,10 @@ public class WebComponentPackage
 		 */
 		void reportError(String specpath, Exception e);
 
+	}
+	public interface ISpecificationFilter
+	{
+		boolean filter(WebComponentSpecification spec);
 	}
 
 	private IPackageReader reader;
@@ -152,6 +159,7 @@ public class WebComponentPackage
 					try
 					{
 						WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
+						if (reader instanceof ISpecificationFilter && ((ISpecificationFilter)reader).filter(parsed)) continue;
 						parsed.setSpecURL(reader.getUrlForPath(specpath));
 						if (parsed.getDefinition() != null) parsed.setDefinitionFileURL(reader.getUrlForPath(parsed.getDefinition().substring(
 							parsed.getDefinition().indexOf("/") + 1)));
@@ -180,6 +188,7 @@ public class WebComponentPackage
 					try
 					{
 						WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
+						if (reader instanceof ISpecificationFilter && ((ISpecificationFilter)reader).filter(parsed)) continue;
 						parsed.setSpecURL(reader.getUrlForPath(specpath));
 						if (parsed.getDefinition() != null) parsed.setDefinitionFileURL(reader.getUrlForPath(parsed.getDefinition().substring(
 							parsed.getDefinition().indexOf("/") + 1)));
@@ -275,7 +284,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -286,7 +295,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -321,7 +330,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -378,7 +387,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#reportError(java.lang.String, java.lang.Exception)
 		 */
 		@Override
@@ -395,7 +404,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#getPackageURL()
 		 */
 		@Override
@@ -427,7 +436,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -438,7 +447,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -473,7 +482,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -523,7 +532,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#getPackageURL()
 		 */
 		@Override
@@ -541,11 +550,12 @@ public class WebComponentPackage
 		}
 	}
 
-	public static class WarURLPackageReader implements WebComponentPackage.IPackageReader
+	public static class WarURLPackageReader implements WebComponentPackage.IPackageReader, WebComponentPackage.ISpecificationFilter
 	{
 		private final URL urlOfManifest;
 		private final String packageName;
 		private final ServletContext servletContext;
+		private HashSet<String> exportedComponents;
 
 		public WarURLPackageReader(ServletContext servletContext, String packageName) throws MalformedURLException
 		{
@@ -556,11 +566,26 @@ public class WebComponentPackage
 			{
 				throw new IllegalArgumentException("Package " + this.packageName + "META-INF/MANIFEST.MF not found in this context");
 			}
+			try
+			{
+				if (servletContext.getResource("/WEB-INF/exported_components.properties") != null)
+				{
+					InputStream is = servletContext.getResourceAsStream("/WEB-INF/exported_components.properties");
+					Properties properties = new Properties();
+					properties.load(is);
+					exportedComponents = new HashSet<String>(Arrays.asList(properties.getProperty("components").split(",")));
+					exportedComponents.add("servoyservices");
+				}
+			}
+			catch (Exception e)
+			{
+				throw new IllegalArgumentException("Exception during init exported_components.properties reading", e);
+			}
 		}
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
 		 */
 		@Override
@@ -571,7 +596,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
 		 */
 		@Override
@@ -598,7 +623,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 *
+		 * 
 		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
 		 */
 		@Override
@@ -640,7 +665,7 @@ public class WebComponentPackage
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#getPackageURL()
 		 */
 		@Override
@@ -648,11 +673,27 @@ public class WebComponentPackage
 		{
 			return null;
 		}
+
+		/*
+		 * (non-Javadoc)
+		 *
+		 * @see org.sablo.specification.WebComponentPackage.ISpecificationFilter#filter(org.sablo.specification.WebComponentSpecification)
+		 */
+		/**
+		 * @param spec
+		 * @return true if the component is not in the list of the exported components
+		 */
+		@Override
+		public boolean filter(WebComponentSpecification spec)
+		{
+			return exportedComponents != null && !spec.getName().equals("servoydefault-errorbean") && !spec.getPackageName().equals("servoyservices") &&
+				!exportedComponents.contains(spec.getName());
+		}
 	}
 
 	/*
 	 * (non-Javadoc)
-	 *
+	 * 
 	 * @see java.lang.Object#toString()
 	 */
 	@Override

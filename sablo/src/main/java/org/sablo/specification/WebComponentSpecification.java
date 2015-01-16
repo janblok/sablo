@@ -263,15 +263,14 @@ public class WebComponentSpecification extends PropertyDescription
 							if (param.has("optional")) isOptional = true;
 
 							ParsedProperty pp = spec.parsePropertyString(param.getString("type"));
-							PropertyDescription desc = new PropertyDescription(paramName, pp.type, null, Boolean.valueOf(pp.array), null, null, null,
-								isOptional); // hmm why not set the array field instead of configObject here?
+							PropertyDescription desc = new PropertyDescription(paramName, resolveArrayType(pp), null, param, null, null, null, isOptional);
 							def.addParameter(desc);
 						}
 					}
 					else if ("returns".equals(key))
 					{
 						ParsedProperty pp = spec.parsePropertyString(jsonDef.getString("returns"));
-						PropertyDescription desc = new PropertyDescription("return", pp.type, Boolean.valueOf(pp.array)); // hmm why not set the array field instead of configObject here?
+						PropertyDescription desc = new PropertyDescription("return", resolveArrayType(pp), null);
 						def.setReturnType(desc);
 					}
 					else
@@ -286,6 +285,17 @@ public class WebComponentSpecification extends PropertyDescription
 			}
 		}
 		return spec;
+	}
+
+	private static IPropertyType< ? > resolveArrayType(ParsedProperty pp)
+	{
+		IPropertyType< ? > type = pp.type;
+		if (Boolean.valueOf(pp.array))
+		{
+			PropertyDescription parDescription = new PropertyDescription("", pp.type);
+			return TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, parDescription);
+		}
+		return type;
 	}
 
 	/**

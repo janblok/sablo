@@ -354,23 +354,19 @@ public class WebComponentSpecification extends PropertyDescription
 			{
 				String key = itk.next();
 				Object value = jsonProps.get(key);
-				IPropertyType< ? > type = null;
-				boolean isArray = false;
+
 				JSONObject configObject = null;
 				Object defaultValue = null;
 				JSONObject tags = null;
 				List<Object> values = null;
+				ParsedProperty pp = null;
 				if (value instanceof String)
 				{
-					ParsedProperty pp = parsePropertyString((String)value);
-					isArray = pp.array;
-					type = pp.type;
+					pp = parsePropertyString((String)value);
 				}
 				else if (value instanceof JSONObject && ((JSONObject)value).has("type"))
 				{
-					ParsedProperty pp = parsePropertyString(((JSONObject)value).getString("type"));
-					type = pp.type;
-					isArray = pp.array;
+					pp = parsePropertyString(((JSONObject)value).getString("type"));
 					configObject = ((JSONObject)value);
 					defaultValue = configObject.opt("default");
 					tags = configObject.optJSONObject("tags");
@@ -385,9 +381,10 @@ public class WebComponentSpecification extends PropertyDescription
 						}
 					}
 				}
-				if (type != null)
+				if (pp != null && pp.type != null)
 				{
-					if (isArray)
+					IPropertyType< ? > type = pp.type;
+					if (pp.array)
 					{
 						// here we could have something like { type: 'myprop[]', a: ..., b: ... } so with a config object;
 						// the config object will be used by the 'CustomJSONArray' type;

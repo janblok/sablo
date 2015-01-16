@@ -41,7 +41,6 @@ public class PropertyDescription
 	private final boolean optional;
 	private final Object defaultValue;
 	private final List<Object> values;
-	private String scope = null;
 	private final JSONObject tags;
 
 	//case of nested type
@@ -51,34 +50,31 @@ public class PropertyDescription
 
 	public PropertyDescription(String name, IPropertyType< ? > type)
 	{
-		this(name, type, null, null, null, null, null, false);
+		this(name, type, null, null, null, null, false);
 	}
 
 	public PropertyDescription(String name, IPropertyType< ? > type, Object config)
 	{
-		this(name, type, null, config, null, null, null, false);
+		this(name, type, config, null, null, null, false);
 	}
 
 	/**
 	 * 
 	 * @param name
 	 * @param type
-	 * @param scope
 	 * @param config
 	 * @param defaultValue
 	 * @param values
 	 * @param tags 
 	 * @param optional only used for api arguments
 	 */
-	public PropertyDescription(String name, IPropertyType< ? > type, String scope, Object config, Object defaultValue, List<Object> values, JSONObject tags,
-		boolean optional)
+	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Object defaultValue, List<Object> values, JSONObject tags, boolean optional)
 	{
 		this.name = name;
 		this.type = type;
 		this.config = config;
 		this.defaultValue = defaultValue;
 		this.values = values;
-		this.scope = scope;
 		this.tags = tags;
 		this.optional = optional;
 	}
@@ -142,11 +138,6 @@ public class PropertyDescription
 	public IPropertyType< ? > getType()
 	{
 		return type;
-	}
-
-	public String getScope()
-	{
-		return scope;
 	}
 
 	public Object getConfig()

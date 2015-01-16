@@ -258,19 +258,17 @@ public class WebComponentSpecification extends PropertyDescription
 						for (int p = 0; p < params.length(); p++)
 						{
 							JSONObject param = params.getJSONObject(p);
-							String paramName = (String)param.get("name");
-							boolean isOptional = false;
-							if (param.has("optional")) isOptional = true;
 
 							ParsedProperty pp = spec.parsePropertyString(param.getString("type"));
-							PropertyDescription desc = new PropertyDescription(paramName, resolveArrayType(pp), null, param, null, null, null, isOptional);
-							def.addParameter(desc);
+							// hmm why not set the array field instead of configObject here?
+							def.addParameter(new PropertyDescription((String)param.get("name"), resolveArrayType(pp), param, null, null, null,
+								param.has("optional")));
 						}
 					}
 					else if ("returns".equals(key))
 					{
 						ParsedProperty pp = spec.parsePropertyString(jsonDef.getString("returns"));
-						PropertyDescription desc = new PropertyDescription("return", resolveArrayType(pp), null);
+						PropertyDescription desc = new PropertyDescription("return", resolveArrayType(pp));
 						def.setReturnType(desc);
 					}
 					else
@@ -289,13 +287,11 @@ public class WebComponentSpecification extends PropertyDescription
 
 	private static IPropertyType< ? > resolveArrayType(ParsedProperty pp)
 	{
-		IPropertyType< ? > type = pp.type;
-		if (Boolean.valueOf(pp.array))
+		if (pp.array)
 		{
-			PropertyDescription parDescription = new PropertyDescription("", pp.type);
-			return TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, parDescription);
+			return TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, new PropertyDescription("", pp.type));
 		}
-		return type;
+		return pp.type;
 	}
 
 	/**
@@ -363,7 +359,6 @@ public class WebComponentSpecification extends PropertyDescription
 				JSONObject configObject = null;
 				Object defaultValue = null;
 				JSONObject tags = null;
-				String scope = null;
 				List<Object> values = null;
 				if (value instanceof String)
 				{
@@ -379,7 +374,6 @@ public class WebComponentSpecification extends PropertyDescription
 					configObject = ((JSONObject)value);
 					defaultValue = configObject.opt("default");
 					tags = configObject.optJSONObject("tags");
-					scope = configObject.optString("scope", null);
 
 					JSONArray valuesArray = configObject.optJSONArray("values");
 					if (valuesArray != null)
@@ -399,12 +393,12 @@ public class WebComponentSpecification extends PropertyDescription
 						// the config object will be used by the 'CustomJSONArray' type;
 						// a config for the element type can be specified like this: { type: 'myprop[]', a: ..., b: ..., elementConfig: {...} } and we could give that to the elementDescription instead
 						JSONObject elementConfig = configObject != null ? configObject.optJSONObject(CustomJSONArrayType.ELEMENT_CONFIG_KEY) : null;
-						PropertyDescription elementDescription = new PropertyDescription("", type, scope, elementConfig != null
-							? type.parseConfig(elementConfig) : null, defaultValue, values, tags, false);
+						PropertyDescription elementDescription = new PropertyDescription("", type, elementConfig != null ? type.parseConfig(elementConfig)
+							: null, defaultValue, values, tags, false);
 						type = TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, elementDescription);
 					}
 
-					pds.put(key, new PropertyDescription(key, type, scope, type.parseConfig(configObject), defaultValue, values, tags, false));
+					pds.put(key, new PropertyDescription(key, type, type.parseConfig(configObject), defaultValue, values, tags, false));
 				}
 			}
 		}

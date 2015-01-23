@@ -525,7 +525,7 @@ webSocketModule.factory('$webSocket',
 				   }
 				   return true;
 			   }
-			return {
+			var sabloUtils = {
 				isChanged: isChanged,
 				getCombinedPropertyNames: getCombinedPropertyNames,
 				convertClientObject : function(value) {
@@ -630,7 +630,26 @@ webSocketModule.factory('$webSocket',
 					
 					return ret;
 				}
+				,
+				//do not watch __internalState as that is handled by servoy code
+				generateWatchFunctionFor: function (modelObjectRoot, path) {
+									var filteredObject = function (scope) {
+														var result = {};
+														var modelObject = sabloUtils.getInDepthProperty(modelObjectRoot, path)
+														
+														for (k in modelObject) {
+															if (modelObject[k].__internalState && modelObject[k].__internalState.setChangeNotifier) {
+																continue;
+															}
+															result[k] = modelObject[k];
+														}
+														return result;
+													 };
+									return filteredObject;
+				}
 			}
+			
+			return sabloUtils;
 		}).value("$swingModifiers" ,{
 		    SHIFT_MASK : 1,
 		    CTRL_MASK : 2,

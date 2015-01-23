@@ -73,9 +73,9 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		if (baseList instanceof IAttachAware) ((IAttachAware<WT>)baseList).setAttachHandler(new IAttachHandler<WT>()
 		{
 			@Override
-			public void attachToBaseObjectIfNeeded(int i)
+			public void attachToBaseObjectIfNeeded(int i, WT value)
 			{
-				if (changeMonitor != null) attachToBaseObject(i, getWrappedBaseListForReadOnly().get(i), false);
+				if (changeMonitor != null) attachToBaseObject(i, value, false);
 			}
 
 			@Override
@@ -101,7 +101,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	 */
 	public static interface IAttachHandler<WT>
 	{
-		void attachToBaseObjectIfNeeded(int i);
+		void attachToBaseObjectIfNeeded(int i, WT value);
 
 		void detachFromBaseObjectIfNeeded(int i, WT value);
 	}

@@ -76,9 +76,9 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		if (baseMap instanceof IAttachAware) ((IAttachAware<WT>)baseMap).setAttachHandler(new IAttachHandler<WT>()
 		{
 			@Override
-			public void attachToBaseObjectIfNeeded(String key)
+			public void attachToBaseObjectIfNeeded(String key, WT value)
 			{
-				if (changeMonitor != null) attachToBaseObject(key, getWrappedBaseMapForReadOnly().get(key));
+				if (changeMonitor != null) attachToBaseObject(key, value);
 			}
 
 			@Override
@@ -104,7 +104,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	 */
 	public static interface IAttachHandler<WT>
 	{
-		void attachToBaseObjectIfNeeded(String key);
+		void attachToBaseObjectIfNeeded(String key, WT value);
 
 		void detachFromBaseObjectIfNeeded(String key, WT value);
 	}

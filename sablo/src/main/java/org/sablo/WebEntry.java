@@ -60,7 +60,7 @@ public abstract class WebEntry implements Filter
 	}
 
 	/**
-	 * Provide all the webcompontent bundle names. 
+	 * Provide all the webcomponent bundle names. 
 	 * @return the bundle names
 	 */
 	public abstract String[] getWebComponentBundleNames();

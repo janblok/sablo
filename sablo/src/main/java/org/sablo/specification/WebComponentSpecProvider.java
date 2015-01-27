@@ -16,6 +16,7 @@
 
 package org.sablo.specification;
 
+import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,7 @@ import java.util.Set;
 import javax.servlet.ServletContext;
 
 import org.sablo.specification.WebComponentPackage.IPackageReader;
+import org.sablo.specification.WebComponentPackage.JarPackageReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +55,7 @@ public class WebComponentSpecProvider
 	 */
 	public static synchronized void init(IPackageReader[] locations)
 	{
-		instance = new WebComponentSpecProvider(new WebSpecReader(locations));
+		instance = new WebComponentSpecProvider(new WebSpecReader(locations, "Web-Component"));
 	}
 
 	/**
@@ -76,7 +78,14 @@ public class WebComponentSpecProvider
 						{
 							readers.add(new WebComponentPackage.WarURLPackageReader(servletContext, location));
 						}
-						instance = new WebComponentSpecProvider(new WebSpecReader(readers.toArray(new IPackageReader[readers.size()])));
+
+						// scan all jars for components
+						for (String resourcePath : servletContext.getResourcePaths("/WEB-INF/lib"))
+						{
+							readers.add(new JarPackageReader(new File(servletContext.getRealPath(resourcePath))));
+						}
+
+						instance = new WebComponentSpecProvider(new WebSpecReader(readers.toArray(new IPackageReader[readers.size()]), "Web-Component"));
 					}
 					catch (Exception e)
 					{

@@ -87,7 +87,10 @@ public abstract class BaseWebObject
 	{
 		this.name = name;
 		this.specification = specification;
-		if (specification == null) throw new IllegalStateException("Cannot work without specification");
+		if (specification == null)
+		{
+			throw new IllegalStateException("Cannot work without specification");
+		}
 	}
 
 	/**

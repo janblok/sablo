@@ -17,6 +17,7 @@
 package org.sablo.startup;
 
 import java.net.URL;
+import java.util.Enumeration;
 
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -29,6 +30,8 @@ import org.osgi.framework.BundleContext;
 
 public class Activator implements BundleActivator
 {
+	public static final String RESOURCES_PATH = "META-INF/resources/";
+
 	private static Activator plugin;
 
 	private BundleContext context;
@@ -49,9 +52,30 @@ public class Activator implements BundleActivator
 		return context;
 	}
 
+	public Enumeration<String> getResourcePaths(String path)
+	{
+		final Enumeration<String> entryPaths = context.getBundle().getEntryPaths(RESOURCES_PATH + (path.startsWith("/") ? path.substring(1) : path));
+		return new Enumeration<String>()
+		{
+
+			@Override
+			public boolean hasMoreElements()
+			{
+				return entryPaths.hasMoreElements();
+			}
+
+			@Override
+			public String nextElement()
+			{
+				String nextElement = entryPaths.nextElement();
+				return nextElement.substring(RESOURCES_PATH.length());
+			}
+		};
+	}
+
 	public URL getResource(String path)
 	{
-		return context.getBundle().getEntry("/META-INF/resources/" + (path.startsWith("/") ? path.substring(1) : path));
+		return context.getBundle().getEntry(RESOURCES_PATH + (path.startsWith("/") ? path.substring(1) : path));
 	}
 
 	public static Activator getDefault()

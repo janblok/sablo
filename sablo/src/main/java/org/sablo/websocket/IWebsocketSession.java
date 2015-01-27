@@ -115,4 +115,15 @@ public interface IWebsocketSession
 	 * @return
 	 */
 	public Container getForm(String formName);
+
+	/**
+	 * @return the currentFormUrl
+	 */
+	public String getCurrentFormUrl();
+
+	/**
+	 * @param currentFormUrl the currentFormUrl to set
+	 */
+	public void setCurrentFormUrl(String currentFormUrl);
+
 }

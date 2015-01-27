@@ -58,6 +58,8 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BaseWebsocketSession implements IWebsocketSession, IChangeListener
 {
+	public static final String SABLO_SERVICE = "$sabloService";
+
 	private static final Logger log = LoggerFactory.getLogger(WebsocketEndpoint.class.getCanonicalName());
 	private final Map<String, IServerService> serverServices = new HashMap<>();
 	private final Map<String, IClientService> services = new HashMap<>();
@@ -69,6 +71,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	private final AtomicInteger handlingEvent = new AtomicInteger(0);
 
 	private boolean proccessChanges;
+	private String currentFormUrl;
 
 
 	public BaseWebsocketSession(String uuid)
@@ -199,6 +202,24 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	{
 		return uuid;
 	}
+
+	/**
+	 * @return the currentFormUrl
+	 */
+	public String getCurrentFormUrl()
+	{
+		return currentFormUrl;
+	}
+
+	/**
+	 * @param currentFormUrl the currentFormUrl to set
+	 */
+	public void setCurrentFormUrl(String currentFormUrl)
+	{
+		this.currentFormUrl = currentFormUrl;
+		getService(SABLO_SERVICE).executeAsyncServiceCall("setCurrentFormUrl", new Object[] { currentFormUrl });
+	}
+
 
 	public void registerServerService(String name, IServerService service)
 	{

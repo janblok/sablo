@@ -686,8 +686,7 @@ public class WebComponentPackage
 		@Override
 		public boolean filter(WebComponentSpecification spec)
 		{
-			return exportedComponents != null && !spec.getName().equals("servoydefault-errorbean") && !spec.getName().equals("servoydefault-portal") &&
-				!spec.getPackageName().equals("servoyservices") && !exportedComponents.contains(spec.getName());
+			return exportedComponents != null && !exportedComponents.contains(spec.getName());
 		}
 	}
 

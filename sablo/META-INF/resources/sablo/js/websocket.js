@@ -641,7 +641,7 @@ webSocketModule.factory('$webSocket',
 														var modelObject = sabloUtils.getInDepthProperty.apply(sabloUtils,args);
 														
 														for (k in modelObject) {
-															if (modelObject[k].__internalState && modelObject[k].__internalState.setChangeNotifier) {
+															if (modelObject[k] && modelObject[k].__internalState && modelObject[k].__internalState.setChangeNotifier) {
 																continue;
 															}
 															result[k] = modelObject[k];

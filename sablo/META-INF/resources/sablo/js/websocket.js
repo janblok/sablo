@@ -635,10 +635,13 @@ webSocketModule.factory('$webSocket',
 				generateWatchFunctionFor: function (modelObjectRoot, path) {
 									var filteredObject = function (scope) {
 														var result = {};
-														var modelObject = sabloUtils.getInDepthProperty(modelObjectRoot, path)
+														var args = [];
+														args.push(modelObjectRoot);
+														args = args.concat(path);
+														var modelObject = sabloUtils.getInDepthProperty.apply(sabloUtils,args);
 														
 														for (k in modelObject) {
-															if (modelObject[k].__internalState && modelObject[k].__internalState.setChangeNotifier) {
+															if (modelObject[k] && modelObject[k].__internalState && modelObject[k].__internalState.setChangeNotifier) {
 																continue;
 															}
 															result[k] = modelObject[k];

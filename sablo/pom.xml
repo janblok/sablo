@@ -19,21 +19,45 @@
 
   <build>
       <plugins>
-          <plugin>
-              <groupId>org.apache.felix</groupId>
-              <artifactId>maven-bundle-plugin</artifactId>
-              <version>1.4.0</version>
-              <extensions>true</extensions>
-              <configuration>
-                  <instructions>
-                      <Bundle-SymbolicName>${pom.groupId}</Bundle-SymbolicName>
-                      <Bundle-Name>${pom.name}</Bundle-Name>
-                      <Bundle-Version>${pom.version}</Bundle-Version>
-                      <Export-Package>org.sablo, org.sablo.eventthread, org.sablo.specification, org.sablo.specification.property, org.sablo.websocket</Export-Package>
-                  </instructions>
-              </configuration>
+	<plugin>
+	   <groupId>com.github.eirslett</groupId>
+	   <artifactId>frontend-maven-plugin</artifactId>
+	   <version>0.0.20</version>
+	   <executions>
+ 
+		<!-- 1. Install node and npm locally -->
+		<execution>
+			<id>install node and npm</id>
+			<goals>
+				<goal>install-node-and-npm</goal>
+			</goals>
+			<configuration>
+				<nodeVersion>v0.10.36</nodeVersion>
+				<npmVersion>2.4.1</npmVersion>
+			</configuration>
+		</execution>
+ 
+		<!-- 2. Install karma and karma plugins -->
+		<execution>
+			<id>npm install</id>
+			<goals>
+				<goal>npm</goal>
+			</goals>
+		</execution>
+ 
+		<!-- 3. Run karma tests -->
+		<execution>
+			<id>javascript tests</id>
+			<goals>
+				<goal>karma</goal>
+			</goals>
+			<configuration>
+				<karmaConfPath>client_tests/karma.conf</karmaConfPath>
+			</configuration>
+		</execution>
+	   </executions>
           </plugin>
-          <plugin>
+	<plugin>
 	        <groupId>org.apache.maven.plugins</groupId>
 	        <artifactId>maven-jar-plugin</artifactId>
 	        <configuration>

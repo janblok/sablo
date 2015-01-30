@@ -144,14 +144,14 @@ public class WebComponentPackage
 		}
 	}
 
-	public List<WebComponentSpecification> getWebComponentDescriptions() throws IOException
+	public List<WebComponentSpecification> getWebComponentDescriptions(String attributeName) throws IOException
 	{
 		ArrayList<WebComponentSpecification> descriptions = new ArrayList<>();
 		Manifest mf = reader.getManifest();
 
 		if (mf != null)
 		{
-			for (String specpath : getWebEntrySpecNames(mf, "Web-Component"))
+			for (String specpath : getWebEntrySpecNames(mf, attributeName))
 			{
 				String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
 				if (specfileContent != null)
@@ -171,27 +171,6 @@ public class WebComponentPackage
 							new PropertyDescription("location", TypesRegistry.getType(PointPropertyType.TYPE_NAME)));
 						if (parsed.getProperty("anchors") == null) parsed.putProperty("anchors",
 							new PropertyDescription("anchors", TypesRegistry.getType(IntPropertyType.TYPE_NAME)));
-						descriptions.add(parsed);
-					}
-					catch (Exception e)
-					{
-						reader.reportError(specpath, e);
-					}
-				}
-			}
-
-			for (String specpath : getWebEntrySpecNames(mf, "Web-Service"))
-			{
-				String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
-				if (specfileContent != null)
-				{
-					try
-					{
-						WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
-						if (reader instanceof ISpecificationFilter && ((ISpecificationFilter)reader).filter(parsed)) continue;
-						parsed.setSpecURL(reader.getUrlForPath(specpath));
-						if (parsed.getDefinition() != null) parsed.setDefinitionFileURL(reader.getUrlForPath(parsed.getDefinition().substring(
-							parsed.getDefinition().indexOf("/") + 1)));
 						descriptions.add(parsed);
 					}
 					catch (Exception e)
@@ -374,8 +353,7 @@ public class WebComponentPackage
 				JarEntry entry = jar.getJarEntry(path);
 				if (entry != null)
 				{
-					InputStream is = jar.getInputStream(entry);
-					return IOUtils.toString(is, charset);
+					return IOUtils.toString(jar.getInputStream(entry), charset);
 				}
 			}
 			finally
@@ -697,7 +675,7 @@ public class WebComponentPackage
 	@Override
 	public String toString()
 	{
-		return "WebComponnetPackage: " + getPackageName();
+		return "WebComponent-package: " + getPackageName();
 	}
 
 }

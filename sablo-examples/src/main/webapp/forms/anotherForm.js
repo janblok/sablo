@@ -1,8 +1,8 @@
-angular.module('sampleApp').controller("mainForm", function($scope, $window, $sabloApplication, $sabloUtils) {
+angular.module('sampleApp').controller("anotherForm", function($scope, $window, $sabloApplication, $sabloUtils) {
 
-//	$window.alert(' starting mainForm');
+//	$window.alert(' starting anotherForm');
 
-	var formName = 'mainForm';
+	var formName = 'anotherForm';
 	
     var beans = {
 			thelabel: 	 { text : 'Initial value' },
@@ -45,7 +45,6 @@ angular.module('sampleApp').controller("mainForm", function($scope, $window, $sa
 	var watches = {};
 
 	// TODO: create automatically
-	
 	formState.addWatches = function (beanNames) {
 		if (beanNames) {
 		 	for (var beanName in beanNames) {
@@ -74,7 +73,7 @@ angular.module('sampleApp').controller("mainForm", function($scope, $window, $sa
 		}
 		return true;
 	};
-    
+        
     formState.getScope = function() { return $scope; };
 
 });

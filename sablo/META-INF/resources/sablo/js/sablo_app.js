@@ -1,8 +1,9 @@
 angular.module('sabloApp', ['webSocketModule'])
-.factory('$sabloApplication', function ($rootScope, $q, $webSocket,$sabloConverters,$sabloUtils) {
+.factory('$sabloApplication', function ($rootScope, $timeout, $q, $webSocket,$sabloConverters,$sabloUtils) {
 	   // formName:[beanname:{property1:1,property2:"test"}] needs to be synced to and from server
 	   // this holds the form model with all the data, per form is this the "synced" view of the the IFormUI on the server 
 	   // (3 way binding)
+	   var currentFormUrl = null;
 	   var formStates = {};
 	   var formStatesConversionInfo = {};
 	   
@@ -246,7 +247,10 @@ angular.module('sabloApp', ['webSocketModule'])
 		   initFormState: function(formName, beanDatas, formProperties, formScope, requestDataCallback) {
 			   var state = formStates[formName];
 			   // if the form is already initialized or if the beanDatas are not given, return that 
-			   if (state != null || !beanDatas) return state; 
+			   if (state != null || !beanDatas) {
+				   $timeout(function(){state.addWatches();})
+				   return state; 
+			   }
 
 			   var model = {}
 			   var api = {}
@@ -345,8 +349,30 @@ angular.module('sabloApp', ['webSocketModule'])
 					   });
 				   }
 			   }
-		   }
+		   },
 		   
+		   // Get the current form url, when not set yet start getting it from the server (when fetch is not false)
+		   getCurrentFormUrl: function(fetch) {
+			   if (currentFormUrl == null && fetch != false) {
+				   // not set yet, fetch from server
+				   currentFormUrl = ""
+					callService('formService', 'getCurrentFormUrl', null, false)
+				     	.then(function(url) {
+				     		currentFormUrl = url;
+				     	}
+				     	, function(url) {
+				     		currentFormUrl = null;
+				      });
+				   return null;
+			   }
+			   return currentFormUrl == "" ? null : currentFormUrl;
+		   },
+		   
+		   // set current form url, push to server when push is not false
+		   setCurrentFormUrl: function(url, push) {
+				currentFormUrl = url
+				if (push != false) callService('formService', 'setCurrentFormUrl', {url:url}, true);
+		   }
 	   }
 })
 

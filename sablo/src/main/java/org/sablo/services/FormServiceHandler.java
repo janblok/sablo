@@ -92,6 +92,17 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 				return executeEvent(args);
 			}
 
+			case "getCurrentFormUrl" :
+			{
+				return websocketSession.getCurrentFormUrl();
+			}
+
+			case "setCurrentFormUrl" :
+			{
+				websocketSession.setCurrentFormUrl(args.optString("url"));
+				break;
+			}
+
 			default :
 				log.warn("Method not implemented: '" + methodName + "'");
 		}

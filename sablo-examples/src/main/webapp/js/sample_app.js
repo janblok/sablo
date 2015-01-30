@@ -1,7 +1,9 @@
-angular.module('sampleApp', ['sabloApp', 'webStorageModule', 'mylabel', 'mybutton', 'mytextfield', 'mycounter']).config(function() {
+angular.module('sampleApp', ['sabloApp', '$sabloService', 'webStorageModule', 'mylabel', 'mybutton', 'mytextfield', 'mycounter']).config(function() {
 }).controller("SampleController", function($scope, $rootScope, $window, $sabloApplication, webStorage) {
-	$scope.windowTitle = 'Sample Aplication';
-	$scope.currentPanel = 'forms/mainForm.html';
+	$scope.windowTitle = 'Sample Application';
+	$scope.getCurrentFormUrl = function() {
+		return $sabloApplication.getCurrentFormUrl()
+	}
 	
 	// $window.alert('Connecting...');
 	$sabloApplication.connect('', [webStorage.session.get("sessionid")]).onMessageObject(function (msg, conversionInfo) {

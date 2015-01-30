@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.sablo.Container;
+import org.sablo.example.forms.AnotherForm;
 import org.sablo.example.forms.MainForm;
 import org.sablo.websocket.BaseWebsocketSession;
 
@@ -58,6 +59,10 @@ public class HelloWorldWebsocketSession extends BaseWebsocketSession
 			case "mainForm" :
 
 				return new MainForm(formName);
+				 
+			case "anotherForm" :
+				
+				return new AnotherForm(formName);
 		}
 		throw new IllegalArgumentException("unkown form: " + formName);
 	}

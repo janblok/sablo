@@ -45,9 +45,12 @@ class WebSpecReader
 
 	private final IPackageReader[] packageReaders;
 
-	WebSpecReader(IPackageReader[] packageReaders)
+	private final String attributeName;
+
+	WebSpecReader(IPackageReader[] packageReaders, String attributeName)
 	{
 		this.packageReaders = packageReaders;
+		this.attributeName = attributeName;
 		load();
 	}
 
@@ -115,7 +118,7 @@ class WebSpecReader
 		{
 			try
 			{
-				cache(p.getPackageName(), p.getWebComponentDescriptions());
+				cache(p.getPackageName(), p.getWebComponentDescriptions(attributeName));
 			}
 			catch (IOException e)
 			{
@@ -128,7 +131,7 @@ class WebSpecReader
 			}
 			catch (IOException e)
 			{
-				log.error("Cannot read web component specs from package: " + p.getName(), e); //$NON-NLS-1$
+				log.error("Cannot read web layout specs from package: " + p.getName(), e); //$NON-NLS-1$
 			}
 		}
 	}

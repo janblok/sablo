@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Servoy BV
+ * Copyright (C) 2015 Servoy BV
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,16 +20,15 @@ import org.sablo.Container;
 import org.sablo.IEventHandler;
 import org.sablo.WebComponent;
 import org.sablo.specification.WebComponentSpecification;
-import org.sablo.websocket.BaseWebsocketSession;
 import org.sablo.websocket.WebsocketEndpoint;
 
 /**
- * Main Form in sample sablo application.
+ * Form in sample sablo application.
  * 
  * @author rgansevles
  *
  */
-public class MainForm extends Container
+public class AnotherForm extends Container
 {
 
 	private static final WebComponentSpecification FORM_SPEC = new WebComponentSpecification("form_spec", "", "", null, null, "", null);
@@ -39,7 +38,7 @@ public class MainForm extends Container
 	private final WebComponent theCounter;
 	private final WebComponent theButton;
 
-	public MainForm(String name)
+	public AnotherForm(String name)
 	{
 		super(name, FORM_SPEC);
 
@@ -67,7 +66,7 @@ public class MainForm extends Container
 				// call a function on an element
 				theCounter.invokeApi("increment", new Object[] { 2 });
 				
-		 		WebsocketEndpoint.get().getWebsocketSession().setCurrentFormUrl("forms/anotherForm.html");
+				WebsocketEndpoint.get().getWebsocketSession().setCurrentFormUrl("forms/mainForm.html");
 
 				return null;
 			}

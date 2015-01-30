@@ -438,6 +438,7 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 			}
 
 			Integer messageId = null;
+			String text = null;
 
 			if (hasContentToSend)
 			{
@@ -448,11 +449,12 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 				JSONUtils.writeClientConversions(w, clientDataConversions);
 				w.endObject();
 
-				sendText(w.toString());
+				text = w.toString();
+				sendText(text);
 				serviceCalls.clear();
 			}
 
-			return (messageId == null) ? null : waitResponse(messageId);
+			return (messageId == null) ? null : waitResponse(messageId, text);
 		}
 		catch (JSONException e)
 		{
@@ -505,14 +507,21 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 
 
 	/** Wait for a response message with given messsageId.
+	 * @param text 
 	 * @throws IOException
 	 */
-	protected Object waitResponse(Integer messageId) throws IOException
+	protected Object waitResponse(Integer messageId, String text) throws IOException
 	{
 		List<Object> ret = new ArrayList<>(1);
 		pendingMessages.put(messageId, ret);
 		wsSession.getEventDispatcher().suspend(messageId, EVENT_LEVEL_SYNC_API_CALL); // TODO are fail-safes/timeouts needed here in case client browser gets closed or confused?
 
+		if (ret.size() == 0)
+		{
+			log.warn("No response from client for message '" + text + "'");
+			// Or throw an exception here?
+			return null;
+		}
 		return ret.get(0);
 	}
 

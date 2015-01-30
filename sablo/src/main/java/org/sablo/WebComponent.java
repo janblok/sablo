@@ -16,6 +16,7 @@
 
 package org.sablo;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -144,6 +145,41 @@ public class WebComponent extends BaseWebObject
 	public Object invokeApi(WebComponentApiDefinition apiFunction, Object[] args)
 	{
 		return WebsocketEndpoint.get().getWebsocketSession().invokeApi(this, apiFunction, args, getParameterTypes(apiFunction));
+	}
+
+	/**
+	 * Execute a service function defined in the client.
+	 * Synchronous call, blocks until the result is returned.
+	 *
+	 * @param service
+	 *            the service name
+	 * @param functionName
+	 *            the functionName name
+	 * @param arguments
+	 *            the arguments
+	 * @return the value if any
+	 * @throws IOException 
+	 */
+	public Object executeServiceCall(String service, String functionName, Object[] arguments) throws IOException
+	{
+		return WebsocketEndpoint.get().getWebsocketSession().getService(service).executeServiceCall(functionName, arguments);
+	}
+
+	/**
+	 * Execute a service function defined in the client.
+	 * Asynchronous non-blocking call.
+	 *
+	 * @param service
+	 *            the service name
+	 * @param functionName
+	 *            the functionName name
+	 * @param arguments
+	 *            the arguments
+	 * @throws IOException 
+	 */
+	public void executeAsyncServiceCall(String service, String functionName, Object[] arguments)
+	{
+		WebsocketEndpoint.get().getWebsocketSession().getService(service).executeAsyncServiceCall(functionName, arguments);
 	}
 
 	public static PropertyDescription getParameterTypes(WebComponentApiDefinition apiFunc)

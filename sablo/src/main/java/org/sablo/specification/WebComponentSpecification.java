@@ -391,7 +391,7 @@ public class WebComponentSpecification extends PropertyDescription
 						// a config for the element type can be specified like this: { type: 'myprop[]', a: ..., b: ..., elementConfig: {...} } and we could give that to the elementDescription instead
 						JSONObject elementConfig = configObject != null ? configObject.optJSONObject(CustomJSONArrayType.ELEMENT_CONFIG_KEY) : null;
 						PropertyDescription elementDescription = new PropertyDescription("", type, elementConfig != null ? type.parseConfig(elementConfig)
-							: null, defaultValue, values, tags, false);
+							: type.parseConfig(configObject), defaultValue, values, tags, false);
 						type = TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, elementDescription);
 					}
 

@@ -191,41 +191,44 @@ public class WebComponentPackage
 	{
 		Map<String, WebLayoutSpecification> descriptions = new HashMap<>();
 		Manifest mf = reader.getManifest();
-		for (String specpath : getWebEntrySpecNames(mf, "Web-Layout"))
+		if (mf != null)
 		{
-			String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
-			if (specfileContent != null)
+			for (String specpath : getWebEntrySpecNames(mf, "Web-Layout"))
 			{
-				try
+				String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
+				if (specfileContent != null)
 				{
-					WebLayoutSpecification parsed = WebLayoutSpecification.parseLayoutSpec(specfileContent, reader.getPackageName(), reader);
-					parsed.setSpecURL(reader.getUrlForPath(specpath));
-					if (parsed.getDefinition() != null) parsed.setDefinitionFileURL(reader.getUrlForPath(parsed.getDefinition().substring(
-						parsed.getDefinition().indexOf("/") + 1)));
-					descriptions.put(parsed.getName(), parsed);
-				}
-				catch (Exception e)
-				{
-					reader.reportError(specpath, e);
+					try
+					{
+						WebLayoutSpecification parsed = WebLayoutSpecification.parseLayoutSpec(specfileContent, reader.getPackageName(), reader);
+						parsed.setSpecURL(reader.getUrlForPath(specpath));
+						if (parsed.getDefinition() != null) parsed.setDefinitionFileURL(reader.getUrlForPath(parsed.getDefinition().substring(
+							parsed.getDefinition().indexOf("/") + 1)));
+						descriptions.put(parsed.getName(), parsed);
+					}
+					catch (Exception e)
+					{
+						reader.reportError(specpath, e);
+					}
 				}
 			}
-		}
-		for (String specpath : getWebEntrySpecNames(mf, "Web-Composite"))
-		{
-			String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
-			if (specfileContent != null)
+			for (String specpath : getWebEntrySpecNames(mf, "Web-Composite"))
 			{
-				try
+				String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
+				if (specfileContent != null)
 				{
-					WebLayoutSpecification parsed = WebLayoutSpecification.parseLayoutSpec(specfileContent, reader.getPackageName(), reader);
-					parsed.setSpecURL(reader.getUrlForPath(specpath));
-					if (parsed.getDefinition() != null) parsed.setDefinitionFileURL(reader.getUrlForPath(parsed.getDefinition().substring(
-						parsed.getDefinition().indexOf("/") + 1)));
-					descriptions.put(parsed.getName(), parsed);
-				}
-				catch (Exception e)
-				{
-					reader.reportError(specpath, e);
+					try
+					{
+						WebLayoutSpecification parsed = WebLayoutSpecification.parseLayoutSpec(specfileContent, reader.getPackageName(), reader);
+						parsed.setSpecURL(reader.getUrlForPath(specpath));
+						if (parsed.getDefinition() != null) parsed.setDefinitionFileURL(reader.getUrlForPath(parsed.getDefinition().substring(
+							parsed.getDefinition().indexOf("/") + 1)));
+						descriptions.put(parsed.getName(), parsed);
+					}
+					catch (Exception e)
+					{
+						reader.reportError(specpath, e);
+					}
 				}
 			}
 		}
@@ -285,7 +288,7 @@ public class WebComponentPackage
 				String bundleName = getManifest().getMainAttributes().getValue(BUNDLE_NAME);
 				if (bundleName != null) return bundleName;
 			}
-			catch (IOException e)
+			catch (Exception e)
 			{
 				log.error("Bundle Name attribute not found.", e);
 			}

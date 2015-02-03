@@ -120,7 +120,7 @@ class WebSpecReader
 			{
 				cache(p.getPackageName(), p.getWebComponentDescriptions(attributeName));
 			}
-			catch (IOException e)
+			catch (Exception e)
 			{
 				log.error("Cannot read web component specs from package: " + p.getName(), e); //$NON-NLS-1$
 			}
@@ -129,7 +129,7 @@ class WebSpecReader
 				Map<String, WebLayoutSpecification> layoutDescriptions = p.getLayoutDescriptions();
 				if (layoutDescriptions.size() > 0) cachedLayoutDescriptions.put(p.getPackageName(), layoutDescriptions);
 			}
-			catch (IOException e)
+			catch (Exception e)
 			{
 				log.error("Cannot read web layout specs from package: " + p.getName(), e); //$NON-NLS-1$
 			}

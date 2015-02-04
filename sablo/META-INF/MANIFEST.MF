@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: sablo-core
 Bundle-SymbolicName: sablo;singleton:=true
-Bundle-Version: 8.0.0.3013
+Bundle-Version: 8.0.0.3014
 Export-Package: org.sablo,
  org.sablo.eventthread,
  org.sablo.property.types,

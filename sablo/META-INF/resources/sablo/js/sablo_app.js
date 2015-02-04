@@ -248,8 +248,8 @@ angular.module('sabloApp', ['webSocketModule'])
 			   var state = formStates[formName];
 			   // if the form is already initialized or if the beanDatas are not given, return that 
 			   if (state != null || !beanDatas) {
-				   $timeout(function(){if (state) state.addWatches();})
-				   if (!beanDatas) return state;
+				   if (state) $timeout(function(){state.addWatches();})
+				   return state;
 			   }
 
 			   var model = {}

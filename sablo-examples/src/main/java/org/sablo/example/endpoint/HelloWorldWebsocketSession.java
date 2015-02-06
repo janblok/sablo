@@ -20,9 +20,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.sablo.Container;
+import org.sablo.example.HelloWorldWindow;
 import org.sablo.example.forms.AnotherForm;
 import org.sablo.example.forms.MainForm;
 import org.sablo.websocket.BaseWebsocketSession;
+import org.sablo.websocket.CurrentWindow;
+import org.sablo.websocket.IWindow;
 
 /**
  * Web socket session for a sablo application.
@@ -34,36 +37,23 @@ import org.sablo.websocket.BaseWebsocketSession;
  */
 public class HelloWorldWebsocketSession extends BaseWebsocketSession
 {
-	protected final ConcurrentMap<String, Container> createdForms = new ConcurrentHashMap<>();
 
 	public HelloWorldWebsocketSession(String uuid)
 	{
 		super(uuid);
 	}
-
+	
 	@Override
-	public Container getForm(String formName)
-	{
-		Container form = createdForms.get(formName);
-		if (form == null)
-		{
-			createdForms.put(formName, form = createForm(formName));
-		}
-		return form;
+	public IWindow createWindow(String windowName) {
+		
+		IWindow window = new HelloWorldWindow(windowName);
+		window.setCurrentFormUrl("forms/" + (windowName==null?"mainForm":windowName) + ".html");
+		return window;
+	}
+	
+	@Override
+	public void onOpen(String argument) {
+		if (CurrentWindow.get().getCurrentFormUrl()==null) {CurrentWindow.get().setCurrentFormUrl("forms/mainForm.html");}
 	}
 
-	public Container createForm(String formName)
-	{
-		switch (formName)
-		{
-			case "mainForm" :
-
-				return new MainForm(formName);
-				 
-			case "anotherForm" :
-				
-				return new AnotherForm(formName);
-		}
-		throw new IllegalArgumentException("unkown form: " + formName);
-	}
 }

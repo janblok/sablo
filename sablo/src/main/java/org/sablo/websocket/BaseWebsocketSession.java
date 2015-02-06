@@ -18,36 +18,23 @@ package org.sablo.websocket;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.json.JSONException;
 import org.json.JSONObject;
-import org.json.JSONWriter;
-import org.sablo.BaseWebObject;
-import org.sablo.Container;
 import org.sablo.IChangeListener;
-import org.sablo.WebComponent;
 import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
 import org.sablo.services.FormServiceHandler;
-import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.WebServiceSpecProvider;
-import org.sablo.specification.property.DataConverterContext;
-import org.sablo.specification.property.types.AggregatedPropertyType;
-import org.sablo.specification.property.types.DatePropertyType;
 import org.sablo.websocket.impl.ClientService;
-import org.sablo.websocket.utils.DataConversion;
-import org.sablo.websocket.utils.JSONUtils;
-import org.sablo.websocket.utils.JSONUtils.ChangesToJSONConverter;
-import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
-import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +50,11 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	private static final Logger log = LoggerFactory.getLogger(WebsocketEndpoint.class.getCanonicalName());
 	private final Map<String, IServerService> serverServices = new HashMap<>();
 	private final Map<String, IClientService> services = new HashMap<>();
-	private final List<IWebsocketEndpoint> registeredEnpoints = Collections.synchronizedList(new ArrayList<IWebsocketEndpoint>());
+	private final List<IWindow> windows = new ArrayList<IWindow>();
+
+	//maps window to time
+	private static Map<IWindow, Long> nonActiveWindows = new HashMap<>();
+	private static final long WINDOW_TIMEOUT = 1 * 60 * 1000;
 
 	private final String uuid;
 	private volatile IEventDispatcher executor;
@@ -71,7 +62,6 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	private final AtomicInteger handlingEvent = new AtomicInteger(0);
 
 	private boolean proccessChanges;
-	private String currentFormUrl;
 
 
 	public BaseWebsocketSession(String uuid)
@@ -80,35 +70,121 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		registerServerService("formService", createFormService());
 	}
 
+	@Override
+	public Collection<IWindow> getWindows()
+	{
+		return Collections.unmodifiableCollection(windows);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.sablo.websocket.IWebsocketSession#getOrCreateWindow(java.lang.String, java.lang.String)
+	 */
+	@Override
+	public IWindow getOrCreateWindow(String windowId, String windowName)
+	{
+		synchronized (windows)
+		{
+			for (IWindow window : windows)
+			{
+				if (windowId == null)
+				{
+					if (window.getUuid() == null &&
+						((windowName == null && window.getName() == null) || (windowName != null && windowName.equals(window.getName()))))
+					{
+						// window was created serverside but had no uuid yet
+						window.setUuid(UUID.randomUUID().toString());
+						nonActiveWindows.remove(window);
+						return window;
+					}
+				}
+				else if (windowId.equals(window.getUuid()))
+				{
+					nonActiveWindows.remove(window);
+					return window;
+				}
+			}
+
+			// not found, create a new one
+			IWindow window = createWindow(windowName);
+			window.setSession(this);
+			window.setUuid(windowId == null ? UUID.randomUUID().toString() : windowId);
+			windows.add(window);
+			return window;
+		}
+	}
+
+	protected IWindow createWindow(String windowName)
+	{
+		return new BaseWindow(windowName);
+	}
+
+	public void addWindow(IWindow window)
+	{
+		synchronized (windows)
+		{
+			windows.add(window);
+			invalidateWindow(window);
+		}
+	}
+
 	/**
+	 * @param endpointType
+	 * @param uuid
+	 */
+	public void invalidateWindow(IWindow window)
+	{
+		synchronized (windows)
+		{
+			// mark current window as non active
+			nonActiveWindows.put(window, new Long(System.currentTimeMillis()));
+		}
+	}
+
+	/**
+	 * Check nonactive windows in timeout, return true when no more windows are left
 	 * @return
 	 */
+	public boolean checkForWindowActivity()
+	{
+		synchronized (windows)
+		{
+			//do global non active cleanup
+			long currentTime = System.currentTimeMillis();
+			Iterator<Entry<IWindow, Long>> iterator = nonActiveWindows.entrySet().iterator();
+			while (iterator.hasNext())
+			{
+				Entry<IWindow, Long> entry = iterator.next();
+				if (currentTime - entry.getValue().longValue() > WINDOW_TIMEOUT)
+				{
+					IWindow window = entry.getKey();
+					windows.remove(window);
+					iterator.remove();
+					try
+					{
+						window.destroy();
+					}
+					catch (Exception e)
+					{
+						log.warn("Error destroying window " + window, e);
+					}
+				}
+			}
+
+			return windows.size() == 0;
+		}
+	}
+
+
 	protected IServerService createFormService()
 	{
-		return new FormServiceHandler(this);
+		return FormServiceHandler.INSTANCE;
 	}
 
 	public boolean isValid()
 	{
 		return true;
-	}
-
-	public void registerEndpoint(IWebsocketEndpoint endpoint)
-	{
-		registeredEnpoints.add(endpoint);
-	}
-
-	public void deregisterEndpoint(IWebsocketEndpoint endpoint)
-	{
-		registeredEnpoints.remove(endpoint);
-	}
-
-	/**
-	 * @return the registeredEnpoints
-	 */
-	public List<IWebsocketEndpoint> getRegisteredEnpoints()
-	{
-		return Collections.unmodifiableList(registeredEnpoints);
 	}
 
 	public final IEventDispatcher getEventDispatcher()
@@ -119,7 +195,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 			{
 				if (executor == null)
 				{
-					Thread thread = new Thread(executor = createDispatcher(), "Executor,uuid:" + uuid);
+					Thread thread = new Thread(executor = createEventDispatcher(), "Executor,uuid:" + uuid);
 					thread.setDaemon(true);
 					thread.start();
 				}
@@ -131,56 +207,25 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	/**
 	 * Method to create the {@link IEventDispatcher} runnable
 	 */
-	protected IEventDispatcher createDispatcher()
+	protected IEventDispatcher createEventDispatcher()
 	{
 		return new EventDispatcher(this);
 	}
 
 	public void onOpen(String argument)
 	{
-		// send all the service data to the browser.
-		Map<String, Object> data = new HashMap<>(3);
-		Map<String, Map<String, Object>> serviceData = new HashMap<>();
-		PropertyDescription serviceDataTypes = AggregatedPropertyType.newAggregatedProperty();
-
-		for (Entry<String, IClientService> entry : services.entrySet())
-		{
-			TypedData<Map<String, Object>> sd = entry.getValue().getProperties();
-			if (!sd.content.isEmpty())
-			{
-				serviceData.put(entry.getKey(), sd.content);
-			}
-			if (sd.contentType != null) serviceDataTypes.putProperty(entry.getKey(), sd.contentType);
-		}
-		if (serviceData.size() > 0)
-		{
-			data.put("services", serviceData);
-		}
-		PropertyDescription dataTypes = null;
-		if (serviceDataTypes.hasChildProperties())
-		{
-			dataTypes = AggregatedPropertyType.newAggregatedProperty();
-			dataTypes.putProperty("services", serviceDataTypes);
-		}
-		try
-		{
-			if (data.size() > 0)
-			{
-				WebsocketEndpoint.get().sendMessage(data, dataTypes, true, FullValueToJSONConverter.INSTANCE);
-			}
-		}
-		catch (IOException e)
-		{
-			log.error(e.getLocalizedMessage(), e);
-		}
 	}
 
 	@Override
 	public void closeSession()
 	{
-		for (IWebsocketEndpoint endpoint : registeredEnpoints.toArray(new IWebsocketEndpoint[registeredEnpoints.size()]))
+		synchronized (windows)
 		{
-			endpoint.closeSession();
+			for (IWindow window : windows)
+			{
+				window.closeSession();
+			}
+			windows.clear();
 		}
 		if (executor != null)
 		{
@@ -203,24 +248,6 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		return uuid;
 	}
 
-	/**
-	 * @return the currentFormUrl
-	 */
-	public String getCurrentFormUrl()
-	{
-		return currentFormUrl;
-	}
-
-	/**
-	 * @param currentFormUrl the currentFormUrl to set
-	 */
-	public void setCurrentFormUrl(String currentFormUrl)
-	{
-		this.currentFormUrl = currentFormUrl;
-		getService(SABLO_SERVICE).executeAsyncServiceCall("setCurrentFormUrl", new Object[] { currentFormUrl });
-	}
-
-
 	public void registerServerService(String name, IServerService service)
 	{
 		if (service != null)
@@ -237,7 +264,6 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	@Override
 	public IClientService getService(String name)
 	{
-
 		IClientService clientService = services.get(name);
 		if (clientService == null)
 		{
@@ -247,6 +273,12 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		return clientService;
 	}
 
+	@Override
+	public Collection<IClientService> getServices()
+	{
+		return Collections.unmodifiableCollection(services.values());
+	}
+
 	/**
 	 * @param name
 	 * @return
@@ -254,33 +286,6 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	protected IClientService createClientService(String name)
 	{
 		return new ClientService(name, WebServiceSpecProvider.getInstance().getWebServiceSpecification(name));
-	}
-
-	public boolean writeAllServicesChanges(JSONWriter w, String keyInParent, IToJSONConverter converter, DataConversion clientDataConversions)
-		throws JSONException
-	{
-		boolean contentHasBeenWritten = false;
-		for (IClientService service : services.values())
-		{
-			TypedData<Map<String, Object>> changes = service.getAndClearChanges();
-			if (changes.content.size() > 0)
-			{
-				if (!contentHasBeenWritten)
-				{
-					JSONUtils.addKeyIfPresent(w, keyInParent);
-					w.object();
-					contentHasBeenWritten = true;
-				}
-				String childName = service.getName();
-				w.key(childName).object();
-				clientDataConversions.pushNode(childName);
-				JSONUtils.writeData(converter, w, changes.content, changes.contentType, clientDataConversions, (BaseWebObject)service);
-				clientDataConversions.popNode();
-				w.endObject();
-			}
-		}
-		if (contentHasBeenWritten) w.endObject();
-		return contentHasBeenWritten;
 	}
 
 	public void startHandlingEvent()
@@ -298,129 +303,22 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	public void valueChanged()
 	{
 		// if there is an incoming message or an Event running on event thread, postpone sending until it's done; else push it.
-		if (!proccessChanges && WebsocketEndpoint.exists() && WebsocketEndpoint.get().hasSession() && handlingEvent.get() == 0)
-		{
-			sendChanges();
-		}
-	}
-
-	protected void sendChanges()
-	{
-		try
+		if (!proccessChanges && CurrentWindow.exists() && CurrentWindow.get().hasEndpoint() && handlingEvent.get() == 0)
 		{
 			proccessChanges = true;
-
-			// TODO this should not send to the currently active end-point, but to each of all end-points their own changes...
-			// so that any change from 1 end-point request ends up in all the end points.
-			WebsocketEndpoint.get().sendMessage(new IToJSONWriter<BaseWebObject>()
+			try
 			{
-				@Override
-				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<BaseWebObject> converter,
-					DataConversion clientDataConversions) throws JSONException
-				{
-					JSONUtils.addKeyIfPresent(w, keyInParent);
-					w.object();
-
-					clientDataConversions.pushNode("forms");
-					boolean changesFound = WebsocketEndpoint.get().writeAllComponentsChanges(w, "forms", ChangesToJSONConverter.INSTANCE, clientDataConversions);
-					clientDataConversions.popNode();
-
-					clientDataConversions.pushNode("services");
-					changesFound = writeAllServicesChanges(w, "services", ChangesToJSONConverter.INSTANCE, clientDataConversions) || changesFound;
-					clientDataConversions.popNode();
-
-					w.endObject();
-
-					return changesFound;
-				}
-			}, true, ChangesToJSONConverter.INSTANCE);
-		}
-		catch (IOException e)
-		{
-			log.error("sendChanges", e);
-		}
-		finally
-		{
-			proccessChanges = false;
-		}
-	}
-
-	public Object invokeApi(WebComponent receiver, WebComponentApiDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes)
-	{
-		return invokeApi(receiver, apiFunction, arguments, argumentTypes, null);
-	}
-
-	protected Object invokeApi(final WebComponent receiver, final WebComponentApiDefinition apiFunction, final Object[] arguments,
-		final PropertyDescription argumentTypes, final Map<String, Object> callContributions)
-	{
-		// {"call":{"form":"product","bean":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}}
-		try
-		{
-			Object ret = WebsocketEndpoint.get().sendMessage(new IToJSONWriter<BaseWebObject>()
-			{
-				@Override
-				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<BaseWebObject> converter,
-					DataConversion clientDataConversions) throws JSONException
-				{
-					JSONUtils.addKeyIfPresent(w, keyInParent);
-					w.object();
-
-					clientDataConversions.pushNode("forms");
-					WebsocketEndpoint.get().writeAllComponentsChanges(w, "forms", converter, clientDataConversions);
-					clientDataConversions.popNode();
-
-					Map<String, Object> call = new HashMap<>();
-					PropertyDescription callTypes = AggregatedPropertyType.newAggregatedProperty();
-					if (callContributions != null) call.putAll(callContributions);
-					Container topContainer = receiver.getParent();
-					while (topContainer != null && topContainer.getParent() != null)
-					{
-						topContainer = topContainer.getParent();
-					}
-					call.put("form", topContainer.getName());
-					call.put("bean", receiver.getName());
-					call.put("api", apiFunction.getName());
-					if (arguments != null && arguments.length > 0)
-					{
-						call.put("args", arguments);
-						if (argumentTypes != null) callTypes.putProperty("args", argumentTypes);
-					}
-
-					w.key("call").object();
-					clientDataConversions.pushNode("call");
-					JSONUtils.writeData(converter, w, call, callTypes, clientDataConversions, receiver);
-					clientDataConversions.popNode();
-					w.endObject();
-
-					w.endObject();
-					return true;
-				}
-			}, false, FullValueToJSONConverter.INSTANCE);
-
-
-			// convert dates back; TODO should this if be removed?; the JSONUtils.fromJSON below should do this anyway
-			if (ret instanceof Long && apiFunction.getReturnType().getType() instanceof DatePropertyType)
-			{
-				return new Date(((Long)ret).longValue());
+				CurrentWindow.get().sendChanges();
 			}
-			if (apiFunction.getReturnType() != null)
+			catch (IOException e)
 			{
-				try
-				{
-					return JSONUtils.fromJSON(null, ret, apiFunction.getReturnType(), new DataConverterContext(apiFunction.getReturnType(), receiver));
-				}
-				catch (Exception e)
-				{
-					log.error("Cannot parse api call return value JSON for: " + ret + " for api call: " + apiFunction, e);
-				}
+				log.error("Error sending changes", e);
+			}
+			finally
+			{
+				proccessChanges = false;
 			}
 		}
-		catch (IOException e)
-		{
-			log.error("IOException occurred", e);
-		}
-
-		return null;
 	}
 
 	@Override

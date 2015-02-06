@@ -57,9 +57,7 @@ public class HelloWorld extends WebEntry
 		{
 			public IWebsocketSession createSession(String uuid) throws Exception
 			{
-				HelloWorldWebsocketSession session = new HelloWorldWebsocketSession(uuid);
-				session.setCurrentFormUrl("forms/mainForm.html");
-				return session;
+				return new HelloWorldWebsocketSession(uuid);
 			}
 		};
 	}

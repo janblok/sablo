@@ -21,6 +21,7 @@ import org.sablo.IEventHandler;
 import org.sablo.WebComponent;
 import org.sablo.specification.WebComponentSpecification;
 import org.sablo.websocket.BaseWebsocketSession;
+import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.WebsocketEndpoint;
 
 /**
@@ -67,7 +68,7 @@ public class MainForm extends Container
 				// call a function on an element
 				theCounter.invokeApi("increment", new Object[] { 2 });
 				
-		 		WebsocketEndpoint.get().getWebsocketSession().setCurrentFormUrl("forms/anotherForm.html");
+				CurrentWindow.get().setCurrentFormUrl("forms/anotherForm.html");
 
 				return null;
 			}

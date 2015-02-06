@@ -29,7 +29,7 @@ import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebComponentSpecification;
 import org.sablo.specification.property.types.AggregatedPropertyType;
-import org.sablo.websocket.WebsocketEndpoint;
+import org.sablo.websocket.CurrentWindow;
 
 /**
  * Server side representation of an angular webcomponent in the browser. It is
@@ -144,7 +144,7 @@ public class WebComponent extends BaseWebObject
 	 */
 	public Object invokeApi(WebComponentApiDefinition apiFunction, Object[] args)
 	{
-		return WebsocketEndpoint.get().getWebsocketSession().invokeApi(this, apiFunction, args, getParameterTypes(apiFunction));
+		return CurrentWindow.get().invokeApi(this, apiFunction, args, getParameterTypes(apiFunction));
 	}
 
 	/**
@@ -162,7 +162,7 @@ public class WebComponent extends BaseWebObject
 	 */
 	public Object executeServiceCall(String service, String functionName, Object[] arguments) throws IOException
 	{
-		return WebsocketEndpoint.get().getWebsocketSession().getService(service).executeServiceCall(functionName, arguments);
+		return CurrentWindow.get().getSession().getService(service).executeServiceCall(functionName, arguments);
 	}
 
 	/**
@@ -179,7 +179,7 @@ public class WebComponent extends BaseWebObject
 	 */
 	public void executeAsyncServiceCall(String service, String functionName, Object[] arguments)
 	{
-		WebsocketEndpoint.get().getWebsocketSession().getService(service).executeAsyncServiceCall(functionName, arguments);
+		CurrentWindow.get().getSession().getService(service).executeAsyncServiceCall(functionName, arguments);
 	}
 
 	public static PropertyDescription getParameterTypes(WebComponentApiDefinition apiFunc)

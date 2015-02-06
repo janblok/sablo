@@ -27,9 +27,9 @@ import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.WebComponentSpecification;
 import org.sablo.specification.WebServiceSpecProvider;
 import org.sablo.specification.property.DataConverterContext;
+import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.IClientService;
 import org.sablo.websocket.TypedData;
-import org.sablo.websocket.WebsocketEndpoint;
 import org.sablo.websocket.utils.JSONUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +53,7 @@ public class ClientService extends BaseWebObject implements IClientService
 	public Object executeServiceCall(String functionName, Object[] arguments) throws IOException
 	{
 		TypedData<Map<String, Object>> serviceChanges = getAndClearChanges();
-		Object retValue = WebsocketEndpoint.get().executeServiceCall(name, functionName, arguments, getParameterTypes(functionName),
+		Object retValue = CurrentWindow.get().executeServiceCall(name, functionName, arguments, getParameterTypes(functionName),
 			serviceChanges.content.isEmpty() ? null : Collections.singletonMap("services", Collections.singletonMap(getName(), serviceChanges.content)),
 			serviceChanges.contentType);
 		if (retValue != null)
@@ -83,7 +83,7 @@ public class ClientService extends BaseWebObject implements IClientService
 	@Override
 	public void executeAsyncServiceCall(String functionName, Object[] arguments)
 	{
-		WebsocketEndpoint.get().executeAsyncServiceCall(name, functionName, arguments, getParameterTypes(functionName));
+		CurrentWindow.get().executeAsyncServiceCall(name, functionName, arguments, getParameterTypes(functionName));
 	}
 
 	protected PropertyDescription getParameterTypes(String functionName)

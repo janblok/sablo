@@ -19,7 +19,6 @@ package org.sablo.websocket;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -38,11 +37,6 @@ public class WebsocketSessionManager
 	//maps form uuid to session
 	private static Map<String, IWebsocketSession> wsSessions = new HashMap<>();
 
-	//maps sessionkey to time
-	private static Map<String, Long> nonActiveWsSessions = new HashMap<>();
-
-	private static final long SESSION_TIMEOUT = 1 * 60 * 1000;
-
 	public static void addSession(IWebsocketSession wsSession)
 	{
 		synchronized (wsSessions)
@@ -55,7 +49,6 @@ public class WebsocketSessionManager
 	{
 		synchronized (wsSessions)
 		{
-			nonActiveWsSessions.remove(uuid);
 			return wsSessions.remove(uuid);
 		}
 	}
@@ -91,7 +84,6 @@ public class WebsocketSessionManager
 			if (uuid != null && uuid.length() > 0)
 			{
 				wsSession = wsSessions.get(uuid);
-				nonActiveWsSessions.remove(uuid);
 			}
 			else
 			{
@@ -118,27 +110,19 @@ public class WebsocketSessionManager
 	 * @param endpointType
 	 * @param uuid
 	 */
-	static void closeSession(String endpointType, String uuid)
+	static void closeInactiveSessions()
 	{
 		synchronized (wsSessions)
 		{
-			//do global non active cleanup
-			long currentTime = System.currentTimeMillis();
-			Iterator<Entry<String, Long>> iterator = nonActiveWsSessions.entrySet().iterator();
-			while (iterator.hasNext())
+			Iterator<IWebsocketSession> sessions = wsSessions.values().iterator();
+			while (sessions.hasNext())
 			{
-				Entry<String, Long> entry = iterator.next();
-				if (currentTime - entry.getValue().longValue() > SESSION_TIMEOUT)
+				IWebsocketSession session = sessions.next();
+				if (session.checkForWindowActivity())
 				{
-					wsSessions.remove(entry.getKey());
-					iterator.remove();
+					sessions.remove();
+					session.closeSession();
 				}
-			}
-
-			//mark current as non active
-			if (uuid != null)
-			{
-				nonActiveWsSessions.put(uuid, new Long(currentTime));
 			}
 		}
 	}
@@ -152,4 +136,5 @@ public class WebsocketSessionManager
 	{
 		return websocketSessionFactories.get(endpointType);
 	}
+
 }

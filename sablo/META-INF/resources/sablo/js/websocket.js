@@ -7,7 +7,7 @@ var webSocketModule = angular.module('webSocketModule', []);
  * Setup the $webSocket service.
  */
 webSocketModule.factory('$webSocket',
-		function($rootScope, $injector, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers) {
+		function($rootScope, $injector, $window, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers) {
 
 			var websocket = null
 
@@ -18,6 +18,10 @@ webSocketModule.factory('$webSocket',
 			}
 
 			var deferredEvents = {};
+			
+			var getURLParameter = function getURLParameter(name) {
+				return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec($window.location.search)||[,""])[1].replace(/\+/g, '%20'))||null
+			};
 			
 			var handleMessage = function(wsSession, message) {
 				var obj
@@ -251,7 +255,9 @@ webSocketModule.factory('$webSocket',
 				
 				isConnected: function() {
 					return connected;
-				}
+				},
+				
+				getURLParameter: getURLParameter
 			};
 		}).factory("$services", function($rootScope, $sabloConverters, $sabloUtils){
 			// serviceName:{} service model

@@ -134,14 +134,12 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 		this.endpointType = endpointType;
 	}
 
-	public void start(Session newSession, String sessionid, final String windowid, final String arg) throws Exception
+	public void start(Session newSession, String sessionid, final String windowid, final String... arg) throws Exception
 	{
 		session = newSession;
 
 		String uuid = "null".equalsIgnoreCase(sessionid) ? null : sessionid;
 		windowId = "null".equalsIgnoreCase(windowid) ? null : windowid;
-		String argument = "null".equalsIgnoreCase(arg) ? null : arg;
-
 		currentInstance.set(this);
 		try
 		{
@@ -149,7 +147,7 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 
 			if (!wsSession.getUuid().equals(uuid)) sendMessage(new JSONStringer().object().key("sessionid").value(wsSession.getUuid()).endObject().toString());
 			wsSession.registerEndpoint(this);
-			wsSession.onOpen(argument);
+			wsSession.onOpen(arg);
 		}
 		finally
 		{
@@ -507,7 +505,7 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 
 
 	/** Wait for a response message with given messsageId.
-	 * @param text 
+	 * @param text
 	 * @throws IOException
 	 */
 	protected Object waitResponse(Integer messageId, String text) throws IOException

@@ -17,15 +17,21 @@ package org.sablo.property.types;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Point;
+
+import javax.swing.plaf.ColorUIResource;
 
 import org.json.JSONObject;
 import org.json.JSONStringer;
 import org.junit.Test;
+import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.types.DimensionPropertyType;
 import org.sablo.specification.property.types.PointPropertyType;
+import org.sablo.specification.property.types.TypesRegistry;
 
 /**
  * @author jcompagner
@@ -89,6 +95,20 @@ public class TypesTest
 		Point result = type.fromJSON(object, point, null);
 
 		assertEquals(point, result);
+	}
+
+	@Test
+	public void testSubclassType() throws Exception
+	{
+
+		IClassPropertyType< ? > type = TypesRegistry.getType(Color.class);
+		assertNotNull(type);
+
+		IClassPropertyType< ? > type2 = TypesRegistry.getType(ColorUIResource.class);
+
+		assertNotNull(type2);
+
+		assertSame(type, type2);
 	}
 
 }

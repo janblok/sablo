@@ -52,7 +52,7 @@ public class HelloWorldWebsocketSession extends BaseWebsocketSession
 	}
 	
 	@Override
-	public void onOpen(String argument) {
+	public void onOpen(String... arg) {
 		if (CurrentWindow.get().getCurrentFormUrl()==null) {CurrentWindow.get().setCurrentFormUrl("forms/mainForm.html");}
 	}
 

@@ -207,7 +207,15 @@ webSocketModule.factory('$webSocket',
 					for (var a in args) {
 						new_uri += '/' + args[a]
 					}
-
+					if (loc.search)
+					{
+						new_uri += '/'+encodeURI(loc.search.substring(1,loc.search.length)); 
+					}
+					else
+					{
+						new_uri +='/null';
+					}
+					
 					websocket = new WebSocket(new_uri);
 
 					var wsSession = new WebsocketSession()

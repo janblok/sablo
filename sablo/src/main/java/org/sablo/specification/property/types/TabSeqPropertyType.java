@@ -15,6 +15,8 @@
  */
 package org.sablo.specification.property.types;
 
+import org.sablo.specification.PropertyDescription;
+
 
 /**
  * This simple int combined with the client-side svy-tabseq directive can help you build complex
@@ -38,7 +40,7 @@ public class TabSeqPropertyType extends DefaultPropertyType<Integer>
 	}
 
 	@Override
-	public Integer defaultValue()
+	public Integer defaultValue(PropertyDescription pd)
 	{
 		return Integer.valueOf(0);
 	}

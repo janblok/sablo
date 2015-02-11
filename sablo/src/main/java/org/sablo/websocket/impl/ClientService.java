@@ -66,8 +66,7 @@ public class ClientService extends BaseWebObject implements IClientService
 				{
 					try
 					{
-						return JSONUtils.fromJSONUnwrapped(null, retValue, apiFunction.getReturnType(), new DataConverterContext(apiFunction.getReturnType(),
-							this));
+						return JSONUtils.fromJSONUnwrapped(null, retValue, new DataConverterContext(apiFunction.getReturnType(), this));
 					}
 					catch (JSONException e)
 					{

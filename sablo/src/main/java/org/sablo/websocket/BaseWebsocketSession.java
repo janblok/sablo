@@ -407,7 +407,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 			{
 				try
 				{
-					return JSONUtils.fromJSON(null, ret, apiFunction.getReturnType(), new DataConverterContext(apiFunction.getReturnType(), receiver));
+					return JSONUtils.fromJSON(null, ret, new DataConverterContext(apiFunction.getReturnType(), receiver));
 				}
 				catch (Exception e)
 				{

@@ -15,6 +15,8 @@
  */
 package org.sablo.specification.property.types;
 
+import org.sablo.specification.PropertyDescription;
+
 
 /**
  * @author jcompagner
@@ -37,7 +39,7 @@ public class IntPropertyType extends DefaultPropertyType<Integer>
 	}
 
 	@Override
-	public Integer defaultValue()
+	public Integer defaultValue(PropertyDescription pd)
 	{
 		return Integer.valueOf(0);
 	}

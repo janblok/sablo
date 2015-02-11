@@ -39,7 +39,7 @@ public class TypesTest
 	{
 		DimensionPropertyType type = DimensionPropertyType.INSTANCE;
 
-		Dimension dim = type.defaultValue();
+		Dimension dim = type.defaultValue(null);
 		assertNotNull(dim);
 
 		assertEquals(0, dim.height);
@@ -68,7 +68,7 @@ public class TypesTest
 	{
 		PointPropertyType type = PointPropertyType.INSTANCE;
 
-		Point point = type.defaultValue();
+		Point point = type.defaultValue(null);
 		assertNotNull(point);
 
 		assertEquals(0, point.x);

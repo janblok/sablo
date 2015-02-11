@@ -20,6 +20,7 @@ import java.awt.Point;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
+import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.websocket.utils.DataConversion;
@@ -65,7 +66,7 @@ public class PointPropertyType extends DefaultPropertyType<Point> implements ICl
 	}
 
 	@Override
-	public Point defaultValue()
+	public Point defaultValue(PropertyDescription pd)
 	{
 		return new Point(0, 0);
 	}

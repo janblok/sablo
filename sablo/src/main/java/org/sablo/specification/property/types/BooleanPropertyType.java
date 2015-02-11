@@ -15,6 +15,8 @@
  */
 package org.sablo.specification.property.types;
 
+import org.sablo.specification.PropertyDescription;
+
 
 /**
  * @author jcompagner
@@ -37,7 +39,7 @@ public class BooleanPropertyType extends DefaultPropertyType<Boolean>
 	}
 
 	@Override
-	public Boolean defaultValue()
+	public Boolean defaultValue(PropertyDescription pd)
 	{
 		return Boolean.FALSE;
 	}

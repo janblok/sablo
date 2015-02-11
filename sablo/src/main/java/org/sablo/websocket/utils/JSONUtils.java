@@ -33,6 +33,7 @@ import org.sablo.specification.property.DataConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IConvertedPropertyType;
 import org.sablo.specification.property.IDataConverterContext;
+import org.sablo.specification.property.IPropertyConverter;
 import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.ISupportsGranularUpdates;
 import org.sablo.specification.property.IWrapperType;
@@ -307,10 +308,10 @@ public class JSONUtils
 		return true;
 	}
 
-	public static Object fromJSONUnwrapped(Object previousComponentValue, Object newJSONValue, PropertyDescription propDesc,
-		DataConverterContext dataConversionContext) throws JSONException
+	public static Object fromJSONUnwrapped(Object previousComponentValue, Object newJSONValue, DataConverterContext dataConversionContext) throws JSONException
 	{
-		Object value = fromJSON(previousComponentValue, newJSONValue, propDesc, dataConversionContext);
+		Object value = fromJSON(previousComponentValue, newJSONValue, dataConversionContext);
+		PropertyDescription propDesc = dataConversionContext.getPropertyDescription();
 		if (propDesc != null && propDesc.getType() instanceof IWrapperType< ? , ? >)
 		{
 			// will probably never happen as all this fromJSON thing was only meant for Dates (at least currently)
@@ -324,19 +325,16 @@ public class JSONUtils
 	 * Returns the object to be set directly in a BaseWebObject properties map. For wrapper types this means a wrapped value directly.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static Object fromJSON(Object oldValue, Object newValue, PropertyDescription desc, IDataConverterContext dataConversionContext) throws JSONException
+	public static Object fromJSON(Object oldValue, Object newValue, IDataConverterContext dataConversionContext) throws JSONException
 	{
 		if (newValue == JSONObject.NULL) newValue = null;
+		PropertyDescription desc = dataConversionContext.getPropertyDescription();
 		if (desc != null)
 		{
 			IPropertyType< ? > type = desc.getType();
-			if (type instanceof IConvertedPropertyType< ? >)
+			if (type instanceof IPropertyConverter< ? >)
 			{
-				return ((IConvertedPropertyType)type).fromJSON(newValue, oldValue, dataConversionContext);
-			}
-			else if (type instanceof IWrapperType< ? , ? >)
-			{
-				return ((IWrapperType)type).fromJSON(newValue, oldValue, dataConversionContext);
+				return ((IPropertyConverter)type).fromJSON(newValue, oldValue, dataConversionContext);
 			}
 		}
 		return newValue;

@@ -15,6 +15,8 @@
  */
 package org.sablo.specification.property.types;
 
+import org.sablo.specification.PropertyDescription;
+
 
 /**
  * @author jcompagner
@@ -37,7 +39,7 @@ public class BytePropertyType extends DefaultPropertyType<Byte>
 	}
 
 	@Override
-	public Byte defaultValue()
+	public Byte defaultValue(PropertyDescription pd)
 	{
 		return Byte.valueOf((byte)0);
 	}

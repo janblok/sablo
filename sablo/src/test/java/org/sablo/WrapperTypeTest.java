@@ -28,6 +28,7 @@ import org.json.JSONWriter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.property.IDataConverterContext;
@@ -66,7 +67,7 @@ public class WrapperTypeTest
 		}
 
 		@Override
-		public String defaultValue()
+		public String defaultValue(PropertyDescription pd)
 		{
 			return null;
 		}

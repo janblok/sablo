@@ -140,7 +140,7 @@ public abstract class BaseWebObject
 
 	/**
 	 * Determine visibility on properties of type VisiblePropertyType.INSTANCE.
-	 * 
+	 *
 	 * @param property check properties that have for defined for this  when null, check for component-level visibility.
 	 */
 	public final boolean isVisible(String property)
@@ -203,7 +203,7 @@ public abstract class BaseWebObject
 	/**
 	 * Check protection of property.
 	 * Validate if component or not visible or protected by another property.
-	 * 
+	 *
 	 * @throws IllegalComponentAccessException when property is protected
 	 */
 	protected void checkProtection(String property)
@@ -216,7 +216,7 @@ public abstract class BaseWebObject
 
 				// visible default true, so block on false by default
 				// protected default false, so block on true by default
-				boolean blockingOn = Boolean.FALSE.equals(prop.getType().defaultValue());
+				boolean blockingOn = Boolean.FALSE.equals(prop.getType().defaultValue(prop));
 				if (config instanceof ProtectedConfig)
 				{
 					blockingOn = ((ProtectedConfig)config).getBlockingOn();
@@ -245,7 +245,7 @@ public abstract class BaseWebObject
 
 	/**
 	 * Check if the property is protected, i.e. it cannot be set from the client.
-	 * 
+	 *
 	 * @param propName
 	 * @throws IllegalComponentAccessException when property is protected
 	 */
@@ -304,7 +304,7 @@ public abstract class BaseWebObject
 	/**
 	 * Get the changes of this component, clear changes.
 	 * When the component is not visible, only the visibility-properties are returned and cleared from the changes.
-	 * 
+	 *
 	 */
 	public TypedData<Map<String, Object>> getAndClearChanges()
 	{
@@ -347,7 +347,7 @@ public abstract class BaseWebObject
 
 	/**
 	 * For testing only.
-	 * 
+	 *
 	 * DO NOT USE THIS METHOD; when possible please use {@link #getProperty(String)}, {@link #getProperties()} or {@link #getAllPropertyNames(boolean)} instead.
 	 */
 	Map<String, Object> getRawPropertiesWithoutDefaults()
@@ -492,14 +492,14 @@ public abstract class BaseWebObject
 			Object defaultProperty = defaultPropertiesUnwrapped.get(firstProperty);
 			if (defaultProperty == null && !defaultPropertiesUnwrapped.containsKey(firstProperty))
 			{
-				// default value based o 
+				// default value based o
 				PropertyDescription propertyDesc = specification.getProperty(firstProperty);
 				if (propertyDesc != null)
 				{
 					defaultProperty = propertyDesc.getDefaultValue();
 					if (defaultProperty == null && propertyDesc.getType() != null)
 					{
-						defaultProperty = propertyDesc.getType().defaultValue();
+						defaultProperty = propertyDesc.getType().defaultValue(propertyDesc);
 					}
 				}
 			}
@@ -567,7 +567,7 @@ public abstract class BaseWebObject
 	 */
 	protected void onPropertyChange(String propertyName, final Object oldValue, final Object newValue)
 	{
-		if (newValue instanceof ISmartPropertyValue && newValue != oldValue)
+		if ((newValue instanceof ISmartPropertyValue || oldValue instanceof ISmartPropertyValue) && newValue != oldValue)
 		{
 			final String complexPropertyRoot = propertyName;
 
@@ -587,22 +587,25 @@ public abstract class BaseWebObject
 			}
 
 			// a new complex property is linked to this component; initialize it
-			((ISmartPropertyValue)newValue).attachToBaseObject(new IChangeListener()
+			if (newValue instanceof ISmartPropertyValue)
 			{
-				@Override
-				public void valueChanged()
+				((ISmartPropertyValue)newValue).attachToBaseObject(new IChangeListener()
 				{
-					flagPropertyAsDirty(complexPropertyRoot, true);
-
-					if (defaultPropertiesUnwrapped.containsKey(complexPropertyRoot))
+					@Override
+					public void valueChanged()
 					{
-						// something changed in this 'smart' property - so it no longer represents the default value; remove
-						// it from default values (as the value reference is the same but the content changed) and put it in properties map
-						properties.put(complexPropertyRoot, newValue);
-						defaultPropertiesUnwrapped.remove(complexPropertyRoot);
+						flagPropertyAsDirty(complexPropertyRoot, true);
+
+						if (defaultPropertiesUnwrapped.containsKey(complexPropertyRoot))
+						{
+							// something changed in this 'smart' property - so it no longer represents the default value; remove
+							// it from default values (as the value reference is the same but the content changed) and put it in properties map
+							properties.put(complexPropertyRoot, newValue);
+							defaultPropertiesUnwrapped.remove(complexPropertyRoot);
+						}
 					}
-				}
-			}, this);
+				}, this);
+			}
 		}
 	}
 
@@ -681,8 +684,7 @@ public abstract class BaseWebObject
 		if (newJSONValue == JSONObject.NULL) newJSONValue = null;
 
 		PropertyDescription propertyDesc = specification.getProperty(propertyName);
-		Object value = propertyDesc != null ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDesc, new DataConverterContext(propertyDesc,
-			this)) : null;
+		Object value = propertyDesc != null ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, new DataConverterContext(propertyDesc, this)) : null;
 		return value;
 	}
 

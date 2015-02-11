@@ -16,6 +16,7 @@
 package org.sablo.specification.property.types;
 
 import org.json.JSONObject;
+import org.sablo.specification.PropertyDescription;
 
 
 /**
@@ -39,7 +40,7 @@ public class VisiblePropertyType extends DefaultPropertyType<Boolean>
 	}
 
 	@Override
-	public Boolean defaultValue()
+	public Boolean defaultValue(PropertyDescription pd)
 	{
 		return Boolean.TRUE;
 	}

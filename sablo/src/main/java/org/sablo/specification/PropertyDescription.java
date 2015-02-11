@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.json.JSONObject;
+import org.sablo.specification.IYieldingType.YieldDescriptionArguments;
 import org.sablo.specification.property.CustomJSONPropertyType;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
@@ -35,6 +36,7 @@ import org.sablo.specification.property.IPropertyType;
  */
 public class PropertyDescription
 {
+
 	private final String name;
 	private final IPropertyType< ? > type;
 	private final Object config;
@@ -58,25 +60,43 @@ public class PropertyDescription
 		this(name, type, config, null, null, null, false);
 	}
 
-	/**
-	 * 
-	 * @param name
-	 * @param type
-	 * @param config
-	 * @param defaultValue
-	 * @param values
-	 * @param tags 
-	 * @param optional only used for api arguments
-	 */
 	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Object defaultValue, List<Object> values, JSONObject tags, boolean optional)
 	{
 		this.name = name;
-		this.type = type;
-		this.config = config;
-		this.defaultValue = defaultValue;
-		this.values = values;
-		this.tags = tags;
-		this.optional = optional;
+		if (type instanceof IYieldingType)
+		{
+			YieldDescriptionArguments params = new YieldDescriptionArguments(config, defaultValue, values, tags, optional);
+			this.type = ((IYieldingType< ? , ? >)type).yieldToOtherIfNeeded(name, params);
+
+			if (this.type != type)
+			{
+				// it yielded; use new argument values in case yielding required it
+				this.config = params.config;
+				this.defaultValue = params.defaultValue;
+				this.values = params.values;
+				this.tags = params.tags;
+				this.optional = params.optional;
+			}
+			else
+			{
+				// didn't yield to another type; just use same args
+				this.config = config;
+				this.defaultValue = defaultValue;
+				this.values = values;
+				this.tags = tags;
+				this.optional = optional;
+			}
+		}
+		else
+		{
+			this.type = type;
+
+			this.config = config;
+			this.defaultValue = defaultValue;
+			this.values = values;
+			this.tags = tags;
+			this.optional = optional;
+		}
 	}
 
 	public Collection<PropertyDescription> getProperties(IPropertyType< ? > pt)

@@ -18,6 +18,7 @@ package org.sablo.specification.property.types;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.sablo.specification.property.CustomJSONArrayType;
 import org.sablo.specification.property.CustomJSONArrayTypeFactory;
@@ -96,9 +97,17 @@ public class TypesRegistry
 	public static IClassPropertyType< ? > getType(Class< ? > clz)
 	{
 		IClassPropertyType< ? > type = typesByClass.get(clz);
-		//TODO if this is still null should we do a isAssignableFrom/instanceof check?
 		// clz could be a concrete type, but the registered type is a interface class type.
-//		if (type == null) throw new RuntimeException("Type for class: '" + clz + "' not found in " + printTypes());
+		if (type == null)
+		{
+			for (Entry<Class< ? >, IClassPropertyType< ? >> entry : typesByClass.entrySet())
+			{
+				if (entry.getKey().isAssignableFrom(clz))
+				{
+					return entry.getValue();
+				}
+			}
+		}
 		return type;
 	}
 

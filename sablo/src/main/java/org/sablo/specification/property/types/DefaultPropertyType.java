@@ -16,6 +16,7 @@
 package org.sablo.specification.property.types;
 
 import org.json.JSONObject;
+import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IPropertyType;
 
 /**
@@ -32,7 +33,7 @@ public abstract class DefaultPropertyType<T> implements IPropertyType<T>
 	}
 
 	@Override
-	public T defaultValue()
+	public T defaultValue(PropertyDescription pd)
 	{
 		return null;
 	}

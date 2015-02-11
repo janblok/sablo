@@ -44,6 +44,12 @@ import org.slf4j.LoggerFactory;
  */
 public class WebComponentSpecification extends PropertyDescription
 {
+
+	/**
+	 * Property descriptions that are array element property descriptions will have this name.
+	 */
+	public static final String ARRAY_ELEMENT_PD_NAME = ""; //$NON-NLS-1$
+
 	private static final Logger log = LoggerFactory.getLogger(WebComponentSpecification.class.getCanonicalName());
 
 	public static final String TYPES_KEY = "types";
@@ -289,7 +295,7 @@ public class WebComponentSpecification extends PropertyDescription
 	{
 		if (pp.array)
 		{
-			return TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, new PropertyDescription("", pp.type));
+			return TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, new PropertyDescription(ARRAY_ELEMENT_PD_NAME, pp.type));
 		}
 		return pp.type;
 	}
@@ -390,8 +396,7 @@ public class WebComponentSpecification extends PropertyDescription
 						// the config object will be used by the 'CustomJSONArray' type;
 						// a config for the element type can be specified like this: { type: 'myprop[]', a: ..., b: ..., elementConfig: {...} } and we could give that to the elementDescription instead
 						JSONObject elementConfig = configObject != null ? configObject.optJSONObject(CustomJSONArrayType.ELEMENT_CONFIG_KEY) : null;
-						PropertyDescription elementDescription = new PropertyDescription("", type, type.parseConfig(elementConfig), defaultValue, values, tags,
-							false);
+						PropertyDescription elementDescription = new PropertyDescription(ARRAY_ELEMENT_PD_NAME, type, type.parseConfig(elementConfig), defaultValue, values, tags, false);
 						type = TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, elementDescription);
 					}
 

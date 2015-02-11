@@ -15,6 +15,8 @@
  */
 package org.sablo.specification.property.types;
 
+import org.sablo.specification.PropertyDescription;
+
 
 /**
  * @author jcompagner
@@ -37,7 +39,7 @@ public class FloatPropertyType extends DefaultPropertyType<Float>
 	}
 
 	@Override
-	public Float defaultValue()
+	public Float defaultValue(PropertyDescription pd)
 	{
 		return Float.valueOf(0);
 	}

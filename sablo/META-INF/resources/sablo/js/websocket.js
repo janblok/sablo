@@ -35,7 +35,7 @@ webSocketModule.factory('$webSocket',
 						if (obj.exception) {
 							// something went wrong
 							if (obj.conversions && obj.conversions.exception) {
-								obj.exception = $sabloConverters.convertFromServerToClient(obj.exception, obj.conversions.exception, undefined, undefined)
+								obj.exception = $sabloConverters.convertFromServerToClient(obj.exception, obj.conversions.exception, undefined, undefined, undefined)
 							}
 							if (deferredEvent.scope) {
 								deferredEvent.deferred.reject(obj.exception);
@@ -48,7 +48,7 @@ webSocketModule.factory('$webSocket',
 							}
 						} else {
 							if (obj.conversions && obj.conversions.ret) {
-								obj.ret = $sabloConverters.convertFromServerToClient(obj.ret, obj.conversions.ret, undefined, undefined)
+								obj.ret = $sabloConverters.convertFromServerToClient(obj.ret, obj.conversions.ret, undefined, undefined, undefined)
 							}
 							if (deferredEvent.scope) {
 								deferredEvent.deferred.resolve(obj.ret);
@@ -70,7 +70,7 @@ webSocketModule.factory('$webSocket',
 					if (obj.services) {
 						// services call
 						if (obj.conversions && obj.conversions.services) {
-							obj.services = $sabloConverters.convertFromServerToClient(obj.services, obj.conversions.services, undefined, undefined)
+							obj.services = $sabloConverters.convertFromServerToClient(obj.services, obj.conversions.services, undefined, undefined, undefined)
 						}
 						for (var index in obj.services) {
 							var service = obj.services[index];
@@ -211,7 +211,15 @@ webSocketModule.factory('$webSocket',
 					for (var a in args) {
 						new_uri += '/' + args[a]
 					}
-
+					if (loc.search)
+					{
+						new_uri += '/'+encodeURI(loc.search.substring(1,loc.search.length)); 
+					}
+					else
+					{
+						new_uri +='/null';
+					}
+					
 					websocket = new WebSocket(new_uri);
 
 					var wsSession = new WebsocketSession()
@@ -325,7 +333,7 @@ webSocketModule.factory('$webSocket',
 	 		            	// so no previous service state; set it now
 	 		            	if (conversionInfo && conversionInfo[servicename]) {
  		            			// convert all properties, remember type for when a client-server conversion will be needed
-	 		            		services[servicename] = $sabloConverters.convertFromServerToClient(services[servicename], conversionInfo[servicename], undefined, serviceScopes[serviceName])
+	 		            		services[servicename] = $sabloConverters.convertFromServerToClient(services[servicename], conversionInfo[servicename], undefined, serviceScopes[serviceName], function() { return serviceScopes[serviceName].model })
 	 		            		var changeNotifier = getChangeNotifier(servicename);
 	 		            		for (var pn in conversionInfo[servicename]) {
 	 		            			if (services[servicename][pn] && services[servicename][pn][$sabloConverters.INTERNAL_IMPL]
@@ -347,7 +355,7 @@ webSocketModule.factory('$webSocket',
 	 		            		if (conversionInfo && conversionInfo[servicename] && conversionInfo[servicename][key]) {
 	 		            			// convert property, remember type for when a client-server conversion will be needed
 	 		            			if (!serviceScopesConversionInfo[servicename]) serviceScopesConversionInfo[servicename] = {};
-	 		            			serviceData[key] = $sabloConverters.convertFromServerToClient(serviceData[key], conversionInfo[servicename][key], serviceScope.model[key], serviceScope)
+	 		            			serviceData[key] = $sabloConverters.convertFromServerToClient(serviceData[key], conversionInfo[servicename][key], serviceScope.model[key], serviceScope, function() { return serviceScope.model })
 	 		            			
 	 		            			if ((serviceData[key] !== serviceScope.model[key] || serviceScopesConversionInfo[servicename][key] !== conversionInfo[servicename][key]) && serviceData[key]
 	 		            					&& serviceData[key][$sabloConverters.INTERNAL_IMPL] && serviceData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
@@ -379,16 +387,16 @@ webSocketModule.factory('$webSocket',
 			 */
 			var customPropertyConverters = {};
 
-			var convertFromServerToClient = function(serverSentData, conversionInfo, currentClientData, componentScope) {
+			var convertFromServerToClient = function(serverSentData, conversionInfo, currentClientData, scope, modelGetter) {
 				if (typeof conversionInfo === 'string' || typeof conversionInfo === 'number') {
 					var customConverter = customPropertyConverters[conversionInfo];
-					if (customConverter) serverSentData = customConverter.fromServerToClient(serverSentData, currentClientData, componentScope);
+					if (customConverter) serverSentData = customConverter.fromServerToClient(serverSentData, currentClientData, scope, modelGetter);
 					else { //converter not found - will not convert
 						$log.error("cannot find type converter (s->c) for: '" + conversionInfo + "'.");
 					}
 				} else if (conversionInfo) {
 					for (var conKey in conversionInfo) {
-						serverSentData[conKey] = convertFromServerToClient(serverSentData[conKey], conversionInfo[conKey], currentClientData ? currentClientData[conKey] : undefined, componentScope); // TODO should componentScope really stay the same here? 
+						serverSentData[conKey] = convertFromServerToClient(serverSentData[conKey], conversionInfo[conKey], currentClientData ? currentClientData[conKey] : undefined, scope, modelGetter); // TODO should componentScope really stay the same here? 
 					}
 				}
 				return serverSentData;
@@ -421,16 +429,18 @@ webSocketModule.factory('$webSocket',
 				 */
 				INTERNAL_IMPL: '__internalState',
 				
-				prepareInternalState: function(propertyValue) {
+				prepareInternalState: function(propertyValue, optionalInternalStateValue) {
+					if (angular.isUndefined(optionalInternalStateValue)) optionalInternalStateValue = {};
+					
 					if (Object.defineProperty) {
 						// try to avoid unwanted iteration/non-intended interference over the private property state
 						Object.defineProperty(propertyValue, this.INTERNAL_IMPL, {
 							configurable: false,
 							enumerable: false,
 							writable: false,
-							value: {}
+							value: optionalInternalStateValue
 						});
-					} else propertyValue[$sabloConverters.INTERNAL_IMPL] = {};
+					} else propertyValue[$sabloConverters.INTERNAL_IMPL] = optionalInternalStateValue;
 				},
 				
 				convertFromServerToClient: convertFromServerToClient,
@@ -450,8 +460,10 @@ webSocketModule.factory('$webSocket',
 				 *				// @param serverSentJSONValue the JSON value received from the server for the property
 				 *				// @param currentClientValue the JS value that is currently used for that property in the client; can be null/undefined if
 				 *				//        conversion happens for service API call parameters for example...
-				 *				// @param componentScope scope that can be used to add component and property related watches; can be null/undefined if
-				 *				//        conversion happens for service API call parameters for example...
+				 *				// @param scope scope that can be used to add component/service and property related watches; can be null/undefined if
+				 *				//        conversion happens for service/component API call parameters for example...
+				 *				// @param modelGetter a function that returns the model that can be used to find other properties of the service/component if needed (if the
+				 *              //        property is 'linked' to another one); can be null/undefined if conversion happens for service/component API call parameters for example...
 				 *				// @return the new/updated client side property value; if this returned value is interested in triggering
 				 *				//         updates to server when something changes client side it must have these member functions in this[$sabloConverters.INTERNAL_IMPL]:
 				 *				//				setChangeNotifier: function(changeNotifier) - where changeNotifier is a function that can be called when
@@ -459,7 +471,7 @@ webSocketModule.factory('$webSocket',
 				 *				//                                                          not be called when value is a call parameter for example, but will
 				 *				//                                                          be called when set into a component's/service's property/model
 				 *				//              isChanged: function() - should return true if the value needs to send updates to server // TODO this could be kept track of internally
-				 * 				fromServerToClient: function (serverSentJSONValue, currentClientValue, componentScope) { (...); return newClientValue; },
+				 * 				fromServerToClient: function (serverSentJSONValue, currentClientValue, scope, modelGetter) { (...); return newClientValue; },
 				 * 
 				 *				// Converts from a client property JS value to a JSON that will be sent to the server.
 				 *				// @param newClientData the new JS client side property value
@@ -541,22 +553,6 @@ webSocketModule.factory('$webSocket',
 					return value;
 				},
 				
-				/**
-				 * Receives variable arguments. First is the object obj and the others (for example a, b, c) are used
-				 * to return obj[a][b][c] making sure if for example b is not there it returns undefined instead of
-				 * throwing an exception.
-				 */
-				getInDepthProperty: function() {
-					if (arguments.length == 0) return undefined;
-					
-					var ret = arguments[0];
-					var i;
-					for (i = 1; (i < arguments.length) && (ret !== undefined && ret !== null); i++) ret = ret[arguments[i]];
-					if (i < arguments.length) ret = undefined;
-					
-					return ret;
-				},
-
 				getEventArgs: function(args,eventName)
 				{
 					var newargs = []
@@ -624,10 +620,8 @@ webSocketModule.factory('$webSocket',
 					
 					var ret = arguments[0];
 					if (ret == undefined || ret === null || arguments.length == 1) return ret;
-					var p;
 					var i;
 					for (i = 1; i < arguments.length; i++) {
-						p = ret;
 						ret = ret[arguments[i]];
 						if (ret === undefined || ret === null) {
 							return i == arguments.length - 1 ? ret : undefined;

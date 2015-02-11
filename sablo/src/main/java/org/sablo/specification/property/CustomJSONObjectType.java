@@ -177,7 +177,8 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 								PropertyDescription keyPD = getCustomJSONTypeDefinition().getProperty(key);
 								if (keyPD != null)
 								{
-									WT newWrappedEl = (WT)JSONUtils.fromJSON(wrappedBaseMap.get(key), val, keyPD, dataConverterContext);
+									WT newWrappedEl = (WT)JSONUtils.fromJSON(wrappedBaseMap.get(key), val,
+										new DataConverterContext(keyPD, dataConverterContext.getWebObject()));
 									previousChangeAwareMap.putInWrappedBaseList(key, newWrappedEl, false);
 								}
 								else
@@ -254,8 +255,8 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 				}
 				try
 				{
-					map.put(key,
-						(WT)JSONUtils.fromJSON(oldVal, clientReceivedJSON.opt(key), getCustomJSONTypeDefinition().getProperty(key), dataConverterContext));
+					map.put(key, (WT)JSONUtils.fromJSON(oldVal, clientReceivedJSON.opt(key), new DataConverterContext(
+						getCustomJSONTypeDefinition().getProperty(key), dataConverterContext.getWebObject())));
 				}
 				catch (JSONException e)
 				{

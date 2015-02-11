@@ -15,6 +15,8 @@
  */
 package org.sablo.specification.property.types;
 
+import org.sablo.specification.PropertyDescription;
+
 
 /**
  * @author jcompagner
@@ -37,7 +39,7 @@ public class LongPropertyType extends DefaultPropertyType<Long>
 	}
 
 	@Override
-	public Long defaultValue()
+	public Long defaultValue(PropertyDescription pd)
 	{
 		return Long.valueOf(0);
 	}

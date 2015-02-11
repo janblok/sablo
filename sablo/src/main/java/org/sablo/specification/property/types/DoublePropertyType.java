@@ -15,6 +15,8 @@
  */
 package org.sablo.specification.property.types;
 
+import org.sablo.specification.PropertyDescription;
+
 
 /**
  * @author jcompagner
@@ -37,7 +39,7 @@ public class DoublePropertyType extends DefaultPropertyType<Double>
 	}
 
 	@Override
-	public Double defaultValue()
+	public Double defaultValue(PropertyDescription pd)
 	{
 		return Double.valueOf(0);
 	}

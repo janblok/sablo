@@ -43,7 +43,7 @@ public interface IWebsocketSession
 	 * Called when a new connection is started (also on reconnect)
 	 * @param argument
 	 */
-	public void onOpen(String argument);
+	public void onOpen(String... argument);
 
 	String getUuid();
 

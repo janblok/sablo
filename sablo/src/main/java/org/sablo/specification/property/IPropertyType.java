@@ -49,7 +49,7 @@ public interface IPropertyType<T>
 	 */
 	public Object parseConfig(JSONObject config);
 
-	public T defaultValue();
+	public T defaultValue(PropertyDescription pd);
 
 	/**
 	 * Defines whether this property can only be set the server, updates from client will be ignored.

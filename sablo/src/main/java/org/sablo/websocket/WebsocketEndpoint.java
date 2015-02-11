@@ -72,14 +72,13 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		this.endpointType = endpointType;
 	}
 
-	public void start(Session newSession, String sessionid, String winname, String winid, String arg) throws Exception
+	public void start(Session newSession, String sessionid, String winname, final String winid, final String... arg) throws Exception
 	{
 		this.session = newSession;
 
 		String uuid = "null".equalsIgnoreCase(sessionid) ? null : sessionid;
 		String windowId = "null".equalsIgnoreCase(winid) ? null : winid;
 		String windowName = "null".equalsIgnoreCase(winname) ? null : winname;
-		final String argument = "null".equalsIgnoreCase(arg) ? null : arg;
 
 		final IWebsocketSession wsSession = WebsocketSessionManager.getOrCreateSession(endpointType, uuid, true);
 
@@ -95,7 +94,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 				public void run()
 				{
 					window.onOpen();
-					wsSession.onOpen(argument);
+					wsSession.onOpen(arg);
 				}
 			});
 		}
@@ -329,7 +328,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 
 
 	/** Wait for a response message with given messsageId.
-	 * @param text 
+	 * @param text
 	 * @throws IOException
 	 */
 	public Object waitResponse(Integer messageId, String text) throws IOException

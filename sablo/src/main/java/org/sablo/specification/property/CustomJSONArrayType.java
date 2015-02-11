@@ -170,8 +170,8 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 
 								if (wrappedBaseListReadOnly.size() > idx)
 								{
-									WT newWrappedEl = (WT)JSONUtils.fromJSON(wrappedBaseListReadOnly.get(idx), val, getCustomJSONTypeDefinition(),
-										dataConverterContext);
+									WT newWrappedEl = (WT)JSONUtils.fromJSON(wrappedBaseListReadOnly.get(idx), val, new DataConverterContext(
+										getCustomJSONTypeDefinition(), dataConverterContext.getWebObject()));
 									previousChangeAwareList.setInWrappedBaseList(idx, newWrappedEl, false);
 								}
 								else
@@ -243,7 +243,8 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 			}
 			try
 			{
-				list.add((WT)JSONUtils.fromJSON(oldVal, array.opt(i), getCustomJSONTypeDefinition(), dataConverterContext));
+				list.add((WT)JSONUtils.fromJSON(oldVal, array.opt(i),
+					new DataConverterContext(getCustomJSONTypeDefinition(), dataConverterContext.getWebObject())));
 			}
 			catch (JSONException e)
 			{

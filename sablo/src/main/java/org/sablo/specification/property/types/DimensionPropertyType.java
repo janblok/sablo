@@ -20,6 +20,7 @@ import java.awt.Dimension;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
+import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.websocket.utils.DataConversion;
@@ -65,7 +66,7 @@ public class DimensionPropertyType extends DefaultPropertyType<Dimension> implem
 	}
 
 	@Override
-	public Dimension defaultValue()
+	public Dimension defaultValue(PropertyDescription pd)
 	{
 		return new Dimension(0, 0);
 	}

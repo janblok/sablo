@@ -148,6 +148,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	 */
 	public boolean checkForWindowActivity()
 	{
+		List<IWindow> inactiveWindows = new ArrayList<>();
 		synchronized (windows)
 		{
 			//do global non active cleanup
@@ -161,14 +162,19 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 					IWindow window = entry.getKey();
 					windows.remove(window);
 					iterator.remove();
-					try
-					{
-						window.destroy();
-					}
-					catch (Exception e)
-					{
-						log.warn("Error destroying window " + window, e);
-					}
+					inactiveWindows.add(window);
+				}
+			}
+
+			for (IWindow window : inactiveWindows)
+			{
+				try
+				{
+					window.destroy();
+				}
+				catch (Exception e)
+				{
+					log.warn("Error destroying window " + window, e);
 				}
 			}
 

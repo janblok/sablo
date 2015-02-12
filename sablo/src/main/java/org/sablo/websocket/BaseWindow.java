@@ -61,6 +61,7 @@ public class BaseWindow implements IWindow
 	private static final Logger log = LoggerFactory.getLogger(BaseWindow.class.getCanonicalName());
 
 	private IWebsocketEndpoint endpoint;
+	private boolean endpointWasOverwriten = false;
 	private IWebsocketSession session;
 	private String uuid;
 	private final String name;
@@ -114,14 +115,25 @@ public class BaseWindow implements IWindow
 	@Override
 	public void setEndpoint(IWebsocketEndpoint endpoint)
 	{
-		if (this.endpoint != endpoint)
+		if (endpoint == null)
 		{
-			this.endpoint = endpoint;
-			if (endpoint == null)
+			// endpoint was closed
+			if (endpointWasOverwriten)
 			{
-				// endpoint was closed
-				session.invalidateWindow(this);
+				// endpoint was replaced before previous one was closed
+				endpointWasOverwriten = false;
 			}
+			else
+			{
+				this.endpoint = null;
+			}
+			session.invalidateWindow(this); // decrements refcount
+		}
+		else
+		{
+			endpointWasOverwriten = this.endpoint != null;
+			this.endpoint = endpoint;
+			session.activateWindow(this); // increments refcount
 		}
 	}
 

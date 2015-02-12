@@ -32,10 +32,10 @@ public class WebsocketSessionManager
 {
 	private static final Logger log = LoggerFactory.getLogger(WebsocketSessionManager.class.getCanonicalName());
 
-	private static Map<String, IWebsocketSessionFactory> websocketSessionFactories = new HashMap<>();
+	private final static Map<String, IWebsocketSessionFactory> websocketSessionFactories = new HashMap<>();
 
 	//maps form uuid to session
-	private static Map<String, IWebsocketSession> wsSessions = new HashMap<>();
+	private final static Map<String, IWebsocketSession> wsSessions = new HashMap<>();
 
 	public static void addSession(IWebsocketSession wsSession)
 	{

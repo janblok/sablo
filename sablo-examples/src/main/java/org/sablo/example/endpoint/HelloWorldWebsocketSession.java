@@ -16,13 +16,7 @@
 
 package org.sablo.example.endpoint;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
-import org.sablo.Container;
 import org.sablo.example.HelloWorldWindow;
-import org.sablo.example.forms.AnotherForm;
-import org.sablo.example.forms.MainForm;
 import org.sablo.websocket.BaseWebsocketSession;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.IWindow;
@@ -37,23 +31,35 @@ import org.sablo.websocket.IWindow;
  */
 public class HelloWorldWebsocketSession extends BaseWebsocketSession
 {
+	
+	private String clientState = "!";
 
 	public HelloWorldWebsocketSession(String uuid)
 	{
 		super(uuid);
 	}
 	
+	public String getClientState() {
+		return clientState;
+	}
+	
+	public void setClientState(String clientState) {
+		this.clientState = clientState;
+	}
+	
 	@Override
 	public IWindow createWindow(String windowName) {
 		
-		IWindow window = new HelloWorldWindow(windowName);
-		window.setCurrentFormUrl("forms/" + (windowName==null?"mainForm":windowName) + ".html");
+		HelloWorldWindow window = new HelloWorldWindow(this, windowName);
+		window.setCurrentFormUrl("forms/" + (windowName == null ? "mainForm":windowName) + ".html");
 		return window;
 	}
 	
 	@Override
 	public void onOpen(String... arg) {
-		if (CurrentWindow.get().getCurrentFormUrl()==null) {CurrentWindow.get().setCurrentFormUrl("forms/mainForm.html");}
+		if (CurrentWindow.get().getCurrentFormUrl() == null) {
+			CurrentWindow.get().setCurrentFormUrl("forms/mainForm.html");
+		}
 	}
 
 }

@@ -6,7 +6,8 @@ angular.module('sampleApp', ['sabloApp', '$sabloService', 'webStorageModule', 'm
 	}
 	
 	// $window.alert('Connecting...');
-	$sabloApplication.connect('', [$webSocket.getURLParameter('windowName'), webStorage.session.get("sessionid"), webStorage.session.get("windowid")]).onMessageObject(function (msg, conversionInfo) {
+	$sabloApplication.connect('', [$sabloApplication.getSessionId(), $sabloApplication.getWindowName(), $sabloApplication.getWindowId()])
+	.onMessageObject(function (msg, conversionInfo) {
 		   if (msg.sessionid) {
 			   webStorage.session.add("sessionid", msg.sessionid);
 		   }

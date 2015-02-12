@@ -16,6 +16,8 @@
 
 package org.sablo.websocket;
 
+import java.util.concurrent.Callable;
+
 
 /**
  * RAGTEST doc
@@ -44,7 +46,7 @@ public class CurrentWindow
 		return currentWindow.get() != null;
 	}
 
-	public static IWindow set(IWindow window)
+	static IWindow set(IWindow window)
 	{
 		IWindow old = currentWindow.get();
 		if (window == null)
@@ -56,5 +58,31 @@ public class CurrentWindow
 			currentWindow.set(window);
 		}
 		return old;
+	}
+
+	public static void runForWindow(IWindow window, Runnable runnable)
+	{
+		IWindow previous = set(window);
+		try
+		{
+			runnable.run();
+		}
+		finally
+		{
+			set(previous);
+		}
+	}
+
+	public static <T> T runForWindow(IWindow window, Callable<T> callable) throws Exception
+	{
+		IWindow previous = set(window);
+		try
+		{
+			return callable.call();
+		}
+		finally
+		{
+			set(previous);
+		}
 	}
 }

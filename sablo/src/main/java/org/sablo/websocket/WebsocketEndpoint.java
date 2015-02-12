@@ -18,6 +18,7 @@ package org.sablo.websocket;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -72,13 +73,37 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		this.endpointType = endpointType;
 	}
 
-	public void start(Session newSession, String sessionid, String winname, final String winid, final String... arg) throws Exception
+	public void start(Session newSession, String sessionid, String winname, final String winid, String... args) throws Exception
 	{
 		this.session = newSession;
 
 		String uuid = "null".equalsIgnoreCase(sessionid) ? null : sessionid;
 		String windowId = "null".equalsIgnoreCase(winid) ? null : winid;
 		String windowName = "null".equalsIgnoreCase(winname) ? null : winname;
+
+		// TODO: use Session.getRequestParameterMap()
+		String queryString = newSession.getQueryString();
+		final List<String> arguments = new ArrayList<>();
+		if (args != null && args.length > 0)
+		{
+			arguments.addAll(Arrays.asList(args));
+		}
+		if (queryString != null)
+		{
+			String[] queryParams = (queryString.startsWith("?") ? queryString.substring(1) : queryString).split("&");
+			for (String param : queryParams)
+			{
+				String[] pair = null;
+				if ((pair = param.split("=")).length > 1)
+				{
+					arguments.add(pair[0] + ":" + pair[1]);
+				}
+				else
+				{
+					arguments.add(param);
+				}
+			}
+		}
 
 		final IWebsocketSession wsSession = WebsocketSessionManager.getOrCreateSession(endpointType, uuid, true);
 
@@ -94,7 +119,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 				public void run()
 				{
 					window.onOpen();
-					wsSession.onOpen(arg);
+					wsSession.onOpen(arguments.toArray(new String[arguments.size()]));
 				}
 			});
 		}
@@ -260,7 +285,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 			}
 
 			else if (obj.has("servicedatapush"))
-			{// RAGTEST services naar window??
+			{
 				String servicename = obj.optString("servicedatapush");
 				IClientService service = window.getSession().getService(servicename);
 				JSONObject changes = obj.optJSONObject("changes");
@@ -288,11 +313,6 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		}
 
 	}
-
-//	public void sendMessage(String txt) throws IOException
-//	{
-//		sendText("{\"msg\":" + txt + '}');
-//	}
 
 	protected void sendResponse(Object msgId, Object object, PropertyDescription objectType, boolean success) throws IOException
 	{

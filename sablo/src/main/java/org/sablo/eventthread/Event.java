@@ -79,33 +79,39 @@ public class Event
 	 */
 	public final void execute()
 	{
-		IWindow set = currentWindow;
-		if (set == null)
+		IWindow window = currentWindow;
+		if (window == null)
 		{
 			// this was an event from not triggered by a specific endpoint, just relay it to all the endpoints
 			// could be changes in the data model that must be pushed to all endpoints, or a close/shutdown/logout
-			set = createWebsocketSessionWindows();
+			window = createWebsocketSessionWindows();
 		}
-		IWindow previous = CurrentWindow.set(set);
-		try
+
+		CurrentWindow.runForWindow(window, new Runnable()
 		{
-			beforeExecute();
-			if (runnable != null)
+			@Override
+			public void run()
 			{
-				runnable.run();
+				try
+				{
+					beforeExecute();
+					if (runnable != null)
+					{
+						runnable.run();
+					}
+				}
+				catch (Exception e)
+				{
+					log.error("Exception in execute", e);
+					exception = e;
+				}
+				finally
+				{
+					executed = true;
+					afterExecute();
+				}
 			}
-		}
-		catch (Exception e)
-		{
-			log.error("Exception in execute", e);
-			exception = e;
-		}
-		finally
-		{
-			executed = true;
-			afterExecute();
-			CurrentWindow.set(previous);
-		}
+		});
 	}
 
 	protected WebsocketSessionWindows createWebsocketSessionWindows()

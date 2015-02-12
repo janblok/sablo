@@ -1,5 +1,5 @@
-angular.module('sabloApp', ['webSocketModule'])
-.factory('$sabloApplication', function ($rootScope, $timeout, $q, $webSocket,$sabloConverters,$sabloUtils) {
+angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
+.factory('$sabloApplication', function ($rootScope, $timeout, $q, $webSocket, $sabloConverters, $sabloUtils, webStorage) {
 	   // formName:[beanname:{property1:1,property2:"test"}] needs to be synced to and from server
 	   // this holds the form model with all the data, per form is this the "synced" view of the the IFormUI on the server 
 	   // (3 way binding)
@@ -127,6 +127,26 @@ angular.module('sabloApp', ['webSocketModule'])
 		   return getSession().callService(serviceName, methodName, argsObject, async)
 	   }
 	   
+	   var getSessionId = function() {
+		   var sessionId = webStorage.session.get('sessionid')
+		   if (sessionId) {
+			   return sessionId;
+		   }
+		   return $webSocket.getURLParameter('sessionid');
+	   }
+	   
+	   var getWindowName = function() {
+		   return $webSocket.getURLParameter('windowname');
+	   }
+	   
+	   var getWindowId = function() {
+		   return webStorage.session.get('windowid');
+	   }
+	   
+	   var getWindowUrl = function(windowname) {
+		   return "index.html?windowname=" + windowname + "&sessionid="+getSessionId();
+	   }
+	   
 	   return {
 		   connect : function(context, args) {
 			   wsSession = $webSocket.connect(context, args);
@@ -220,6 +240,11 @@ angular.module('sabloApp', ['webSocketModule'])
 
 			   return wsSession
 		   },
+		   
+		   getSessionId: getSessionId,
+		   getWindowName: getWindowName,
+		   getWindowId: getWindowId,
+		   getWindowUrl: getWindowUrl,
 		   
 		   // used by custom property component[] to implement nested component logic
 		   applyBeanData: applyBeanData,

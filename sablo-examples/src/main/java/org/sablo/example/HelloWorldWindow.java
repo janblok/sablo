@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.sablo.Container;
+import org.sablo.example.endpoint.HelloWorldWebsocketSession;
 import org.sablo.example.forms.AnotherForm;
 import org.sablo.example.forms.MainForm;
 import org.sablo.websocket.BaseWindow;
@@ -32,11 +33,12 @@ import org.sablo.websocket.BaseWindow;
 public class HelloWorldWindow extends BaseWindow{
 
 	protected final ConcurrentMap<String, Container> createdForms = new ConcurrentHashMap<>();
+	private final HelloWorldWebsocketSession websocketSession;
 	
-	public HelloWorldWindow(String name) {
+	public HelloWorldWindow(HelloWorldWebsocketSession websocketSession, String name) {
 		super(name);
+		this.websocketSession = websocketSession;
 	}
-
 
 	@Override
 	public Container getForm(String formName)
@@ -55,7 +57,7 @@ public class HelloWorldWindow extends BaseWindow{
 		{
 			case "mainForm" :
 
-				return new MainForm(formName);
+				return new MainForm(websocketSession, formName);
 				 
 			case "anotherForm" :
 				

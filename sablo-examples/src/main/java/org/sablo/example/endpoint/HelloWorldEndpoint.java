@@ -34,7 +34,7 @@ import org.sablo.websocket.WebsocketEndpoint;
  *
  */
 
-@ServerEndpoint(value = "/websocket/{windowName}/{windowid}/{sessionid}")
+@ServerEndpoint(value = "/websocket/{sessionid}/{windowname}/{windowid}")
 public class HelloWorldEndpoint extends WebsocketEndpoint
 {
 	public static final String HELLO_WORLD_ENDPOINT = "helloworld";
@@ -46,11 +46,11 @@ public class HelloWorldEndpoint extends WebsocketEndpoint
 
 	@OnOpen
 	public void start(Session newSession,
-			@PathParam("windowName")  String windowName,
-			@PathParam("windowid")  String windowid,
-			@PathParam("sessionid")  String sessionid) throws Exception
+			@PathParam("sessionid")  String sessionid,
+			@PathParam("windowname")  String windowname,
+			@PathParam("windowid")  String windowid) throws Exception
 	{
-		start(newSession, sessionid, windowName, windowid, null);
+		start(newSession, sessionid, windowname, windowid, null);
 	}
 
 	@Override

@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -35,6 +34,7 @@ import org.sablo.eventthread.IEventDispatcher;
 import org.sablo.services.FormServiceHandler;
 import org.sablo.specification.WebServiceSpecProvider;
 import org.sablo.websocket.impl.ClientService;
+import org.sablo.websocket.utils.ObjectReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,14 +47,12 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 {
 	public static final String SABLO_SERVICE = "$sabloService";
 
+	private static final long WINDOW_TIMEOUT = 1 * 60 * 1000;
+
 	private static final Logger log = LoggerFactory.getLogger(WebsocketEndpoint.class.getCanonicalName());
 	private final Map<String, IServerService> serverServices = new HashMap<>();
 	private final Map<String, IClientService> services = new HashMap<>();
-	private final List<IWindow> windows = new ArrayList<IWindow>();
-
-	//maps window to time
-	private static Map<IWindow, Long> nonActiveWindows = new HashMap<>();
-	private static final long WINDOW_TIMEOUT = 1 * 60 * 1000;
+	private final List<ObjectReference<IWindow>> windows = new ArrayList<>();
 
 	private final String uuid;
 	private volatile IEventDispatcher executor;
@@ -73,7 +71,15 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	@Override
 	public Collection<IWindow> getWindows()
 	{
-		return Collections.unmodifiableCollection(windows);
+		synchronized (windows)
+		{
+			List<IWindow> wins = new ArrayList<>(windows.size());
+			for (ObjectReference<IWindow> ref : windows)
+			{
+				wins.add(ref.getObject());
+			}
+			return wins;
+		}
 	}
 
 	/*
@@ -86,31 +92,30 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	{
 		synchronized (windows)
 		{
-			for (IWindow window : windows)
+			if (windowId != null)
 			{
-				if (windowId == null)
+				for (ObjectReference<IWindow> ref : windows)
 				{
-					if (window.getUuid() == null &&
-						((windowName == null && window.getName() == null) || (windowName != null && windowName.equals(window.getName()))))
+					IWindow window = ref.getObject();
+					if (windowId.equals(window.getUuid()))
 					{
-						// window was created serverside but had no uuid yet
-						window.setUuid(UUID.randomUUID().toString());
-						nonActiveWindows.remove(window);
-						return window;
+						if ((windowName == null && window.getName() == null) || (windowName != null && windowName.equals(window.getName())))
+						{
+							// window matches on name and uuid
+							return window;
+						}
+						// else: 
+						// window with this uuid exists, but windowname is different, this can happen when a new tab is opened
+						// and sessionstorage (containing windowid) is copied to the new tab.
 					}
-				}
-				else if (windowId.equals(window.getUuid()))
-				{
-					nonActiveWindows.remove(window);
-					return window;
 				}
 			}
 
 			// not found, create a new one
 			IWindow window = createWindow(windowName);
 			window.setSession(this);
-			window.setUuid(windowId == null ? UUID.randomUUID().toString() : windowId);
-			windows.add(window);
+			window.setUuid(UUID.randomUUID().toString());
+			windows.add(new ObjectReference<IWindow>(window));
 			return window;
 		}
 	}
@@ -118,15 +123,6 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	protected IWindow createWindow(String windowName)
 	{
 		return new BaseWindow(windowName);
-	}
-
-	public void addWindow(IWindow window)
-	{
-		synchronized (windows)
-		{
-			windows.add(window);
-			invalidateWindow(window);
-		}
 	}
 
 	/**
@@ -137,8 +133,28 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	{
 		synchronized (windows)
 		{
-			// mark current window as non active
-			nonActiveWindows.put(window, new Long(System.currentTimeMillis()));
+			for (ObjectReference<IWindow> ref : windows)
+			{
+				if (window == ref.getObject())
+				{
+					ref.updateLastAccessed();
+					ref.decrementRefcount();
+				}
+			}
+		}
+	}
+
+	public void activateWindow(IWindow window)
+	{
+		synchronized (windows)
+		{
+			for (ObjectReference<IWindow> ref : windows)
+			{
+				if (window == ref.getObject())
+				{
+					ref.incrementRefcount();
+				}
+			}
 		}
 	}
 
@@ -153,16 +169,14 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		{
 			//do global non active cleanup
 			long currentTime = System.currentTimeMillis();
-			Iterator<Entry<IWindow, Long>> iterator = nonActiveWindows.entrySet().iterator();
+			Iterator<ObjectReference<IWindow>> iterator = windows.iterator();
 			while (iterator.hasNext())
 			{
-				Entry<IWindow, Long> entry = iterator.next();
-				if (currentTime - entry.getValue().longValue() > WINDOW_TIMEOUT)
+				ObjectReference<IWindow> ref = iterator.next();
+				if (ref.getRefcount() == 0 && currentTime - ref.getLastAccessed() > WINDOW_TIMEOUT)
 				{
-					IWindow window = entry.getKey();
-					windows.remove(window);
 					iterator.remove();
-					inactiveWindows.add(window);
+					inactiveWindows.add(ref.getObject());
 				}
 			}
 
@@ -227,9 +241,9 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	{
 		synchronized (windows)
 		{
-			for (IWindow window : windows)
+			for (ObjectReference<IWindow> ref : windows)
 			{
-				window.closeSession();
+				ref.getObject().closeSession();
 			}
 			windows.clear();
 		}

@@ -81,8 +81,6 @@ public interface IWebsocketSession
 
 	Collection<IClientService> getServices();
 
-	void addWindow(IWindow window);
-
 	/**RAGTEST doc
 	 * @param windowId
 	 * @param windowName
@@ -96,6 +94,8 @@ public interface IWebsocketSession
 	 * @param window
 	 */
 	void invalidateWindow(IWindow window);
+
+	void activateWindow(IWindow window);
 
 	boolean checkForWindowActivity();
 

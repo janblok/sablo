@@ -19,10 +19,9 @@ package org.sablo.example.forms;
 import org.sablo.Container;
 import org.sablo.IEventHandler;
 import org.sablo.WebComponent;
+import org.sablo.example.endpoint.HelloWorldWebsocketSession;
 import org.sablo.specification.WebComponentSpecification;
-import org.sablo.websocket.BaseWebsocketSession;
 import org.sablo.websocket.CurrentWindow;
-import org.sablo.websocket.WebsocketEndpoint;
 
 /**
  * Main Form in sample sablo application.
@@ -40,12 +39,15 @@ public class MainForm extends Container
 	private final WebComponent theCounter;
 	private final WebComponent theButton;
 
-	public MainForm(String name)
+	private final HelloWorldWebsocketSession websocketSession;
+
+	public MainForm(HelloWorldWebsocketSession websocketSession, String name)
 	{
 		super(name, FORM_SPEC);
+		this.websocketSession = websocketSession;
 
 		add(theLabel = new WebComponent("mylabel", "thelabel"));
-		theLabel.setProperty("text", "initial server value");
+		theLabel.setProperty("text", websocketSession.getClientState());
 
 		add(theTextField = new WebComponent("mytextfield", "thetextfield"));
 		theTextField.setProperty("value", "changeme");
@@ -61,10 +63,13 @@ public class MainForm extends Container
 			public Object executeEvent(Object[] args)
 			{
 				System.err.println("I was pushed! theTextField = "+theTextField.isVisible());
+				
+				MainForm.this.websocketSession.setClientState(MainForm.this.websocketSession.getClientState()+'#');
+				
 				theTextField.setVisible(!theTextField.isVisible());
 				// copy value from text field to label, will be automatically synchronised to browser
 				Object textvalue = theTextField.getProperty("value");
-				theLabel.setProperty("text", textvalue);
+				theLabel.setProperty("text", MainForm.this. websocketSession.getClientState() + ":" + textvalue);
 				// call a function on an element
 				theCounter.invokeApi("increment", new Object[] { 2 });
 				

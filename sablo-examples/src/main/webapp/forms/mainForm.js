@@ -1,4 +1,4 @@
-angular.module('sampleApp').controller("mainForm", function($scope, $window, $sabloApplication, $sabloUtils) {
+angular.module('sampleApp').controller("mainForm", function($scope, $window, $sabloApplication, $sabloUtils, webStorage) {
 
 //	$window.alert(' starting mainForm');
 
@@ -76,5 +76,9 @@ angular.module('sampleApp').controller("mainForm", function($scope, $window, $sa
 	};
     
     formState.getScope = function() { return $scope; };
+    
+    $scope.getWindowUrl = function(windowname) {
+    	return $sabloApplication.getWindowUrl(windowname);
+    }
 
 });

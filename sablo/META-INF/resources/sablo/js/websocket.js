@@ -213,11 +213,7 @@ webSocketModule.factory('$webSocket',
 					}
 					if (loc.search)
 					{
-						new_uri += '/'+encodeURI(loc.search.substring(1,loc.search.length)); 
-					}
-					else
-					{
-						new_uri +='/null';
+						new_uri += loc.search; 
 					}
 					
 					websocket = new WebSocket(new_uri);

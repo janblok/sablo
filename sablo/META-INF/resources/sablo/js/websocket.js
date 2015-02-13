@@ -182,7 +182,7 @@ webSocketModule.factory('$webSocket',
 			 */
 			return {
 
-				connect : function(context, args) {
+				connect : function(context, args, queryArgs) {
 
 					var loc = window.location, new_uri;
 					if (loc.protocol === "https:") {
@@ -207,13 +207,22 @@ webSocketModule.factory('$webSocket',
 					for (var a in args) {
 						new_uri += '/' + args[a]
 					}
+					if (queryArgs || loc.search)
+					{
+						new_uri += "?";
+					}
+					for (var a in queryArgs)
+					{
+						new_uri += a+"="+queryArgs[a]+"&";
+					}
+					
 					if (loc.search)
 					{
-						new_uri += '/'+encodeURI(loc.search.substring(1,loc.search.length)); 
+						new_uri +=  encodeURI(loc.search.substring(1,loc.search.length)); 
 					}
 					else
 					{
-						new_uri +='/null';
+						if (queryArgs) new_uri = new_uri.substring(0,new_uri.length-1);
 					}
 					
 					websocket = new WebSocket(new_uri);

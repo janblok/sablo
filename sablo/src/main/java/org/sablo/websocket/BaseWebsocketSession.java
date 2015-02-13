@@ -136,7 +136,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		return new EventDispatcher(this);
 	}
 
-	public void onOpen(String... arguments)
+	public void onOpen(final Map<String, List<String>> requestParams)
 	{
 		// send all the service data to the browser.
 		Map<String, Object> data = new HashMap<>(3);

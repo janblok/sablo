@@ -128,8 +128,8 @@ angular.module('sabloApp', ['webSocketModule'])
 	   }
 	   
 	   return {
-		   connect : function(context, args) {
-			   wsSession = $webSocket.connect(context, args);
+		   connect : function(context, args, queryArgs) {
+			   wsSession = $webSocket.connect(context, args, queryArgs);
 			   
 			   wsSession.onMessageObject(function (msg, conversionInfo) {
 				   // data got back from the server

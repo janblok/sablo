@@ -134,7 +134,7 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 		this.endpointType = endpointType;
 	}
 
-	public void start(Session newSession, String sessionid, final String windowid, final String... arg) throws Exception
+	public void start(Session newSession, String sessionid, final String windowid) throws Exception
 	{
 		session = newSession;
 
@@ -147,7 +147,7 @@ abstract public class WebsocketEndpoint implements IWebsocketEndpoint
 
 			if (!wsSession.getUuid().equals(uuid)) sendMessage(new JSONStringer().object().key("sessionid").value(wsSession.getUuid()).endObject().toString());
 			wsSession.registerEndpoint(this);
-			wsSession.onOpen(arg);
+			wsSession.onOpen(newSession.getRequestParameterMap());
 		}
 		finally
 		{

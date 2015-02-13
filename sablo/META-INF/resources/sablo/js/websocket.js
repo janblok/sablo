@@ -205,7 +205,9 @@ webSocketModule.factory('$webSocket',
 					}
 					new_uri += pathname + '/websocket';
 					for (var a in args) {
-						new_uri += '/' + args[a]
+						if (args.hasOwnProperty(a)) {
+							new_uri += '/' + args[a]
+						}
 					}
 					if (queryArgs || loc.search)
 					{
@@ -213,7 +215,9 @@ webSocketModule.factory('$webSocket',
 					}
 					for (var a in queryArgs)
 					{
-						new_uri += a+"="+queryArgs[a]+"&";
+						if (queryArgs.hasOwnProperty(a)) {
+							new_uri += a+"="+queryArgs[a]+"&";
+						}
 					}
 					
 					if (loc.search)

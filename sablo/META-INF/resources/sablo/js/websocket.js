@@ -218,7 +218,7 @@ webSocketModule.factory('$webSocket',
 					
 					if (loc.search)
 					{
-						new_uri +=  encodeURI(loc.search.substring(1,loc.search.length)); 
+						new_uri +=  loc.search.substring(1,loc.search.length); 
 					}
 					else
 					{

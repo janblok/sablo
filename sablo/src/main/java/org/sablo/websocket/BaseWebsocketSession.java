@@ -31,7 +31,8 @@ import org.json.JSONObject;
 import org.sablo.IChangeListener;
 import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
-import org.sablo.services.FormServiceHandler;
+import org.sablo.services.client.SabloService;
+import org.sablo.services.server.FormServiceHandler;
 import org.sablo.specification.WebServiceSpecProvider;
 import org.sablo.websocket.impl.ClientService;
 import org.sablo.websocket.utils.ObjectReference;
@@ -45,8 +46,6 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BaseWebsocketSession implements IWebsocketSession, IChangeListener
 {
-	public static final String SABLO_SERVICE = "$sabloService";
-
 	private static final long WINDOW_TIMEOUT = 1 * 60 * 1000;
 
 	private static final Logger log = LoggerFactory.getLogger(WebsocketEndpoint.class.getCanonicalName());
@@ -282,7 +281,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	}
 
 	@Override
-	public IClientService getService(String name)
+	public IClientService getClientService(String name)
 	{
 		IClientService clientService = services.get(name);
 		if (clientService == null)
@@ -291,6 +290,12 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 			services.put(name, clientService);
 		}
 		return clientService;
+	}
+
+	@Override
+	public SabloService getSabloService()
+	{
+		return new SabloService(getClientService(SabloService.SABLO_SERVICE));
 	}
 
 	@Override
@@ -345,4 +350,5 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	public void handleMessage(JSONObject obj)
 	{
 	}
+
 }

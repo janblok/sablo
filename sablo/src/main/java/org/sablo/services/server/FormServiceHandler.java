@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.sablo.services;
+package org.sablo.services.server;
 
 import java.util.Iterator;
 

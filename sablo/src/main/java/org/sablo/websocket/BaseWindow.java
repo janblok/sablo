@@ -231,7 +231,7 @@ public class BaseWindow implements IWindow
 	{
 		if (currentFormUrl != null && getSession() != null)
 		{
-			getSession().getService(BaseWebsocketSession.SABLO_SERVICE).executeAsyncServiceCall("setCurrentFormUrl", new Object[] { currentFormUrl });
+			getSession().getSabloService().setCurrentFormUrl(currentFormUrl);
 		}
 	}
 

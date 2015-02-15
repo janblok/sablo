@@ -162,7 +162,7 @@ public class WebComponent extends BaseWebObject
 	 */
 	public Object executeServiceCall(String service, String functionName, Object[] arguments) throws IOException
 	{
-		return CurrentWindow.get().getSession().getService(service).executeServiceCall(functionName, arguments);
+		return CurrentWindow.get().getSession().getClientService(service).executeServiceCall(functionName, arguments);
 	}
 
 	/**
@@ -179,7 +179,7 @@ public class WebComponent extends BaseWebObject
 	 */
 	public void executeAsyncServiceCall(String service, String functionName, Object[] arguments)
 	{
-		CurrentWindow.get().getSession().getService(service).executeAsyncServiceCall(functionName, arguments);
+		CurrentWindow.get().getSession().getClientService(service).executeAsyncServiceCall(functionName, arguments);
 	}
 
 	public static PropertyDescription getParameterTypes(WebComponentApiDefinition apiFunc)

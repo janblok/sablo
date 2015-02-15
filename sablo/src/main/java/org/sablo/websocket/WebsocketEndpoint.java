@@ -287,7 +287,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 			else if (obj.has("servicedatapush"))
 			{
 				String servicename = obj.optString("servicedatapush");
-				IClientService service = window.getSession().getService(servicename);
+				IClientService service = window.getSession().getClientService(servicename);
 				JSONObject changes = obj.optJSONObject("changes");
 				Iterator keys = changes.keys();
 				while (keys.hasNext())

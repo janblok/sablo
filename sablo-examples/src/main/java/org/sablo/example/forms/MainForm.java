@@ -16,10 +16,13 @@
 
 package org.sablo.example.forms;
 
+import java.io.IOException;
+
 import org.sablo.Container;
 import org.sablo.IEventHandler;
 import org.sablo.WebComponent;
 import org.sablo.example.endpoint.HelloWorldWebsocketSession;
+import org.sablo.services.client.SabloService;
 import org.sablo.specification.WebComponentSpecification;
 import org.sablo.websocket.CurrentWindow;
 
@@ -63,18 +66,32 @@ public class MainForm extends Container
 			public Object executeEvent(Object[] args)
 			{
 				System.err.println("I was pushed! theTextField = "+theTextField.isVisible());
-				
+
 				MainForm.this.websocketSession.setClientState(MainForm.this.websocketSession.getClientState()+'#');
-				
+
 				theTextField.setVisible(!theTextField.isVisible());
 				// copy value from text field to label, will be automatically synchronised to browser
 				Object textvalue = theTextField.getProperty("value");
 				theLabel.setProperty("text", MainForm.this. websocketSession.getClientState() + ":" + textvalue);
 				// call a function on an element
 				theCounter.invokeApi("increment", new Object[] { 2 });
-				
+
 				CurrentWindow.get().setCurrentFormUrl("forms/anotherForm.html");
 
+				return null;
+			}
+		});
+
+		WebComponent thebutton2 = new WebComponent("mybutton", "thebutton2");
+		add(thebutton2);
+		thebutton2.addEventHandler("onClick", new IEventHandler()
+		{
+			@Override
+			public Object executeEvent(Object[] args) throws IOException
+			{
+				String url = "http://www.google.nl";
+//				url = "http://localhost:8081/sablo-examples/";
+				CurrentWindow.get().getSession().getSabloService().openWindowInClient(url, "_blank", null, null);
 				return null;
 			}
 		});

@@ -20,6 +20,7 @@ import java.util.Collection;
 
 import org.json.JSONObject;
 import org.sablo.eventthread.IEventDispatcher;
+import org.sablo.services.client.SabloService;
 
 /**
  * Interface for classes handling a websocket user session.
@@ -77,7 +78,7 @@ public interface IWebsocketSession
 	 */
 	IServerService getServerService(String name);
 
-	IClientService getService(String name);
+	IClientService getClientService(String name);
 
 	Collection<IClientService> getServices();
 
@@ -99,4 +100,5 @@ public interface IWebsocketSession
 
 	boolean checkForWindowActivity();
 
+	SabloService getSabloService();
 }

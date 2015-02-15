@@ -119,12 +119,37 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 		   return wsSession;
 	   }
 	   
-	   function sendRequest(objToStringify) {
-		   getSession().sendMessageObject(objToStringify);
+	   var ragtest = []
+	   var ragtestDone
+	   var ragtestCount = 0
+	   function addRagtest(func) {
+		   ragtest.push(func)
+	   }
+	   
+	   function waitForRagtest() {
+		   if (ragtestDone) {
+			   ragtestCount = 0
+			   var ragtest2 = ragtest
+			   ragtest = []
+			   for (i = 0; i < ragtest2.length; i++) { 
+				   ragtest2[i].apply();
+				}
+		   }
+		   else if (--ragtestCount > 0) {
+			   setTimeout(waitForRagtest, 100)
+		   }
 	   }
 	   
 	   function callService(serviceName, methodName, argsObject, async) {
-		   return getSession().callService(serviceName, methodName, argsObject, async)
+		   var dowait = !async && ragtestCount == 0
+		   if (dowait) {
+			   ragtestDone = false
+			   ragtestCount = 10000
+			   setTimeout(waitForRagtest, 100)
+		   }
+		   var promise = getSession().callService(serviceName, methodName, argsObject, async)
+		   var fnDone = function() { ragtestDone = true }
+		   return dowait ? promise.then(fnDone, fnDone) : promise
 	   }
 	   
 	   var getSessionId = function() {
@@ -144,7 +169,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 	   }
 	   
 	   var getWindowUrl = function(windowname) {
-		   return "index.html?windowname=" + windowname + "&sessionid="+getSessionId();
+		   return "index.html?windowname=" + encodeURIComponent(windowname) + "&sessionid="+getSessionId();
 	   }
 	   
 	   return {
@@ -351,11 +376,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 
 		   sendChanges: sendChanges,
 		   callService: callService,
-		   sendRequest: sendRequest,
-		   
-		   sendDeferredMessage: function(obj, scope) {
-			   return getSession().sendDeferredMessage(obj, scope)
-		   },
+		   addRagtest: addRagtest,
 		   
 		   getExecutor: function(formName) {
 			   return {

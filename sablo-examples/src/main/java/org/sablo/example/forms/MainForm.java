@@ -91,6 +91,12 @@ public class MainForm extends Container
 			{
 				String url = "http://www.google.nl";
 //				url = "http://localhost:8081/sablo-examples/";
+				try {
+					Thread.sleep(3000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				CurrentWindow.get().getSession().getSabloService().openWindowInClient(url, "_blank", null, null);
 				return null;
 			}

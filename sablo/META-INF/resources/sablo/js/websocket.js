@@ -37,28 +37,16 @@ webSocketModule.factory('$webSocket',
 							if (obj.conversions && obj.conversions.exception) {
 								obj.exception = $sabloConverters.convertFromServerToClient(obj.exception, obj.conversions.exception, undefined, undefined, undefined)
 							}
-							if (deferredEvent.scope) {
-								deferredEvent.deferred.reject(obj.exception);
-								deferredEvent.scope.$digest();
-							}
-							else {
-								$rootScope.$apply(function() {
-									deferredEvent.deferred.reject(obj.exception);
-								})
-							}
+							$rootScope.$apply(function() {
+								deferredEvent.reject(obj.exception);
+							})
 						} else {
 							if (obj.conversions && obj.conversions.ret) {
 								obj.ret = $sabloConverters.convertFromServerToClient(obj.ret, obj.conversions.ret, undefined, undefined, undefined)
 							}
-							if (deferredEvent.scope) {
-								deferredEvent.deferred.resolve(obj.ret);
-								deferredEvent.scope.$digest();
-							}
-							else {
-								$rootScope.$apply(function() {
-									deferredEvent.deferred.resolve(obj.ret);
-								})
-							}
+							$rootScope.$apply(function() {
+								deferredEvent.resolve(obj.ret);
+							})
 						}
 						delete deferredEvents[obj.cmsgid];
 					}
@@ -123,18 +111,7 @@ webSocketModule.factory('$webSocket',
 				}
 			}
 
-			var sendDeferredMessage = function(obj,scope) {
-				// TODO: put cmsgid and obj in envelope
-				var deferred = $q.defer();
-				var cmsgid = getNextMessageId()
-				deferredEvents[cmsgid] = {deferred:deferred,scope:scope}
-				var cmd = obj || {}
-				cmd.cmsgid = cmsgid
-				sendMessageObject(cmd)
-				return deferred.promise;
-			}
-
-			var callService = function(serviceName, methodName, argsObject,async) {
+			var callService = function(serviceName, methodName, argsObject, async) {
 				var cmd = {
 						service : serviceName,
 						methodname : methodName,
@@ -146,7 +123,12 @@ webSocketModule.factory('$webSocket',
 				}
 				else
 				{
-					return sendDeferredMessage(cmd)
+					var deferred = $q.defer();
+					var cmsgid = getNextMessageId()
+					deferredEvents[cmsgid] = deferred
+					cmd.cmsgid = cmsgid
+					sendMessageObject(cmd)
+					return deferred.promise;
 				}
 			}
 
@@ -158,10 +140,6 @@ webSocketModule.factory('$webSocket',
 			var WebsocketSession = function() {
 
 				// api
-				this.sendMessageObject = sendMessageObject
-
-				this.sendDeferredMessage = sendDeferredMessage
-
 				this.callService = callService
 
 				this.onopen = function(handler) {

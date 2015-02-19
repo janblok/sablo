@@ -1,386 +1,388 @@
 angular.module('sabloApp', ['webSocketModule'])
 .factory('$sabloApplication', function ($rootScope, $timeout, $q, $webSocket,$sabloConverters,$sabloUtils) {
-	   // formName:[beanname:{property1:1,property2:"test"}] needs to be synced to and from server
-	   // this holds the form model with all the data, per form is this the "synced" view of the the IFormUI on the server 
-	   // (3 way binding)
-	   var currentFormUrl = null;
-	   var formStates = {};
-	   var formStatesConversionInfo = {};
-	   
-	   var deferredFormStates = {};
-	   var deferredFormStatesWithData = {};
-	   var getChangeNotifier = function(formName, beanName) {
-		   return function() {
-			   // will be called by the custom property when it needs to send changes server size
-			   var beanModel = formStates[formName].model[beanName];
-			   sendChanges(beanModel, beanModel, formName, beanName);
-		   }
-	   }
-	   
-	   /*
-	    * Some code is interested in form state immediately after it's loaded/initialized (needsInitialData = false) in which case only some template values might be
-	    * available and some code is interested in using form state only after it got the initialData (via "requestData"'s response) from server (needsInitialData = true)
-	    */
-	   var getFormStateImpl = function(name, needsInitialData) { 
-		   var defered = null
-		   var deferredStates = (needsInitialData ? deferredFormStates : deferredFormStatesWithData);
-		   if (!deferredStates[name]) {
-			   var defered = $q.defer()
-			   deferredStates[name] = defered;
-		   } else {
-			   defered = deferredStates[name]
-		   }
+	// formName:[beanname:{property1:1,property2:"test"}] needs to be synced to and from server
+	// this holds the form model with all the data, per form is this the "synced" view of the the IFormUI on the server 
+	// (3 way binding)
+	var currentFormUrl = null;
+	var formStates = {};
+	var formStatesConversionInfo = {};
 
-		   if (formStates[name] && !(formStates[name].initializing && needsInitialData)) {
-			   defered.resolve(formStates[name]); // then handlers are called even if they are applied after it is resolved
-			   delete deferredStates[name];
-		   }			   
-		   return defered.promise;
-	   }
+	var deferredFormStates = {};
+	var deferredFormStatesWithData = {};
+	var getChangeNotifier = function(formName, beanName) {
+		return function() {
+			// will be called by the custom property when it needs to send changes server size
+			var beanModel = formStates[formName].model[beanName];
+			sendChanges(beanModel, beanModel, formName, beanName);
+		}
+	}
 
-	   var getFormState = function(name) { 
-		   return getFormStateImpl(name, false);
-	   }
+	/*
+	 * Some code is interested in form state immediately after it's loaded/initialized (needsInitialData = false) in which case only some template values might be
+	 * available and some code is interested in using form state only after it got the initialData (via "requestData"'s response) from server (needsInitialData = true)
+	 */
+	var getFormStateImpl = function(name, needsInitialData) { 
+		var defered = null
+		var deferredStates = (needsInitialData ? deferredFormStatesWithData : deferredFormStates);
+		if (!deferredStates[name]) {
+			var defered = $q.defer()
+			deferredStates[name] = defered;
+		} else {
+			defered = deferredStates[name]
+		}
 
-	   var getFormStateWithData = function(name) { 
-		   return getFormStateImpl(name, true);
-	   }
+		if (formStates[name] && !(formStates[name].initializing && needsInitialData)) {
+			defered.resolve(formStates[name]); // then handlers are called even if they are applied after it is resolved
+			delete deferredStates[name];
+		}			   
+		return defered.promise;
+	}
 
-	   var getComponentChanges = function(now, prev, beanConversionInfo, parentSize, changeNotifier, componentScope) {
-		   // first build up a list of all the properties both have.
-		   var fulllist = $sabloUtils.getCombinedPropertyNames(now,prev);
-		   var changes = {}, prop;
+	var getFormState = function(name) { 
+		return getFormStateImpl(name, false);
+	}
 
-		   for (prop in fulllist) {
-			   var changed = false;
-			   if (!prev) {
-				   changed = true;
-			   }
-			   else if (now[prop] && now[prop][$sabloConverters.INTERNAL_IMPL] && now[prop][$sabloConverters.INTERNAL_IMPL].isChanged)
-			   {
-				   changed = now[prop][$sabloConverters.INTERNAL_IMPL].isChanged();
-			   }
-			   else if (prev[prop] !== now[prop]) {
-				   if (typeof now[prop] == "object") {
-					   if ($sabloUtils.isChanged(now[prop], prev[prop], beanConversionInfo ? beanConversionInfo[prop] : undefined)) {
-						   changed = true;
-					   }
-				   } else {
-					   changed = true;
-				   }
-			   }
-			   if (changed) {
-				   changes[prop] = now[prop];
-			   }
-		   }
-		   for (prop in changes) {
-			   if (beanConversionInfo && beanConversionInfo[prop]) changes[prop] = $sabloConverters.convertFromClientToServer(changes[prop], beanConversionInfo[prop], prev ? prev[prop] : undefined);
-			   else changes[prop] = $sabloUtils.convertClientObject(changes[prop])
-		   }
-		   return changes;
-	   };
-	   
-	   var sendChanges = function(now, prev, formname, beanname) {
-		   var changes = getComponentChanges(now, prev, $sabloUtils.getInDepthProperty(formStatesConversionInfo, formname, beanname),
-				   formStates[formname].properties.designSize, getChangeNotifier(formname, beanname), formStates[formname].getScope());
-		   if (Object.getOwnPropertyNames(changes).length > 0) {
-			   callService('formService', 'dataPush', {formname:formname,beanname:beanname,changes:changes}, true)
-		   }
-		   return changes
-	   };
+	var getFormStateWithData = function(name) { 
+		return getFormStateImpl(name, true);
+	}
 
-	   var applyBeanData = function(beanModel, beanData, containerSize, changeNotifier, beanConversionInfo, newConversionInfo, componentScope) {
-		   
-		   if (newConversionInfo) { // then means beanConversionInfo should also be defined - we assume that
-			   // beanConversionInfo will be granularly updated in the loop below
-			   // (to not drop other property conversion info when only one property is being applied granularly to the bean)
-			   beanData = $sabloConverters.convertFromServerToClient(beanData, newConversionInfo, beanModel, componentScope, function() { return beanModel });
-		   }
+	var getComponentChanges = function(now, prev, beanConversionInfo, parentSize, changeNotifier, componentScope) {
+		// first build up a list of all the properties both have.
+		var fulllist = $sabloUtils.getCombinedPropertyNames(now,prev);
+		var changes = {}, prop;
 
-		   for(var key in beanData) {
-			   // remember conversion info for when it will be sent back to server - it might need special conversion as well
-			   if (newConversionInfo && newConversionInfo[key]) {
-				   // if the value changed and it wants to be in control of it's changes, or if the conversion info for this value changed (thus possibly preparing an old value for being change-aware without changing the value reference)
-				   if ((beanModel[key] !== beanData[key] || beanConversionInfo[key] !== newConversionInfo[key])
-						   	&& beanData[key] && beanData[key][$sabloConverters.INTERNAL_IMPL] && beanData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
-					   beanData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier(changeNotifier);
-				   }
-				   beanConversionInfo[key] = newConversionInfo[key];
-			   } else if (beanConversionInfo && angular.isDefined(beanConversionInfo[key])) delete beanConversionInfo[key]; // this prop. no longer has conversion info!
+		for (prop in fulllist) {
+			var changed = false;
+			if (!prev) {
+				changed = true;
+			}
+			else if (now[prop] && now[prop][$sabloConverters.INTERNAL_IMPL] && now[prop][$sabloConverters.INTERNAL_IMPL].isChanged)
+			{
+				changed = now[prop][$sabloConverters.INTERNAL_IMPL].isChanged();
+			}
+			else if (prev[prop] !== now[prop]) {
+				if (typeof now[prop] == "object") {
+					if ($sabloUtils.isChanged(now[prop], prev[prop], beanConversionInfo ? beanConversionInfo[prop] : undefined)) {
+						changed = true;
+					}
+				} else {
+					changed = true;
+				}
+			}
+			if (changed) {
+				changes[prop] = now[prop];
+			}
+		}
+		for (prop in changes) {
+			if (beanConversionInfo && beanConversionInfo[prop]) changes[prop] = $sabloConverters.convertFromClientToServer(changes[prop], beanConversionInfo[prop], prev ? prev[prop] : undefined);
+			else changes[prop] = $sabloUtils.convertClientObject(changes[prop])
+		}
+		return changes;
+	};
 
-			   // also make location and size available in model
-			   beanModel[key] = beanData[key];
-		   }
-	   }
-		 
-	   var wsSession = null;
-	   function getSession() {
-		   if (wsSession == null) throw "Session is not created yet, first call connect()";
-		   return wsSession;
-	   }
-	   
-	   function sendRequest(objToStringify) {
-		   getSession().sendMessageObject(objToStringify);
-	   }
-	   
-	   function callService(serviceName, methodName, argsObject, async) {
-		   return getSession().callService(serviceName, methodName, argsObject, async)
-	   }
-	   
-	   return {
-		   connect : function(context, args, queryArgs) {
-			   wsSession = $webSocket.connect(context, args, queryArgs);
-			   
-			   wsSession.onMessageObject(function (msg, conversionInfo) {
-				   // data got back from the server
-				   for(var formname in msg.forms) {
-					   // TODO: replace with service call "applyChanges(form, changes)"
-					   // current model
-					   // if the formState is on the server but not here anymore, skip it. 
-					   // this can happen with a refresh on the browser.
-					   if (typeof(formStates[formname]) == 'undefined') continue;
-					   // we just checked before that formStates exists so getFormState(formname) deferr below will actually be instant right
-					   // it's called like this to reuse getFormState() similar to the rest of the code
-					   getFormState(formname).then(getFormMessageHandler(formname, msg, conversionInfo));
-				   }
-		
-				   if (conversionInfo && conversionInfo.call) msg.call = $sabloConverters.convertFromServerToClient(msg.call, conversionInfo.call, undefined, undefined, undefined);
-				   if (msg.call) {
-					   // {"call":{"form":"product","element":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}, // optionally "viewIndex":1 
-					   // "{ conversions: {product: {datatextfield1: {0: "Date"}}} }
-					   var call = msg.call;
-					   return getFormState(call.form).then(function(formState) {
-						   if (call.viewIndex != undefined) {
-							   var funcThis = formState.api[call.bean][call.viewIndex]; 
-							   if (funcThis)
-							   {
-								   var func = funcThis[call.api];
-							   }
-							   else
-							   {
-								   console.warn("cannot call " + call.api + " on " + call.bean + " because viewIndex "+ call.viewIndex +" api is not found")
-							   }
-						   }
-						   else if (call.propertyPath != undefined)
-						   {
-							   // handle nested components; the property path is an array of string or int keys going
-							   // through the form's model starting with the root bean name, then it's properties (that could be nested)
-							   // then maybe nested child properties and so on 
-							   var obj = formState.model;
-							   var pn;
-							   for (pn in call.propertyPath) obj = obj[call.propertyPath[pn]];
-							   var func = obj.api[call.api];
-						   }
-						   else {
-							   var funcThis = formState.api[call.bean];
-							   var func = funcThis[call.api];
-						   }
-						   if (!func) {
-							   console.warn("bean " + call.bean + " did not provide the api: " + call.api)
-							   return null;
-						   }
-						   return func.apply(funcThis, call.args)
-					   });
-				   }
-			   });
-			   
-			   function getFormMessageHandler(formname, msg, conversionInfo) {
-				   return function (formState) {
-					   var formModel = formState.model;
-					   var newFormData = msg.forms[formname];
-					   var newFormProperties = newFormData['']; // form properties
-					   var newFormConversionInfo = (conversionInfo && conversionInfo.forms && conversionInfo.forms[formname]) ? conversionInfo.forms[formname] : undefined;
+	var sendChanges = function(now, prev, formname, beanname) {
+		var changes = getComponentChanges(now, prev, $sabloUtils.getInDepthProperty(formStatesConversionInfo, formname, beanname),
+				formStates[formname].properties.designSize, getChangeNotifier(formname, beanname), formStates[formname].getScope());
+		if (Object.getOwnPropertyNames(changes).length > 0) {
+			callService('formService', 'dataPush', {formname:formname,beanname:beanname,changes:changes}, true)
+		}
+		return changes
+	};
 
-					   if(newFormProperties) {
-						   if (newFormConversionInfo && newFormConversionInfo['']) newFormProperties = $sabloConverters.convertFromServerToClient(newFormProperties, newFormConversionInfo[''], formModel[''], formState.getScope(), function() { return formModel[''] });
-						   if (!formModel['']) formModel[''] = {};
-						   for(var p in newFormProperties) {
-							   formModel[''][p] = newFormProperties[p]; 
-						   } 
-					   }
+	var applyBeanData = function(beanModel, beanData, containerSize, changeNotifier, beanConversionInfo, newConversionInfo, componentScope) {
 
-					   var watchesRemoved = formState.removeWatches(newFormData);
-					   try {
-						   for (var beanname in newFormData) {
-							   // copy over the changes, skip for form properties (beanname empty)
-							   if (beanname != '') {
-								   var newBeanConversionInfo = newFormConversionInfo ? newFormConversionInfo[beanname] : undefined;
-								   var beanConversionInfo = newBeanConversionInfo ? $sabloUtils.getOrCreateInDepthProperty(formStatesConversionInfo, formname, beanname) : $sabloUtils.getInDepthProperty(formStatesConversionInfo, formname, beanname);
-								   applyBeanData(formModel[beanname], newFormData[beanname], formState.properties.designSize, getChangeNotifier(formname, beanname), beanConversionInfo, newBeanConversionInfo, formState.getScope());
-							   }
-						   }
-					   }
-					   finally {
-						   if (watchesRemoved) {
-							   formState.addWatches(newFormData);
-						   }
-					   }
-				   }
-			   }
+		if (newConversionInfo) { // then means beanConversionInfo should also be defined - we assume that
+			// beanConversionInfo will be granularly updated in the loop below
+			// (to not drop other property conversion info when only one property is being applied granularly to the bean)
+			beanData = $sabloConverters.convertFromServerToClient(beanData, newConversionInfo, beanModel, componentScope, function() { return beanModel });
+		}
 
-			   return wsSession
-		   },
-		   
-		   // used by custom property component[] to implement nested component logic
-		   applyBeanData: applyBeanData,
-		   getComponentChanges: getComponentChanges,
-		   getChangeNotifier: getChangeNotifier,
-		   
-		   getFormState: getFormState,
-		   
-		   getFormStateWithData: getFormStateWithData,
-		   
-		   getFormStatesConversionInfo: function() { return formStatesConversionInfo; },
+		for(var key in beanData) {
+			// remember conversion info for when it will be sent back to server - it might need special conversion as well
+			if (newConversionInfo && newConversionInfo[key]) {
+				// if the value changed and it wants to be in control of it's changes, or if the conversion info for this value changed (thus possibly preparing an old value for being change-aware without changing the value reference)
+				if ((beanModel[key] !== beanData[key] || beanConversionInfo[key] !== newConversionInfo[key])
+						&& beanData[key] && beanData[key][$sabloConverters.INTERNAL_IMPL] && beanData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
+					beanData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier(changeNotifier);
+				}
+				beanConversionInfo[key] = newConversionInfo[key];
+			} else if (beanConversionInfo && angular.isDefined(beanConversionInfo[key])) delete beanConversionInfo[key]; // this prop. no longer has conversion info!
 
-		   hasFormState: function(name) {
-			  return typeof(formStates[name]) !== 'undefined';
-		   },
-		   
-		   hasFormStateWithData: function(name) {
-			   return typeof(formStates[name]) !== 'undefined' && !formStates[name].initializing;
-		   },
+			// also make location and size available in model
+			beanModel[key] = beanData[key];
+		}
+	}
 
-		   clearformState: function(formName) {
-			   delete formStates[formName];
-		   },
+	var wsSession = null;
+	function getSession() {
+		if (wsSession == null) throw "Session is not created yet, first call connect()";
+		return wsSession;
+	}
 
-		   initFormState: function(formName, beanDatas, formProperties, formScope, requestDataCallback) {
-			   var state = formStates[formName];
-			   // if the form is already initialized or if the beanDatas are not given, return that 
-			   if (state != null || !beanDatas) {
-				   if (state) $timeout(function(){state.addWatches();})
-				   return state;
-			   }
+	function sendRequest(objToStringify) {
+		getSession().sendMessageObject(objToStringify);
+	}
 
-			   var model = {}
-			   var api = {}
-			   
-				// send the special request initial data for this form 
-				// this can also make the form (IFormUI instance) on the server if that is not already done
-			   callService('formService', 'requestData', {formname:formName}, false).then(function (initialFormData) {
-				   initialFormData = initialFormData[0]; // ret value is an one item array; the item contains both data and conversion info
-				   if (initialFormData) {
-					   var conversionInfo = initialFormData.conversions;
-					   if (conversionInfo) delete initialFormData.conversions;
+	function callService(serviceName, methodName, argsObject, async) {
+		return getSession().callService(serviceName, methodName, argsObject, async)
+	}
 
-					   // if the formState is on the server but not here anymore, skip it. 
-					   // this can happen with a refresh on the browser.
-					   var formState = formStates[formName];
-					   if (typeof(formState) == 'undefined') return;
+	return {
+		connect : function(context, args, queryArgs) {
+			wsSession = $webSocket.connect(context, args, queryArgs);
 
-					   var formModel = formState.model;
-					   var initialFormProperties = initialFormData['']; // form properties
+			wsSession.onMessageObject(function (msg, conversionInfo) {
+				// data got back from the server
+				for(var formname in msg.forms) {
+					// TODO: replace with service call "applyChanges(form, changes)"
+					// current model
+					// if the formState is on the server but not here anymore, skip it. 
+					// this can happen with a refresh on the browser.
+					if (typeof(formStates[formname]) == 'undefined') continue;
+					// we just checked before that formStates exists so getFormState(formname) deferr below will actually be instant right
+					// it's called like this to reuse getFormState() similar to the rest of the code
+					getFormState(formname).then(getFormMessageHandler(formname, msg, conversionInfo));
+				}
 
-					   if (initialFormProperties) {
-						   if (conversionInfo && conversionInfo['']) initialFormProperties = $sabloConverters.convertFromServerToClient(initialFormProperties, conversionInfo[''], formModel[''], formState.getScope(), function () { return formModel[''] });
-						   if (!formModel['']) formModel[''] = {};
-						   for(var p in initialFormProperties) {
-							   formModel[''][p] = initialFormProperties[p]; 
-						   } 
-					   }
+				if (conversionInfo && conversionInfo.call) msg.call = $sabloConverters.convertFromServerToClient(msg.call, conversionInfo.call, undefined, undefined, undefined);
+				if (msg.call) {
+					// {"call":{"form":"product","element":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}, // optionally "viewIndex":1 
+					// "{ conversions: {product: {datatextfield1: {0: "Date"}}} }
+					var call = msg.call;
+					return getFormState(call.form).then(function(formState) {
+						if (call.viewIndex != undefined) {
+							var funcThis = formState.api[call.bean][call.viewIndex]; 
+							if (funcThis)
+							{
+								var func = funcThis[call.api];
+							}
+							else
+							{
+								console.warn("cannot call " + call.api + " on " + call.bean + " because viewIndex "+ call.viewIndex +" api is not found")
+							}
+						}
+						else if (call.propertyPath != undefined)
+						{
+							// handle nested components; the property path is an array of string or int keys going
+							// through the form's model starting with the root bean name, then it's properties (that could be nested)
+							// then maybe nested child properties and so on 
+							var obj = formState.model;
+							var pn;
+							for (pn in call.propertyPath) obj = obj[call.propertyPath[pn]];
+							var func = obj.api[call.api];
+						}
+						else {
+							var funcThis = formState.api[call.bean];
+							var func = funcThis[call.api];
+						}
+						if (!func) {
+							console.warn("bean " + call.bean + " did not provide the api: " + call.api)
+							return null;
+						}
+						return func.apply(funcThis, call.args)
+					});
+				}
+			});
 
-					   for (var beanname in initialFormData) {
-						   // copy over the initialData, skip for form properties (beanname empty) as they were already dealt with
-						   if (beanname != '') {
-							   var initialBeanConversionInfo = conversionInfo ? conversionInfo[beanname] : undefined;
-							   var beanConversionInfo = initialBeanConversionInfo ? $sabloUtils.getOrCreateInDepthProperty(formStatesConversionInfo, formName, beanname) : $sabloUtils.getInDepthProperty(formStatesConversionInfo, formName, beanname);
-							   applyBeanData(formModel[beanname], initialFormData[beanname], formState.properties.designSize, getChangeNotifier(formName, beanname), beanConversionInfo, initialBeanConversionInfo, formState.getScope());
-						   }
-					   }
-				   }
+			function getFormMessageHandler(formname, msg, conversionInfo) {
+				return function (formState) {
+					var formModel = formState.model;
+					var newFormData = msg.forms[formname];
+					var newFormProperties = newFormData['']; // form properties
+					var newFormConversionInfo = (conversionInfo && conversionInfo.forms && conversionInfo.forms[formname]) ? conversionInfo.forms[formname] : undefined;
 
-				   formState.addWatches();
-				   delete formState.initializing;
-				   
-				   if (deferredFormStatesWithData[formName]) {
-					   if (typeof(formStates[formName]) !== 'undefined') deferredFormStatesWithData[formName].resolve(formStates[formName]);
-					   delete deferredFormStatesWithData[formName];
-				   }
-				   
-				   if (deferredFormStates[formName]) {
-					   // this should never happen cause at this point that deferr should be executed and removed
-					   if (typeof(formStates[formName]) !== 'undefined') deferredFormStates[formName].resolve(formStates[formName]);
-					   delete deferredFormStates[formName];
-				   }
+					if(newFormProperties) {
+						if (newFormConversionInfo && newFormConversionInfo['']) newFormProperties = $sabloConverters.convertFromServerToClient(newFormProperties, newFormConversionInfo[''], formModel[''], formState.getScope(), function() { return formModel[''] });
+						if (!formModel['']) formModel[''] = {};
+						for(var p in newFormProperties) {
+							formModel[''][p] = newFormProperties[p]; 
+						} 
+					}
 
-				   if (requestDataCallback) {
-					   requestDataCallback(initialFormData);
-				   }
-			   });
+					var watchesRemoved = formState.removeWatches(newFormData);
+					try {
+						for (var beanname in newFormData) {
+							// copy over the changes, skip for form properties (beanname empty)
+							if (beanname != '') {
+								var newBeanConversionInfo = newFormConversionInfo ? newFormConversionInfo[beanname] : undefined;
+								var beanConversionInfo = newBeanConversionInfo ? $sabloUtils.getOrCreateInDepthProperty(formStatesConversionInfo, formname, beanname) : $sabloUtils.getInDepthProperty(formStatesConversionInfo, formname, beanname);
+								applyBeanData(formModel[beanname], newFormData[beanname], formState.properties.designSize, getChangeNotifier(formname, beanname), beanConversionInfo, newBeanConversionInfo, formState.getScope());
+							}
+						}
+					}
+					finally {
+						if (watchesRemoved) {
+							formState.addWatches(newFormData);
+						}
+					}
+				}
+			}
 
-			   // init all the objects for the beans.
-			   state = formStates[formName] = { model: model, api: api, properties: formProperties, initializing: true};
-			   
-			   for(var beanName in beanDatas) {
-				   model[beanName] = {};
-				   api[beanName] = {};
-			   }
-			   
-			   if (deferredFormStates[formName]) {
-				   if (typeof(formStates[formName]) !== 'undefined') deferredFormStates[formName].resolve(formStates[formName]);
-				   delete deferredFormStates[formName];
-			   }
-			   
-			   return state;
-		   },
+			return wsSession
+		},
 
-		   sendChanges: sendChanges,
-		   callService: callService,
-		   sendRequest: sendRequest,
-		   
-		   sendDeferredMessage: function(obj, scope) {
-			   return getSession().sendDeferredMessage(obj, scope)
-		   },
-		   
-		   getExecutor: function(formName) {
-			   return {
-				   on: function(beanName,eventName,property,args,rowId) {
-					   return getFormStateWithData(formName).then(function (formState) {
-						   // this is onaction, onfocuslost which is really configured in the html so it really 
-						   // is something that goes to the server
-						   var newargs = $sabloUtils.getEventArgs(args,eventName);
-						   var data = {}
-						   if (property) {
-							   data[property] = formState.model[beanName][property];
-						   }
-						   var cmd = {formname:formName,beanname:beanName,event:eventName,args:newargs,changes:data}
-						   if (rowId) cmd.rowId = rowId
-						   return callService('formService', 'executeEvent', cmd, false)
-					   });
-				   }
-			   }
-		   },
-		   
-		   // Get the current form url, when not set yet start getting it from the server (when fetch is not false)
-		   getCurrentFormUrl: function(fetch) {
-			   if (currentFormUrl == null && fetch != false) {
-				   // not set yet, fetch from server
-				   currentFormUrl = ""
+		// used by custom property component[] to implement nested component logic
+		applyBeanData: applyBeanData,
+		getComponentChanges: getComponentChanges,
+		getChangeNotifier: getChangeNotifier,
+
+		getFormState: getFormState,
+
+		getFormStateWithData: getFormStateWithData,
+
+		getFormStatesConversionInfo: function() { return formStatesConversionInfo; },
+
+		hasFormState: function(name) {
+			return typeof(formStates[name]) !== 'undefined';
+		},
+
+		hasFormStateWithData: function(name) {
+			return typeof(formStates[name]) !== 'undefined' && !formStates[name].initializing;
+		},
+
+		clearformState: function(formName) {
+			delete formStates[formName];
+		},
+
+		initFormState: function(formName, beanDatas, formProperties, formScope) {
+			var state = formStates[formName];
+			// if the form is already initialized or if the beanDatas are not given, return that 
+			if (state != null || !beanDatas) {
+				if (state) $timeout(function(){state.addWatches();})
+				return state;
+			}
+
+			var model = {}
+			var api = {}
+
+			// init all the objects for the beans.
+			state = formStates[formName] = { model: model, api: api, properties: formProperties, initializing: true};
+
+			for(var beanName in beanDatas) {
+				model[beanName] = {};
+				api[beanName] = {};
+			}
+
+			if (deferredFormStates[formName]) {
+				if (typeof(formStates[formName]) !== 'undefined') deferredFormStates[formName].resolve(formStates[formName]);
+				delete deferredFormStates[formName];
+			}
+
+			return state;
+		},
+
+		requestInitialData: function(formName, requestDataCallback) {
+			// send the special request initial data for this form 
+			// this can also make the form (IFormUI instance) on the server if that is not already done
+			callService('formService', 'requestData', {formname:formName}, false).then(function (initialFormData) {
+				initialFormData = initialFormData[0]; // ret value is an one item array; the item contains both data and conversion info
+				if (initialFormData) {
+					var conversionInfo = initialFormData.conversions;
+					if (conversionInfo) delete initialFormData.conversions;
+
+					// if the formState is on the server but not here anymore, skip it. 
+					// this can happen with a refresh on the browser.
+					var formState = formStates[formName];
+					if (typeof(formState) == 'undefined') return;
+
+					var formModel = formState.model;
+					var initialFormProperties = initialFormData['']; // form properties
+
+					if (initialFormProperties) {
+						if (conversionInfo && conversionInfo['']) initialFormProperties = $sabloConverters.convertFromServerToClient(initialFormProperties, conversionInfo[''], formModel[''], formState.getScope(), function () { return formModel[''] });
+						if (!formModel['']) formModel[''] = {};
+						for(var p in initialFormProperties) {
+							formModel[''][p] = initialFormProperties[p]; 
+						} 
+					}
+
+					for (var beanname in initialFormData) {
+						// copy over the initialData, skip for form properties (beanname empty) as they were already dealt with
+						if (beanname != '') {
+							var initialBeanConversionInfo = conversionInfo ? conversionInfo[beanname] : undefined;
+							var beanConversionInfo = initialBeanConversionInfo ? $sabloUtils.getOrCreateInDepthProperty(formStatesConversionInfo, formName, beanname) : $sabloUtils.getInDepthProperty(formStatesConversionInfo, formName, beanname);
+							applyBeanData(formModel[beanname], initialFormData[beanname], formState.properties.designSize, getChangeNotifier(formName, beanname), beanConversionInfo, initialBeanConversionInfo, formState.getScope());
+						}
+					}
+				}
+
+				formState.addWatches();
+				delete formState.initializing;
+
+				if (deferredFormStatesWithData[formName]) {
+					if (typeof(formStates[formName]) !== 'undefined') deferredFormStatesWithData[formName].resolve(formStates[formName]);
+					delete deferredFormStatesWithData[formName];
+				}
+
+				if (deferredFormStates[formName]) {
+					// this should never happen cause at this point that deferr should be executed and removed
+					if (typeof(formStates[formName]) !== 'undefined') deferredFormStates[formName].resolve(formStates[formName]);
+					delete deferredFormStates[formName];
+				}
+
+				if (requestDataCallback) {
+					requestDataCallback(initialFormData);
+				}
+			});
+		},
+
+		sendChanges: sendChanges,
+		callService: callService,
+		sendRequest: sendRequest,
+
+		sendDeferredMessage: function(obj, scope) {
+			return getSession().sendDeferredMessage(obj, scope)
+		},
+
+		getExecutor: function(formName) {
+			return {
+				on: function(beanName,eventName,property,args,rowId) {
+					return getFormStateWithData(formName).then(function (formState) {
+						// this is onaction, onfocuslost which is really configured in the html so it really 
+						// is something that goes to the server
+						var newargs = $sabloUtils.getEventArgs(args,eventName);
+						var data = {}
+						if (property) {
+							data[property] = formState.model[beanName][property];
+						}
+						var cmd = {formname:formName,beanname:beanName,event:eventName,args:newargs,changes:data}
+						if (rowId) cmd.rowId = rowId
+						return callService('formService', 'executeEvent', cmd, false)
+					});
+				}
+			}
+		},
+
+		// Get the current form url, when not set yet start getting it from the server (when fetch is not false)
+		getCurrentFormUrl: function(fetch) {
+			if (currentFormUrl == null && fetch != false) {
+				// not set yet, fetch from server
+				currentFormUrl = ""
 					callService('formService', 'getCurrentFormUrl', null, false)
-				     	.then(function(url) {
-				     		currentFormUrl = url;
-				     	}
-				     	, function(url) {
-				     		currentFormUrl = null;
-				      });
-				   return null;
-			   }
-			   return currentFormUrl == "" ? null : currentFormUrl;
-		   },
-		   
-		   // set current form url, push to server when push is not false
-		   setCurrentFormUrl: function(url, push) {
-				currentFormUrl = url
-				if (push != false) callService('formService', 'setCurrentFormUrl', {url:url}, true);
-		   }
-	   }
+					.then(function(url) {
+						currentFormUrl = url;
+					}
+					, function(url) {
+						currentFormUrl = null;
+					});
+				return null;
+			}
+			return currentFormUrl == "" ? null : currentFormUrl;
+		},
+
+		// set current form url, push to server when push is not false
+		setCurrentFormUrl: function(url, push) {
+			currentFormUrl = url
+			if (push != false) callService('formService', 'setCurrentFormUrl', {url:url}, true);
+		}
+	}
 })
 
-// IMPORTANT: always add a svy-tabseq directive with svy-tabseq-config="{root: true}" to $rootScope element
-// - when svy-tabseq-config="{container: true}" is used (same for 'root: true'), no real tabindex property will be set on the DOM element, it's only for grouping child svy-tabseq
-// - this directive requires full jquery to be loaded before angular.js; jQuery lite that ships with angular doesn't
-// have trigger() that bubbles up; if needed that could be implemented using triggerHandler, going from parent to parent
-// - note: -2 means an element and it's children should be skipped by tabsequence
+//IMPORTANT: always add a svy-tabseq directive with svy-tabseq-config="{root: true}" to $rootScope element
+//- when svy-tabseq-config="{container: true}" is used (same for 'root: true'), no real tabindex property will be set on the DOM element, it's only for grouping child svy-tabseq
+//- this directive requires full jquery to be loaded before angular.js; jQuery lite that ships with angular doesn't
+//have trigger() that bubbles up; if needed that could be implemented using triggerHandler, going from parent to parent
+//- note: -2 means an element and it's children should be skipped by tabsequence
 .directive('svyTabseq',  ['$parse', function ($parse) {
 	return {
 		restrict: 'A',
@@ -448,11 +450,11 @@ angular.module('sabloApp', ['webSocketModule'])
 				// if this container now needs more tab indexes then it was reserved; a recalculate on parent needs to be triggered in this case
 				if (parentRecalculateNeeded && !triggeredByParent) $element.parent().trigger("recalculatePSTS", [designTabSeq]);
 			}
-			
+
 			function hasOwnTabIndex() {
 				return (!config || !(config.container || config.root));
 			}
-			
+
 			function updateCurrentDomElTabIndex() {
 				if (hasOwnTabIndex()) {
 					if (runtimeIndex.startIndex !== 0) $element.attr('tabIndex', runtimeIndex.startIndex);
@@ -493,7 +495,7 @@ angular.module('sabloApp', ['webSocketModule'])
 				return false;
 			}
 			$element.on("registerCSTS", registerChildHandler);
-			
+
 			function unregisterChildHandler(event, designChildIndex, runtimeChildIndex) {
 				if (designTabSeq == -2 || designChildIndex == -2) return false;
 
@@ -531,7 +533,7 @@ angular.module('sabloApp', ['webSocketModule'])
 					runtimeIndex.startIndex = runtimeIndex.nextAvailableIndex = 1;
 					recalculateChildRuntimeIndexesStartingAt(0, true);
 				} // else wait for parent tabSeq directives to get linked as well
-				
+
 				return false;
 			}
 			$element.on("recalculatePSTS", recalculateIndexesHandler);
@@ -544,7 +546,7 @@ angular.module('sabloApp', ['webSocketModule'])
 					runtimeIndex.startIndex = -1;
 					runtimeIndex.nextAvailableIndex = -1;
 					initializing = true;
-					
+
 					if (designTabSeq != -2) {
 						$element.parent().trigger("registerCSTS", [designTabSeq, runtimeIndex]);
 						$element.parent().trigger("recalculatePSTS", [designTabSeq]); // here we could send [0] instead of [designTabSeq] - it would potentially calculate more but start again from first parent available index, not higher index (the end user behavior being the same)
@@ -560,14 +562,14 @@ angular.module('sabloApp', ['webSocketModule'])
 				function destroyHandler(event) {
 					// unregister current tabSeq from parent tabSeq container
 					$element.parent().trigger("unregisterCSTS", [designTabSeq, runtimeIndex]);
-					
+
 					// clean-up listeners
 					$element.off("registerCSTS", registerChildHandler);
 					$element.off("unregisterCSTS", unregisterChildHandler);
 					$element.off("recalculatePSTS", recalculateIndexesHandler);
 					deregDestroy();
 					deregisterAttrObserver();
-					
+
 					return false;
 				}
 				var deregDestroy = $scope.$on("$destroy", destroyHandler); // I don't use here $element.on("$destroy"... because uigrid reuses it's row divs, and that event gets called but the DOM element continues to be used, just changes tabIndex attribute... and the this directive's controller/link doesn't get called again 
@@ -599,7 +601,7 @@ angular.module('sabloApp', ['webSocketModule'])
 
 		fromClientToServer: function(newClientData, oldClientData) {
 			if(!newClientData) return null;
-			
+
 			var r = newClientData;
 			if(typeof newClientData == 'string') r = new Date(newClientData);
 			if (isNaN(r.getTime())) throw new Error("Invalid date/time value: " + newClientData);

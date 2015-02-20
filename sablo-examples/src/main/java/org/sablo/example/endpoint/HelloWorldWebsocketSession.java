@@ -16,6 +16,9 @@
 
 package org.sablo.example.endpoint;
 
+import java.util.List;
+import java.util.Map;
+
 import org.sablo.example.HelloWorldWindow;
 import org.sablo.websocket.BaseWebsocketSession;
 import org.sablo.websocket.CurrentWindow;
@@ -56,10 +59,9 @@ public class HelloWorldWebsocketSession extends BaseWebsocketSession
 	}
 	
 	@Override
-	public void onOpen(String... arg) {
+	public void onOpen(Map<String, List<String>> requestParams) {
 		if (CurrentWindow.get().getCurrentFormUrl() == null) {
 			CurrentWindow.get().setCurrentFormUrl("forms/mainForm.html");
 		}
 	}
-
 }

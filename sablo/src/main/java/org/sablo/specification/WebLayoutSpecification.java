@@ -37,17 +37,9 @@ public class WebLayoutSpecification extends WebComponentSpecification
 	public static WebLayoutSpecification parseLayoutSpec(String specfileContent, String packageName, IPackageReader reader) throws JSONException, IOException
 	{
 		JSONObject json = new JSONObject(specfileContent);
-		List<String> parents = new ArrayList<>();
 		List<String> children = new ArrayList<>();
 
-		JSONArray mustBeParents = json.optJSONArray("parents");
-		if (mustBeParents != null)
-		{
-			for (int i = 0; i < mustBeParents.length(); i++)
-			{
-				parents.add(mustBeParents.optString(i));
-			}
-		}
+		boolean topContainer = json.optBoolean("topContainer", false);
 
 		JSONArray canContainChildren = json.optJSONArray("contains");
 		if (canContainChildren != null)
@@ -63,7 +55,7 @@ public class WebLayoutSpecification extends WebComponentSpecification
 			jsonConfig = reader.readTextFile(json.getString("definition"), Charset.forName("UTF8"));
 		}
 		WebLayoutSpecification spec = new WebLayoutSpecification(json.getString("name"), packageName, json.optString("displayName", null), json.optString(
-			"categoryName", null), json.optString("icon", null), json.getString("definition"), jsonConfig, parents, children);
+			"categoryName", null), json.optString("icon", null), json.getString("definition"), jsonConfig, topContainer, children);
 
 		// properties
 		spec.putAll(spec.parseProperties("model", json));
@@ -72,7 +64,7 @@ public class WebLayoutSpecification extends WebComponentSpecification
 		return spec;
 	}
 
-	private final List<String> allowedParents;
+	private final boolean topContainer;
 	private final List<String> allowedChildren;
 
 	/**
@@ -87,19 +79,19 @@ public class WebLayoutSpecification extends WebComponentSpecification
 	 * @param children
 	 */
 	public WebLayoutSpecification(String name, String packageName, String displayName, String categoryName, String icon, String definition,
-		Object configObject, List<String> allowedParents, List<String> allowedChildren)
+		Object configObject, boolean topContainer, List<String> allowedChildren)
 	{
 		super(name, packageName, displayName, categoryName, icon, definition, null, configObject);
-		this.allowedParents = allowedParents;
+		this.topContainer = topContainer;
 		this.allowedChildren = allowedChildren;
 	}
 
 	/**
 	 * @return the parents
 	 */
-	public List<String> getAllowedParents()
+	public boolean isTopContainer()
 	{
-		return allowedParents;
+		return topContainer;
 	}
 
 	/**

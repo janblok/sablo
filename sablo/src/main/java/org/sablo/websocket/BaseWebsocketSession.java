@@ -231,7 +231,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		return new EventDispatcher(this);
 	}
 
-	public void onOpen(String... arguments)
+	public void onOpen(final Map<String, List<String>> requestParams)
 	{
 	}
 

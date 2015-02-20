@@ -50,7 +50,7 @@ public class HelloWorldEndpoint extends WebsocketEndpoint
 			@PathParam("windowname")  String windowname,
 			@PathParam("windowid")  String windowid) throws Exception
 	{
-		start(newSession, sessionid, windowname, windowid, null);
+		super.start(newSession, sessionid, windowname, windowid);
 	}
 
 	@Override

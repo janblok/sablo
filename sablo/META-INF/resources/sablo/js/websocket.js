@@ -37,17 +37,17 @@ webSocketModule.factory('$webSocket',
 							if (obj.conversions && obj.conversions.exception) {
 								obj.exception = $sabloConverters.convertFromServerToClient(obj.exception, obj.conversions.exception, undefined, undefined, undefined)
 							}
-							$rootScope.$apply(function() {
+								$rootScope.$apply(function() {
 								deferredEvent.reject(obj.exception);
-							})
+								})
 						} else {
 							if (obj.conversions && obj.conversions.ret) {
 								obj.ret = $sabloConverters.convertFromServerToClient(obj.ret, obj.conversions.ret, undefined, undefined, undefined)
 							}
-							$rootScope.$apply(function() {
+								$rootScope.$apply(function() {
 								deferredEvent.resolve(obj.ret);
-							})
-						}
+								})
+							}
 						delete deferredEvents[obj.cmsgid];
 					}
 
@@ -111,7 +111,7 @@ webSocketModule.factory('$webSocket',
 				}
 			}
 
-			var callService = function(serviceName, methodName, argsObject, async) {
+			var callService = function(serviceName, methodName, argsObject,async) {
 				var cmd = {
 						service : serviceName,
 						methodname : methodName,
@@ -164,7 +164,7 @@ webSocketModule.factory('$webSocket',
 			 */
 			return {
 
-				connect : function(context, args) {
+				connect : function(context, args, queryArgs) {
 
 					var loc = window.location, new_uri;
 					if (loc.protocol === "https:") {
@@ -187,11 +187,27 @@ webSocketModule.factory('$webSocket',
 					}
 					new_uri += pathname + '/websocket';
 					for (var a in args) {
-						new_uri += '/' + args[a]
+						if (args.hasOwnProperty(a)) {
+							new_uri += '/' + args[a]
+						}
 					}
+					
+					new_uri += "?";
+
+					for (var a in queryArgs)
+					{
+						if (queryArgs.hasOwnProperty(a)) {
+							new_uri += a+"="+queryArgs[a]+"&";
+						}
+					}
+					
 					if (loc.search)
 					{
-						new_uri += loc.search; 
+						new_uri +=  loc.search.substring(1,loc.search.length); 
+					}
+					else
+					{
+						new_uri = new_uri.substring(0,new_uri.length-1);
 					}
 					
 					websocket = new WebSocket(new_uri);
@@ -603,26 +619,24 @@ webSocketModule.factory('$webSocket',
 					}
 					
 					return ret;
-				}
-				,
+				},
+				
 				//do not watch __internalState as that is handled by servoy code
-				generateWatchFunctionFor: function (modelObjectRoot, path) {
-									var filteredObject = function (scope) {
-														var result = {};
-														var args = [];
-														args.push(modelObjectRoot);
-														args = args.concat(path);
-														var modelObject = sabloUtils.getInDepthProperty.apply(sabloUtils,args);
-														
-														for (k in modelObject) {
-															if (modelObject[k] && modelObject[k].__internalState && modelObject[k].__internalState.setChangeNotifier) {
-																continue;
-															}
-															result[k] = modelObject[k];
-														}
-														return result;
-													 };
-									return filteredObject;
+				generateWatchFunctionFor: function () {
+					var pathArg = arguments;
+					var filteredObject = function (scope) {
+						var result = {}; // deep watch doesn't care when object/array instances differ, going deeper for content so we just return a new obj. each time
+						var modelObject = sabloUtils.getInDepthProperty.apply(sabloUtils, pathArg);
+
+						for (k in modelObject) {
+							if (modelObject[k] && modelObject[k].__internalState && modelObject[k].__internalState.setChangeNotifier) {
+								continue;
+							}
+							result[k] = modelObject[k];
+						}
+						return result;
+					};
+					return filteredObject;
 				}
 			}
 			

@@ -17,6 +17,8 @@
 package org.sablo.websocket;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 import org.json.JSONObject;
 import org.sablo.eventthread.IEventDispatcher;
@@ -44,7 +46,7 @@ public interface IWebsocketSession
 	 * Called when a new connection is started (also on reconnect)
 	 * @param argument
 	 */
-	public void onOpen(String... argument);
+	public void onOpen(Map<String, List<String>> requestParams);
 
 	String getUuid();
 

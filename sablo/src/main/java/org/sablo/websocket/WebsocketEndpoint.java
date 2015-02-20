@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.websocket.CloseReason;
 import javax.websocket.Session;
@@ -37,7 +36,7 @@ import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** RAGTEST doc
+/**
  * The websocket endpoint for communication between the WebSocketWindow instance on the server and the browser.
  * This class handles:
  * <ul>
@@ -63,8 +62,6 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 
 	private IWindow window;
 
-	// RAGTEST naar window
-	private final AtomicInteger nextMessageId = new AtomicInteger(0);
 	private final Map<Integer, List<Object>> pendingMessages = new HashMap<>();
 
 	public WebsocketEndpoint(String endpointType)
@@ -104,12 +101,6 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		}
 
 		WebsocketSessionManager.closeInactiveSessions();
-	}
-
-	@Override
-	public int getNextMessageId()
-	{
-		return nextMessageId.incrementAndGet();
 	}
 
 	@Override

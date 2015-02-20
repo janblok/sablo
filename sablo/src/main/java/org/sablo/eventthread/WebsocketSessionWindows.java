@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * A {@link IWindow} implementation that redirects all the calls on it to the current registered,
- * {@link IWebsocketSession#getRegisteredWindows()} windows.
+ * {@link IWebsocketSession#getWindows()} windows.
  *
  * @author jcompagner, rgansevles
  *

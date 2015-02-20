@@ -28,9 +28,8 @@ import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
 
-/**RAGTEST doc
- * Represents the client side service object on the server.
- * Can be used to execute functions client side, or the get or set model data.
+/**
+ * Represents the client side window object on the server.
  *
  * @author rgansevles
  *

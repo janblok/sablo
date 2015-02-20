@@ -81,11 +81,6 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.sablo.websocket.IWebsocketSession#getOrCreateWindow(java.lang.String, java.lang.String)
-	 */
 	@Override
 	public IWindow getOrCreateWindow(String windowId, String windowName)
 	{

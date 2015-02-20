@@ -10,10 +10,9 @@ angular.module('$sabloService', ['sabloApp'])
 			return $sabloApplication.getCurrentFormUrl(false)
 		},
 		windowOpen: function(url, name, specs, replace) {
-			$sabloApplication.addRagtest(function() {
+			$sabloApplication.addToCurrentServiceCall(function() {
 				$window.open(url, name, specs, replace)
 			})
-			return true;
 		}
 	}	
 }])

@@ -49,11 +49,6 @@ public interface IWebsocketEndpoint
 	void cancelSession(String reason);
 
 	/**
-	 * @return
-	 */
-	int getNextMessageId();
-
-	/**
 	 * @param text
 	 */
 	void sendText(String txt) throws IOException;

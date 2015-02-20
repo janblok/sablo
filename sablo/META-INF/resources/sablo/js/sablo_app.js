@@ -119,58 +119,69 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 		return wsSession;
 	}
 
-	   var ragtest = []
-	   var ragtestDone
-	   var ragtestCount = 0
-	   function addRagtest(func) {
-		   ragtest.push(func)
+   var currentServiceCallCallbacks = []
+   var currentServiceCallDone
+   var currentServiceCallWaiting = 0
+   function addToCurrentServiceCall(func) {
+	   if (currentServiceCallWaiting == 0) {
+		   // No service call currently running, call the function now
+		   $timeout(function(){func.apply();})
 	   }
-	   
-	   function waitForRagtest() {
-		   if (ragtestDone) {
-			   ragtestCount = 0
-			   var ragtest2 = ragtest
-			   ragtest = []
-			   for (i = 0; i < ragtest2.length; i++) { 
-				   ragtest2[i].apply();
-				}
-		   }
-		   else if (--ragtestCount > 0) {
-			   setTimeout(waitForRagtest, 100)
-		   }
-	}
+	   else {
+		   currentServiceCallCallbacks.push(func)
+	   }
+   }
 
-	function callService(serviceName, methodName, argsObject, async) {
-		   var dowait = !async && ragtestCount == 0
-		   if (dowait) {
-			   ragtestDone = false
-			   ragtestCount = 10000
-			   setTimeout(waitForRagtest, 100)
-		   }
-		   var promise = getSession().callService(serviceName, methodName, argsObject, async)
-		   var fnDone = function() { ragtestDone = true }
-		   return dowait ? promise.then(fnDone, fnDone) : promise
+   function callServiceCallbacksWhenDone() {
+	   if (currentServiceCallDone || --currentServiceCallWaiting == 0) {
+		   currentServiceCallWaiting = 0
+		   currentServiceCallTimeouts.map(function (id) { return clearTimeout(id) })
+		   var tmp = currentServiceCallCallbacks
+		   currentServiceCallCallbacks = []
+		   tmp.map(function (func) { func.apply() })
 	   }
-	   
-	   var getSessionId = function() {
-		   var sessionId = webStorage.session.get('sessionid')
-		   if (sessionId) {
-			   return sessionId;
-		   }
-		   return $webSocket.getURLParameter('sessionid');
+   }
+
+   function markServiceCallDone() {
+	   currentServiceCallDone = true
+   }
+
+   function waitForServiceCallbacks(promise, times) {
+	   if (currentServiceCallWaiting >  0) {
+		   // Already waiting
+		   return promise
 	   }
+
+	   currentServiceCallDone = false
+	   currentServiceCallWaiting = times.length
+	   currentServiceCallTimeouts = times.map(function (t) { return setTimeout(callServiceCallbacksWhenDone, t) })
+	   return  promise.then(markServiceCallDone, markServiceCallDone)
+   }
+
+   function callService(serviceName, methodName, argsObject, async) {
+	   var promise = getSession().callService(serviceName, methodName, argsObject, async)
+	   return async ? promise :  waitForServiceCallbacks(promise, [100, 200, 500, 1000, 3000, 5000])
+   }
 	   
-	   var getWindowName = function() {
-		   return $webSocket.getURLParameter('windowname');
+   var getSessionId = function() {
+	   var sessionId = webStorage.session.get('sessionid')
+	   if (sessionId) {
+		   return sessionId;
 	   }
-	   
-	   var getWindowId = function() {
-		   return webStorage.session.get('windowid');
-	   }
-	   
-	   var getWindowUrl = function(windowname) {
-		   return "index.html?windowname=" + encodeURIComponent(windowname) + "&sessionid="+getSessionId();
-	}
+	   return $webSocket.getURLParameter('sessionid');
+   }
+
+   var getWindowName = function() {
+	   return $webSocket.getURLParameter('windowname');
+   }
+
+   var getWindowId = function() {
+	   return webStorage.session.get('windowid');
+   }
+
+   var getWindowUrl = function(windowname) {
+	   return "index.html?windowname=" + encodeURIComponent(windowname) + "&sessionid="+getSessionId();
+   }
 
 	return {
 		connect : function(context, args, queryArgs) {
@@ -378,7 +389,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 
 		sendChanges: sendChanges,
 		callService: callService,
-		   addRagtest: addRagtest,
+		addToCurrentServiceCall: addToCurrentServiceCall,
 
 		getExecutor: function(formName) {
 			return {

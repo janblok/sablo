@@ -20,7 +20,8 @@ import java.util.concurrent.Callable;
 
 
 /**
- * RAGTEST doc
+ * The currently active window, set via a ThreadLocal.
+ * 
  * @author rgansevles
  *
  */
@@ -46,6 +47,9 @@ public class CurrentWindow
 		return currentWindow.get() != null;
 	}
 
+	/*
+	 * Package scope, do not use directly, use runForWindow or callForWindow.
+	 */
 	static IWindow set(IWindow window)
 	{
 		IWindow old = currentWindow.get();
@@ -73,7 +77,7 @@ public class CurrentWindow
 		}
 	}
 
-	public static <T> T runForWindow(IWindow window, Callable<T> callable) throws Exception
+	public static <T> T callForWindow(IWindow window, Callable<T> callable) throws Exception
 	{
 		IWindow previous = set(window);
 		try

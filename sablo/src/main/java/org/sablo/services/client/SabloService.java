@@ -21,7 +21,7 @@ import java.io.IOException;
 import org.sablo.websocket.IClientService;
 
 /**
- * RAGTEST doc
+ * Class to access sablo builtin server-service methods.
  * 
  * @author rgansevles
  *
@@ -45,8 +45,8 @@ public class SabloService
 		clientService.executeAsyncServiceCall("setCurrentFormUrl", new Object[] { currentFormUrl });
 	}
 
-	public boolean openWindowInClient(String url, String winname, String specs, String replace) throws IOException
+	public void openWindowInClient(String url, String winname, String specs, String replace) throws IOException
 	{
-		return Boolean.TRUE.equals(clientService.executeServiceCall("windowOpen", new Object[] { url, winname, specs, replace }));
+		clientService.executeServiceCall("windowOpen", new Object[] { url, winname, specs, replace });
 	}
 }

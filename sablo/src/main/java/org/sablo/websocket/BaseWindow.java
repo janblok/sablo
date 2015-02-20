@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.json.JSONException;
 import org.json.JSONStringer;
@@ -43,16 +44,9 @@ import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** RAGTEST doc
- * The websocket endpoint for communication between the WebSocketSession instance on the server and the browser.
- * This class handles:
- * <ul>
- * <li>creating of websocket sessions and rebinding after reconnect
- * <li>messages protocol with request/response
- * <li>messages protocol with data conversion (currently only date)
- * <li>service calls (both server to client and client to server)
- * </ul>
- *
+/** A window is created for a websocket endpoint to communicate with the websocket session.
+ * When the websocket connection a dropped and recrated (browser refresh), the window will be reused.
+ * 
  * @author jcompagner, rgansevles
  */
 
@@ -66,6 +60,7 @@ public class BaseWindow implements IWindow
 	private String uuid;
 	private final String name;
 
+	private final AtomicInteger nextMessageId = new AtomicInteger(0);
 
 	private final List<Map<String, ? >> serviceCalls = new ArrayList<>();
 	private final PropertyDescription serviceCallTypes = AggregatedPropertyType.newAggregatedProperty();
@@ -223,7 +218,6 @@ public class BaseWindow implements IWindow
 	public void setCurrentFormUrl(String currentFormUrl)
 	{
 		this.currentFormUrl = currentFormUrl;
-		// RAGTEST altijd hier?
 		sendCurrentFormUrl();
 	}
 
@@ -279,7 +273,7 @@ public class BaseWindow implements IWindow
 		}, async, FullValueToJSONConverter.INSTANCE);
 	}
 
-	protected Object sendMessage(IToJSONWriter dataWriter, boolean async, IToJSONConverter converter) throws IOException
+	protected Object sendMessage(IToJSONWriter< ? > dataWriter, boolean async, IToJSONConverter converter) throws IOException
 	{
 		if (dataWriter == null && serviceCalls.size() == 0) return null;
 
@@ -316,7 +310,7 @@ public class BaseWindow implements IWindow
 			{
 				if (!async)
 				{
-					w.key("smsgid").value(messageId = new Integer(endpoint.getNextMessageId()));
+					w.key("smsgid").value(messageId = new Integer(nextMessageId.incrementAndGet()));
 				}
 				JSONUtils.writeClientConversions(w, clientDataConversions);
 				w.endObject();

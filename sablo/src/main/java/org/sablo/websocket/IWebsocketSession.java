@@ -84,7 +84,9 @@ public interface IWebsocketSession
 
 	Collection<IClientService> getServices();
 
-	/**RAGTEST doc
+	/**
+	 * Get the window with give idm, when it does not exist, create a new window based on the widow name. 
+	 * 
 	 * @param windowId
 	 * @param windowName
 	 * @return

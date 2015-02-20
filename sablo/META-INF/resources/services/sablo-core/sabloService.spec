@@ -13,8 +13,7 @@
 	     		{ "name":"url", "type":"string" },
 	     		{ "name":"name", "type":"string", optional: true },
 	     		{ "name":"specs", "type":"string", optional: true },
-	     		{ "name":"replace", "type":"string", optional: true } ],
-	     		"returns": "boolean" 
+	     		{ "name":"replace", "type":"string", optional: true } ]
 	      }
 	}
 }

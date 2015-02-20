@@ -26,7 +26,8 @@ import org.sablo.example.forms.MainForm;
 import org.sablo.websocket.BaseWindow;
 
 /**
- * RAGTEST doc
+ * Window in the HelloWorld sample application.
+ * 
  * @author rgansevles
  *
  */
@@ -56,11 +57,9 @@ public class HelloWorldWindow extends BaseWindow{
 		switch (formName)
 		{
 			case "mainForm" :
-
 				return new MainForm(websocketSession, formName);
 				 
 			case "anotherForm" :
-				
 				return new AnotherForm(formName);
 		}
 		throw new IllegalArgumentException("unkown form: " + formName);

@@ -48,7 +48,7 @@ public class HelloWorldEndpoint extends WebsocketEndpoint
 	public void start(Session newSession, @PathParam("sessionid")
 	String sessionid) throws Exception
 	{
-		start(newSession, sessionid, null, null);
+		super.start(newSession, sessionid, null);
 	}
 
 	@Override

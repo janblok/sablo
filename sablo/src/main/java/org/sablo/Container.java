@@ -65,6 +65,7 @@ public abstract class Container extends WebComponent
 			old.parent = null;
 		}
 		component.parent = this;
+		if (component.hasChanges()) markAsChanged();
 	}
 
 	public void remove(WebComponent component)

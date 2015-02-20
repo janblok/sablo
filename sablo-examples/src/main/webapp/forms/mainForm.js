@@ -39,6 +39,8 @@ angular.module('sampleApp').controller("mainForm", function($scope, $window, $sa
 	$scope.formStyle = formState.style;
 	$scope.formProperties = formState.properties;
 	
+	if (formState.initializing) $sabloApplication.requestInitialData(formName);
+	
 	// TODO: to sablo_app (install watches)
 	var wrapper = function(beanName) {
 		return function(newvalue,oldvalue) {
@@ -53,12 +55,12 @@ angular.module('sampleApp').controller("mainForm", function($scope, $window, $sa
 	formState.addWatches = function (beanNames) {
 		if (beanNames) {
 		 	for (var beanName in beanNames) {
-		 		watches[beanName] = $scope.$watch($sabloUtils.generateWatchFunctionFor($scope, ["model", beanName]), wrapper(beanName), true);
+		 		watches[beanName] = $scope.$watch($sabloUtils.generateWatchFunctionFor($scope, "model", beanName), wrapper(beanName), true);
 			}
 		}
 		else {
 			 for (var beanName in beans) {
-				 watches[beanName] = $scope.$watch($sabloUtils.generateWatchFunctionFor($scope, ["model", beanName]), wrapper(beanName), true);
+				 watches[beanName] = $scope.$watch($sabloUtils.generateWatchFunctionFor($scope, "model", beanName), wrapper(beanName), true);
 			 }
 		}
 	};

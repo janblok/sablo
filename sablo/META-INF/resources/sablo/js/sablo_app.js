@@ -335,6 +335,11 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 		},
 
 		requestInitialData: function(formName, requestDataCallback) {
+			var formState = formStates[formName];
+
+			if (formState.initialDataRequested) return;
+			formState.initialDataRequested = true;
+
 			// send the special request initial data for this form 
 			// this can also make the form (IFormUI instance) on the server if that is not already done
 			callService('formService', 'requestData', {formname:formName}, false).then(function (initialFormData) {
@@ -345,7 +350,6 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 
 					// if the formState is on the server but not here anymore, skip it. 
 					// this can happen with a refresh on the browser.
-					var formState = formStates[formName];
 					if (typeof(formState) == 'undefined') return;
 
 					var formModel = formState.model;
@@ -371,6 +375,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 
 				formState.addWatches();
 				delete formState.initializing;
+				delete formState.initialDataRequested;
 
 				if (deferredFormStatesWithData[formName]) {
 					if (typeof(formStates[formName]) !== 'undefined') deferredFormStatesWithData[formName].resolve(formStates[formName]);

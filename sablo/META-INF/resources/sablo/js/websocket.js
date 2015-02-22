@@ -44,9 +44,9 @@ webSocketModule.factory('$webSocket',
 							if (obj.conversions && obj.conversions.ret) {
 								obj.ret = $sabloConverters.convertFromServerToClient(obj.ret, obj.conversions.ret, undefined, undefined, undefined)
 							}
-								//$rootScope.$apply(function() {
-								//deferredEvent.resolve(obj.ret);
-							//	})
+								$rootScope.$apply(function() {
+								deferredEvent.resolve(obj.ret);
+								})
 							}
 						delete deferredEvents[obj.cmsgid];
 					}

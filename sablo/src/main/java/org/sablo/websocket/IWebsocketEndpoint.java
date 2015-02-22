@@ -18,9 +18,9 @@ package org.sablo.websocket;
 
 import java.io.IOException;
 
-
 /**
  * The websocket endpoint interface.
+ * 
  * @author rgansevles
  */
 public interface IWebsocketEndpoint

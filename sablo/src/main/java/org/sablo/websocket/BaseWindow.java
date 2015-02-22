@@ -391,15 +391,18 @@ public class BaseWindow implements IWindow
 	}
 
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.sablo.websocket.IWindow#hasSession()
-	 */
 	@Override
 	public boolean hasEndpoint()
 	{
 		return endpoint != null;
+	}
+
+	/**
+	 * @return the endpoint
+	 */
+	public IWebsocketEndpoint getEndpoint()
+	{
+		return endpoint;
 	}
 
 	@Override

@@ -30,8 +30,6 @@ import org.sablo.websocket.IWebsocketSession;
 import org.sablo.websocket.IWindow;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A {@link IWindow} implementation that redirects all the calls on it to the current registered,
@@ -43,7 +41,7 @@ import org.slf4j.LoggerFactory;
 public class WebsocketSessionWindows implements IWindow
 {
 
-	private static final Logger log = LoggerFactory.getLogger(WebsocketSessionWindows.class.getCanonicalName());
+	// private static final Logger log = LoggerFactory.getLogger(WebsocketSessionWindows.class.getCanonicalName());
 
 
 	private final IWebsocketSession session;

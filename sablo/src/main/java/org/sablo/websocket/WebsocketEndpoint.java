@@ -144,6 +144,18 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		WebsocketSessionManager.closeInactiveSessions();
 	}
 
+	public void onError(Throwable t)
+	{
+		if (t instanceof IOException)
+		{
+			log.error("IOException happened", t.getMessage()); // TODO if it has no message but has a 'cause' it will not print anything useful
+		}
+		else
+		{
+			log.error("IOException happened", t);
+		}
+	}
+
 	private final StringBuilder incomingPartialMessage = new StringBuilder();
 
 	public void incoming(String msg, boolean lastPart)

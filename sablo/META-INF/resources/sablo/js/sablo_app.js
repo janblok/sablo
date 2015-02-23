@@ -161,7 +161,6 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 
    function callService(serviceName, methodName, argsObject, async) {
 	   var promise = getSession().callService(serviceName, methodName, argsObject, async)
-	   return promise
 	   return async ? promise :  waitForServiceCallbacks(promise, [100, 200, 500, 1000, 3000, 5000])
    }
 	   

@@ -302,7 +302,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 			return typeof(formStates[name]) !== 'undefined' && !formStates[name].initializing;
 		},
 
-		clearformState: function(formName) {
+		clearFormState: function(formName) {
 			delete formStates[formName];
 		},
 

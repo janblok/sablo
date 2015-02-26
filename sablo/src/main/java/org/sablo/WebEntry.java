@@ -60,13 +60,13 @@ public abstract class WebEntry implements Filter
 	}
 
 	/**
-	 * Provide all the webcomponent bundle names. 
+	 * Provide all the webcomponent bundle names.
 	 * @return the bundle names
 	 */
 	public abstract String[] getWebComponentBundleNames();
 
 	/**
-	 * Provide all the service bundle names. 
+	 * Provide all the service bundle names.
 	 * @return the bundle names
 	 */
 	public abstract String[] getServiceBundleNames();
@@ -83,40 +83,13 @@ public abstract class WebEntry implements Filter
 	}
 
 	/**
-	 * Make it possible for subclasses to supply contributions
-	 * @return the contributions as collection of strings
-	 */
-	protected Collection<String> getJSContributions()
-	{
-		return null;
-	}
-
-	/**
-	 * Make it possible for subclasses to supply contributions
-	 * @return the contributions as collection of strings
-	 */
-	protected Collection<String> getCSSContributions()
-	{
-		return null;
-	}
-
-	/**
-	 * Make it possible for subclasses to replace variables
-	 * @return the variable name,value as map
-	 */
-	protected Map<String, String> getVariableSubstitution()
-	{
-		return null;
-	}
-
-	/**
 	 * Provide the websocketsessionfactory
 	 * @return the factory
 	 */
 	protected abstract IWebsocketSessionFactory createSessionFactory();
 
-	@Override
-	public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException
+	public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain, Collection<String> cssContributions,
+		Collection<String> jsContributions, Map<String, String> variableSubstitution) throws IOException, ServletException
 	{
 		HttpServletRequest request = (HttpServletRequest)servletRequest;
 
@@ -126,7 +99,7 @@ public abstract class WebEntry implements Filter
 			((HttpServletResponse)servletResponse).setContentType("text/html");
 
 			PrintWriter w = servletResponse.getWriter();
-			IndexPageEnhancer.enhance(indexPageResource, request.getContextPath(), getCSSContributions(), getJSContributions(), getVariableSubstitution(), w);
+			IndexPageEnhancer.enhance(indexPageResource, request.getContextPath(), cssContributions, jsContributions, variableSubstitution, w);
 			w.flush();
 			return;
 		}

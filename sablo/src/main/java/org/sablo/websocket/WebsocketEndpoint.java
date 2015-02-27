@@ -69,6 +69,14 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		this.endpointType = endpointType;
 	}
 
+	/**
+	 * @return the endpointType
+	 */
+	public String getEndpointType()
+	{
+		return endpointType;
+	}
+
 	public void start(Session newSession, String sessionid, String winname, final String winid) throws Exception
 	{
 		this.session = newSession;

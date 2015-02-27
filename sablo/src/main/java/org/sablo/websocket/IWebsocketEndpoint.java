@@ -33,6 +33,8 @@ public interface IWebsocketEndpoint
 	 */
 	public static final int EVENT_LEVEL_SYNC_API_CALL = 500;
 
+	String getEndpointType();
+
 	/**
 	 * It there an active session to the browser?
 	 */

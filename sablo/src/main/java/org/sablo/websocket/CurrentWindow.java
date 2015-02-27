@@ -48,9 +48,9 @@ public class CurrentWindow
 	}
 
 	/*
-	 * Package scope, do not use directly, use runForWindow or callForWindow.
+	 * Do not use directly, use runForWindow or callForWindow.
 	 */
-	static IWindow set(IWindow window)
+	public static IWindow set(IWindow window)
 	{
 		IWindow old = currentWindow.get();
 		if (window == null)

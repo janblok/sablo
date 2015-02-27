@@ -16,9 +16,9 @@
 
 package org.sablo.eventthread;
 
-import org.sablo.websocket.IWebsocketEndpoint;
+import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.IWebsocketSession;
-import org.sablo.websocket.WebsocketEndpoint;
+import org.sablo.websocket.IWindow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +40,7 @@ public class Event
 	private volatile boolean executed;
 	private volatile Exception exception;
 
-	private final IWebsocketEndpoint currentEndpoint;
+	private final IWindow currentWindow;
 	private final IWebsocketSession session;
 	private final int eventLevel;
 
@@ -50,15 +50,23 @@ public class Event
 		this.runnable = runnable;
 		this.eventLevel = eventLevel;
 
-		if (WebsocketEndpoint.exists())
+		if (CurrentWindow.exists())
 		{
-			currentEndpoint = WebsocketEndpoint.get();
+			currentWindow = CurrentWindow.get();
 		}
 		else
 		{
 			// this is a runnable added to the event thread from a none request thread
-			currentEndpoint = null;
+			currentWindow = null;
 		}
+	}
+
+	/**
+	 * @return the session
+	 */
+	protected IWebsocketSession getSession()
+	{
+		return session;
 	}
 
 	public int getEventLevel()
@@ -71,34 +79,44 @@ public class Event
 	 */
 	public final void execute()
 	{
-		IWebsocketEndpoint set = currentEndpoint;
-		if (set == null)
+		IWindow window = currentWindow;
+		if (window == null)
 		{
 			// this was an event from not triggered by a specific endpoint, just relay it to all the endpoints
 			// could be changes in the data model that must be pushed to all endpoints, or a close/shutdown/logout
-			set = new WebsocketSessionEndpoints(session);
+			window = createWebsocketSessionWindows();
+		}
 
-		}
-		IWebsocketEndpoint previous = WebsocketEndpoint.set(set);
-		try
+		CurrentWindow.runForWindow(window, new Runnable()
 		{
-			beforeExecute();
-			if (runnable != null)
+			@Override
+			public void run()
 			{
-				runnable.run();
+				try
+				{
+					beforeExecute();
+					if (runnable != null)
+					{
+						runnable.run();
+					}
+				}
+				catch (Exception e)
+				{
+					log.error("Exception in execute", e);
+					exception = e;
+				}
+				finally
+				{
+					executed = true;
+					afterExecute();
+				}
 			}
-		}
-		catch (Exception e)
-		{
-			log.error("Exception in execute", e);
-			exception = e;
-		}
-		finally
-		{
-			executed = true;
-			afterExecute();
-			WebsocketEndpoint.set(previous);
-		}
+		});
+	}
+
+	protected WebsocketSessionWindows createWebsocketSessionWindows()
+	{
+		return new WebsocketSessionWindows(session);
 	}
 
 	/**

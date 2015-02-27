@@ -24,8 +24,8 @@ import java.util.Map;
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.WebComponentSpecification;
+import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.TypedData;
-import org.sablo.websocket.WebsocketEndpoint;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
@@ -134,7 +134,7 @@ public abstract class Container extends WebComponent
 
 	public boolean writeAllComponentsProperties(JSONWriter w, IToJSONConverter converter) throws JSONException
 	{
-		WebsocketEndpoint.get().registerContainer(this);
+		CurrentWindow.get().registerContainer(this);
 
 		DataConversion clientDataConversions = new DataConversion();
 		boolean contentHasBeenWritten = writeComponentProperties(w, converter, "", clientDataConversions);

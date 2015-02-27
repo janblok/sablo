@@ -29,6 +29,6 @@ public interface IEventHandler
 	 * @param args
 	 * @return
 	 */
-	Object executeEvent(Object[] args);
+	Object executeEvent(Object[] args) throws Exception;
 
 }

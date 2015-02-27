@@ -16,6 +16,12 @@
 
 package org.sablo.example;
 
+import java.io.IOException;
+
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.annotation.WebFilter;
 
 import org.sablo.WebEntry;
@@ -57,11 +63,15 @@ public class HelloWorld extends WebEntry
 		{
 			public IWebsocketSession createSession(String uuid) throws Exception
 			{
-				HelloWorldWebsocketSession session = new HelloWorldWebsocketSession(uuid);
-				session.setCurrentFormUrl("forms/mainForm.html");
-				return session;
+				return new HelloWorldWebsocketSession(uuid);
 			}
 		};
+	}
+	
+	@Override
+	public void doFilter(ServletRequest request, ServletResponse response,
+			FilterChain chain) throws IOException, ServletException {
+		doFilter(request, response, chain, null,null,null);	
 	}
 
 }

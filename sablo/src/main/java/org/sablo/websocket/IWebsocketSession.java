@@ -16,15 +16,13 @@
 
 package org.sablo.websocket;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import org.json.JSONObject;
-import org.sablo.Container;
-import org.sablo.WebComponent;
 import org.sablo.eventthread.IEventDispatcher;
-import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.WebComponentApiDefinition;
+import org.sablo.services.client.SabloService;
 
 /**
  * Interface for classes handling a websocket user session.
@@ -33,35 +31,16 @@ import org.sablo.specification.WebComponentApiDefinition;
 public interface IWebsocketSession
 {
 	/**
-	 * Called when an endpoint is created for this session.
-	 * @param endpoint
-	 */
-	public void registerEndpoint(IWebsocketEndpoint endpoint);
-
-	/**
-	 * Called when an endpoint is closed for this session.
-	 * @param endpoint
-	 */
-	public void deregisterEndpoint(IWebsocketEndpoint endpoint);
-
-	/**
-	 * get all the current registered endpoints for this session.
-	 *
-	 * @return
-	 */
-	public List<IWebsocketEndpoint> getRegisteredEnpoints();
-
-	/**
 	 * Returns the event dispatcher, that should be a separate thread that processes all the events.
 	 *
 	 * @return
 	 */
-	public IEventDispatcher getEventDispatcher();
+	IEventDispatcher getEventDispatcher();
 
 	/**
 	 * Can it still be used?
 	 */
-	public boolean isValid();
+	boolean isValid();
 
 	/**
 	 * Called when a new connection is started (also on reconnect)
@@ -69,7 +48,7 @@ public interface IWebsocketSession
 	 */
 	public void onOpen(Map<String, List<String>> requestParams);
 
-	public String getUuid();
+	String getUuid();
 
 	void startHandlingEvent();
 
@@ -78,53 +57,52 @@ public interface IWebsocketSession
 	/**
 	 * Request to close the websocket session.
 	 */
-	public void closeSession();
+	void closeSession();
 
 	/**
 	 * Handle an incoming message.
 	 * @param obj
 	 */
 	// TODO: remove this, all when messages are done via service calls
-	public void handleMessage(JSONObject obj);
+	void handleMessage(JSONObject obj);
 
 	/**
 	 * Register server side service
 	 * @param name
 	 * @param service handler
 	 */
-	public void registerServerService(String name, IServerService service);
+	void registerServerService(String name, IServerService service);
 
 	/**
 	 * Returns a server side service for that name.
 	 * @param name
 	 * @return
 	 */
-	public IServerService getServerService(String name);
+	IServerService getServerService(String name);
 
-	public IClientService getService(String name);
+	IClientService getClientService(String name);
 
-	/**
-	 * Invoke an function on the webcomponent
-	 * @param receiver the webcomponent to invoke on
-	 * @param apiFunction the function to invoke
-	 * @param arguments
-	 */
-	public Object invokeApi(WebComponent receiver, WebComponentApiDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes);
+	Collection<IClientService> getServices();
 
 	/**
-	 * @param formName
+	 * Get the window with give idm, when it does not exist, create a new window based on the widow name. 
+	 * 
+	 * @param windowId
+	 * @param windowName
 	 * @return
 	 */
-	public Container getForm(String formName);
+	IWindow getOrCreateWindow(String windowId, String windowName);
+
+	Collection<IWindow> getWindows();
 
 	/**
-	 * @return the currentFormUrl
+	 * @param window
 	 */
-	public String getCurrentFormUrl();
+	void invalidateWindow(IWindow window);
 
-	/**
-	 * @param currentFormUrl the currentFormUrl to set
-	 */
-	public void setCurrentFormUrl(String currentFormUrl);
+	void activateWindow(IWindow window);
 
+	boolean checkForWindowActivity();
+
+	SabloService getSabloService();
 }

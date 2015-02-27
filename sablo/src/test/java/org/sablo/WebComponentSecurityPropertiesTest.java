@@ -725,7 +725,7 @@ public class WebComponentSecurityPropertiesTest
 		doTestProtectedFunction(testcomponentspec, false);
 	}
 
-	private void doTestProtectedFunction(String testcomponentspec, boolean blockingOn)
+	private void doTestProtectedFunction(String testcomponentspec, boolean blockingOn) throws Exception
 	{
 		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 

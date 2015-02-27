@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.sablo.services;
+package org.sablo.services.server;
 
 import java.util.Iterator;
 
@@ -25,9 +25,9 @@ import org.json.JSONString;
 import org.sablo.Container;
 import org.sablo.WebComponent;
 import org.sablo.eventthread.IEventDispatcher;
+import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.IEventDispatchAwareServerService;
 import org.sablo.websocket.IWebsocketEndpoint;
-import org.sablo.websocket.IWebsocketSession;
 import org.sablo.websocket.utils.JSONUtils.EmbeddableJSONWriter;
 import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
@@ -45,6 +45,8 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 {
 	public static final Logger log = LoggerFactory.getLogger(FormServiceHandler.class.getCanonicalName());
 
+	public static final FormServiceHandler INSTANCE = new FormServiceHandler();
+
 	/**
 	 * In order not to generate a deadlock between potential sync service call to client (that waits on client for form to get it's initial data
 	 * and occupies the event dispatch thread on the server) and a initial form data request (service call to server) that wants to execute on the
@@ -52,22 +54,11 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 	 */
 	public static final int EVENT_LEVEL_INITIAL_FORM_DATA_REQUEST = 1000;
 
-	private final IWebsocketSession websocketSession;
-
 	/**
 	 * @param baseWebsocketSession
 	 */
-	public FormServiceHandler(IWebsocketSession websocketSession)
+	protected FormServiceHandler()
 	{
-		this.websocketSession = websocketSession;
-	}
-
-	/**
-	 * @return the websocketSession
-	 */
-	public IWebsocketSession getWebsocketSession()
-	{
-		return websocketSession;
 	}
 
 	@Override
@@ -94,12 +85,12 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 
 			case "getCurrentFormUrl" :
 			{
-				return websocketSession.getCurrentFormUrl();
+				return CurrentWindow.get().getCurrentFormUrl();
 			}
 
 			case "setCurrentFormUrl" :
 			{
-				websocketSession.setCurrentFormUrl(args.optString("url"));
+				CurrentWindow.get().setCurrentFormUrl(args.optString("url"));
 				break;
 			}
 
@@ -119,7 +110,7 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 	{
 		String formName = obj.getString("formname");
 
-		Container form = getWebsocketSession().getForm(formName);
+		Container form = CurrentWindow.get().getForm(formName);
 		if (form == null)
 		{
 			log.warn("executeEvent for unknown form '" + formName + "'");
@@ -147,7 +138,7 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 
 	protected JSONString requestData(String formName) throws JSONException
 	{
-		Container form = getWebsocketSession().getForm(formName);
+		Container form = CurrentWindow.get().getForm(formName);
 		if (form == null)
 		{
 			log.warn("Data requested from unknown form '" + formName + "'");
@@ -177,7 +168,7 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 		{
 			String formName = obj.getString("formname");
 
-			Container form = getWebsocketSession().getForm(formName);
+			Container form = CurrentWindow.get().getForm(formName);
 			if (form == null)
 			{
 				log.warn("dataPush for unknown form '" + formName + "'");

@@ -1,5 +1,5 @@
-angular.module('sabloApp', ['webSocketModule'])
-.factory('$sabloApplication', function ($rootScope, $timeout, $q, $webSocket,$sabloConverters,$sabloUtils) {
+angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
+.factory('$sabloApplication', function ($rootScope, $timeout, $q, $webSocket, $sabloConverters, $sabloUtils, webStorage) {
 	// formName:[beanname:{property1:1,property2:"test"}] needs to be synced to and from server
 	// this holds the form model with all the data, per form is this the "synced" view of the the IFormUI on the server 
 	// (3 way binding)
@@ -119,13 +119,70 @@ angular.module('sabloApp', ['webSocketModule'])
 		return wsSession;
 	}
 
-	function sendRequest(objToStringify) {
-		getSession().sendMessageObject(objToStringify);
-	}
+   var currentServiceCallCallbacks = []
+   var currentServiceCallDone
+   var currentServiceCallWaiting = 0
+   function addToCurrentServiceCall(func) {
+	   if (currentServiceCallWaiting == 0) {
+		   // No service call currently running, call the function now
+		   $timeout(function(){func.apply();})
+	   }
+	   else {
+		   currentServiceCallCallbacks.push(func)
+	   }
+   }
 
-	function callService(serviceName, methodName, argsObject, async) {
-		return getSession().callService(serviceName, methodName, argsObject, async)
-	}
+   function callServiceCallbacksWhenDone() {
+	   if (currentServiceCallDone || --currentServiceCallWaiting == 0) {
+		   currentServiceCallWaiting = 0
+		   currentServiceCallTimeouts.map(function (id) { return clearTimeout(id) })
+		   var tmp = currentServiceCallCallbacks
+		   currentServiceCallCallbacks = []
+		   tmp.map(function (func) { func.apply() })
+	   }
+   }
+
+   function markServiceCallDone(arg) {
+	   currentServiceCallDone = true
+	   return arg
+   }
+
+   function waitForServiceCallbacks(promise, times) {
+	   if (currentServiceCallWaiting >  0) {
+		   // Already waiting
+		   return promise
+	   }
+
+	   currentServiceCallDone = false
+	   currentServiceCallWaiting = times.length
+	   currentServiceCallTimeouts = times.map(function (t) { return setTimeout(callServiceCallbacksWhenDone, t) })
+	   return  promise.then(markServiceCallDone, markServiceCallDone)
+   }
+
+   function callService(serviceName, methodName, argsObject, async) {
+	   var promise = getSession().callService(serviceName, methodName, argsObject, async)
+	   return async ? promise :  waitForServiceCallbacks(promise, [100, 200, 500, 1000, 3000, 5000])
+   }
+	   
+   var getSessionId = function() {
+	   var sessionId = webStorage.session.get('sessionid')
+	   if (sessionId) {
+		   return sessionId;
+	   }
+	   return $webSocket.getURLParameter('sessionid');
+   }
+
+   var getWindowName = function() {
+	   return $webSocket.getURLParameter('windowname');
+   }
+
+   var getWindowId = function() {
+	   return webStorage.session.get('windowid');
+   }
+
+   var getWindowUrl = function(windowname) {
+	   return "index.html?windowname=" + encodeURIComponent(windowname) + "&sessionid="+getSessionId();
+   }
 
 	return {
 		connect : function(context, args, queryArgs) {
@@ -221,6 +278,11 @@ angular.module('sabloApp', ['webSocketModule'])
 			return wsSession
 		},
 
+		   getSessionId: getSessionId,
+		   getWindowName: getWindowName,
+		   getWindowId: getWindowId,
+		   getWindowUrl: getWindowUrl,
+		   
 		// used by custom property component[] to implement nested component logic
 		applyBeanData: applyBeanData,
 		getComponentChanges: getComponentChanges,
@@ -333,11 +395,7 @@ angular.module('sabloApp', ['webSocketModule'])
 
 		sendChanges: sendChanges,
 		callService: callService,
-		sendRequest: sendRequest,
-
-		sendDeferredMessage: function(obj, scope) {
-			return getSession().sendDeferredMessage(obj, scope)
-		},
+		addToCurrentServiceCall: addToCurrentServiceCall,
 
 		getExecutor: function(formName) {
 			return {

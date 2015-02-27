@@ -7,7 +7,7 @@ var webSocketModule = angular.module('webSocketModule', []);
  * Setup the $webSocket service.
  */
 webSocketModule.factory('$webSocket',
-		function($rootScope, $injector, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers) {
+		function($rootScope, $injector, $window, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers) {
 
 			var websocket = null
 
@@ -18,6 +18,10 @@ webSocketModule.factory('$webSocket',
 			}
 
 			var deferredEvents = {};
+			
+			var getURLParameter = function getURLParameter(name) {
+				return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec($window.location.search)||[,""])[1].replace(/\+/g, '%20'))||null
+			};
 			
 			var handleMessage = function(wsSession, message) {
 				var obj
@@ -33,29 +37,17 @@ webSocketModule.factory('$webSocket',
 							if (obj.conversions && obj.conversions.exception) {
 								obj.exception = $sabloConverters.convertFromServerToClient(obj.exception, obj.conversions.exception, undefined, undefined, undefined)
 							}
-							if (deferredEvent.scope) {
-								deferredEvent.deferred.reject(obj.exception);
-								deferredEvent.scope.$digest();
-							}
-							else {
 								$rootScope.$apply(function() {
-									deferredEvent.deferred.reject(obj.exception);
+								deferredEvent.reject(obj.exception);
 								})
-							}
 						} else {
 							if (obj.conversions && obj.conversions.ret) {
 								obj.ret = $sabloConverters.convertFromServerToClient(obj.ret, obj.conversions.ret, undefined, undefined, undefined)
 							}
-							if (deferredEvent.scope) {
-								deferredEvent.deferred.resolve(obj.ret);
-								deferredEvent.scope.$digest();
-							}
-							else {
 								$rootScope.$apply(function() {
-									deferredEvent.deferred.resolve(obj.ret);
+								deferredEvent.resolve(obj.ret);
 								})
 							}
-						}
 						delete deferredEvents[obj.cmsgid];
 					}
 
@@ -119,17 +111,6 @@ webSocketModule.factory('$webSocket',
 				}
 			}
 
-			var sendDeferredMessage = function(obj,scope) {
-				// TODO: put cmsgid and obj in envelope
-				var deferred = $q.defer();
-				var cmsgid = getNextMessageId()
-				deferredEvents[cmsgid] = {deferred:deferred,scope:scope}
-				var cmd = obj || {}
-				cmd.cmsgid = cmsgid
-				sendMessageObject(cmd)
-				return deferred.promise;
-			}
-
 			var callService = function(serviceName, methodName, argsObject,async) {
 				var cmd = {
 						service : serviceName,
@@ -142,7 +123,12 @@ webSocketModule.factory('$webSocket',
 				}
 				else
 				{
-					return sendDeferredMessage(cmd)
+					var deferred = $q.defer();
+					var cmsgid = getNextMessageId()
+					deferredEvents[cmsgid] = deferred
+					cmd.cmsgid = cmsgid
+					sendMessageObject(cmd)
+					return deferred.promise;
 				}
 			}
 
@@ -154,10 +140,6 @@ webSocketModule.factory('$webSocket',
 			var WebsocketSession = function() {
 
 				// api
-				this.sendMessageObject = sendMessageObject
-
-				this.sendDeferredMessage = sendDeferredMessage
-
 				this.callService = callService
 
 				this.onopen = function(handler) {
@@ -209,10 +191,9 @@ webSocketModule.factory('$webSocket',
 							new_uri += '/' + args[a]
 						}
 					}
-					if (queryArgs || loc.search)
-					{
-						new_uri += "?";
-					}
+					
+					new_uri += "?";
+
 					for (var a in queryArgs)
 					{
 						if (queryArgs.hasOwnProperty(a)) {
@@ -226,7 +207,7 @@ webSocketModule.factory('$webSocket',
 					}
 					else
 					{
-						if (queryArgs) new_uri = new_uri.substring(0,new_uri.length-1);
+						new_uri = new_uri.substring(0,new_uri.length-1);
 					}
 					
 					websocket = new WebSocket(new_uri);
@@ -272,7 +253,9 @@ webSocketModule.factory('$webSocket',
 				
 				isConnected: function() {
 					return connected;
-				}
+				},
+				
+				getURLParameter: getURLParameter
 			};
 		}).factory("$services", function($rootScope, $sabloConverters, $sabloUtils){
 			// serviceName:{} service model

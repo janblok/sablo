@@ -1,4 +1,4 @@
-angular.module('sampleApp').controller("mainForm", function($scope, $window, $sabloApplication, $sabloUtils) {
+angular.module('sampleApp').controller("mainForm", function($scope, $window, $sabloApplication, $sabloUtils, webStorage) {
 
 //	$window.alert(' starting mainForm');
 
@@ -7,6 +7,7 @@ angular.module('sampleApp').controller("mainForm", function($scope, $window, $sa
     var beans = {
 			thelabel: 	 { text : 'Initial value' },
 			thebutton: 	 { text: 'push me'  },
+			thebutton2: 	 { text: 'open window'  },
 			thetextfield: 	 { value : 'should be replaced with server data' },
 			thecounter: 	 { n: 3 }
 	};
@@ -22,6 +23,9 @@ angular.module('sampleApp').controller("mainForm", function($scope, $window, $sa
 	$scope.handlers = {
 			thebutton: {
 				onClick: function (event) { getExecutor('thebutton')('onClick', [event]); }
+			},
+			thebutton2: {
+				onClick: function (event) { getExecutor('thebutton2')('onClick', [event]); }
 			}
 	};
 
@@ -78,5 +82,9 @@ angular.module('sampleApp').controller("mainForm", function($scope, $window, $sa
 	};
     
     formState.getScope = function() { return $scope; };
+    
+    $scope.getWindowUrl = function(windowname) {
+    	return $sabloApplication.getWindowUrl(windowname);
+    }
 
 });

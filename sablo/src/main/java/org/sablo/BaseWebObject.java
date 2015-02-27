@@ -114,15 +114,16 @@ public abstract class BaseWebObject
 	 * @param eventType
 	 * @param args
 	 * @return
+	 * @throws Exception 
 	 */
-	public final Object executeEvent(String eventType, Object[] args)
+	public final Object executeEvent(String eventType, Object[] args) throws Exception
 	{
 		checkProtection(eventType);
 
 		return doExecuteEvent(eventType, args);
 	}
 
-	protected Object doExecuteEvent(String eventType, Object[] args)
+	protected Object doExecuteEvent(String eventType, Object[] args) throws Exception
 	{
 		IEventHandler handler = getEventHandler(eventType);
 		if (handler == null)

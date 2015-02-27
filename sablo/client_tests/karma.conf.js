@@ -5,6 +5,7 @@ module.exports = function(config){
        'lib/jquery.js',
        'lib/angular_1.3.4.js',
        'lib/angular-mocks_1.3.4.js',
+       'lib/angular-webstorage.js',
        '../META-INF/resources/sablo/js/*.js',
        'lib/phantomjs.polyfill.js',
        './test/**/*.js',	  

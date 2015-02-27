@@ -659,14 +659,15 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 	// Date type -----------------------------------------------
 	$sabloConverters.registerCustomPropertyHandler('Date', {
 		fromServerToClient: function (serverJSONValue, currentClientValue, scope, modelGetter) {
-			return typeof (serverJSONValue) === "number" ? new Date(serverJSONValue) : serverJSONValue;
+			return serverJSONValue;
 		},
 
 		fromClientToServer: function(newClientData, oldClientData) {
 			if(!newClientData) return null;
 
 			var r = newClientData;
-			if(typeof newClientData == 'string') r = new Date(newClientData);
+			if(typeof newClientData === 'string') r = new Date(newClientData);
+			if(typeof newClientData === 'number') return r;
 			if (isNaN(r.getTime())) throw new Error("Invalid date/time value: " + newClientData);
 			return r.getTime();
 		}

@@ -48,7 +48,8 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 {
 	private static final long WINDOW_TIMEOUT = 1 * 60 * 1000;
 
-	private static final Logger log = LoggerFactory.getLogger(WebsocketEndpoint.class.getCanonicalName());
+	private static final Logger log = LoggerFactory.getLogger(BaseWebsocketSession.class.getCanonicalName());
+
 	private final Map<String, IServerService> serverServices = new HashMap<>();
 	private final Map<String, IClientService> services = new HashMap<>();
 	private final List<ObjectReference<IWindow>> windows = new ArrayList<>();
@@ -173,6 +174,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 					inactiveWindows.add(ref.getObject());
 				}
 			}
+		}
 
 		for (IWindow window : inactiveWindows)
 		{
@@ -186,6 +188,8 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 			}
 		}
 
+		synchronized (windows)
+		{
 			return windows.size() == 0;
 		}
 	}
@@ -233,14 +237,25 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	@Override
 	public void closeSession()
 	{
+		Collection< ? extends IWindow> allWindows;
 		synchronized (windows)
 		{
-			for (ObjectReference<IWindow> ref : windows)
-		{
-				ref.getObject().closeSession();
-			}
+			allWindows = getWindows();
 			windows.clear();
+		}
+
+		for (IWindow window : allWindows)
+		{
+			try
+			{
+				window.closeSession();
 			}
+			catch (Exception e)
+			{
+				log.error("Error closing window", e);
+			}
+		}
+
 		if (executor != null)
 		{
 			synchronized (this)

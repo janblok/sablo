@@ -256,7 +256,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 						} 
 					}
 
-					var watchesRemoved = formState.removeWatches(newFormData);
+					var watchesRemoved = formState.removeWatches && formState.removeWatches(newFormData);
 					try {
 						for (var beanname in newFormData) {
 							// copy over the changes, skip for form properties (beanname empty)

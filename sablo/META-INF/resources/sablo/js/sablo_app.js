@@ -659,7 +659,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 	// Date type -----------------------------------------------
 	$sabloConverters.registerCustomPropertyHandler('Date', {
 		fromServerToClient: function (serverJSONValue, currentClientValue, scope, modelGetter) {
-			return serverJSONValue;
+			return typeof (serverJSONValue) === "number" ? new Date(serverJSONValue) : serverJSONValue;
 		},
 
 		fromClientToServer: function(newClientData, oldClientData) {

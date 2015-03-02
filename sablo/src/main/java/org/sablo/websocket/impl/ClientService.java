@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 public class ClientService extends BaseWebObject implements IClientService
 {
 
-	private static final Logger log = LoggerFactory.getLogger(BaseWebObject.class.getCanonicalName());
+	private static final Logger log = LoggerFactory.getLogger(ClientService.class.getCanonicalName());
 
 	public ClientService(String serviceName, WebComponentSpecification spec)
 	{

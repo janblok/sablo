@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 public abstract class CustomJSONPropertyType<T> extends DefaultPropertyType<T> implements ICustomType<T>
 {
 
-	protected static final Logger log = LoggerFactory.getLogger(IPropertyType.class.getCanonicalName());
+	protected static final Logger log = LoggerFactory.getLogger(CustomJSONPropertyType.class.getCanonicalName());
 	private PropertyDescription definition;
 	private final String name;
 

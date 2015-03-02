@@ -39,7 +39,8 @@ import org.slf4j.LoggerFactory;
 public class CustomPropertyTypeResolver
 {
 
-	private static final Logger log = LoggerFactory.getLogger(IPropertyType.class.getCanonicalName());
+	private static final Logger log = LoggerFactory.getLogger(CustomPropertyTypeResolver.class.getCanonicalName());
+
 	private static final CustomPropertyTypeResolver INSTANCE = new CustomPropertyTypeResolver();
 
 	public static final CustomPropertyTypeResolver getInstance()

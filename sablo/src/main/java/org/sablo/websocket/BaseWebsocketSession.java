@@ -68,7 +68,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	}
 
 	@Override
-	public Collection<IWindow> getWindows()
+	public Collection< ? extends IWindow> getWindows()
 	{
 		synchronized (windows)
 		{
@@ -174,17 +174,17 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 				}
 			}
 
-			for (IWindow window : inactiveWindows)
+		for (IWindow window : inactiveWindows)
+		{
+			try
 			{
-				try
-				{
-					window.destroy();
-				}
-				catch (Exception e)
-				{
-					log.warn("Error destroying window " + window, e);
-				}
+				window.destroy();
 			}
+			catch (Exception e)
+			{
+				log.warn("Error destroying window " + window, e);
+			}
+		}
 
 			return windows.size() == 0;
 		}
@@ -236,11 +236,11 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		synchronized (windows)
 		{
 			for (ObjectReference<IWindow> ref : windows)
-			{
+		{
 				ref.getObject().closeSession();
 			}
 			windows.clear();
-		}
+			}
 		if (executor != null)
 		{
 			synchronized (this)

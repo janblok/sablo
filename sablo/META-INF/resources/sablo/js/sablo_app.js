@@ -306,7 +306,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 			delete formStates[formName];
 		},
 
-		initFormState: function(formName, beanDatas, formProperties, formScope) {
+		initFormState: function(formName, beanDatas, formProperties, formScope, resolve) {
 			var state = formStates[formName];
 			// if the form is already initialized or if the beanDatas are not given, return that 
 			if (state != null || !beanDatas) {
@@ -325,12 +325,16 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 				api[beanName] = {};
 			}
 
+			if (resolve || resolve === undefined) this.resolveFormState(formName);
+
+			return state;
+		},
+		
+		resolveFormState: function(formName) {
 			if (deferredFormStates[formName]) {
 				if (typeof(formStates[formName]) !== 'undefined') deferredFormStates[formName].resolve(formStates[formName]);
 				delete deferredFormStates[formName];
 			}
-
-			return state;
 		},
 
 		requestInitialData: function(formName, requestDataCallback) {

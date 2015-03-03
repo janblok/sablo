@@ -76,7 +76,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 			List<IWindow> wins = new ArrayList<>(windows.size());
 			for (ObjectReference<IWindow> ref : windows)
 			{
-				wins.add(ref.getObject());
+				if (ref.getRefcount() > 0) wins.add(ref.getObject());
 			}
 			return wins;
 		}
@@ -99,7 +99,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 							// window matches on name and uuid
 							return window;
 						}
-						// else: 
+						// else:
 						// window with this uuid exists, but windowname is different, this can happen when a new tab is opened
 						// and sessionstorage (containing windowid) is copied to the new tab.
 					}

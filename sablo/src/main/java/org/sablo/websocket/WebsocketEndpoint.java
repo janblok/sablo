@@ -22,12 +22,15 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.TimeoutException;
 
 import javax.websocket.CloseReason;
 import javax.websocket.Session;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.types.AggregatedPropertyType;
@@ -143,6 +146,16 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 	{
 		if (window != null)
 		{
+			if (window.getSession() != null)
+			{
+				for (Integer pendingMessageId : pendingMessages.keySet())
+				{
+					window.getSession().getEventDispatcher().cancelSuspend(pendingMessageId,
+						"Websocket endpoint is closing... (can happen for example due to a full browser refresh)");
+				}
+				pendingMessages.clear();
+			}
+
 			IWindow win = window;
 			window = null;
 			win.setEndpoint(null);
@@ -202,7 +215,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 						window.getSession().getEventDispatcher().resume(suspendID);
 					}
 
-				}, IWebsocketEndpoint.EVENT_LEVEL_SYNC_API_CALL);
+				}, IEventDispatcher.EVENT_LEVEL_SYNC_API_CALL);
 			}
 
 			else if (obj.has("service"))
@@ -337,11 +350,25 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 	 * @param text
 	 * @throws IOException
 	 */
-	public Object waitResponse(Integer messageId, String text) throws IOException
+	public Object waitResponse(Integer messageId, String text, boolean blockEventProcessing) throws IOException
 	{
 		List<Object> ret = new ArrayList<>(1);
 		pendingMessages.put(messageId, ret);
-		window.getSession().getEventDispatcher().suspend(messageId, EVENT_LEVEL_SYNC_API_CALL); // TODO are fail-safes/timeouts needed here in case client browser gets closed or confused?
+
+		try
+		{
+			window.getSession().getEventDispatcher().suspend(messageId,
+				blockEventProcessing ? IEventDispatcher.EVENT_LEVEL_SYNC_API_CALL : IEventDispatcher.EVENT_LEVEL_DEFAULT,
+				blockEventProcessing ? EventDispatcher.DEFAULT_TIMEOUT : IEventDispatcher.NO_TIMEOUT);
+		}
+		catch (CancellationException e)
+		{
+			throw e; // full browser refresh while doing this?
+		}
+		catch (TimeoutException e)
+		{
+			throw new RuntimeException(e); // timeout... something went wrong; propagate this exception to calling code...
+		}
 
 		if (ret.size() == 0)
 		{

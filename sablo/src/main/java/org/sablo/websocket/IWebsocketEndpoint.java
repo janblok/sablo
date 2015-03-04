@@ -20,7 +20,7 @@ import java.io.IOException;
 
 /**
  * The websocket endpoint interface.
- * 
+ *
  * @author rgansevles
  */
 public interface IWebsocketEndpoint
@@ -50,15 +50,7 @@ public interface IWebsocketEndpoint
 	 */
 	void cancelSession(String reason);
 
-	/**
-	 * @param text
-	 */
 	void sendText(String txt) throws IOException;
 
-	/**
-	 * @param messageId
-	 * @param text
-	 * @return
-	 */
-	Object waitResponse(Integer messageId, String text) throws IOException;
+	Object waitResponse(Integer messageId, String text, boolean blockEventProcessing) throws IOException;
 }

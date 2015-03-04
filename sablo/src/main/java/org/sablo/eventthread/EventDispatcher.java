@@ -19,8 +19,10 @@ package org.sablo.eventthread;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeoutException;
 
 import org.sablo.websocket.IWebsocketSession;
 import org.slf4j.Logger;
@@ -36,7 +38,18 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 {
 	private static final Logger log = LoggerFactory.getLogger(EventDispatcher.class.getCanonicalName());
 
-	private final ConcurrentMap<Object, Event> suspendedEvents = new ConcurrentHashMap<Object, Event>();
+	/**
+	 * 1 minute in milliseconds - default timeout for suspend calls.<br/>
+	 * Can be overridden via system property sablo.internal.APICallToClientTimeout. Use 0 for no-timeout.
+	 */
+	public static long DEFAULT_TIMEOUT = IEventDispatcher.DEFAULT_TIMEOUT;
+
+	private final ConcurrentMap<Object, String> suspendedEvents = new ConcurrentHashMap<Object, String>();
+	/**
+	 * When this is a value in {@link #suspendedEvents} above it's a normal suspend mode. When the value in {@link #suspendedEvents} is another String
+	 * then the suspend will be cancelled with that String as a reason.
+	 */
+	private static final String SUSPENDED_NOT_CANCELED = "_.,,._"; //$NON-NLS-1$
 
 	private final List<Event> events = new ArrayList<Event>();
 	private final LinkedList<Event> stack = new LinkedList<Event>();
@@ -52,6 +65,15 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 	public EventDispatcher(IWebsocketSession session)
 	{
 		this.session = session;
+
+		try
+		{
+			DEFAULT_TIMEOUT = Long.parseLong(System.getProperty("sablo.internal.APICallToClientTimeout", String.valueOf(IEventDispatcher.DEFAULT_TIMEOUT)));
+		}
+		catch (NumberFormatException e)
+		{
+			log.error("Please check system property values. 'sablo.internal.APICallToClientTimeout' is not a number.");
+		}
 	}
 
 	public void run()
@@ -59,11 +81,11 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		scriptThread = Thread.currentThread();
 		while (!exit)
 		{
-			dispatch(EVENT_LEVEL_DEFAULT);
+			dispatch(EVENT_LEVEL_DEFAULT, NO_TIMEOUT);
 		}
 	}
 
-	private void dispatch(int minEventLevelToDispatch)
+	private void dispatch(int minEventLevelToDispatch, long endMillis)
 	{
 		currentMinEventLevel = minEventLevelToDispatch;
 
@@ -73,7 +95,8 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 			Event event = null;
 			synchronized (events)
 			{
-				while (event == null)
+				long remainingMillis = 123456; // dummy value just to compile
+				while (event == null && (endMillis == NO_TIMEOUT || (remainingMillis = endMillis - System.currentTimeMillis()) > 0))
 				{
 					i = 0;
 					while (event == null && i < events.size())
@@ -86,20 +109,24 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 					}
 					if (event == null)
 					{
-						events.wait();
+						events.wait(endMillis == NO_TIMEOUT ? 0 : remainingMillis);
 					}
 				}
 			}
-			stack.add(event);
-			event.execute();
-			if (stack.getLast() != event)
+
+			if (event != null)
 			{
-				throw new Exception("State not expected");
-			}
-			stack.remove(event);
-			synchronized (events)
-			{
-				events.notifyAll();
+				stack.add(event);
+				event.execute();
+				if (stack.getLast() != event)
+				{
+					throw new Exception("State not expected");
+				}
+				stack.remove(event);
+				synchronized (events)
+				{
+					events.notifyAll();
+				}
 			}
 		}
 		catch (Throwable t)
@@ -156,13 +183,13 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		return new Event(session, event, eventLevel);
 	}
 
-	public void suspend(Object suspendID)
+	public void suspend(Object suspendID) throws CancellationException, TimeoutException
 	{
-		suspend(suspendID, EVENT_LEVEL_DEFAULT);
+		suspend(suspendID, EVENT_LEVEL_DEFAULT, DEFAULT_TIMEOUT);
 	}
 
 	@Override
-	public void suspend(Object suspendID, int minEventLevelToDispatch)
+	public void suspend(Object suspendID, int minEventLevelToDispatch, long timeout) throws CancellationException, TimeoutException
 	{
 		// TODO should this one be called in the execute event thread, should an check be done??
 		if (!isEventDispatchThread())
@@ -170,39 +197,60 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 			log.error("suspend called in another thread then the script thread: " + Thread.currentThread(), new RuntimeException());
 			return;
 		}
+		long endMillis = (timeout != NO_TIMEOUT ? System.currentTimeMillis() + timeout : NO_TIMEOUT);
 		Event event = stack.getLast();
 		if (event != null)
 		{
-			suspendedEvents.put(suspendID, event);
+			suspendedEvents.put(suspendID, SUSPENDED_NOT_CANCELED);
 			event.willSuspend();
 			synchronized (events)
 			{
 				events.notifyAll();
-
 			}
 
 			// if we were already dispatching in a higher currentMinEventLevel, use that one instead of "minEventLevelToDispatch"
 			int dispatchEventLevel = Math.max(minEventLevelToDispatch, currentMinEventLevel);
 
+			String suspendedEventsValue;
 			int oldMinEventLevel = currentMinEventLevel;
 			try
 			{
-				while (suspendedEvents.containsKey(suspendID) && !exit)
+				while ((suspendedEventsValue = suspendedEvents.get(suspendID)) == SUSPENDED_NOT_CANCELED && !exit &&
+					(timeout == NO_TIMEOUT || endMillis - System.currentTimeMillis() > 0)) // this condition assumes NO_TIMEOUT <= 0 which is true
 				{
-					dispatch(dispatchEventLevel);
+					dispatch(dispatchEventLevel, endMillis);
 				}
 			}
 			finally
 			{
 				currentMinEventLevel = oldMinEventLevel;
 			}
+
 			event.willResume();
+
+			if (suspendedEventsValue != null && !exit)
+			{
+				suspendedEvents.remove(suspendID);
+				if (suspendedEventsValue != SUSPENDED_NOT_CANCELED) throw new CancellationException("Suspended event cancelled. Reason: " +
+					suspendedEventsValue);
+				else throw new TimeoutException("Suspended event timed out. It was not resumed in " + timeout + " milliseconds.");
+			}
 		}
 	}
 
 	public void resume(Object eventKey)
 	{
 		suspendedEvents.remove(eventKey);
+	}
+
+	@Override
+	public void cancelSuspend(Integer suspendID, String cancelReason)
+	{
+		if (suspendedEvents.containsKey(suspendID))
+		{
+			if (cancelReason == null) cancelReason = "unspecified."; // our map can't handle null values
+			suspendedEvents.put(suspendID, cancelReason);
+		}
 	}
 
 	private void addEmptyEvent()

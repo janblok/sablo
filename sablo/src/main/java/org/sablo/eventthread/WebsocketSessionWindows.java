@@ -142,11 +142,11 @@ public class WebsocketSessionWindows implements IWindow
 
 	@Override
 	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes, Map<String, ? > changes,
-		PropertyDescription changesTypes) throws IOException
+		PropertyDescription changesTypes, boolean blockEventProcessing) throws IOException
 	{
 		for (IWindow window : session.getWindows())
 		{
-			window.executeServiceCall(serviceName, functionName, arguments, argumentTypes, changes, changesTypes);
+			window.executeServiceCall(serviceName, functionName, arguments, argumentTypes, changes, changesTypes, blockEventProcessing);
 		}
 		return null;
 	}

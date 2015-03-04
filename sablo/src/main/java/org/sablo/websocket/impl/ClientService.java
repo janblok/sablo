@@ -52,16 +52,21 @@ public class ClientService extends BaseWebObject implements IClientService
 	@Override
 	public Object executeServiceCall(String functionName, Object[] arguments) throws IOException
 	{
+		WebComponentSpecification spec = WebServiceSpecProvider.getInstance().getWebServiceSpecification(name);
+		WebComponentApiDefinition apiFunction = null;
+		if (spec != null)
+		{
+			apiFunction = spec.getApiFunction(functionName);
+		}
+
 		TypedData<Map<String, Object>> serviceChanges = getAndClearChanges();
 		Object retValue = CurrentWindow.get().executeServiceCall(name, functionName, arguments, getParameterTypes(functionName),
 			serviceChanges.content.isEmpty() ? null : Collections.singletonMap("services", Collections.singletonMap(getName(), serviceChanges.content)),
-			serviceChanges.contentType);
+			serviceChanges.contentType, apiFunction != null ? apiFunction.getBlockEventProcessing() : true);
 		if (retValue != null)
 		{
-			WebComponentSpecification spec = WebServiceSpecProvider.getInstance().getWebServiceSpecification(name);
 			if (spec != null)
 			{
-				WebComponentApiDefinition apiFunction = spec.getApiFunction(functionName);
 				if (apiFunction != null && apiFunction.getReturnType() != null)
 				{
 					try

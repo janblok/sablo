@@ -277,6 +277,10 @@ public class WebComponentSpecification extends PropertyDescription
 						PropertyDescription desc = new PropertyDescription("return", resolveArrayType(pp));
 						def.setReturnType(desc);
 					}
+					else if ("blockEventProcessing".equals(key))
+					{
+						def.setBlockEventProcessing(jsonDef.getBoolean("blockEventProcessing"));
+					}
 					else
 					{
 						if (customConfiguration == null) customConfiguration = new JSONObject();
@@ -396,7 +400,8 @@ public class WebComponentSpecification extends PropertyDescription
 						// the config object will be used by the 'CustomJSONArray' type;
 						// a config for the element type can be specified like this: { type: 'myprop[]', a: ..., b: ..., elementConfig: {...} } and we could give that to the elementDescription instead
 						JSONObject elementConfig = configObject != null ? configObject.optJSONObject(CustomJSONArrayType.ELEMENT_CONFIG_KEY) : null;
-						PropertyDescription elementDescription = new PropertyDescription(ARRAY_ELEMENT_PD_NAME, type, type.parseConfig(elementConfig), defaultValue, values, tags, false);
+						PropertyDescription elementDescription = new PropertyDescription(ARRAY_ELEMENT_PD_NAME, type, type.parseConfig(elementConfig),
+							defaultValue, values, tags, false);
 						type = TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, elementDescription);
 					}
 

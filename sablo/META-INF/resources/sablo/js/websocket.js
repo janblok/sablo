@@ -32,22 +32,24 @@ webSocketModule.factory('$webSocket',
 					// data got back from the server
 					if (obj.cmsgid) { // response to event
 						var deferredEvent = deferredEvents[obj.cmsgid];
-						if (obj.exception) {
-							// something went wrong
-							if (obj.conversions && obj.conversions.exception) {
-								obj.exception = $sabloConverters.convertFromServerToClient(obj.exception, obj.conversions.exception, undefined, undefined, undefined)
-							}
+						if (deferredEvent != null && angular.isDefined(deferredEvent)) {
+							if (obj.exception) {
+								// something went wrong
+								if (obj.conversions && obj.conversions.exception) {
+									obj.exception = $sabloConverters.convertFromServerToClient(obj.exception, obj.conversions.exception, undefined, undefined, undefined)
+								}
 								$rootScope.$apply(function() {
-								deferredEvent.reject(obj.exception);
+									deferredEvent.reject(obj.exception);
 								})
-						} else {
-							if (obj.conversions && obj.conversions.ret) {
-								obj.ret = $sabloConverters.convertFromServerToClient(obj.ret, obj.conversions.ret, undefined, undefined, undefined)
-							}
+							} else {
+								if (obj.conversions && obj.conversions.ret) {
+									obj.ret = $sabloConverters.convertFromServerToClient(obj.ret, obj.conversions.ret, undefined, undefined, undefined)
+								}
 								$rootScope.$apply(function() {
-								deferredEvent.resolve(obj.ret);
+									deferredEvent.resolve(obj.ret);
 								})
 							}
+						} else $log.warn("Response to an unknown handler call dismissed; can happen (normal) if a handler call gets interrupted by a full browser refresh.");
 						delete deferredEvents[obj.cmsgid];
 					}
 

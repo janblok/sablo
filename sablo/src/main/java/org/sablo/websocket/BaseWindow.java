@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
 
 /** A window is created for a websocket endpoint to communicate with the websocket session.
  * When the websocket connection a dropped and recrated (browser refresh), the window will be reused.
- * 
+ *
  * @author jcompagner, rgansevles
  */
 
@@ -176,7 +176,7 @@ public class BaseWindow implements IWindow
 		}
 		if (data.size() > 0)
 		{
-			sendMessage(data, dataTypes, true);
+			sendMessage(data, dataTypes, FullValueToJSONConverter.INSTANCE, true, false);
 		}
 	}
 
@@ -190,7 +190,7 @@ public class BaseWindow implements IWindow
 		Map<String, String> msg = new HashMap<>();
 		msg.put("sessionid", getSession().getUuid());
 		msg.put("windowid", uuid);
-		sendMessage(msg, null, true);
+		sendMessage(msg, null, FullValueToJSONConverter.INSTANCE, true, false);
 	}
 
 	@Override
@@ -253,7 +253,22 @@ public class BaseWindow implements IWindow
 		usedContainers.put(container, new Object());
 	}
 
-	protected <ContextT> Object sendMessage(final Map<String, ? > data, final PropertyDescription dataTypes, boolean async) throws IOException
+	/**
+	 * Sends a message to the client/browser, containing the given data (transformed into JSON based on give dataTypes).
+	 * Uses FullValueToJSONConverter for conversions.<br/>
+	 *
+	 * If there are any pending service calls those will be sent to the client/attached to the message as well.
+	 *
+	 * @param data the data to be sent to the client (converted to JSON format where needed).
+	 * @param dataTypes description of the data structure; each key in "data" might have a corresponding child "dataTypes.getProperty(key)" who's type can be used for "to JSON" conversion.
+	 * @param async specifies is the messages should be sent later or right away.
+	 * @param converter converter for values to json.
+	 * @param blockEventProcessing if true then the event processing will be blocked until we get the expected resonse from the browser/client (or until a timeout expires).
+	 * @return if async it will return null; otherwise it will return whatever the client sends back as a response to this message.
+	 * @throws IOException when such an exception occurs.
+	 */
+	protected <ContextT> Object sendMessage(final Map<String, ? > data, final PropertyDescription dataTypes, IToJSONConverter<ContextT> converter,
+		boolean async, boolean blockEventProcessing) throws IOException
 	{
 		return sendMessage((data == null || data.size() == 0) ? null : new IToJSONWriter<ContextT>()
 		{
@@ -270,10 +285,23 @@ public class BaseWindow implements IWindow
 				return false;
 			}
 
-		}, async, FullValueToJSONConverter.INSTANCE);
+		}, async, converter, blockEventProcessing);
 	}
 
-	protected Object sendMessage(IToJSONWriter< ? > dataWriter, boolean async, IToJSONConverter converter) throws IOException
+	/**
+	 * Sends a message to the client/browser. The message will be written to dataWriter.
+	 *
+	 * If there are any pending service calls those will be sent to the client/attached to the message as well.
+	 *
+	 * @param dataWriter the writer where to write contents to send to client.
+	 * @param async specifies is the messages should be sent later or right away.
+	 * @param converter converter for values to json.
+	 * @param blockEventProcessing if true then the event processing will be blocked until we get the expected resonse from the browser/client (or until a timeout expires).
+	 * @return if async it will return null; otherwise it will return whatever the client sends back as a response to this message.
+	 * @throws IOException when such an exception occurs.
+	 */
+	protected <X> Object sendMessage(IToJSONWriter<X> dataWriter, boolean async, IToJSONConverter<X> converter, boolean blockEventProcessing)
+		throws IOException
 	{
 		if (dataWriter == null && serviceCalls.size() == 0) return null;
 
@@ -299,7 +327,7 @@ public class BaseWindow implements IWindow
 			{
 				hasContentToSend = true;
 				clientDataConversions.pushNode("services");
-				converter.toJSONValue(w, "services", serviceCalls, serviceCallTypes, clientDataConversions, null);
+				FullValueToJSONConverter.INSTANCE.toJSONValue(w, "services", serviceCalls, serviceCallTypes, clientDataConversions, null);
 				clientDataConversions.popNode();
 			}
 
@@ -320,7 +348,7 @@ public class BaseWindow implements IWindow
 				serviceCalls.clear();
 			}
 
-			return messageId == null ? null : endpoint.waitResponse(messageId, text);
+			return messageId == null ? null : endpoint.waitResponse(messageId, text, blockEventProcessing);
 		}
 		catch (JSONException e)
 		{
@@ -354,21 +382,21 @@ public class BaseWindow implements IWindow
 
 				return changesFound;
 			}
-		}, true, ChangesToJSONConverter.INSTANCE);
+		}, true, ChangesToJSONConverter.INSTANCE, false);
 	}
 
 
 	public void flush() throws IOException
 	{
-		sendMessage(null, null, true);
+		sendMessage(null, null, FullValueToJSONConverter.INSTANCE, true, false);
 	}
 
 	@Override
 	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes, Map<String, ? > changes,
-		PropertyDescription changesTypes) throws IOException
+		PropertyDescription changesTypes, boolean blockEventProcessing) throws IOException
 	{
 		addServiceCall(serviceName, functionName, arguments, argumentTypes);
-		return sendMessage(changes, changesTypes, false); // will return response from last service call
+		return sendMessage(changes, changesTypes, ChangesToJSONConverter.INSTANCE, false, blockEventProcessing); // will return response from last service call
 	}
 
 	@Override
@@ -509,7 +537,7 @@ public class BaseWindow implements IWindow
 					w.endObject();
 					return true;
 				}
-			}, false, FullValueToJSONConverter.INSTANCE);
+			}, false, FullValueToJSONConverter.INSTANCE, apiFunction.getBlockEventProcessing());
 
 
 			// convert dates back; TODO should this if be removed?; the JSONUtils.fromJSON below should do this anyway

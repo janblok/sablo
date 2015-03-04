@@ -16,6 +16,10 @@
 
 package org.sablo.eventthread;
 
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.TimeoutException;
+
+import org.sablo.websocket.IEventDispatchAwareServerService;
 import org.sablo.websocket.IWebsocketSession;
 
 
@@ -30,6 +34,23 @@ public interface IEventDispatcher extends Runnable
 {
 
 	public final static int EVENT_LEVEL_DEFAULT = 0;
+
+	/**
+	 * Sync service calls to client (that wait for a response on the event dispatch thread) will continue dipatching events of event level
+	 * minimum {@link #EVENT_LEVEL_SYNC_API_CALL} while waiting and block only the rest. This is to avoid deadlocks in case the sync api call to client needs to wait
+	 * for some initialization call to be executed on server (that initialization call can use a higher event level through {@link IEventDispatchAwareServerService#getMethodEventThreadLevel(String, org.json.JSONObject)}).
+	 */
+	public static final int EVENT_LEVEL_SYNC_API_CALL = 500;
+
+	/**
+	 * Value used for suspend timeout parameter when it is expected that a suspend call is long running. (for example modal dialogs who's open method returns a value)
+	 */
+	public static final int NO_TIMEOUT = 0;
+
+	/**
+	 * 1 minute in milliseconds - default timeout for suspend calls. Implementing classes may decide to use a different value as default timeout.
+	 */
+	public static final long DEFAULT_TIMEOUT = 60000;
 
 	boolean isEventDispatchThread();
 
@@ -59,16 +80,24 @@ public interface IEventDispatcher extends Runnable
 	 * @param minEventLevelToDispatch while current event is suspended, the minimum event level to dispatch will be "minEventLevelToDispatch". So
 	 * events added with "eventLevel" < "minEventLevelToDispatch" will not get dispatched. Events added with "eventLevel" >= "minEventLevelToDispatch" will
 	 * continue being dispatched.
+	 * @param timeout can be {@link #NO_TIMEOUT}; number of milliseconds to wait for a {@link #resume(Object)} call with the same suspendID. If no {@link #resume(Object)} will be called
+	 * on this id for more then "timeout" ms then this suspend will fail with an exception. (to prevent locked application state or ever climbing event loops if event levels require it)
+	 *
+	 * @throws CancellationException in case  {@link #cancelSuspend(Integer)} is called for this suspendID later on.
+	 * @throws TimeoutException when the timeout expires before getting a resume with this suspendID.
 	 */
-	void suspend(Object suspendID, int minEventLevelToDispatch);
+	void suspend(Object suspendID, int minEventLevelToDispatch, long timeout) throws CancellationException, TimeoutException;
 
 	/**
-	 * Same as {@link #suspend(Object, int)} with "minEventLevelToDispatch" having a value of {@link #EVENT_LEVEL_DEFAULT}. So all other events
-	 * will continue to dispatch.
+	 * Same as {@link #suspend(Object, int)} with "minEventLevelToDispatch" having a value of {@link #EVENT_LEVEL_DEFAULT} and "timeout" of {@link #DEFAULT_TIMEOUT}.
+	 * So all other events will continue to dispatch.
 	 *
 	 * @param suspendID The Object that is the suspend operation identifier.
+	 *
+	 * @throws CancellationException in case  {@link #cancelSuspend(Integer)} is called for this suspendID later on.
+	 * @throws TimeoutException when the {@link #DEFAULT_TIMEOUT} expires before getting a resume with this suspendID.
 	 */
-	void suspend(Object suspendID);
+	void suspend(Object suspendID) throws CancellationException, TimeoutException;
 
 	/**
 	 * See {@link #suspend(Object)}.
@@ -76,6 +105,13 @@ public interface IEventDispatcher extends Runnable
 	 * @param suspendID The Object that was used as a suspend operation identifier in a previous call to one of the "suspend" methods.
 	 */
 	void resume(Object suspendID);
+
+	/**
+	 * Resumes a previous suspend by throwing a CancellationException to the suspend calling code.
+	 * @param suspendID the if of the suspend operation.
+	 * @param cancelReason a user-readable message for why the suspend was cancelled.
+	 */
+	void cancelSuspend(Integer suspendID, String cancelReason);
 
 	/**
 	 * destroys this event dispatcher thread.

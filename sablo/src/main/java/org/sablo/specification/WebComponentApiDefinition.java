@@ -28,11 +28,13 @@ import org.json.JSONObject;
  */
 public class WebComponentApiDefinition
 {
+
 	private final String name;
 	private final List<PropertyDescription> parameters = new ArrayList<>();
 	private PropertyDescription returnType;
 	private JSONObject customConfigOptions;
 	private String documentation;
+	private boolean blockEventProcessing = true;
 
 	public WebComponentApiDefinition(String name)
 	{
@@ -80,9 +82,6 @@ public class WebComponentApiDefinition
 		return "WebComponentApiDefinition[name:" + name + ",returnType:" + returnType + ", parameters:" + parameters + "]";
 	}
 
-	/**
-	 * @param documentation
-	 */
 	public void setDocumentation(String documentation)
 	{
 		this.documentation = documentation;
@@ -92,4 +91,15 @@ public class WebComponentApiDefinition
 	{
 		return documentation;
 	}
+
+	public void setBlockEventProcessing(boolean blockEventProcessing)
+	{
+		this.blockEventProcessing = blockEventProcessing;
+	}
+
+	public boolean getBlockEventProcessing()
+	{
+		return blockEventProcessing;
+	}
+
 }

@@ -115,7 +115,7 @@ public interface IWindow
 	 * @throws IOException if such an exception happens.
 	 */
 	Object executeServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes, Map<String, ? > changes,
-		PropertyDescription changesTypes) throws IOException;
+		PropertyDescription changesTypes, boolean blockEventProcessing) throws IOException;
 
 	/**
 	 * Invoke an function on the webcomponent
@@ -149,19 +149,19 @@ public interface IWindow
 
 
 	/**
-	 * 
+	 *
 	 */
 	void destroy();
 
 
 	/**
-	 * 
+	 *
 	 */
 	void sendChanges() throws IOException;
 
 
 	/**
-	 * 
+	 *
 	 */
 	void onOpen();
 

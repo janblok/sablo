@@ -30,8 +30,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 		} else {
 			defered = deferredStates[name]
 		}
-
-		if (formStates[name] && !(formStates[name].initializing && needsInitialData)) {
+		
+		var formState = formStates[name];
+		if (formState && !(formState.initializing && needsInitialData) && formState.removeWatches) {
 			defered.resolve(formStates[name]); // then handlers are called even if they are applied after it is resolved
 			delete deferredStates[name];
 		}			   

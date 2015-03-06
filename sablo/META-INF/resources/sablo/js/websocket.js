@@ -143,6 +143,8 @@ webSocketModule.factory('$webSocket',
 
 				// api
 				this.callService = callService
+				
+				this.sendMessageObject = sendMessageObject;
 
 				this.onopen = function(handler) {
 					onOpenHandlers.push(handler)

@@ -359,7 +359,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		{
 			window.getSession().getEventDispatcher().suspend(messageId,
 				blockEventProcessing ? IEventDispatcher.EVENT_LEVEL_SYNC_API_CALL : IEventDispatcher.EVENT_LEVEL_DEFAULT,
-				blockEventProcessing ? EventDispatcher.DEFAULT_TIMEOUT : IEventDispatcher.NO_TIMEOUT);
+				blockEventProcessing ? EventDispatcher.CONFIGURED_TIMEOUT : IEventDispatcher.NO_TIMEOUT);
 		}
 		catch (CancellationException e)
 		{

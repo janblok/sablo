@@ -42,7 +42,21 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 	 * 1 minute in milliseconds - default timeout for suspend calls.<br/>
 	 * Can be overridden via system property sablo.internal.APICallToClientTimeout. Use 0 for no-timeout.
 	 */
-	public static long DEFAULT_TIMEOUT = IEventDispatcher.DEFAULT_TIMEOUT;
+	public static final long CONFIGURED_TIMEOUT;
+	static
+	{
+		long timeout;
+		try
+		{
+			timeout = Long.parseLong(System.getProperty("sablo.internal.APICallToClientTimeout", String.valueOf(IEventDispatcher.DEFAULT_TIMEOUT)));
+		}
+		catch (NumberFormatException e)
+		{
+			timeout = IEventDispatcher.DEFAULT_TIMEOUT;
+			log.error("Please check system property values. 'sablo.internal.APICallToClientTimeout' is not a number.");
+		}
+		CONFIGURED_TIMEOUT = timeout;
+	}
 
 	private final ConcurrentMap<Object, String> suspendedEvents = new ConcurrentHashMap<Object, String>();
 	/**
@@ -65,15 +79,6 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 	public EventDispatcher(IWebsocketSession session)
 	{
 		this.session = session;
-
-		try
-		{
-			DEFAULT_TIMEOUT = Long.parseLong(System.getProperty("sablo.internal.APICallToClientTimeout", String.valueOf(IEventDispatcher.DEFAULT_TIMEOUT)));
-		}
-		catch (NumberFormatException e)
-		{
-			log.error("Please check system property values. 'sablo.internal.APICallToClientTimeout' is not a number.");
-		}
 	}
 
 	public void run()
@@ -185,7 +190,7 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 
 	public void suspend(Object suspendID) throws CancellationException, TimeoutException
 	{
-		suspend(suspendID, EVENT_LEVEL_DEFAULT, DEFAULT_TIMEOUT);
+		suspend(suspendID, EVENT_LEVEL_DEFAULT, CONFIGURED_TIMEOUT);
 	}
 
 	@Override

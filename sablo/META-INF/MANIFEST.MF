@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: sablo-core
+Bundle-Name: Sablo core library
 Bundle-SymbolicName: sablo;singleton:=true
 Bundle-Version: 8.0.0.3015
 Export-Package: org.sablo,
@@ -29,5 +29,5 @@ Import-Package: javax.servlet,
  org.json,
  org.osgi.framework
 
-Name: META-INF/resources/services/sablo-core/sabloService.spec
+Name: /sablo/sabloService.spec
 Web-Service: True

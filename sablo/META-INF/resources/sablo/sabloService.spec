@@ -2,7 +2,7 @@
 	"name": "$sabloService",
 	"displayName": "Sablo core service",
 	"version": 1,
-	"definition": "services/sablo-core/sabloService.js",
+	"definition": "sablo/sabloService.js",
 	"libraries": [],
 	"model": { },
 	"api": {

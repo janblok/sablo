@@ -16,6 +16,7 @@
 
 package org.sablo.specification;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -233,7 +234,14 @@ public class WebComponentSpecification extends PropertyDescription
 
 		if (json.has("serverscript"))
 		{
-			spec.setServerScript(reader.getUrlForPath(json.getString("serverscript").substring(packageName.length())));
+			try
+			{
+				spec.setServerScript(reader.getUrlForPath(json.getString("serverscript").substring(packageName.length())));
+			}
+			catch (MalformedURLException e)
+			{
+				log.error("Error getting serverscript", e);
+			}
 		}
 		// first types, can be used in properties
 		spec.parseTypes(json);

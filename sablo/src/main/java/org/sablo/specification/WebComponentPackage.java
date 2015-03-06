@@ -36,6 +36,7 @@ import java.util.Properties;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
 import javax.servlet.ServletContext;
@@ -58,7 +59,7 @@ public class WebComponentPackage
 {
 	private static final Logger log = LoggerFactory.getLogger(WebComponentPackage.class.getCanonicalName());
 	private static final String GLOBAL_TYPES_MANIFEST_ATTR = "Global-Types";
-	private static final String BUNDLE_NAME = "Bundle-Name";
+	private static final String BUNDLE_SYMBOLIC_NAME = "Bundle-SymbolicName";
 
 	public interface IPackageReader
 	{
@@ -70,7 +71,7 @@ public class WebComponentPackage
 
 		String readTextFile(String path, Charset charset) throws IOException;
 
-		URL getUrlForPath(String path);
+		URL getUrlForPath(String path) throws MalformedURLException;
 
 		URL getPackageURL();
 
@@ -161,8 +162,26 @@ public class WebComponentPackage
 						WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
 						if (reader instanceof ISpecificationFilter && ((ISpecificationFilter)reader).filter(parsed)) continue;
 						parsed.setSpecURL(reader.getUrlForPath(specpath));
-						if (parsed.getDefinition() != null) parsed.setDefinitionFileURL(reader.getUrlForPath(parsed.getDefinition().substring(
-							parsed.getDefinition().indexOf("/") + 1)));
+						if (parsed.getDefinition() != null)
+						{
+							String packageName = parsed.getPackageName();
+							String definition;
+							if (packageName != null && parsed.getDefinition().startsWith(packageName + '/'))
+							{
+								definition = parsed.getDefinition().substring(packageName.length() + 1);
+							}
+							else if (packageName != null && parsed.getDefinition().startsWith("/"))
+							{
+								definition = parsed.getDefinition();
+							}
+							else
+							{
+								log.warn("Definition file for spec file " + specpath + " does not start with package name '" + packageName + "'");
+								definition = parsed.getDefinition().substring(parsed.getDefinition().indexOf("/") + 1);
+							}
+							parsed.setDefinitionFileURL(reader.getUrlForPath(definition));
+						}
+
 						// add properties defined by us
 						// TODO this is servoy specific so remove?
 						if (parsed.getProperty("size") == null) parsed.putProperty("size",
@@ -254,6 +273,100 @@ public class WebComponentPackage
 		reader = null;
 	}
 
+	public static class JarServletContextReader implements IPackageReader
+	{
+		private final ServletContext servletContext;
+		private final String resourcePath;
+
+		private Manifest manifest = null;
+
+		public JarServletContextReader(ServletContext servletContext, String resourcePath)
+		{
+			this.servletContext = servletContext;
+			this.resourcePath = resourcePath;
+		}
+
+		@Override
+		public String getName()
+		{
+			return resourcePath;
+		}
+
+		@Override
+		public String getPackageName()
+		{
+			try
+			{
+				String bundleName = getBundleSymbolicName(getManifest());
+				if (bundleName != null) return bundleName;
+			}
+			catch (Exception e)
+			{
+				log.error("Bundle Name attribute not found." + getName(), e);
+			}
+			return FilenameUtils.getBaseName(resourcePath);
+		}
+
+		@Override
+		public Manifest getManifest() throws IOException
+		{
+			if (manifest == null)
+			{
+				try (JarInputStream jarInputStream = new JarInputStream(servletContext.getResourceAsStream(resourcePath)))
+				{
+					manifest = jarInputStream.getManifest();
+				}
+			}
+			return manifest;
+		}
+
+		@Override
+		public URL getUrlForPath(String path) throws MalformedURLException
+		{
+			return servletContext.getResource(path.charAt(0) == '/' ? path : '/' + getPackageName() + '/' + path);
+		}
+
+		@Override
+		public String readTextFile(String path, Charset charset) throws IOException
+		{
+			String pathWithSlashPrefix = path.charAt(0) == '/' ? path : '/' + path;
+			try (InputStream inputStream = servletContext.getResourceAsStream(pathWithSlashPrefix))
+			{
+				if (inputStream != null)
+				{
+					return IOUtils.toString(inputStream, charset);
+				}
+			}
+			return null;
+		}
+
+		@Override
+		public void reportError(String specpath, Exception e)
+		{
+			log.error("Cannot parse spec file '" + specpath + "' from package '" + toString() + "'. ", e);
+		}
+
+		@Override
+		public String toString()
+		{
+			return "JarPackage: " + getName();
+		}
+
+		@Override
+		public URL getPackageURL()
+		{
+			try
+			{
+				return servletContext.getResource(resourcePath);
+			}
+			catch (MalformedURLException e)
+			{
+				log.error("MalformedURL", e);
+			}
+			return null;
+		}
+	}
+
 	public static class JarPackageReader implements IPackageReader
 	{
 
@@ -264,28 +377,18 @@ public class WebComponentPackage
 			this.jarFile = jarFile;
 		}
 
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
-		 */
 		@Override
 		public String getName()
 		{
 			return jarFile.getAbsolutePath();
 		}
 
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
-		 */
 		@Override
 		public String getPackageName()
 		{
 			try
 			{
-				String bundleName = getManifest().getMainAttributes().getValue(BUNDLE_NAME);
+				String bundleName = getBundleSymbolicName(getManifest());
 				if (bundleName != null) return bundleName;
 			}
 			catch (Exception e)
@@ -298,31 +401,18 @@ public class WebComponentPackage
 		@Override
 		public Manifest getManifest() throws IOException
 		{
-			JarFile jar = null;
-			try
+			try (JarFile jar = new JarFile(jarFile))
 			{
-				jar = new JarFile(jarFile);
 				return jar.getManifest();
-			}
-			finally
-			{
-				if (jar != null) jar.close();
 			}
 		}
 
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
-		 */
 		@Override
 		public URL getUrlForPath(String path)
 		{
-			JarFile jar = null;
-			try
+			String pathWithSlashPrefix = path.startsWith("/") ? path : "/" + path;
+			try (JarFile jar = new JarFile(jarFile))
 			{
-				String pathWithSlashPrefix = path.startsWith("/") ? path : "/" + path;
-				jar = new JarFile(jarFile);
 				JarEntry entry = jar.getJarEntry(pathWithSlashPrefix.substring(1)); // strip /
 				if (entry != null)
 				{
@@ -333,44 +423,25 @@ public class WebComponentPackage
 			{
 				log.error("Exception in getUrlForPath", e);
 			}
-			finally
-			{
-				if (jar != null) try
-				{
-					jar.close();
-				}
-				catch (IOException e)
-				{
-				}
-			}
+
 			return null;
 		}
 
 		@Override
 		public String readTextFile(String path, Charset charset) throws IOException
 		{
-			JarFile jar = null;
-			try
+			try (JarFile jar = new JarFile(jarFile))
 			{
-				jar = new JarFile(jarFile);
 				JarEntry entry = jar.getJarEntry(path);
 				if (entry != null)
 				{
 					return IOUtils.toString(jar.getInputStream(entry), charset);
 				}
 			}
-			finally
-			{
-				if (jar != null) jar.close();
-			}
+
 			return null;
 		}
 
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#reportError(java.lang.String, java.lang.Exception)
-		 */
 		@Override
 		public void reportError(String specpath, Exception e)
 		{
@@ -383,11 +454,6 @@ public class WebComponentPackage
 			return "JarPackage: " + jarFile.getAbsolutePath();
 		}
 
-		/*
-		 * (non-Javadoc)
-		 *
-		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#getPackageURL()
-		 */
 		@Override
 		public URL getPackageURL()
 		{
@@ -415,28 +481,18 @@ public class WebComponentPackage
 			this.dir = dir;
 		}
 
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
-		 */
 		@Override
 		public String getName()
 		{
 			return dir.getAbsolutePath();
 		}
 
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
-		 */
 		@Override
 		public String getPackageName()
 		{
 			try
 			{
-				String bundleName = getManifest().getMainAttributes().getValue(BUNDLE_NAME);
+				String bundleName = getBundleSymbolicName(getManifest());
 				if (bundleName != null) return bundleName;
 			}
 			catch (IOException e)
@@ -449,23 +505,12 @@ public class WebComponentPackage
 		@Override
 		public Manifest getManifest() throws IOException
 		{
-			InputStream is = null;
-			try
+			try (InputStream is = new BufferedInputStream(new FileInputStream(new File(dir, "META-INF/MANIFEST.MF"))))
 			{
-				is = new BufferedInputStream(new FileInputStream(new File(dir, "META-INF/MANIFEST.MF")));
 				return new Manifest(is);
-			}
-			finally
-			{
-				if (is != null) is.close();
 			}
 		}
 
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
-		 */
 		@Override
 		public URL getUrlForPath(String path)
 		{
@@ -487,15 +532,9 @@ public class WebComponentPackage
 		@Override
 		public String readTextFile(String path, Charset charset) throws IOException
 		{
-			InputStream is = null;
-			try
+			try (InputStream is = new BufferedInputStream(new FileInputStream(new File(dir, path))))
 			{
-				is = new BufferedInputStream(new FileInputStream(new File(dir, path)));
 				return IOUtils.toString(is, charset);
-			}
-			finally
-			{
-				if (is != null) is.close();
 			}
 		}
 
@@ -511,11 +550,6 @@ public class WebComponentPackage
 			return "DirPackage: " + dir.getAbsolutePath();
 		}
 
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#getPackageURL()
-		 */
 		@Override
 		public URL getPackageURL()
 		{
@@ -563,49 +597,28 @@ public class WebComponentPackage
 			}
 		}
 
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getName()
-		 */
 		@Override
 		public String getName()
 		{
 			return urlOfManifest.toExternalForm();
 		}
 
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getPackageName()
-		 */
 		@Override
 		public String getPackageName()
 		{
 			return packageName.replaceAll("/", "");
 		}
 
+
 		@Override
 		public Manifest getManifest() throws IOException
 		{
-			InputStream is = urlOfManifest.openStream();
-			try
+			try (InputStream is = urlOfManifest.openStream())
 			{
-				Manifest manifest = new Manifest();
-				manifest.read(is);
-				return manifest;
-			}
-			finally
-			{
-				is.close();
+				return new Manifest(is);
 			}
 		}
 
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see com.servoy.j2db.server.ngclient.component.WebComponentPackage.IPackageReader#getUrlForPath(java.lang.String)
-		 */
 		@Override
 		public URL getUrlForPath(String path)
 		{
@@ -625,15 +638,10 @@ public class WebComponentPackage
 		{
 			URL url = getUrlForPath(path);
 			if (url == null) return null;
-			InputStream is = null;
-			try
+
+			try (InputStream is = url.openStream())
 			{
-				is = url.openStream();
 				return IOUtils.toString(is, charset);
-			}
-			finally
-			{
-				if (is != null) is.close();
 			}
 		}
 
@@ -643,22 +651,12 @@ public class WebComponentPackage
 			log.error("Cannot parse spec file '" + specpath + "' from package 'WarReeader[ " + urlOfManifest + " ]'. ", e);
 		}
 
-		/*
-		 * (non-Javadoc)
-		 *
-		 * @see org.sablo.specification.WebComponentPackage.IPackageReader#getPackageURL()
-		 */
 		@Override
 		public URL getPackageURL()
 		{
 			return null;
 		}
 
-		/*
-		 * (non-Javadoc)
-		 *
-		 * @see org.sablo.specification.WebComponentPackage.ISpecificationFilter#filter(org.sablo.specification.WebComponentSpecification)
-		 */
 		/**
 		 * @param spec
 		 * @return true if the component is not in the list of the exported components
@@ -670,15 +668,26 @@ public class WebComponentPackage
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Object#toString()
-	 */
 	@Override
 	public String toString()
 	{
 		return "WebComponent-package: " + getPackageName();
+	}
+
+	/**
+	 * @param manifest
+	 * @return
+	 */
+	public static String getBundleSymbolicName(Manifest manifest)
+	{
+		String bundleName = manifest.getMainAttributes().getValue(BUNDLE_SYMBOLIC_NAME);
+
+		if (bundleName != null && bundleName.indexOf(';') > 0)
+		{
+			return bundleName.substring(0, bundleName.indexOf(';')).trim();
+		}
+
+		return bundleName;
 	}
 
 }

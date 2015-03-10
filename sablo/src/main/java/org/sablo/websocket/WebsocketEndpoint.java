@@ -211,6 +211,8 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 						Integer suspendID = new Integer(obj.optInt("smsgid"));
 						List<Object> ret = pendingMessages.remove(suspendID);
 						if (ret != null) ret.add(obj.opt("ret"));
+						else log.error("Discarded response for obsolete pending message (it probably timed - out waiting for response before it got one): " +
+							suspendID);
 
 						window.getSession().getEventDispatcher().resume(suspendID);
 					}
@@ -346,33 +348,24 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 	}
 
 
-	/** Wait for a response message with given messsageId.
-	 * @param text
-	 * @throws IOException
+	/**
+	 * Wait for a response message with given messsageId.
+	 *
+	 * @throws TimeoutException see {@link IEventDispatcher#suspend(Object, int, long)} for more details.
+	 * @throws CancellationException see {@link IEventDispatcher#suspend(Object, int, long)} for more details.
 	 */
-	public Object waitResponse(Integer messageId, String text, boolean blockEventProcessing) throws IOException
+	public Object waitResponse(Integer messageId, String text, boolean blockEventProcessing) throws IOException, CancellationException, TimeoutException
 	{
 		List<Object> ret = new ArrayList<>(1);
 		pendingMessages.put(messageId, ret);
 
-		try
-		{
-			window.getSession().getEventDispatcher().suspend(messageId,
-				blockEventProcessing ? IEventDispatcher.EVENT_LEVEL_SYNC_API_CALL : IEventDispatcher.EVENT_LEVEL_DEFAULT,
-				blockEventProcessing ? EventDispatcher.CONFIGURED_TIMEOUT : IEventDispatcher.NO_TIMEOUT);
-		}
-		catch (CancellationException e)
-		{
-			throw e; // full browser refresh while doing this?
-		}
-		catch (TimeoutException e)
-		{
-			throw new RuntimeException(e); // timeout... something went wrong; propagate this exception to calling code...
-		}
+		window.getSession().getEventDispatcher().suspend(messageId,
+			blockEventProcessing ? IEventDispatcher.EVENT_LEVEL_SYNC_API_CALL : IEventDispatcher.EVENT_LEVEL_DEFAULT,
+			blockEventProcessing ? EventDispatcher.CONFIGURED_TIMEOUT : IEventDispatcher.NO_TIMEOUT);
 
 		if (ret.size() == 0)
 		{
-			log.warn("No response from client for message '" + text + "'");
+			log.error("No response from client for message '" + text + "'");
 			// Or throw an exception here?
 			return null;
 		}

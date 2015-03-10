@@ -17,6 +17,10 @@
 package org.sablo.websocket;
 
 import java.io.IOException;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.TimeoutException;
+
+import org.sablo.eventthread.IEventDispatcher;
 
 /**
  * The websocket endpoint interface.
@@ -52,5 +56,10 @@ public interface IWebsocketEndpoint
 
 	void sendText(String txt) throws IOException;
 
-	Object waitResponse(Integer messageId, String text, boolean blockEventProcessing) throws IOException;
+	/**
+	 * @throws TimeoutException see {@link IEventDispatcher#suspend(Object, int, long)} for more details.
+	 * @throws CancellationException see {@link IEventDispatcher#suspend(Object, int, long)} for more details.
+	 */
+	Object waitResponse(Integer messageId, String text, boolean blockEventProcessing) throws IOException, CancellationException, TimeoutException;
+
 }

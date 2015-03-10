@@ -238,7 +238,7 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 				suspendedEvents.remove(suspendID);
 				if (suspendedEventsValue != SUSPENDED_NOT_CANCELED) throw new CancellationException("Suspended event cancelled. Reason: " +
 					suspendedEventsValue);
-				else throw new TimeoutException("Suspended event timed out. It was not resumed in " + timeout + " milliseconds.");
+				else throw new TimeoutException("Suspended event timed out (" + suspendID + "). It was not resumed in " + timeout + " milliseconds.");
 			}
 		}
 	}
@@ -254,7 +254,7 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		if (suspendedEvents.containsKey(suspendID))
 		{
 			if (cancelReason == null) cancelReason = "unspecified."; // our map can't handle null values
-			suspendedEvents.put(suspendID, cancelReason);
+			suspendedEvents.put(suspendID, "(" + suspendID + ") " + cancelReason);
 		}
 	}
 

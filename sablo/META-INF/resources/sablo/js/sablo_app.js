@@ -17,6 +17,10 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 		}
 	}
 
+	var isFormStateDestroyed = function(formState) {
+		return formState && (!formState.removeWatches); // a form that was previously shown but is now hidden (DOM/directives/scopes destroyed...); still has model contents in it for example
+	};
+
 	/*
 	 * Some code is interested in form state immediately after it's loaded/initialized (needsInitialData = false) in which case only some template values might be
 	 * available and some code is interested in using form state only after it got the initialData (via "requestData"'s response) from server (needsInitialData = true)
@@ -30,9 +34,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 		} else {
 			defered = deferredStates[name]
 		}
-		
+
 		var formState = formStates[name];
-		if (formState && !(formState.initializing && needsInitialData) && formState.removeWatches) {
+		if (formState && formState.resolved && !(formState.initializing && needsInitialData) && !isFormStateDestroyed(formState)) {
 			defered.resolve(formStates[name]); // then handlers are called even if they are applied after it is resolved
 			delete deferredStates[name];
 		}			   
@@ -120,70 +124,72 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 		return wsSession;
 	}
 
-   var currentServiceCallCallbacks = []
-   var currentServiceCallDone
-   var currentServiceCallWaiting = 0
-   function addToCurrentServiceCall(func) {
-	   if (currentServiceCallWaiting == 0) {
-		   // No service call currently running, call the function now
-		   $timeout(function(){func.apply();})
-	   }
-	   else {
-		   currentServiceCallCallbacks.push(func)
-	   }
-   }
+	var currentServiceCallCallbacks = []
+	var currentServiceCallDone
+	var currentServiceCallWaiting = 0
+	function addToCurrentServiceCall(func) {
+		if (currentServiceCallWaiting == 0) {
+			// No service call currently running, call the function now
+			$timeout(function(){func.apply();})
+		}
+		else {
+			currentServiceCallCallbacks.push(func)
+		}
+	}
 
-   function callServiceCallbacksWhenDone() {
-	   if (currentServiceCallDone || --currentServiceCallWaiting == 0) {
-		   currentServiceCallWaiting = 0
-		   currentServiceCallTimeouts.map(function (id) { return clearTimeout(id) })
-		   var tmp = currentServiceCallCallbacks
-		   currentServiceCallCallbacks = []
-		   tmp.map(function (func) { func.apply() })
-	   }
-   }
+	function callServiceCallbacksWhenDone() {
+		if (currentServiceCallDone || --currentServiceCallWaiting == 0) {
+			currentServiceCallWaiting = 0
+			currentServiceCallTimeouts.map(function (id) { return clearTimeout(id) })
+			var tmp = currentServiceCallCallbacks
+			currentServiceCallCallbacks = []
+			tmp.map(function (func) { func.apply() })
+		}
+	}
 
-   function markServiceCallDone(arg) {
-	   currentServiceCallDone = true
-	   return arg
-   }
+	function markServiceCallDone(arg) {
+		currentServiceCallDone = true
+		return arg
+	}
 
-   function waitForServiceCallbacks(promise, times) {
-	   if (currentServiceCallWaiting >  0) {
-		   // Already waiting
-		   return promise
-	   }
+	function waitForServiceCallbacks(promise, times) {
+		if (currentServiceCallWaiting >  0) {
+			// Already waiting
+			return promise
+		}
 
-	   currentServiceCallDone = false
-	   currentServiceCallWaiting = times.length
-	   currentServiceCallTimeouts = times.map(function (t) { return setTimeout(callServiceCallbacksWhenDone, t) })
-	   return  promise.then(markServiceCallDone, markServiceCallDone)
-   }
+		currentServiceCallDone = false
+		currentServiceCallWaiting = times.length
+		currentServiceCallTimeouts = times.map(function (t) { return setTimeout(callServiceCallbacksWhenDone, t) })
+		return  promise.then(markServiceCallDone, markServiceCallDone)
+	}
 
-   function callService(serviceName, methodName, argsObject, async) {
-	   var promise = getSession().callService(serviceName, methodName, argsObject, async)
-	   return async ? promise :  waitForServiceCallbacks(promise, [100, 200, 500, 1000, 3000, 5000])
-   }
-	   
-   var getSessionId = function() {
-	   var sessionId = webStorage.session.get('sessionid')
-	   if (sessionId) {
-		   return sessionId;
-	   }
-	   return $webSocket.getURLParameter('sessionid');
-   }
+	function callService(serviceName, methodName, argsObject, async) {
+		var promise = getSession().callService(serviceName, methodName, argsObject, async)
+		return async ? promise :  waitForServiceCallbacks(promise, [100, 200, 500, 1000, 3000, 5000])
+	}
 
-   var getWindowName = function() {
-	   return $webSocket.getURLParameter('windowname');
-   }
+	var getSessionId = function() {
+		var sessionId = webStorage.session.get('sessionid')
+		if (sessionId) {
+			return sessionId;
+		}
+		return $webSocket.getURLParameter('sessionid');
+	}
 
-   var getWindowId = function() {
-	   return webStorage.session.get('windowid');
-   }
+	var getWindowName = function() {
+		return $webSocket.getURLParameter('windowname');
+	}
 
-   var getWindowUrl = function(windowname) {
-	   return "index.html?windowname=" + encodeURIComponent(windowname) + "&sessionid="+getSessionId();
-   }
+	var getWindowId = function() {
+		return webStorage.session.get('windowid');
+	}
+
+	var getWindowUrl = function(windowname) {
+		return "index.html?windowname=" + encodeURIComponent(windowname) + "&sessionid="+getSessionId();
+	}
+	
+	var formLoadHandler = null;
 
 	return {
 		connect : function(context, args, queryArgs) {
@@ -207,7 +213,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 					// {"call":{"form":"product","element":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}, // optionally "viewIndex":1 
 					// "{ conversions: {product: {datatextfield1: {0: "Date"}}} }
 					var call = msg.call;
-					return getFormState(call.form).then(function(formState) {
+
+					function executeAPICall(formState) {
 						if (call.viewIndex != undefined) {
 							var funcThis = formState.api[call.bean][call.viewIndex]; 
 							if (funcThis)
@@ -238,7 +245,14 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 							return null;
 						}
 						return func.apply(funcThis, call.args)
-					});
+					};
+
+					if (formLoadHandler != null && isFormStateDestroyed(formStates[call.form])) {
+						// this means that the form was shown and is now hidden/destroyed; but we still must handle API call to it!
+						// see if the form needs to be loaded;
+						formLoadHandler.prepareDestroyedFormForUse(call.form);
+					}
+					return getFormState(call.form).then(executeAPICall);
 				}
 			});
 
@@ -279,11 +293,15 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 			return wsSession
 		},
 
-		   getSessionId: getSessionId,
-		   getWindowName: getWindowName,
-		   getWindowId: getWindowId,
-		   getWindowUrl: getWindowUrl,
-		   
+		contributeFormLoadHandler: function(contributedFormLoadHandler) {
+			formLoadHandler = contributedFormLoadHandler;
+		},
+		
+		getSessionId: getSessionId,
+		getWindowName: getWindowName,
+		getWindowId: getWindowId,
+		getWindowUrl: getWindowUrl,
+
 		// used by custom property component[] to implement nested component logic
 		applyBeanData: applyBeanData,
 		getComponentChanges: getComponentChanges,
@@ -330,12 +348,13 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 
 			return state;
 		},
-		
+
 		resolveFormState: function(formName) {
 			if (deferredFormStates[formName]) {
 				if (typeof(formStates[formName]) !== 'undefined') deferredFormStates[formName].resolve(formStates[formName]);
 				delete deferredFormStates[formName];
 			}
+			formStates[formName].resolved = true;
 		},
 
 		requestInitialData: function(formName, requestDataCallback) {

@@ -36,7 +36,7 @@ public interface IEventDispatcher extends Runnable
 	public final static int EVENT_LEVEL_DEFAULT = 0;
 
 	/**
-	 * Sync service calls to client (that wait for a response on the event dispatch thread) will continue dipatching events of event level
+	 * Sync service calls to client (that wait for a response on the event dispatch thread) will continue dispatching events of event level
 	 * minimum {@link #EVENT_LEVEL_SYNC_API_CALL} while waiting and block only the rest. This is to avoid deadlocks in case the sync api call to client needs to wait
 	 * for some initialization call to be executed on server (that initialization call can use a higher event level through {@link IEventDispatchAwareServerService#getMethodEventThreadLevel(String, org.json.JSONObject)}).
 	 */

@@ -1,5 +1,5 @@
 angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
-.factory('$sabloApplication', function ($rootScope, $timeout, $q, $webSocket, $sabloConverters, $sabloUtils, webStorage) {
+.factory('$sabloApplication', function ($rootScope, $timeout, $q, $log, $webSocket, $sabloConverters, $sabloUtils, webStorage) {
 	// formName:[beanname:{property1:1,property2:"test"}] needs to be synced to and from server
 	// this holds the form model with all the data, per form is this the "synced" view of the the IFormUI on the server 
 	// (3 way binding)
@@ -17,10 +17,6 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 		}
 	}
 
-	var isFormStateDestroyed = function(formState) {
-		return formState && (!formState.removeWatches); // a form that was previously shown but is now hidden (DOM/directives/scopes destroyed...); still has model contents in it for example
-	};
-
 	/*
 	 * Some code is interested in form state immediately after it's loaded/initialized (needsInitialData = false) in which case only some template values might be
 	 * available and some code is interested in using form state only after it got the initialData (via "requestData"'s response) from server (needsInitialData = true)
@@ -36,7 +32,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 		}
 
 		var formState = formStates[name];
-		if (formState && formState.resolved && !(formState.initializing && needsInitialData) && !isFormStateDestroyed(formState)) {
+		if (formState && formState.resolved && !(formState.initializing && needsInitialData) && formState.resolved) {
 			defered.resolve(formStates[name]); // then handlers are called even if they are applied after it is resolved
 			delete deferredStates[name];
 		}			   
@@ -189,7 +185,11 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 		return "index.html?windowname=" + encodeURIComponent(windowname) + "&sessionid="+getSessionId();
 	}
 	
-	var formLoadHandler = null;
+	var formResolver = null;
+	
+	function hasResolvedFormState(name) {
+		return typeof(formStates[name]) !== 'undefined' && formStates[name].resolved;
+	}
 
 	return {
 		connect : function(context, args, queryArgs) {
@@ -247,10 +247,11 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 						return func.apply(funcThis, call.args)
 					};
 
-					if (formLoadHandler != null && isFormStateDestroyed(formStates[call.form])) {
+					if (formResolver != null && !hasResolvedFormState(call.form)) {
 						// this means that the form was shown and is now hidden/destroyed; but we still must handle API call to it!
 						// see if the form needs to be loaded;
-						formLoadHandler.prepareDestroyedFormForUse(call.form);
+						$log.debug("svy * Api call '" + call.api + "' to unresolved form " + call.form + "; will call prepareUnresolvedFormForUse.");
+						formResolver.prepareUnresolvedFormForUse(call.form);
 					}
 					return getFormState(call.form).then(executeAPICall);
 				}
@@ -293,8 +294,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 			return wsSession
 		},
 
-		contributeFormLoadHandler: function(contributedFormLoadHandler) {
-			formLoadHandler = contributedFormLoadHandler;
+		contributeFormResolver: function(contributedFormResolver) {
+			formResolver = contributedFormResolver;
 		},
 		
 		getSessionId: getSessionId,
@@ -311,14 +312,21 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 
 		getFormStateWithData: getFormStateWithData,
 
+		// this method should only be used to manipulate pre-resolve state if apps. need any; the returned form state if defined will not have any data in it or operations DOM/directives
+		getFormStateEvenIfNotYetResolved: function(name) { 
+			return formStates[name];
+		},
+
 		getFormStatesConversionInfo: function() { return formStatesConversionInfo; },
 
 		hasFormState: function(name) {
 			return typeof(formStates[name]) !== 'undefined';
 		},
 
+		hasResolvedFormState: hasResolvedFormState,
+
 		hasFormStateWithData: function(name) {
-			return typeof(formStates[name]) !== 'undefined' && !formStates[name].initializing;
+			return typeof(formStates[name]) !== 'undefined' && !formStates[name].initializing && formStates[name].resolved;
 		},
 
 		clearFormState: function(formName) {
@@ -327,21 +335,18 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 
 		initFormState: function(formName, beanDatas, formProperties, formScope, resolve) {
 			var state = formStates[formName];
-			// if the form is already initialized or if the beanDatas are not given, return that 
-			if (state != null || !beanDatas) {
-				if (state) $timeout(function(){state.addWatches();})
-				return state;
-			}
+			// if the form is already initialized or if the beanDatas are not given, return that
+			if (!state && beanDatas) {
+				var model = {}
+				var api = {}
 
-			var model = {}
-			var api = {}
+				// init all the objects for the beans.
+				state = formStates[formName] = { model: model, api: api, properties: formProperties, initializing: true};
 
-			// init all the objects for the beans.
-			state = formStates[formName] = { model: model, api: api, properties: formProperties, initializing: true};
-
-			for(var beanName in beanDatas) {
-				model[beanName] = {};
-				api[beanName] = {};
+				for(var beanName in beanDatas) {
+					model[beanName] = {};
+					api[beanName] = {};
+				}
 			}
 
 			if (resolve || resolve === undefined) this.resolveFormState(formName);
@@ -349,12 +354,23 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 			return state;
 		},
 
+		// form state has is now ready for use (even though it might not have initial data)
 		resolveFormState: function(formName) {
+			formStates[formName].resolved = true;
+			if (!formStates[formName].initializing) formStates[formName].addWatches(); // so it already got initial data a while ago - restore watches then
 			if (deferredFormStates[formName]) {
 				if (typeof(formStates[formName]) !== 'undefined') deferredFormStates[formName].resolve(formStates[formName]);
 				delete deferredFormStates[formName];
 			}
-			formStates[formName].resolved = true;
+			$log.debug('svy * Resolved form: ' + formName + " before .resolved == " + oldResolved);
+		},
+
+		// form state has data but is not ready to be used (maybe it was hidden / temporarily with DOM disposed)
+		unResolveFormState: function(formName) {
+			if (formStates[formName] && formStates[formName].resolved) {
+				delete formStates[formName].resolved;
+			}
+			$log.debug('svy * Unresolved form: ' + formName + " before .resolved == " + oldResolved);
 		},
 
 		requestInitialData: function(formName, requestDataCallback) {
@@ -362,58 +378,64 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 
 			if (formState.initialDataRequested) return;
 			formState.initialDataRequested = true;
+			$log.debug('svy * Requesting initial data: ' + formName);
 
 			// send the special request initial data for this form 
 			// this can also make the form (IFormUI instance) on the server if that is not already done
 			callService('formService', 'requestData', {formname:formName}, false).then(function (initialFormData) {
-				initialFormData = initialFormData[0]; // ret value is an one item array; the item contains both data and conversion info
-				if (initialFormData) {
-					var conversionInfo = initialFormData.conversions;
-					if (conversionInfo) delete initialFormData.conversions;
-
-					// if the formState is on the server but not here anymore, skip it. 
-					// this can happen with a refresh on the browser.
-					if (typeof(formState) == 'undefined') return;
-
-					var formModel = formState.model;
-					var initialFormProperties = initialFormData['']; // form properties
-
-					if (initialFormProperties) {
-						if (conversionInfo && conversionInfo['']) initialFormProperties = $sabloConverters.convertFromServerToClient(initialFormProperties, conversionInfo[''], formModel[''], formState.getScope(), function () { return formModel[''] });
-						if (!formModel['']) formModel[''] = {};
-						for(var p in initialFormProperties) {
-							formModel[''][p] = initialFormProperties[p]; 
-						} 
-					}
-
-					for (var beanname in initialFormData) {
-						// copy over the initialData, skip for form properties (beanname empty) as they were already dealt with
-						if (beanname != '') {
-							var initialBeanConversionInfo = conversionInfo ? conversionInfo[beanname] : undefined;
-							var beanConversionInfo = initialBeanConversionInfo ? $sabloUtils.getOrCreateInDepthProperty(formStatesConversionInfo, formName, beanname) : $sabloUtils.getInDepthProperty(formStatesConversionInfo, formName, beanname);
-							applyBeanData(formModel[beanname], initialFormData[beanname], formState.properties.designSize, getChangeNotifier(formName, beanname), beanConversionInfo, initialBeanConversionInfo, formState.getScope());
+				$log.debug('svy * Initial data received: ' + formName);
+				// it is possible that the form was unresolved meanwhile; so get it nicely just in case we have to wait for it to be resolved again TODO should we force load it again using formResolver.prepareUnresolvedFormForUse(...)? (we used that at API calls but those are blocking on server)
+				getFormState(formName).then(function (formState)  {
+					$log.debug('svy * Applying initial data: ' + formName);
+					initialFormData = initialFormData[0]; // ret value is an one item array; the item contains both data and conversion info
+					if (initialFormData) {
+						var conversionInfo = initialFormData.conversions;
+						if (conversionInfo) delete initialFormData.conversions;
+						
+						// if the formState is on the server but not here anymore, skip it. 
+						// this can happen with a refresh on the browser.
+						if (typeof(formState) == 'undefined') return;
+						
+						var formModel = formState.model;
+						var initialFormProperties = initialFormData['']; // form properties
+						
+						if (initialFormProperties) {
+							if (conversionInfo && conversionInfo['']) initialFormProperties = $sabloConverters.convertFromServerToClient(initialFormProperties, conversionInfo[''], formModel[''], formState.getScope(), function () { return formModel[''] });
+							if (!formModel['']) formModel[''] = {};
+							for(var p in initialFormProperties) {
+								formModel[''][p] = initialFormProperties[p]; 
+							} 
+						}
+						
+						for (var beanname in initialFormData) {
+							// copy over the initialData, skip for form properties (beanname empty) as they were already dealt with
+							if (beanname != '') {
+								var initialBeanConversionInfo = conversionInfo ? conversionInfo[beanname] : undefined;
+								var beanConversionInfo = initialBeanConversionInfo ? $sabloUtils.getOrCreateInDepthProperty(formStatesConversionInfo, formName, beanname) : $sabloUtils.getInDepthProperty(formStatesConversionInfo, formName, beanname);
+								applyBeanData(formModel[beanname], initialFormData[beanname], formState.properties.designSize, getChangeNotifier(formName, beanname), beanConversionInfo, initialBeanConversionInfo, formState.getScope());
+							}
 						}
 					}
-				}
-
-				formState.addWatches();
-				delete formState.initializing;
-				delete formState.initialDataRequested;
-
-				if (deferredFormStatesWithData[formName]) {
-					if (typeof(formStates[formName]) !== 'undefined') deferredFormStatesWithData[formName].resolve(formStates[formName]);
-					delete deferredFormStatesWithData[formName];
-				}
-
-				if (deferredFormStates[formName]) {
-					// this should never happen cause at this point that deferr should be executed and removed
-					if (typeof(formStates[formName]) !== 'undefined') deferredFormStates[formName].resolve(formStates[formName]);
-					delete deferredFormStates[formName];
-				}
-
-				if (requestDataCallback) {
-					requestDataCallback(initialFormData);
-				}
+					
+					formState.addWatches();
+					delete formState.initializing;
+					delete formState.initialDataRequested;
+					
+					if (deferredFormStatesWithData[formName]) {
+						if (typeof(formStates[formName]) !== 'undefined') deferredFormStatesWithData[formName].resolve(formStates[formName]);
+						delete deferredFormStatesWithData[formName];
+					}
+					
+					if (deferredFormStates[formName]) {
+						// this should never happen cause at this point that deferr should be executed and removed
+						if (typeof(formStates[formName]) !== 'undefined') deferredFormStates[formName].resolve(formStates[formName]);
+						delete deferredFormStates[formName];
+					}
+					
+					if (requestDataCallback) {
+						requestDataCallback(initialFormData);
+					}
+				});
 			});
 		},
 

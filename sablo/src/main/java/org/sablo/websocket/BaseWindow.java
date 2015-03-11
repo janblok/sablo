@@ -530,7 +530,7 @@ public class BaseWindow implements IWindow
 		throws JSONException
 	{
 		boolean contentHasBeenWritten = false;
-		for (IClientService service : getSession().getServices())
+		for (IClientService service : getSession().getServices().toArray(new IClientService[0])) // toArray is used here to try to avoid a ConcurrentModificationException while looping
 		{
 			TypedData<Map<String, Object>> changes = service.getAndClearChanges();
 			if (changes.content.size() > 0)

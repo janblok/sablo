@@ -362,7 +362,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 				if (typeof(formStates[formName]) !== 'undefined') deferredFormStates[formName].resolve(formStates[formName]);
 				delete deferredFormStates[formName];
 			}
-			$log.debug('svy * Resolved form: ' + formName + " before .resolved == " + oldResolved);
+			$log.debug('svy * Resolved form: ' + formName);
 		},
 
 		// form state has data but is not ready to be used (maybe it was hidden / temporarily with DOM disposed)
@@ -370,7 +370,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 			if (formStates[formName] && formStates[formName].resolved) {
 				delete formStates[formName].resolved;
 			}
-			$log.debug('svy * Unresolved form: ' + formName + " before .resolved == " + oldResolved);
+			$log.debug('svy * Unresolved form: ' + formName);
 		},
 
 		requestInitialData: function(formName, requestDataCallback) {

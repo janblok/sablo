@@ -342,7 +342,6 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 
 				// init all the objects for the beans.
 				state = formStates[formName] = { model: model, api: api, properties: formProperties, initializing: true};
-
 				for(var beanName in beanDatas) {
 					model[beanName] = {};
 					api[beanName] = {};
@@ -373,6 +372,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 			$log.debug('svy * Unresolved form: ' + formName);
 		},
 
+		// requestDataCallback gets 2 parameters, the initalFormData and the currentFormState
 		requestInitialData: function(formName, requestDataCallback) {
 			var formState = formStates[formName];
 
@@ -433,7 +433,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 					}
 					
 					if (requestDataCallback) {
-						requestDataCallback(initialFormData);
+						requestDataCallback(initialFormData, formState);
 					}
 				});
 			});

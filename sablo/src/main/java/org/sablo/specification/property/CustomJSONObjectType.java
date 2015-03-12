@@ -148,8 +148,6 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		if (newJSONValue instanceof JSONObject && (clientReceivedJSON = (JSONObject)newJSONValue).has(CONTENT_VERSION) &&
 			(clientReceivedJSON.has(VALUE) || clientReceivedJSON.has(UPDATES)))
 		{
-			if (clientReceivedJSON.has(NO_OP)) return previousChangeAwareMap;
-
 			try
 			{
 				if (previousChangeAwareMap == null || clientReceivedJSON.getInt(CONTENT_VERSION) == previousChangeAwareMap.getListContentVersion())
@@ -221,6 +219,8 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		}
 		else if (newJSONValue instanceof JSONObject)
 		{
+			if (((JSONObject)newJSONValue).has(NO_OP)) return previousChangeAwareMap;
+
 			// this can happen if the property was undefined before (so not even aware of type client side) and it was assigned a complete object value client side;
 			// in this case we must update server value and send a request back to client containing the type and letting it know that it must start watching the new value (for granular updates)
 			ChangeAwareMap<ET, WT> newChangeAwareMap = fullValueReplaceFromBrowser(previousChangeAwareMap, dataConverterContext, (JSONObject)newJSONValue);

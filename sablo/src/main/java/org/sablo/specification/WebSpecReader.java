@@ -39,9 +39,9 @@ class WebSpecReader
 {
 	private static final Logger log = LoggerFactory.getLogger(WebSpecReader.class.getCanonicalName());
 
-	private final Map<String, WebComponentSpecification> cachedDescriptions = new HashMap<>();
-	private final Map<String, Map<String, WebLayoutSpecification>> cachedLayoutDescriptions = new TreeMap<>();
-	private final Map<String, List<String>> packagesToComponentNames = new HashMap<>();
+	private final Map<String, WebComponentPackageSpecification<WebComponentSpecification>> cachedDescriptions = new HashMap<>();
+	private final Map<String, WebComponentPackageSpecification<WebLayoutSpecification>> cachedLayoutDescriptions = new TreeMap<>();
+	private final Map<String, WebComponentSpecification> allComponentSpecifications = new HashMap<>();
 
 	private final IPackageReader[] packageReaders;
 
@@ -56,7 +56,7 @@ class WebSpecReader
 
 	synchronized void load()
 	{
-		cachedDescriptions.clear();
+		allComponentSpecifications.clear();
 		List<WebComponentPackage> packages = new ArrayList<>();
 		for (IPackageReader packageReader : packageReaders)
 		{
@@ -118,7 +118,7 @@ class WebSpecReader
 		{
 			try
 			{
-				cache(p.getPackageName(), p.getWebComponentDescriptions(attributeName));
+				cache(p.getWebComponentDescriptions(attributeName));
 			}
 			catch (Exception e)
 			{
@@ -126,8 +126,8 @@ class WebSpecReader
 			}
 			try
 			{
-				Map<String, WebLayoutSpecification> layoutDescriptions = p.getLayoutDescriptions();
-				if (layoutDescriptions.size() > 0) cachedLayoutDescriptions.put(p.getPackageName(), layoutDescriptions);
+				WebComponentPackageSpecification<WebLayoutSpecification> layoutDescriptions = p.getLayoutDescriptions();
+				if (layoutDescriptions.getSpecifications().size() > 0) cachedLayoutDescriptions.put(p.getPackageName(), layoutDescriptions);
 			}
 			catch (Exception e)
 			{
@@ -136,43 +136,50 @@ class WebSpecReader
 		}
 	}
 
-	private void cache(String packageName, List<WebComponentSpecification> webComponentDescriptions)
+	private void cache(WebComponentPackageSpecification<WebComponentSpecification> webComponentPackageSpecification)
 	{
-		if (webComponentDescriptions.size() == 0) return;
-		if (packagesToComponentNames.get(packageName) == null) packagesToComponentNames.put(packageName, new ArrayList<String>());
-		List<String> currentPackageComponents = packagesToComponentNames.get(packageName);
-		for (WebComponentSpecification desc : webComponentDescriptions)
+		Map<String, WebComponentSpecification> webComponentDescriptions = webComponentPackageSpecification.getSpecifications();
+		Map<String, WebComponentSpecification> packageComponents = new HashMap<>(webComponentDescriptions.size());
+		for (WebComponentSpecification desc : webComponentDescriptions.values())
 		{
-			WebComponentSpecification old = cachedDescriptions.put(desc.getName(), desc);
+			WebComponentSpecification old = allComponentSpecifications.put(desc.getName(), desc);
 			if (old != null) log.error("Conflict found! Duplicate web component definition name: " + old.getName());
 			else
 			{
-				if (!currentPackageComponents.contains(desc.getName())) currentPackageComponents.add(desc.getName());
+				packageComponents.put(desc.getName(), desc);
 			}
+		}
+
+		if (packageComponents.size() > 0)
+		{
+			cachedDescriptions.put(
+				webComponentPackageSpecification.getPackageName(),
+				new WebComponentPackageSpecification<>(webComponentPackageSpecification.getPackageName(),
+					webComponentPackageSpecification.getPackageDisplayname(), packageComponents));
 		}
 	}
 
 	public synchronized WebComponentSpecification getWebComponentSpecification(String componentTypeName)
 	{
-		return cachedDescriptions.get(componentTypeName);
+		return allComponentSpecifications.get(componentTypeName);
 	}
 
-	public synchronized WebComponentSpecification[] getWebComponentSpecifications()
+	public synchronized Map<String, WebComponentPackageSpecification<WebComponentSpecification>> getWebComponentSpecifications()
 	{
-		return cachedDescriptions.values().toArray(new WebComponentSpecification[cachedDescriptions.size()]);
+		return Collections.unmodifiableMap(cachedDescriptions);
+	}
+
+	public synchronized WebComponentSpecification[] getAllWebComponentSpecifications()
+	{
+		return allComponentSpecifications.values().toArray(new WebComponentSpecification[allComponentSpecifications.size()]);
 	}
 
 	/**
 	 * @return
 	 */
-	public Map<String, Map<String, WebLayoutSpecification>> getLayoutSpecifications()
+	public Map<String, WebComponentPackageSpecification<WebLayoutSpecification>> getLayoutSpecifications()
 	{
 		return Collections.unmodifiableMap(cachedLayoutDescriptions);
-	}
-
-	public synchronized Map<String, List<String>> getPackagesToComponents()
-	{
-		return packagesToComponentNames;
 	}
 
 	/**

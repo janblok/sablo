@@ -18,6 +18,8 @@ package org.sablo.specification;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -128,19 +130,29 @@ public class WebComponentSpecProvider
 	/**
 	 * get all registered web component specifications.
 	 *
-	 * @return an array of all the specifications
+	 * @return a map of all the specifications
 	 */
-	public WebComponentSpecification[] getWebComponentSpecifications()
+	public Map<String, WebComponentPackageSpecification<WebComponentSpecification>> getWebComponentSpecifications()
 	{
 		return reader.getWebComponentSpecifications();
 	}
 
 	/**
-	 * get all registered layout component specifications.
+	 * get all registered web component specifications.
 	 *
 	 * @return an array of all the specifications
 	 */
-	public Map<String, Map<String, WebLayoutSpecification>> getLayoutSpecifications()
+	public WebComponentSpecification[] getAllWebComponentSpecifications()
+	{
+		return reader.getAllWebComponentSpecifications();
+	}
+
+	/**
+	 * get all registered layout component specifications.
+	 *
+	 * @return a map of all the specifications
+	 */
+	public Map<String, WebComponentPackageSpecification<WebLayoutSpecification>> getLayoutSpecifications()
 	{
 		return reader.getLayoutSpecifications();
 	}
@@ -150,7 +162,7 @@ public class WebComponentSpecProvider
 	 */
 	public Set<String> getPackageNames()
 	{
-		return reader.getPackagesToComponents().keySet();
+		return reader.getWebComponentSpecifications().keySet();
 	}
 
 	/**
@@ -164,8 +176,10 @@ public class WebComponentSpecProvider
 	/**
 	 * Get a list of all components contained by provided package name
 	 */
-	public List<String> getComponentsInPackage(String packageName)
+	public Collection<String> getComponentsInPackage(String packageName)
 	{
-		return reader.getPackagesToComponents().get(packageName);
+		WebComponentPackageSpecification<WebComponentSpecification> pkg = reader.getWebComponentSpecifications().get(packageName);
+		return pkg == null ? Collections.<String> emptyList() : pkg.getSpecifications().keySet();
+
 	}
 }

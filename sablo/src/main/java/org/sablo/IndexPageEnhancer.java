@@ -101,7 +101,7 @@ public class IndexPageEnhancer
 	{
 		StringBuilder retval = new StringBuilder();
 
-		WebComponentSpecification[] webComponentDescriptions = WebComponentSpecProvider.getInstance().getWebComponentSpecifications();
+		WebComponentSpecification[] webComponentDescriptions = WebComponentSpecProvider.getInstance().getAllWebComponentSpecifications();
 		LinkedHashMap<String, JSONObject> allLibraries = new LinkedHashMap<>();
 		for (WebComponentSpecification spec : webComponentDescriptions)
 		{
@@ -109,7 +109,7 @@ public class IndexPageEnhancer
 			mergeLibs(allLibraries, spec.getLibraries());
 		}
 
-		WebComponentSpecification[] webServiceDescriptions = WebServiceSpecProvider.getInstance().getWebServiceSpecifications();
+		WebComponentSpecification[] webServiceDescriptions = WebServiceSpecProvider.getInstance().getAllWebServiceSpecifications();
 		for (WebComponentSpecification spec : webServiceDescriptions)
 		{
 			retval.append(String.format("<script src=\"%s\"></script>\n", spec.getDefinition()));

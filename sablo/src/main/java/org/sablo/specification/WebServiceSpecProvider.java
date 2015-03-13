@@ -113,12 +113,23 @@ public class WebServiceSpecProvider
 	/**
 	 * get all registered web service specifications.
 	 *
-	 * @return an array of all the specifications
+	 * @return a map of all the specifications
 	 */
-	public WebComponentSpecification[] getWebServiceSpecifications()
+	public Map<String, WebComponentPackageSpecification<WebComponentSpecification>> getWebServiceSpecifications()
 	{
 		return reader.getWebComponentSpecifications();
 	}
+
+	/**
+	 * get all registered web service specifications.
+	 *
+	 * @return an array of all the specifications
+	 */
+	public WebComponentSpecification[] getAllWebServiceSpecifications()
+	{
+		return reader.getAllWebComponentSpecifications();
+	}
+
 
 	/**
 	 * get a specification for a specific service.
@@ -133,9 +144,9 @@ public class WebServiceSpecProvider
 	/**
 	 * Get a list of all services contained by provided package name
 	 */
-	public List<String> getServicesInPackage(String packageName)
+	public WebComponentPackageSpecification<WebComponentSpecification> getServicesInPackage(String packageName)
 	{
-		return reader.getPackagesToComponents().get(packageName);
+		return reader.getWebComponentSpecifications().get(packageName);
 	}
 
 	/**
@@ -144,7 +155,7 @@ public class WebServiceSpecProvider
 	 */
 	public Set<String> getPackageNames()
 	{
-		return reader.getPackagesToComponents().keySet();
+		return reader.getWebComponentSpecifications().keySet();
 	}
 
 	/**

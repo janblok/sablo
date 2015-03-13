@@ -22,6 +22,7 @@ import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.jar.Manifest;
 
+import org.sablo.specification.WebComponentPackage;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 
 /**
@@ -50,6 +51,23 @@ public class InMemPackageReader implements IPackageReader
 	public String getPackageName()
 	{
 		return "inmem";
+	}
+
+	@Override
+	public String getPackageDisplayname()
+	{
+		try
+		{
+			String packageDisplayname = WebComponentPackage.getPackageDisplayname(getManifest());
+			if (packageDisplayname != null) return packageDisplayname;
+		}
+		catch (IOException e)
+		{
+			throw new RuntimeException("Error getting package display name", e);
+		}
+
+		// fall back to symbolic name
+		return getPackageName();
 	}
 
 	@Override

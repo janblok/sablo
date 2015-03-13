@@ -59,13 +59,16 @@ public class WebComponentPackage
 {
 	private static final Logger log = LoggerFactory.getLogger(WebComponentPackage.class.getCanonicalName());
 	private static final String GLOBAL_TYPES_MANIFEST_ATTR = "Global-Types";
-	private static final String BUNDLE_SYMBOLIC_NAME = "Bundle-SymbolicName";
+	private static final String BUNDLE_SYMBOLIC_NAME = "Bundle-SymbolicName"; // for package name
+	private static final String BUNDLE_NAME = "Bundle-Name"; // for package display name
 
 	public interface IPackageReader
 	{
 		String getName();
 
 		String getPackageName();
+
+		String getPackageDisplayname();
 
 		Manifest getManifest() throws IOException;
 
@@ -99,7 +102,6 @@ public class WebComponentPackage
 	{
 		return reader.getName();
 	}
-
 
 	public String getPackageName()
 	{
@@ -145,13 +147,18 @@ public class WebComponentPackage
 		}
 	}
 
-	public List<WebComponentSpecification> getWebComponentDescriptions(String attributeName) throws IOException
+	public WebComponentPackageSpecification<WebComponentSpecification> getWebComponentDescriptions(String attributeName) throws IOException
 	{
-		ArrayList<WebComponentSpecification> descriptions = new ArrayList<>();
+		String packageName = null;
+		String packageDisplayname = null;
+		Map<String, WebComponentSpecification> descriptions = new HashMap<>();
 		Manifest mf = reader.getManifest();
 
 		if (mf != null)
 		{
+			packageName = reader.getPackageName();
+			packageDisplayname = reader.getPackageDisplayname();
+
 			for (String specpath : getWebEntrySpecNames(mf, attributeName))
 			{
 				String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
@@ -164,7 +171,6 @@ public class WebComponentPackage
 						parsed.setSpecURL(reader.getUrlForPath(specpath));
 						if (parsed.getDefinition() != null)
 						{
-							String packageName = parsed.getPackageName();
 							String definition;
 							if (packageName != null && parsed.getDefinition().startsWith(packageName + '/'))
 							{
@@ -190,7 +196,7 @@ public class WebComponentPackage
 							new PropertyDescription("location", TypesRegistry.getType(PointPropertyType.TYPE_NAME)));
 						if (parsed.getProperty("anchors") == null) parsed.putProperty("anchors",
 							new PropertyDescription("anchors", TypesRegistry.getType(IntPropertyType.TYPE_NAME)));
-						descriptions.add(parsed);
+						descriptions.put(parsed.getName(), parsed);
 					}
 					catch (Exception e)
 					{
@@ -199,19 +205,24 @@ public class WebComponentPackage
 				}
 			}
 		}
-		return descriptions;
+
+		return new WebComponentPackageSpecification<>(packageName, packageDisplayname, descriptions);
 	}
 
 	/**
 	 * @return
 	 * @throws IOException
 	 */
-	public Map<String, WebLayoutSpecification> getLayoutDescriptions() throws IOException
+	public WebComponentPackageSpecification<WebLayoutSpecification> getLayoutDescriptions() throws IOException
 	{
+		String packageName = null;
+		String packageDisplayname = null;
 		Map<String, WebLayoutSpecification> descriptions = new HashMap<>();
 		Manifest mf = reader.getManifest();
 		if (mf != null)
 		{
+			packageName = reader.getPackageName();
+			packageDisplayname = reader.getPackageDisplayname();
 			for (String specpath : getWebEntrySpecNames(mf, "Web-Layout"))
 			{
 				String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
@@ -219,7 +230,7 @@ public class WebComponentPackage
 				{
 					try
 					{
-						WebLayoutSpecification parsed = WebLayoutSpecification.parseLayoutSpec(specfileContent, reader.getPackageName(), reader);
+						WebLayoutSpecification parsed = WebLayoutSpecification.parseLayoutSpec(specfileContent, packageName, reader);
 						parsed.setSpecURL(reader.getUrlForPath(specpath));
 						if (parsed.getDefinition() != null) parsed.setDefinitionFileURL(reader.getUrlForPath(parsed.getDefinition().substring(
 							parsed.getDefinition().indexOf("/") + 1)));
@@ -238,7 +249,7 @@ public class WebComponentPackage
 				{
 					try
 					{
-						WebLayoutSpecification parsed = WebLayoutSpecification.parseLayoutSpec(specfileContent, reader.getPackageName(), reader);
+						WebLayoutSpecification parsed = WebLayoutSpecification.parseLayoutSpec(specfileContent, packageName, reader);
 						parsed.setSpecURL(reader.getUrlForPath(specpath));
 						if (parsed.getDefinition() != null) parsed.setDefinitionFileURL(reader.getUrlForPath(parsed.getDefinition().substring(
 							parsed.getDefinition().indexOf("/") + 1)));
@@ -251,7 +262,7 @@ public class WebComponentPackage
 				}
 			}
 		}
-		return descriptions;
+		return new WebComponentPackageSpecification<>(packageName, packageDisplayname, descriptions);
 	}
 
 	private static List<String> getWebEntrySpecNames(Manifest mf, String attributeName)
@@ -297,14 +308,31 @@ public class WebComponentPackage
 		{
 			try
 			{
-				String bundleName = getBundleSymbolicName(getManifest());
-				if (bundleName != null) return bundleName;
+				String packageName = WebComponentPackage.getPackageName(getManifest());
+				if (packageName != null) return packageName;
 			}
 			catch (Exception e)
 			{
-				log.error("Bundle Name attribute not found." + getName(), e);
+				log.error("Error getting package name." + getName(), e);
 			}
 			return FilenameUtils.getBaseName(resourcePath);
+		}
+
+		@Override
+		public String getPackageDisplayname()
+		{
+			try
+			{
+				String packageDisplayname = WebComponentPackage.getPackageDisplayname(getManifest());
+				if (packageDisplayname != null) return packageDisplayname;
+			}
+			catch (IOException e)
+			{
+				log.error("Error getting package display name." + getName(), e);
+			}
+
+			// fall back to symbolic name
+			return getPackageName();
 		}
 
 		@Override
@@ -388,14 +416,31 @@ public class WebComponentPackage
 		{
 			try
 			{
-				String bundleName = getBundleSymbolicName(getManifest());
-				if (bundleName != null) return bundleName;
+				String packageName = WebComponentPackage.getPackageName(getManifest());
+				if (packageName != null) return packageName;
 			}
 			catch (Exception e)
 			{
-				log.error("Bundle Name attribute not found." + jarFile.getAbsolutePath(), e);
+				log.error("Error getting package name " + jarFile.getAbsolutePath(), e);
 			}
 			return FilenameUtils.getBaseName(jarFile.getAbsolutePath());
+		}
+
+		@Override
+		public String getPackageDisplayname()
+		{
+			try
+			{
+				String packageDisplayname = WebComponentPackage.getPackageDisplayname(getManifest());
+				if (packageDisplayname != null) return packageDisplayname;
+			}
+			catch (IOException e)
+			{
+				log.error("Error getting package display name " + jarFile.getAbsolutePath(), e);
+			}
+
+			// fall back to symbolic name
+			return getPackageName();
 		}
 
 		@Override
@@ -492,14 +537,31 @@ public class WebComponentPackage
 		{
 			try
 			{
-				String bundleName = getBundleSymbolicName(getManifest());
-				if (bundleName != null) return bundleName;
+				String packageName = WebComponentPackage.getPackageName(getManifest());
+				if (packageName != null) return packageName;
 			}
 			catch (IOException e)
 			{
-				log.error("Bundle Name attribute not found.", e);
+				log.error("Error getting package name", e);
 			}
 			return dir.getName();
+		}
+
+		@Override
+		public String getPackageDisplayname()
+		{
+			try
+			{
+				String packageDisplayname = WebComponentPackage.getPackageDisplayname(getManifest());
+				if (packageDisplayname != null) return packageDisplayname;
+			}
+			catch (IOException e)
+			{
+				log.error("Error getting package display name", e);
+			}
+
+			// fall back to symbolic name
+			return getPackageName();
 		}
 
 		@Override
@@ -609,6 +671,22 @@ public class WebComponentPackage
 			return packageName.replaceAll("/", "");
 		}
 
+		@Override
+		public String getPackageDisplayname()
+		{
+			try
+			{
+				String packageDisplayname = WebComponentPackage.getPackageDisplayname(getManifest());
+				if (packageDisplayname != null) return packageDisplayname;
+			}
+			catch (IOException e)
+			{
+				log.error("getting package display name." + getName(), e);
+			}
+
+			// fall back to symbolic name
+			return getPackageName();
+		}
 
 		@Override
 		public Manifest getManifest() throws IOException
@@ -678,7 +756,7 @@ public class WebComponentPackage
 	 * @param manifest
 	 * @return
 	 */
-	public static String getBundleSymbolicName(Manifest manifest)
+	public static String getPackageName(Manifest manifest)
 	{
 		String bundleName = manifest.getMainAttributes().getValue(BUNDLE_SYMBOLIC_NAME);
 
@@ -688,6 +766,12 @@ public class WebComponentPackage
 		}
 
 		return bundleName;
+	}
+
+	public static String getPackageDisplayname(Manifest manifest)
+	{
+		if (manifest == null) return null;
+		return manifest.getMainAttributes().getValue(BUNDLE_NAME);
 	}
 
 }

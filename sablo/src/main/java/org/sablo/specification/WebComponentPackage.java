@@ -108,6 +108,11 @@ public class WebComponentPackage
 		return reader.getPackageName();
 	}
 
+	IPackageReader getReader()
+	{
+		return reader;
+	}
+
 	public void appendGlobalTypesJSON(JSONObject allGlobalTypesFromAllPackages) throws IOException
 	{
 		Manifest mf = reader.getManifest();
@@ -774,4 +779,11 @@ public class WebComponentPackage
 		return manifest.getMainAttributes().getValue(BUNDLE_NAME);
 	}
 
+	public static class DuplicatePackageException extends Exception
+	{
+		public DuplicatePackageException(String message)
+		{
+			super(message);
+		}
+	}
 }

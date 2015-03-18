@@ -26,6 +26,7 @@ import java.util.TreeMap;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.sablo.specification.WebComponentPackage.DuplicatePackageException;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.property.types.TypesRegistry;
 import org.slf4j.Logger;
@@ -42,6 +43,7 @@ class WebSpecReader
 	private final Map<String, WebComponentPackageSpecification<WebComponentSpecification>> cachedDescriptions = new HashMap<>();
 	private final Map<String, WebComponentPackageSpecification<WebLayoutSpecification>> cachedLayoutDescriptions = new TreeMap<>();
 	private final Map<String, WebComponentSpecification> allComponentSpecifications = new HashMap<>();
+	private final Map<String, WebComponentPackage> allPackages = new HashMap<String, WebComponentPackage>();
 
 	private final IPackageReader[] packageReaders;
 
@@ -57,6 +59,7 @@ class WebSpecReader
 	synchronized void load()
 	{
 		allComponentSpecifications.clear();
+		allPackages.clear();
 		List<WebComponentPackage> packages = new ArrayList<>();
 		for (IPackageReader packageReader : packageReaders)
 		{
@@ -118,7 +121,7 @@ class WebSpecReader
 		{
 			try
 			{
-				cache(p.getWebComponentDescriptions(attributeName));
+				cache(p);
 			}
 			catch (Exception e)
 			{
@@ -136,8 +139,15 @@ class WebSpecReader
 		}
 	}
 
-	private void cache(WebComponentPackageSpecification<WebComponentSpecification> webComponentPackageSpecification)
+	private void cache(WebComponentPackage p) throws IOException
 	{
+		WebComponentPackage oldPackage = allPackages.put(p.getPackageName(), p);
+		if (oldPackage != null)
+		{
+			log.error("Conflict found! Duplicate web component package name: " + oldPackage.getPackageName());
+			oldPackage.getReader().reportError("", new DuplicatePackageException("Duplicate package " + oldPackage.getPackageName()));
+		}
+		WebComponentPackageSpecification<WebComponentSpecification> webComponentPackageSpecification = p.getWebComponentDescriptions(attributeName);
 		Map<String, WebComponentSpecification> webComponentDescriptions = webComponentPackageSpecification.getSpecifications();
 		Map<String, WebComponentSpecification> packageComponents = new HashMap<>(webComponentDescriptions.size());
 		for (WebComponentSpecification desc : webComponentDescriptions.values())

@@ -250,7 +250,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 					if (formResolver != null && !hasResolvedFormState(call.form)) {
 						// this means that the form was shown and is now hidden/destroyed; but we still must handle API call to it!
 						// see if the form needs to be loaded;
-						$log.debug("svy * Api call '" + call.api + "' to unresolved form " + call.form + "; will call prepareUnresolvedFormForUse.");
+						$log.debug("sbl * Api call '" + call.api + "' to unresolved form " + call.form + "; will call prepareUnresolvedFormForUse.");
 						formResolver.prepareUnresolvedFormForUse(call.form);
 					}
 					return getFormState(call.form).then(executeAPICall);
@@ -272,7 +272,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 						} 
 					}
 
-					var watchesRemoved = formState.removeWatches && formState.removeWatches(newFormData);
+					var watchesRemoved = formState.removeWatches(newFormData);
 					try {
 						for (var beanname in newFormData) {
 							// copy over the changes, skip for form properties (beanname empty)
@@ -361,7 +361,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 				if (typeof(formStates[formName]) !== 'undefined') deferredFormStates[formName].resolve(formStates[formName]);
 				delete deferredFormStates[formName];
 			}
-			$log.debug('svy * Resolved form: ' + formName);
+			$log.debug('sbl * Resolved form: ' + formName);
 		},
 
 		// form state has data but is not ready to be used (maybe it was hidden / temporarily with DOM disposed)
@@ -369,7 +369,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 			if (formStates[formName] && formStates[formName].resolved) {
 				delete formStates[formName].resolved;
 			}
-			$log.debug('svy * Unresolved form: ' + formName);
+			$log.debug('sbl * Unresolved form: ' + formName);
 		},
 
 		// requestDataCallback gets 2 parameters, the initalFormData and the currentFormState
@@ -378,15 +378,19 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule'])
 
 			if (formState.initialDataRequested) return;
 			formState.initialDataRequested = true;
-			$log.debug('svy * Requesting initial data: ' + formName);
+			$log.debug('sbl * Requesting initial data: ' + formName);
 
 			// send the special request initial data for this form 
 			// this can also make the form (IFormUI instance) on the server if that is not already done
 			callService('formService', 'requestData', {formname:formName}, false).then(function (initialFormData) {
-				$log.debug('svy * Initial data received: ' + formName);
+				$log.debug('sbl * Initial data received: ' + formName);
+				if (!formStates[formName]) {
+					$log.debug('sbl * Initial data dropped; form state was completely removed meanwhile: ' + formName);
+					return; // a recreateUI might have completely dropped the form state meanwhile so another initial data req. will follow when neeeded; this one can be discarded
+				}
 				// it is possible that the form was unresolved meanwhile; so get it nicely just in case we have to wait for it to be resolved again TODO should we force load it again using formResolver.prepareUnresolvedFormForUse(...)? (we used that at API calls but those are blocking on server)
 				getFormState(formName).then(function (formState)  {
-					$log.debug('svy * Applying initial data: ' + formName);
+					$log.debug('sbl * Applying initial data: ' + formName);
 					initialFormData = initialFormData[0]; // ret value is an one item array; the item contains both data and conversion info
 					if (initialFormData) {
 						var conversionInfo = initialFormData.conversions;

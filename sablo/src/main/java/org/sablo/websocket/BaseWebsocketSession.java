@@ -180,7 +180,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		{
 			try
 			{
-				window.destroy();
+				window.dispose();
 			}
 			catch (Exception e)
 			{

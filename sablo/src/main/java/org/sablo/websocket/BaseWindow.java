@@ -197,7 +197,7 @@ public class BaseWindow implements IWindow
 	}
 
 	@Override
-	public void destroy()
+	public void dispose()
 	{
 	}
 

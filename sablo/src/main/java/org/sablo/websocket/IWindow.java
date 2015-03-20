@@ -151,7 +151,7 @@ public interface IWindow
 	/**
 	 *
 	 */
-	void destroy();
+	void dispose();
 
 
 	/**

@@ -189,11 +189,11 @@ public class WebsocketSessionWindows implements IWindow
 	}
 
 	@Override
-	public void destroy()
+	public void dispose()
 	{
 		for (IWindow window : session.getWindows())
 		{
-			window.destroy();
+			window.dispose();
 		}
 	}
 

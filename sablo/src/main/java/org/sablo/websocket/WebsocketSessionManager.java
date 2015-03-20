@@ -47,13 +47,17 @@ public class WebsocketSessionManager
 		}
 	}
 
-	public static void removeSession(IWebsocketSession websocketSession)
+	public static void removeSession(String uuid)
 	{
+		IWebsocketSession websocketSession;
 		synchronized (wsSessions)
 		{
-			wsSessions.remove(websocketSession.getUuid());
+			websocketSession = wsSessions.remove(uuid);
 		}
-		websocketSession.dispose();
+		if (websocketSession != null)
+		{
+			websocketSession.dispose();
+		}
 	}
 
 	public static IWebsocketSession getSession(String endpointType, String prevUuid)

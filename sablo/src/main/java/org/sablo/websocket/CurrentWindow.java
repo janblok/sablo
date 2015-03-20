@@ -21,7 +21,7 @@ import java.util.concurrent.Callable;
 
 /**
  * The currently active window, set via a ThreadLocal.
- * 
+ *
  * @author rgansevles
  *
  */
@@ -40,6 +40,11 @@ public class CurrentWindow
 		}
 
 		return window;
+	}
+
+	public static IWindow safeGet()
+	{
+		return currentWindow.get();
 	}
 
 	public static boolean exists()

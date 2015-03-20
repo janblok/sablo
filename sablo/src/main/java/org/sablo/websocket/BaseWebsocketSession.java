@@ -240,8 +240,10 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	}
 
 	@Override
-	public void dispose()
+	public final void dispose()
 	{
+		onDispose();
+
 		Collection< ? extends IWindow> allWindows;
 		synchronized (windows)
 		{
@@ -272,6 +274,11 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 				}
 			}
 		}
+
+	}
+
+	protected void onDispose()
+	{
 	}
 
 	/**

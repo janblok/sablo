@@ -18,10 +18,11 @@ describe('styles helpers', function() {
 //      angular.mock.module('servoyMock');
 
       // 5. Get an instance of the provider you want to test.
-      inject(function(_$rootScope_,_$compile_ ,$templateCache,_$q_){
+      inject(function(_$rootScope_,_$compile_ ,_$templateCache_,_$q_){
     	  
     	  $compile = _$compile_
     	  $scope = _$rootScope_.$new();
+    	  $templateCache = _$templateCache_;
   	  })
   	  // mock timout
 	  jasmine.clock().install();
@@ -52,7 +53,7 @@ describe('styles helpers', function() {
   		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('1');
   		expect($(myDiv.children()[2]).attr('tabIndex')).toBe('2');
   	});
-  	
+    
   	it("should apply default/no tabIndex for children", function() {
   		// simulate record view form with 1 portal in body and an element in footer
   		var template= '<div svy-tabseq="1" svy-tabseq-config="{root: true}">' +
@@ -111,6 +112,24 @@ describe('styles helpers', function() {
   		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('1');
 
   		// DONT SPLIT BELOW CODE --------------- START --------------------------
+  		// default tab sequence - tabIndex should not be set
+  		$scope.myModel1 = 0;
+  		$scope.myModel111 = 0;
+  		$scope.myModel112 = 0;
+  		$scope.myModel121 = 0;
+  		$scope.myModel122 = 0;
+  		$scope.myModel2 = 0;
+  		$scope.$digest();
+
+  		expect(myDiv.children().attr('tabIndex')).toBe(undefined);
+  		expect($(myDiv.children()[0]).children().attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[0]).children()[0]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[0]).children()[1]).attr('tabIndex')).toBe(undefined);
+  		expect($($(myDiv.children()[0]).children()[1]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[1]).children()[0]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[1]).children()[1]).attr('tabIndex')).toBe(undefined);
+  		expect($(myDiv.children()[1]).attr('tabIndex')).toBe(undefined);
+
   		// another one
   		$scope.myModel1 = undefined;
   		$scope.myModel111 = 2;
@@ -138,8 +157,6 @@ describe('styles helpers', function() {
   		$scope.myModel2 = 4;
   		$scope.$digest();
 
-  		// here the tabIndex starts with 2 and skips a few indexes because of optimisations (old 'undefined', '1', '2' and '1' design tab seq. get removed from parent one by one and replaced by '3', '4', '1' and '1')
-  		// and when '3' gets readded it starts counting from where old '1' left off
   		expect(myDiv.children().attr('tabIndex')).toBe(undefined);
   		expect($(myDiv.children()[0]).children().attr('tabIndex')).toBe(undefined);
   		expect($($($(myDiv.children()[0]).children()[0]).children()[0]).attr('tabIndex')).toBe('2');
@@ -147,10 +164,374 @@ describe('styles helpers', function() {
   		expect($($(myDiv.children()[0]).children()[1]).attr('tabIndex')).toBe(undefined);
   		expect($($($(myDiv.children()[0]).children()[1]).children()[0]).attr('tabIndex')).toBe('4');
   		expect($($($(myDiv.children()[0]).children()[1]).children()[1]).attr('tabIndex')).toBe('4');
-  		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('156');
+  		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('152');
   		// DONT SPLIT CODE --------------- END --------------------------
   		
-  		
-  		
   	});
+  	
+  	it("should apply tabIndex for children if rows are added", function() {
+  		// simulate record view form with 1 portal in body and an element in footer
+  		var template= '<div svy-tabseq="1" svy-tabseq-config="{root: true}">' +
+			'<div name="myPortal" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 150}">' +
+				'<div ng-repeat="item in items" svy-tabseq="item.tabSeq" svy-tabseq-config="{container: true}">' +
+  				'<div name="myOtherTagC1" svy-tabseq="myModel1">' +
+  				'</div>' +
+  				'<div name="myOtherTagC2" svy-tabseq="myModel1">' +
+  				'</div>' +
+				'</div>' +
+			'</div>' +
+			'<div name="myOtherOtherTag" svy-tabseq="myModel2"></div>' +
+		'</div>';
+  		$scope.myModel1 = 1;
+  		$scope.myModel2 = 2;
+  		$scope.items = [{tabSeq: 1},{tabSeq: 2}];
+  		$scope.$digest();
+  		
+  		var myDiv = $compile(template)($scope);
+  		$scope.$digest();
+
+  		expect(myDiv.children().attr('tabIndex')).toBe(undefined);
+  		expect($(myDiv.children()[0]).children().attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[0]).children()[0]).attr('tabIndex')).toBe('1');
+  		expect($($($(myDiv.children()[0]).children()[0]).children()[1]).attr('tabIndex')).toBe('1');
+  		expect($($(myDiv.children()[0]).children()[1]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[1]).children()[0]).attr('tabIndex')).toBe('2');
+  		expect($($($(myDiv.children()[0]).children()[1]).children()[1]).attr('tabIndex')).toBe('2');
+  		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('151');
+  		
+  		//add 1 row
+  		$scope.items.push({tabSeq:3});
+  		$scope.$digest();
+
+  		expect(myDiv.children().attr('tabIndex')).toBe(undefined);
+  		expect($(myDiv.children()[0]).children().attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[0]).children()[0]).attr('tabIndex')).toBe('1');
+  		expect($($($(myDiv.children()[0]).children()[0]).children()[1]).attr('tabIndex')).toBe('1');
+  		expect($($(myDiv.children()[0]).children()[1]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[1]).children()[0]).attr('tabIndex')).toBe('2');
+  		expect($($($(myDiv.children()[0]).children()[1]).children()[1]).attr('tabIndex')).toBe('2');
+  		expect($($(myDiv.children()[0]).children()[2]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[2]).children()[0]).attr('tabIndex')).toBe('3');
+  		expect($($($(myDiv.children()[0]).children()[2]).children()[1]).attr('tabIndex')).toBe('3');
+  		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('151');
+  	});
+  	
+  	it("should recalculate indexes if more are needed than reserved, due to adding rows at runtime", function() {
+  		// simulate record view form with 1 portal in body and an element in footer
+  		var template= '<div svy-tabseq="1" svy-tabseq-config="{root: true}">' +
+			'<div name="myPortal" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 150}">' +
+				'<div ng-repeat="item in items" svy-tabseq="item.tabSeq" svy-tabseq-config="{container: true}">' +
+  				'<div name="myOtherTagC1" svy-tabseq="myModel11">' +
+  				'</div>' +
+  				'<div name="myOtherTagC2" svy-tabseq="myModel12">' +
+  				'</div>' +
+				'</div>' +
+			'</div>' +
+			'<div name="myOtherOtherTag" svy-tabseq="myModel2"></div>' +
+		'</div>';
+  		$scope.myModel1 = 1;
+  		$scope.myModel11 = 1;
+  		$scope.myModel12 = 1;
+  		$scope.myModel2 = 2;
+  		$scope.items = [{tabSeq: 1},{tabSeq: 2}];
+  		$scope.$digest();
+  		
+  		var myDiv = $compile(template)($scope);
+  		debugger;
+  		$scope.$digest();
+
+  		expect($(myDiv.children()[0]).children().length).toBe(2); //2 rows in portal
+  		expect(myDiv.children().attr('tabIndex')).toBe(undefined);
+  		expect($(myDiv.children()[0]).children().attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[0]).children()[0]).attr('tabIndex')).toBe('1');
+  		expect($($($(myDiv.children()[0]).children()[0]).children()[1]).attr('tabIndex')).toBe('1');
+  		expect($($(myDiv.children()[0]).children()[1]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[1]).children()[0]).attr('tabIndex')).toBe('2');
+  		expect($($($(myDiv.children()[0]).children()[1]).children()[1]).attr('tabIndex')).toBe('2');
+  		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('151');
+  		
+  		//add 148 rows
+  		for (var i = 3; i <= 150; i++)
+  		{
+  			$scope.items.push({tabSeq:i});
+  		}
+  		$scope.$digest();
+
+  		expect($(myDiv.children()[0]).children().length).toBe(150);
+  		expect(myDiv.children().attr('tabIndex')).toBe(undefined);
+  		expect($(myDiv.children()[0]).children().attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[0]).children()[0]).attr('tabIndex')).toBe('1');
+  		expect($($($(myDiv.children()[0]).children()[0]).children()[1]).attr('tabIndex')).toBe('1');
+  		expect($($(myDiv.children()[0]).children()[1]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[1]).children()[0]).attr('tabIndex')).toBe('2');
+  		expect($($($(myDiv.children()[0]).children()[1]).children()[1]).attr('tabIndex')).toBe('2');
+  		expect($($(myDiv.children()[0]).children()[2]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[2]).children()[0]).attr('tabIndex')).toBe('3');
+  		expect($($($(myDiv.children()[0]).children()[2]).children()[1]).attr('tabIndex')).toBe('3');
+  		expect($($(myDiv.children()[0]).children()[2]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[149]).children()[0]).attr('tabIndex')).toBe('150');
+  		expect($($($(myDiv.children()[0]).children()[149]).children()[1]).attr('tabIndex')).toBe('150');
+  		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('151');
+  		
+  		//add one more row - need to recalculate
+  		$scope.items.push({tabSeq: 151});
+  		$scope.$digest();
+  		expect($(myDiv.children()[0]).children().length).toBe(151);
+  		expect($($($(myDiv.children()[0]).children()[150]).children()[0]).attr('tabIndex')).toBe('151');
+  		expect($($($(myDiv.children()[0]).children()[150]).children()[1]).attr('tabIndex')).toBe('151');
+  		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('302');
+  		
+  		$scope.items.push({tabSeq: 152});
+  		$scope.$digest();
+  		expect($(myDiv.children()[0]).children().length).toBe(152);
+  		expect($($($(myDiv.children()[0]).children()[151]).children()[0]).attr('tabIndex')).toBe('152');
+  		expect($($($(myDiv.children()[0]).children()[151]).children()[1]).attr('tabIndex')).toBe('152');
+  		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('302');
+  	});
+  	
+  	it("should recalculate indexes if more are needed than reserved", function() {
+  		// simulate record view form with 1 portal in body and an element in footer
+  		var template= '<div svy-tabseq="1" svy-tabseq-config="{root: true}">' +
+				  			'<div name="myTag" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 2}">' +
+				  				'<div name="myOtherTag" svy-tabseq="1" svy-tabseq-config="{container: true}">' +
+					  				'<div name="myOtherTagC1" svy-tabseq="myModel1">' +
+					  				'</div>' +
+					  				'<div name="myOtherTagC2" svy-tabseq="myModel1">' +
+					  				'</div>' +
+				  				'</div>' +
+				  				'<div name="myOtherTag" svy-tabseq="2" svy-tabseq-config="{container: true}">' +
+					  				'<div name="myOtherTagC1" svy-tabseq="myModel1">' +
+					  				'</div>' +
+					  				'<div name="myOtherTagC2" svy-tabseq="myModel1">' +
+					  				'</div>' +
+				  				'</div>' +
+				  			'</div>' +
+				  			'<div name="myOtherOtherTag" svy-tabseq="myModel2"></div>' +
+			  			'</div>';
+  		
+  		$scope.myModel1 = 1;
+  		$scope.myModel2 = 2;
+  		$scope.$digest();
+  		
+  		var myDiv = $compile(template)($scope);
+
+  		expect(myDiv.children().attr('tabIndex')).toBe(undefined);
+  		expect($(myDiv.children()[0]).children().attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[0]).children()[0]).attr('tabIndex')).toBe('1');
+  		expect($($($(myDiv.children()[0]).children()[0]).children()[1]).attr('tabIndex')).toBe('1');
+  		expect($($(myDiv.children()[0]).children()[1]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[1]).children()[0]).attr('tabIndex')).toBe('2');
+  		expect($($($(myDiv.children()[0]).children()[1]).children()[1]).attr('tabIndex')).toBe('2');
+  		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('3');
+  	});
+  		
+  	
+  	it("should recalculate indexes if more are needed in case of a small reservedGap value", function() {
+  		// simulate record view form with 1 portal in body and an element in footer
+  		var template= '<div svy-tabseq="1" svy-tabseq-config="{root: true}">' +
+				  			'<div name="myPortal" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 2}">' +
+				  				'<div ng-repeat="item in items" svy-tabseq="item.tabSeq" svy-tabseq-config="{container: true}">' +
+					  				'<div name="myOtherTagC1" svy-tabseq="item.tabSeqC1">' +
+					  				'</div>' +
+					  				'<div name="myOtherTagC2" svy-tabseq="item.tabSeqC2">' +
+					  				'</div>' +
+				  				'</div>' +
+				  			'</div>' +
+				  			'<div name="myOtherOtherTag" svy-tabseq="myModel2"></div>' +
+			  			'</div>';
+  		
+  		$scope.myModel1 = 1;
+  		$scope.myModel2 = 2;
+  		$scope.items = [{tabSeq: 1, tabSeqC1: 1, tabSeqC2: 2},{tabSeq: 2, tabSeqC1: 2, tabSeqC2: 1}];
+  		$scope.$digest();
+  		var myDiv = $compile(template)($scope);
+  		$scope.$digest();
+  		
+  		expect($(myDiv.children()[0]).children().length).toBe(2); //2 rows in the portal
+  		expect(myDiv.children().attr('tabIndex')).toBe(undefined);
+  		expect($(myDiv.children()[0]).children().attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[0]).children()[0]).attr('tabIndex')).toBe('1');
+  		expect($($($(myDiv.children()[0]).children()[0]).children()[1]).attr('tabIndex')).toBe('2');
+  		expect($($(myDiv.children()[0]).children()[1]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[1]).children()[0]).attr('tabIndex')).toBe('4');
+  		expect($($($(myDiv.children()[0]).children()[1]).children()[1]).attr('tabIndex')).toBe('3');
+  		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('7');
+  		
+  		//add 1 row
+  		$scope.items.push({tabSeq:3, tabSeqC1: 1, tabSeqC2: 2});
+  		$scope.$digest();
+  		
+  		expect($(myDiv.children()[0]).children().length).toBe(3);//3 rows in portal
+  		expect(myDiv.children().attr('tabIndex')).toBe(undefined);
+  		expect($(myDiv.children()[0]).children().attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[0]).children()[0]).attr('tabIndex')).toBe('1');
+  		expect($($($(myDiv.children()[0]).children()[0]).children()[1]).attr('tabIndex')).toBe('2');
+  		expect($($(myDiv.children()[0]).children()[2]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(myDiv.children()[0]).children()[2]).children()[0]).attr('tabIndex')).toBe('5');
+  		expect($($($(myDiv.children()[0]).children()[2]).children()[1]).attr('tabIndex')).toBe('6');
+  		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('7');
+  	});
+  	
+  	it("should set correct tabIndexes in tabpanel if a new tab is added", function() {
+  		// simulate record view form with 1 tabpanel in body and an element in footer
+  		//tabpanel
+  		var template= '<div svy-tabseq="1" svy-tabseq-config="{root: true}">' +
+				  			'<tabset name="myTabpanel" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 50}">' +
+				  				'<tab ng-repeat="tab in tabs" heading="tab.heading" active="tab.active">' +
+				  					'<div ng-include="tab.active ? tab.content : null"></div>'+
+				  				'</tab>' +
+				  			'</tabset>' +
+				  			'<div name="myOtherOtherTag" svy-tabseq="myModel2"></div>' +
+			  			'</div>';
+  		$templateCache.put('simple.html', '<div name="myOtherTag" svy-tabseq="myModel1"></div>');
+  		$templateCache.put('portal.html', '<div name="myPortal" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 150}">' +
+			'<div ng-repeat="item in items" svy-tabseq="item.tabSeq" svy-tabseq-config="{container: true}">' +
+				'<div name="myOtherTagC1" svy-tabseq="item.tabSeqC1">' +
+				'</div>' +
+				'<div name="myOtherTagC2" svy-tabseq="item.tabSeqC2">' +
+				'</div>' +
+			'</div>' +
+		'</div>');
+  		$scope.myModel1 = 1;
+  		$scope.myModel2 = 2;
+  		$scope.tabs = [{active: true, heading: 'Tab 1', content: 'simple.html'}];
+  		$scope.items = [{tabSeq: 1, tabSeqC1: 1, tabSeqC2: 2},{tabSeq: 2, tabSeqC1: 2, tabSeqC2: 1}];
+  		$scope.$digest();
+  		var myDiv = $compile(template)($scope);
+  		$scope.$digest();
+  		
+  		var tabs = myDiv.find('tab');  		
+  		expect(tabs.length).toBe(1);
+  		expect(myDiv.children().attr('tabIndex')).toBe(undefined);
+  		expect($(tabs[0]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(tabs[0]).children()[0]).children()[0]).attr('tabIndex')).toBe('1');
+  		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('51');
+  		
+  		//add 1 tab
+  		//tab indexes should be the same, because the second tab is not active
+  		$scope.tabs.push({active: false, heading: 'Tab 2', content: 'portal.html'});
+  		$scope.$digest();
+  		tabs = myDiv.find('tab');  	
+  		var portal = $(tabs[1]).children()[0];
+  		expect(tabs.length).toBe(2);
+  		expect(myDiv.children().attr('tabIndex')).toBe(undefined);
+  		expect($(tabs[0]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(tabs[0]).children()[0]).children()[0]).attr('tabIndex')).toBe('1');
+  		expect($(tabs[1]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(portal).children()[0]).children()[0]).attr('tabIndex')).toBe(undefined);
+  		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('51');
+  		
+  		$scope.tabs[0].active = false;
+  		$scope.tabs[1].active = true;
+  		$scope.$digest();
+  		portal = $(tabs[1]).children()[0];
+  		
+  		expect($(tabs[1]).attr('tabIndex')).toBe(undefined);
+  		expect($($(tabs[0]).children()[0]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(tabs[0]).children()[0]).children()[0]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(portal).children()[0]).children()[0]).attr('tabIndex')).toBe(undefined);
+  		expect($($($($(portal).children()[0]).children()[0]).children()[0]).attr('tabIndex')).toBe('1');
+  		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('201');
+  	});
+
+  	it("should set correct tabIndexes in tabpanel", function() {
+  		// simulate record view form with 1 tabpanel in body and an element in footer
+  		var template= '<div svy-tabseq="1" svy-tabseq-config="{root: true}">' +
+				  			'<tabset name="myTabpanel" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 50}">' +
+				  				'<tab ng-repeat="tab in tabs" heading="tab.heading" active="tab.active">' +
+				  					'<div ng-include="tab.active ? tab.content : null"></div>'+
+				  				'</tab>' +
+				  			'</tabset>' +
+				  			'<div name="myOtherOtherTag" svy-tabseq="myModel2"></div>' +
+			  			'</div>';
+  		$templateCache.put('simple.html', '<div name="myOtherTag" svy-tabseq="myModel1"></div>');
+  		$templateCache.put('portal.html', '<div name="myPortal" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 150}">' +
+			'<div ng-repeat="item in items" svy-tabseq="item.tabSeq" svy-tabseq-config="{container: true}">' +
+				'<div name="myOtherTagC1" svy-tabseq="item.tabSeqC1">' +
+				'</div>' +
+				'<div name="myOtherTagC2" svy-tabseq="item.tabSeqC2">' +
+				'</div>' +
+			'</div>' +
+		'</div>');
+  		$scope.myModel1 = 1;
+  		$scope.myModel2 = 2;
+  		$scope.tabs = [{active: true, heading: 'Tab 1', content: 'portal.html'}, 
+  		               {active: false, heading: 'Tab 2', content: 'simple.html'} ];
+  		$scope.items = [{tabSeq: 1, tabSeqC1: 1, tabSeqC2: 2},{tabSeq: 2, tabSeqC1: 2, tabSeqC2: 1}];
+  		$scope.$digest();
+  		var myDiv = $compile(template)($scope);
+  		$scope.$digest();
+  		
+  		var tabs = myDiv.find('tab');  
+  		var portal = $(tabs[0]).children()[0];
+  		
+  		expect(tabs.length).toBe(2);
+  		expect(myDiv.children().attr('tabIndex')).toBe(undefined);
+  		expect($($($(portal).children()[0]).children()[0]).attr('tabIndex')).toBe(undefined);
+  		expect($($($($(portal).children()[0]).children()[0]).children()[0]).attr('tabIndex')).toBe('1');
+  		expect($($(tabs[1]).children()[0]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(tabs[1]).children()[0]).children()[0]).attr('tabIndex')).toBe(undefined);
+  		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('201');
+  		
+  		$scope.tabs[0].active = false;
+  		$scope.tabs[1].active = true;
+  		$scope.$digest();
+  		tabs = myDiv.find('tab');
+  		portal = $(tabs[0]).children()[0];
+  		
+  		var portal = $(tabs[0]).children()[0];
+  		expect($(tabs[1]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(portal).children()[0]).children()[0]).attr('tabIndex')).toBe(undefined);
+  		expect($($($($(portal).children()[0]).children()[0]).children()[0]).attr('tabIndex')).toBe(undefined);
+  		expect($($(tabs[1]).children()[0]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(tabs[1]).children()[0]).children()[0]).attr('tabIndex')).toBe('1');
+  		//still 201; is not changed to a lower value (51)
+  		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('201');
+  	});
+  	
+  	it("should set correct tabIndexes in splitpane", function() {
+  		// simulate record view form with 1 splitpane in body and an element in footer
+  		var template= '<div svy-tabseq="1" svy-tabseq-config="{root: true}">' +
+				  			'<bg-splitter name="mySplitpane" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 50}">' +
+		  						'<bg-pane ng-include="tabs[0].content" svy-tabseq="myModel1" svy-tabseq-config="{container: true}"></bg-pane>'+
+		  						'<bg-pane ng-include="tabs[1].content" svy-tabseq="myModel2" svy-tabseq-config="{container: true}"></bg-pane>' +
+		  					'</bg-splitter>' +
+				  			'<div name="myOtherOtherTag" svy-tabseq="myModel2"></div>' +
+			  		  '</div>';
+  		$templateCache.put('simple.html', '<div name="myOtherTag" svy-tabseq="myModel1"></div>');
+  		$templateCache.put('portal.html', '<div name="myPortal" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 150}">' +
+			'<div ng-repeat="item in items" svy-tabseq="item.tabSeq" svy-tabseq-config="{container: true}">' +
+				'<div name="myOtherTagC1" svy-tabseq="item.tabSeqC1">' +
+				'</div>' +
+				'<div name="myOtherTagC2" svy-tabseq="item.tabSeqC2">' +
+				'</div>' +
+			'</div>' +
+		'</div>');
+  		$templateCache.put('portal2.html', '<div name="myPortal" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 150}">' +
+  				'<div ng-repeat="item in items" svy-tabseq="item.tabSeq" svy-tabseq-config="{container: true}">' +
+  					'<div name="myOtherTagC1" svy-tabseq="item.tabSeqC1">' +
+  					'</div>' +
+  					'<div name="myOtherTagC2" svy-tabseq="item.tabSeqC2">' +
+  					'</div>' +
+  				'</div>' +
+  			'</div>');
+  		$scope.tabs = [{content: 'portal.html'}, {content: 'simple.html'} ];
+  		$scope.items = [{tabSeq: 1, tabSeqC1: 1, tabSeqC2: 2},{tabSeq: 2, tabSeqC1: 2, tabSeqC2: 1}];
+  		$scope.myModel1 = 1;
+  		$scope.myModel2 = 2;
+  		$scope.$digest();
+  		var myDiv = $compile(template)($scope);
+  		$scope.$digest();  	
+  		
+  		var panes = myDiv.find('bg-pane');
+  		var portal = $(panes[0]).children()[0];
+  		
+  		expect(panes.length).toBe(2);
+  		expect($(panes[0]).attr('tabIndex')).toBe(undefined);
+  		expect($($(portal).children()[0]).attr('tabIndex')).toBe(undefined);
+  		expect($($($(portal).children()[0]).children()[0]).attr('tabIndex')).toBe('1');
+  		expect($($(panes[1]).children()[0]).attr('tabIndex')).toBe('151');
+  		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('201');
+  	});
+
 }); 

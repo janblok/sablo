@@ -531,6 +531,11 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 					runtimeIndex.startIndex = 0;
 				} else if (runtimeIndex.startIndex === 0) {
 					runtimeIndex.nextAvailableIndex = 0;
+				} 
+				else if (runtimeIndex.nextAvailableIndex === -1)
+				{
+					var reservedGap = (config && config.reservedGap) ? config.reservedGap : 0;
+					runtimeIndex.nextAvailableIndex = runtimeIndex.startIndex + reservedGap;
 				}
 
 				if (posInDesignArray === 0) updateCurrentDomElTabIndex();
@@ -564,7 +569,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 					var ownTabIndexBump = hasOwnTabIndex() ? 1 : 0;
 					parentRecalculateNeeded = (runtimeIndex.nextAvailableIndex < recalculateStartIndex + ownTabIndexBump);
 					var reservedGap = (config && config.reservedGap) ? config.reservedGap : 0;
-					runtimeIndex.nextAvailableIndex = recalculateStartIndex + reservedGap + ownTabIndexBump;
+					if (parentRecalculateNeeded) runtimeIndex.nextAvailableIndex = recalculateStartIndex + reservedGap + ownTabIndexBump;
 				} else {
 					// start index 0 means default (no tabIndex attr. set)
 					parentRecalculateNeeded = false;

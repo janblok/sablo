@@ -235,7 +235,12 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	}
 
 	@Override
-	public void closeSession()
+	public void sessionExpired()
+	{
+	}
+
+	@Override
+	public void dispose()
 	{
 		Collection< ? extends IWindow> allWindows;
 		synchronized (windows)

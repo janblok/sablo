@@ -16,8 +16,10 @@
 
 package org.sablo.websocket;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -45,12 +47,13 @@ public class WebsocketSessionManager
 		}
 	}
 
-	public static IWebsocketSession removeSession(String uuid)
+	public static void removeSession(IWebsocketSession websocketSession)
 	{
 		synchronized (wsSessions)
 		{
-			return wsSessions.remove(uuid);
+			wsSessions.remove(websocketSession.getUuid());
 		}
+		websocketSession.dispose();
 	}
 
 	public static IWebsocketSession getSession(String endpointType, String prevUuid)
@@ -112,6 +115,7 @@ public class WebsocketSessionManager
 	 */
 	static void closeInactiveSessions()
 	{
+		List<IWebsocketSession> expiredSessions = new ArrayList<>(3);
 		synchronized (wsSessions)
 		{
 			Iterator<IWebsocketSession> sessions = wsSessions.values().iterator();
@@ -121,10 +125,32 @@ public class WebsocketSessionManager
 				if (session.checkForWindowActivity())
 				{
 					sessions.remove();
-					session.closeSession();
+					expiredSessions.add(session);
 				}
 			}
 		}
+
+		for (IWebsocketSession session : expiredSessions)
+		{
+			try
+			{
+				session.sessionExpired();
+			}
+			catch (Exception e)
+			{
+				log.error("Error expiring session " + session.getUuid(), e);
+			}
+
+			try
+			{
+				session.dispose();
+			}
+			catch (Exception e)
+			{
+				log.error("Error disposing expired session " + session.getUuid(), e);
+			}
+		}
+
 	}
 
 	public static void setWebsocketSessionFactory(String endpointType, IWebsocketSessionFactory factory)
@@ -136,5 +162,4 @@ public class WebsocketSessionManager
 	{
 		return websocketSessionFactories.get(endpointType);
 	}
-
 }

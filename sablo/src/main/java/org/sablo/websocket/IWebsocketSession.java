@@ -55,9 +55,15 @@ public interface IWebsocketSession
 	void stopHandlingEvent();
 
 	/**
-	 * Request to close the websocket session.
+	 * Called when all windows are expired, session is removed from WebsocketSessionManager
 	 */
-	void closeSession();
+
+	void sessionExpired();
+
+	/**
+	 * Cleanup, close all windows.
+	 */
+	void dispose();
 
 	/**
 	 * Handle an incoming message.
@@ -85,8 +91,8 @@ public interface IWebsocketSession
 	Collection<IClientService> getServices();
 
 	/**
-	 * Get the window with give idm, when it does not exist, create a new window based on the widow name. 
-	 * 
+	 * Get the window with give idm, when it does not exist, create a new window based on the widow name.
+	 *
 	 * @param windowId
 	 * @param windowName
 	 * @return

@@ -30,8 +30,8 @@ describe('styles helpers', function() {
     afterEach(function() {
         jasmine.clock().uninstall();
     })
-  	it("should apply sibling svy-tabseq", function() {
-  		var template= '<div svy-tabseq="1" svy-tabseq-config="{root: true}"><div name="myTag" svy-tabseq="myModel1"></div><div name="myOtherTag" svy-tabseq="myModel2"></div><div name="myOtherOtherTag" svy-tabseq="myModel3"></div></div>'; 
+  	it("should apply sibling sablo-tabseq", function() {
+  		var template= '<div sablo-tabseq="1" sablo-tabseq-config="{root: true}"><div name="myTag" sablo-tabseq="myModel1"></div><div name="myOtherTag" sablo-tabseq="myModel2"></div><div name="myOtherOtherTag" sablo-tabseq="myModel3"></div></div>'; 
   		$scope.myModel1 = -2;
   		$scope.myModel2 = -2;
   		$scope.myModel3 = -2;
@@ -56,22 +56,22 @@ describe('styles helpers', function() {
     
   	it("should apply default/no tabIndex for children", function() {
   		// simulate record view form with 1 portal in body and an element in footer
-  		var template= '<div svy-tabseq="1" svy-tabseq-config="{root: true}">' +
-				  			'<div name="myTag" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 150}">' +
-				  				'<div name="myOtherTag" svy-tabseq="1" svy-tabseq-config="{container: true}">' +
-					  				'<div name="myOtherTagC1" svy-tabseq="myModel111">' +
+  		var template= '<div sablo-tabseq="1" sablo-tabseq-config="{root: true}">' +
+				  			'<div name="myTag" sablo-tabseq="myModel1" sablo-tabseq-config="{container: true, reservedGap: 150}">' +
+				  				'<div name="myOtherTag" sablo-tabseq="1" sablo-tabseq-config="{container: true}">' +
+					  				'<div name="myOtherTagC1" sablo-tabseq="myModel111">' +
 					  				'</div>' +
-					  				'<div name="myOtherTagC2" svy-tabseq="myModel112">' +
+					  				'<div name="myOtherTagC2" sablo-tabseq="myModel112">' +
 					  				'</div>' +
 				  				'</div>' +
-				  				'<div name="myOtherTag" svy-tabseq="2" svy-tabseq-config="{container: true}">' +
-					  				'<div name="myOtherTagC1" svy-tabseq="myModel121">' +
+				  				'<div name="myOtherTag" sablo-tabseq="2" sablo-tabseq-config="{container: true}">' +
+					  				'<div name="myOtherTagC1" sablo-tabseq="myModel121">' +
 					  				'</div>' +
-					  				'<div name="myOtherTagC2" svy-tabseq="myModel122">' +
+					  				'<div name="myOtherTagC2" sablo-tabseq="myModel122">' +
 					  				'</div>' +
 				  				'</div>' +
 				  			'</div>' +
-				  			'<div name="myOtherOtherTag" svy-tabseq="myModel2"></div>' +
+				  			'<div name="myOtherOtherTag" sablo-tabseq="myModel2"></div>' +
 			  			'</div>';
   		
   		// default tab seq. - no tabIndex should be set at all
@@ -171,16 +171,16 @@ describe('styles helpers', function() {
   	
   	it("should apply tabIndex for children if rows are added", function() {
   		// simulate record view form with 1 portal in body and an element in footer
-  		var template= '<div svy-tabseq="1" svy-tabseq-config="{root: true}">' +
-			'<div name="myPortal" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 150}">' +
-				'<div ng-repeat="item in items" svy-tabseq="item.tabSeq" svy-tabseq-config="{container: true}">' +
-  				'<div name="myOtherTagC1" svy-tabseq="myModel1">' +
+  		var template= '<div sablo-tabseq="1" sablo-tabseq-config="{root: true}">' +
+			'<div name="myPortal" sablo-tabseq="myModel1" sablo-tabseq-config="{container: true, reservedGap: 150}">' +
+				'<div ng-repeat="item in items" sablo-tabseq="item.tabSeq" sablo-tabseq-config="{container: true}">' +
+  				'<div name="myOtherTagC1" sablo-tabseq="myModel1">' +
   				'</div>' +
-  				'<div name="myOtherTagC2" svy-tabseq="myModel1">' +
+  				'<div name="myOtherTagC2" sablo-tabseq="myModel1">' +
   				'</div>' +
 				'</div>' +
 			'</div>' +
-			'<div name="myOtherOtherTag" svy-tabseq="myModel2"></div>' +
+			'<div name="myOtherOtherTag" sablo-tabseq="myModel2"></div>' +
 		'</div>';
   		$scope.myModel1 = 1;
   		$scope.myModel2 = 2;
@@ -218,16 +218,16 @@ describe('styles helpers', function() {
   	
   	it("should recalculate indexes if more are needed than reserved, due to adding rows at runtime", function() {
   		// simulate record view form with 1 portal in body and an element in footer
-  		var template= '<div svy-tabseq="1" svy-tabseq-config="{root: true}">' +
-			'<div name="myPortal" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 150}">' +
-				'<div ng-repeat="item in items" svy-tabseq="item.tabSeq" svy-tabseq-config="{container: true}">' +
-  				'<div name="myOtherTagC1" svy-tabseq="myModel11">' +
+  		var template= '<div sablo-tabseq="1" sablo-tabseq-config="{root: true}">' +
+			'<div name="myPortal" sablo-tabseq="myModel1" sablo-tabseq-config="{container: true, reservedGap: 150}">' +
+				'<div ng-repeat="item in items" sablo-tabseq="item.tabSeq" sablo-tabseq-config="{container: true}">' +
+  				'<div name="myOtherTagC1" sablo-tabseq="myModel11">' +
   				'</div>' +
-  				'<div name="myOtherTagC2" svy-tabseq="myModel12">' +
+  				'<div name="myOtherTagC2" sablo-tabseq="myModel12">' +
   				'</div>' +
 				'</div>' +
 			'</div>' +
-			'<div name="myOtherOtherTag" svy-tabseq="myModel2"></div>' +
+			'<div name="myOtherOtherTag" sablo-tabseq="myModel2"></div>' +
 		'</div>';
   		$scope.myModel1 = 1;
   		$scope.myModel11 = 1;
@@ -291,22 +291,22 @@ describe('styles helpers', function() {
   	
   	it("should recalculate indexes if more are needed than reserved", function() {
   		// simulate record view form with 1 portal in body and an element in footer
-  		var template= '<div svy-tabseq="1" svy-tabseq-config="{root: true}">' +
-				  			'<div name="myTag" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 2}">' +
-				  				'<div name="myOtherTag" svy-tabseq="1" svy-tabseq-config="{container: true}">' +
-					  				'<div name="myOtherTagC1" svy-tabseq="myModel1">' +
+  		var template= '<div sablo-tabseq="1" sablo-tabseq-config="{root: true}">' +
+				  			'<div name="myTag" sablo-tabseq="myModel1" sablo-tabseq-config="{container: true, reservedGap: 2}">' +
+				  				'<div name="myOtherTag" sablo-tabseq="1" sablo-tabseq-config="{container: true}">' +
+					  				'<div name="myOtherTagC1" sablo-tabseq="myModel1">' +
 					  				'</div>' +
-					  				'<div name="myOtherTagC2" svy-tabseq="myModel1">' +
+					  				'<div name="myOtherTagC2" sablo-tabseq="myModel1">' +
 					  				'</div>' +
 				  				'</div>' +
-				  				'<div name="myOtherTag" svy-tabseq="2" svy-tabseq-config="{container: true}">' +
-					  				'<div name="myOtherTagC1" svy-tabseq="myModel1">' +
+				  				'<div name="myOtherTag" sablo-tabseq="2" sablo-tabseq-config="{container: true}">' +
+					  				'<div name="myOtherTagC1" sablo-tabseq="myModel1">' +
 					  				'</div>' +
-					  				'<div name="myOtherTagC2" svy-tabseq="myModel1">' +
+					  				'<div name="myOtherTagC2" sablo-tabseq="myModel1">' +
 					  				'</div>' +
 				  				'</div>' +
 				  			'</div>' +
-				  			'<div name="myOtherOtherTag" svy-tabseq="myModel2"></div>' +
+				  			'<div name="myOtherOtherTag" sablo-tabseq="myModel2"></div>' +
 			  			'</div>';
   		
   		$scope.myModel1 = 1;
@@ -328,16 +328,16 @@ describe('styles helpers', function() {
   	
   	it("should recalculate indexes if more are needed in case of a small reservedGap value", function() {
   		// simulate record view form with 1 portal in body and an element in footer
-  		var template= '<div svy-tabseq="1" svy-tabseq-config="{root: true}">' +
-				  			'<div name="myPortal" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 2}">' +
-				  				'<div ng-repeat="item in items" svy-tabseq="item.tabSeq" svy-tabseq-config="{container: true}">' +
-					  				'<div name="myOtherTagC1" svy-tabseq="item.tabSeqC1">' +
+  		var template= '<div sablo-tabseq="1" sablo-tabseq-config="{root: true}">' +
+				  			'<div name="myPortal" sablo-tabseq="myModel1" sablo-tabseq-config="{container: true, reservedGap: 2}">' +
+				  				'<div ng-repeat="item in items" sablo-tabseq="item.tabSeq" sablo-tabseq-config="{container: true}">' +
+					  				'<div name="myOtherTagC1" sablo-tabseq="item.tabSeqC1">' +
 					  				'</div>' +
-					  				'<div name="myOtherTagC2" svy-tabseq="item.tabSeqC2">' +
+					  				'<div name="myOtherTagC2" sablo-tabseq="item.tabSeqC2">' +
 					  				'</div>' +
 				  				'</div>' +
 				  			'</div>' +
-				  			'<div name="myOtherOtherTag" svy-tabseq="myModel2"></div>' +
+				  			'<div name="myOtherOtherTag" sablo-tabseq="myModel2"></div>' +
 			  			'</div>';
   		
   		$scope.myModel1 = 1;
@@ -375,20 +375,20 @@ describe('styles helpers', function() {
   	it("should set correct tabIndexes in tabpanel if a new tab is added", function() {
   		// simulate record view form with 1 tabpanel in body and an element in footer
   		//tabpanel
-  		var template= '<div svy-tabseq="1" svy-tabseq-config="{root: true}">' +
-				  			'<tabset name="myTabpanel" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 50}">' +
+  		var template= '<div sablo-tabseq="1" sablo-tabseq-config="{root: true}">' +
+				  			'<tabset name="myTabpanel" sablo-tabseq="myModel1" sablo-tabseq-config="{container: true, reservedGap: 50}">' +
 				  				'<tab ng-repeat="tab in tabs" heading="tab.heading" active="tab.active">' +
 				  					'<div ng-include="tab.active ? tab.content : null"></div>'+
 				  				'</tab>' +
 				  			'</tabset>' +
-				  			'<div name="myOtherOtherTag" svy-tabseq="myModel2"></div>' +
+				  			'<div name="myOtherOtherTag" sablo-tabseq="myModel2"></div>' +
 			  			'</div>';
-  		$templateCache.put('simple.html', '<div name="myOtherTag" svy-tabseq="myModel1"></div>');
-  		$templateCache.put('portal.html', '<div name="myPortal" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 150}">' +
-			'<div ng-repeat="item in items" svy-tabseq="item.tabSeq" svy-tabseq-config="{container: true}">' +
-				'<div name="myOtherTagC1" svy-tabseq="item.tabSeqC1">' +
+  		$templateCache.put('simple.html', '<div name="myOtherTag" sablo-tabseq="myModel1"></div>');
+  		$templateCache.put('portal.html', '<div name="myPortal" sablo-tabseq="myModel1" sablo-tabseq-config="{container: true, reservedGap: 150}">' +
+			'<div ng-repeat="item in items" sablo-tabseq="item.tabSeq" sablo-tabseq-config="{container: true}">' +
+				'<div name="myOtherTagC1" sablo-tabseq="item.tabSeqC1">' +
 				'</div>' +
-				'<div name="myOtherTagC2" svy-tabseq="item.tabSeqC2">' +
+				'<div name="myOtherTagC2" sablo-tabseq="item.tabSeqC2">' +
 				'</div>' +
 			'</div>' +
 		'</div>');
@@ -436,20 +436,20 @@ describe('styles helpers', function() {
 
   	it("should set correct tabIndexes in tabpanel", function() {
   		// simulate record view form with 1 tabpanel in body and an element in footer
-  		var template= '<div svy-tabseq="1" svy-tabseq-config="{root: true}">' +
-				  			'<tabset name="myTabpanel" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 50}">' +
+  		var template= '<div sablo-tabseq="1" sablo-tabseq-config="{root: true}">' +
+				  			'<tabset name="myTabpanel" sablo-tabseq="myModel1" sablo-tabseq-config="{container: true, reservedGap: 50}">' +
 				  				'<tab ng-repeat="tab in tabs" heading="tab.heading" active="tab.active">' +
 				  					'<div ng-include="tab.active ? tab.content : null"></div>'+
 				  				'</tab>' +
 				  			'</tabset>' +
-				  			'<div name="myOtherOtherTag" svy-tabseq="myModel2"></div>' +
+				  			'<div name="myOtherOtherTag" sablo-tabseq="myModel2"></div>' +
 			  			'</div>';
-  		$templateCache.put('simple.html', '<div name="myOtherTag" svy-tabseq="myModel1"></div>');
-  		$templateCache.put('portal.html', '<div name="myPortal" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 150}">' +
-			'<div ng-repeat="item in items" svy-tabseq="item.tabSeq" svy-tabseq-config="{container: true}">' +
-				'<div name="myOtherTagC1" svy-tabseq="item.tabSeqC1">' +
+  		$templateCache.put('simple.html', '<div name="myOtherTag" sablo-tabseq="myModel1"></div>');
+  		$templateCache.put('portal.html', '<div name="myPortal" sablo-tabseq="myModel1" sablo-tabseq-config="{container: true, reservedGap: 150}">' +
+			'<div ng-repeat="item in items" sablo-tabseq="item.tabSeq" sablo-tabseq-config="{container: true}">' +
+				'<div name="myOtherTagC1" sablo-tabseq="item.tabSeqC1">' +
 				'</div>' +
-				'<div name="myOtherTagC2" svy-tabseq="item.tabSeqC2">' +
+				'<div name="myOtherTagC2" sablo-tabseq="item.tabSeqC2">' +
 				'</div>' +
 			'</div>' +
 		'</div>');
@@ -491,27 +491,27 @@ describe('styles helpers', function() {
   	
   	it("should set correct tabIndexes in splitpane", function() {
   		// simulate record view form with 1 splitpane in body and an element in footer
-  		var template= '<div svy-tabseq="1" svy-tabseq-config="{root: true}">' +
-				  			'<bg-splitter name="mySplitpane" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 50}">' +
-		  						'<bg-pane ng-include="tabs[0].content" svy-tabseq="myModel1" svy-tabseq-config="{container: true}"></bg-pane>'+
-		  						'<bg-pane ng-include="tabs[1].content" svy-tabseq="myModel2" svy-tabseq-config="{container: true}"></bg-pane>' +
+  		var template= '<div sablo-tabseq="1" sablo-tabseq-config="{root: true}">' +
+				  			'<bg-splitter name="mySplitpane" sablo-tabseq="myModel1" sablo-tabseq-config="{container: true, reservedGap: 50}">' +
+		  						'<bg-pane ng-include="tabs[0].content" sablo-tabseq="myModel1" sablo-tabseq-config="{container: true}"></bg-pane>'+
+		  						'<bg-pane ng-include="tabs[1].content" sablo-tabseq="myModel2" sablo-tabseq-config="{container: true}"></bg-pane>' +
 		  					'</bg-splitter>' +
-				  			'<div name="myOtherOtherTag" svy-tabseq="myModel2"></div>' +
+				  			'<div name="myOtherOtherTag" sablo-tabseq="myModel2"></div>' +
 			  		  '</div>';
-  		$templateCache.put('simple.html', '<div name="myOtherTag" svy-tabseq="myModel1"></div>');
-  		$templateCache.put('portal.html', '<div name="myPortal" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 150}">' +
-			'<div ng-repeat="item in items" svy-tabseq="item.tabSeq" svy-tabseq-config="{container: true}">' +
-				'<div name="myOtherTagC1" svy-tabseq="item.tabSeqC1">' +
+  		$templateCache.put('simple.html', '<div name="myOtherTag" sablo-tabseq="myModel1"></div>');
+  		$templateCache.put('portal.html', '<div name="myPortal" sablo-tabseq="myModel1" sablo-tabseq-config="{container: true, reservedGap: 150}">' +
+			'<div ng-repeat="item in items" sablo-tabseq="item.tabSeq" sablo-tabseq-config="{container: true}">' +
+				'<div name="myOtherTagC1" sablo-tabseq="item.tabSeqC1">' +
 				'</div>' +
-				'<div name="myOtherTagC2" svy-tabseq="item.tabSeqC2">' +
+				'<div name="myOtherTagC2" sablo-tabseq="item.tabSeqC2">' +
 				'</div>' +
 			'</div>' +
 		'</div>');
-  		$templateCache.put('portal2.html', '<div name="myPortal" svy-tabseq="myModel1" svy-tabseq-config="{container: true, reservedGap: 150}">' +
-  				'<div ng-repeat="item in items" svy-tabseq="item.tabSeq" svy-tabseq-config="{container: true}">' +
-  					'<div name="myOtherTagC1" svy-tabseq="item.tabSeqC1">' +
+  		$templateCache.put('portal2.html', '<div name="myPortal" sablo-tabseq="myModel1" sablo-tabseq-config="{container: true, reservedGap: 150}">' +
+  				'<div ng-repeat="item in items" sablo-tabseq="item.tabSeq" sablo-tabseq-config="{container: true}">' +
+  					'<div name="myOtherTagC1" sablo-tabseq="item.tabSeqC1">' +
   					'</div>' +
-  					'<div name="myOtherTagC2" svy-tabseq="item.tabSeqC2">' +
+  					'<div name="myOtherTagC2" sablo-tabseq="item.tabSeqC2">' +
   					'</div>' +
   				'</div>' +
   			'</div>');

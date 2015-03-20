@@ -501,20 +501,20 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 	}
 })
 
-//IMPORTANT: always add a svy-tabseq directive with svy-tabseq-config="{root: true}" to $rootScope element
-//- when svy-tabseq-config="{container: true}" is used (same for 'root: true'), no real tabindex property will be set on the DOM element, it's only for grouping child svy-tabseq
+//IMPORTANT: always add a sablo-tabseq directive with sablo-tabseq-config="{root: true}" to $rootScope element
+//- when sablo-tabseq-config="{container: true}" is used (same for 'root: true'), no real tabindex property will be set on the DOM element, it's only for grouping child sablo-tabseq
 //- this directive requires full jquery to be loaded before angular.js; jQuery lite that ships with angular doesn't
 //have trigger() that bubbles up; if needed that could be implemented using triggerHandler, going from parent to parent
 //- note: -2 means an element and it's children should be skipped by tabsequence
-.directive('svyTabseq',  ['$parse', function ($parse) {
+.directive('sabloTabseq',  ['$parse', function ($parse) {
 	return {
 		restrict: 'A',
 
 		controller: function($scope, $element, $attrs) {
 			// called by angular in parents first then in children
-			var designTabSeq = $parse($attrs.svyTabseq)($scope);
+			var designTabSeq = $parse($attrs.sabloTabseq)($scope);
 			if (!designTabSeq) designTabSeq = 0;
-			var config = $parse($attrs.svyTabseqConfig)($scope);
+			var config = $parse($attrs.sabloTabseqConfig)($scope);
 
 			var designChildIndexToArrayPosition = {};
 			var designChildTabSeq = []; // contains ordered numbers that will be keys in 'runtimeChildIndexes'; can have duplicates
@@ -656,7 +656,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 					// a new child is ready/linked; recalculate tab indexes for it and after it
 					recalculateChildRuntimeIndexesStartingAt(designChildIndexToArrayPosition[designChildIndex], false);
 				} else if (initialRootRecalculate) {
-					// this is $rootScope (one $parent extra cause the directive creates it); we always assume a svyTabseq directive is bound to it;
+					// this is $rootScope (one $parent extra cause the directive creates it); we always assume a sabloTabseq directive is bound to it;
 					// now that it is linked we can do initial calculation of tre
 					runtimeIndex.startIndex = runtimeIndex.nextAvailableIndex = 1;
 					recalculateChildRuntimeIndexesStartingAt(0, true);
@@ -666,7 +666,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 			}
 			$element.on("recalculatePSTS", recalculateIndexesHandler);
 
-			var deregisterAttrObserver = $scope.$watch($attrs.svyTabseq, function (newDesignTabSeq) {
+			var deregisterAttrObserver = $scope.$watch($attrs.sabloTabseq, function (newDesignTabSeq) {
 				if (designTabSeq !== newDesignTabSeq && !(config && config.root)) {
 					if (designTabSeq != -2) $element.parent().trigger("unregisterCSTS", [designTabSeq, runtimeIndex]);
 					designTabSeq = newDesignTabSeq;
@@ -706,14 +706,14 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 
 		link: function (scope, element, attrs) {
 			// called by angular in children first, then in parents
-			var config = $parse(attrs.svyTabseqConfig)(scope);
+			var config = $parse(attrs.sabloTabseqConfig)(scope);
 
 			// check to see if this is the top-most tabSeq container
 			if (config && config.root) {
 				// it's root tab seq container (so no parent); just emit on self to do initial tree calculation
 				element.trigger("recalculatePSTS", [0, true]);
 			} else {
-				var designTabSeq = $parse(attrs.svyTabseq)(scope);
+				var designTabSeq = $parse(attrs.sabloTabseq)(scope);
 				if (designTabSeq != -2) element.parent().trigger("recalculatePSTS", [designTabSeq ? designTabSeq : 0]);
 			}
 		}

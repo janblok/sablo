@@ -19,7 +19,7 @@ import org.sablo.specification.PropertyDescription;
 
 
 /**
- * This simple int combined with the client-side svy-tabseq directive can help you build complex
+ * This simple int combined with the client-side sablo-tabseq directive can help you build complex
  * tab sequences in the browser.
  * @author jcompagner
  */

@@ -3,10 +3,10 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 	$logProvider.debugEnabled(false);
 	$provide.decorator("$log", function($delegate) {
 		Object.defineProperty($delegate, "debugEnabled", {
-			  enumerable: false,
-			  configurable: false,
-			  get: $logProvider.debugEnabled
-			});
+			enumerable: false,
+			configurable: false,
+			get: $logProvider.debugEnabled
+		});
 		return $delegate;
 	})
 }).factory('$sabloApplication', function ($rootScope, $timeout, $q, $log, $webSocket, $sabloConverters, $sabloUtils, webStorage) {
@@ -124,6 +124,15 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		}
 	}
 
+	var updateScopeForState = function(formName, state, formScope) {
+		for (var componentName in state.model) {
+			if (componentName !== '') {
+				$sabloConverters.updateAngularScope(state.model[componentName],
+						$sabloUtils.getInDepthProperty(formStatesConversionInfo, formName, componentName), formScope);
+			}
+		}
+	}
+
 	var wsSession = null;
 	function getSession() {
 		if (wsSession == null) throw "Session is not created yet, first call connect()";
@@ -194,9 +203,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 	var getWindowUrl = function(windowname) {
 		return "index.html?windowname=" + encodeURIComponent(windowname) + "&sessionid="+getSessionId();
 	}
-	
+
 	var formResolver = null;
-	
+
 	function hasResolvedFormState(name) {
 		return typeof(formStates[name]) !== 'undefined' && formStates[name].resolved;
 	}
@@ -311,7 +320,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		contributeFormResolver: function(contributedFormResolver) {
 			formResolver = contributedFormResolver;
 		},
-		
+
 		getSessionId: getSessionId,
 		getWindowName: getWindowName,
 		getWindowId: getWindowId,
@@ -367,6 +376,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 			return state;
 		},
 
+		updateScopeForState: updateScopeForState,
+
 		// form state has is now ready for use (even though it might not have initial data)
 		resolveFormState: function(formName) {
 			formStates[formName].resolved = true;
@@ -409,14 +420,14 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 					if (initialFormData) {
 						var conversionInfo = initialFormData.conversions;
 						if (conversionInfo) delete initialFormData.conversions;
-						
+
 						// if the formState is on the server but not here anymore, skip it. 
 						// this can happen with a refresh on the browser.
 						if (typeof(formState) == 'undefined') return;
-						
+
 						var formModel = formState.model;
 						var initialFormProperties = initialFormData['']; // form properties
-						
+
 						if (initialFormProperties) {
 							if (conversionInfo && conversionInfo['']) initialFormProperties = $sabloConverters.convertFromServerToClient(initialFormProperties, conversionInfo[''], formModel[''], formState.getScope(), function () { return formModel[''] });
 							if (!formModel['']) formModel[''] = {};
@@ -424,7 +435,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 								formModel[''][p] = initialFormProperties[p]; 
 							} 
 						}
-						
+
 						for (var beanname in initialFormData) {
 							// copy over the initialData, skip for form properties (beanname empty) as they were already dealt with
 							if (beanname != '') {
@@ -434,22 +445,22 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 							}
 						}
 					}
-					
+
 					formState.addWatches();
 					delete formState.initializing;
 					delete formState.initialDataRequested;
-					
+
 					if (deferredFormStatesWithData[formName]) {
 						if (typeof(formStates[formName]) !== 'undefined') deferredFormStatesWithData[formName].resolve(formStates[formName]);
 						delete deferredFormStatesWithData[formName];
 					}
-					
+
 					if (deferredFormStates[formName]) {
 						// this should never happen cause at this point that deferr should be executed and removed
 						if (typeof(formStates[formName]) !== 'undefined') deferredFormStates[formName].resolve(formStates[formName]);
 						delete deferredFormStates[formName];
 					}
-					
+
 					if (requestDataCallback) {
 						requestDataCallback(initialFormData, formState);
 					}
@@ -739,6 +750,10 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 			if(typeof newClientData === 'number') return r;
 			if (isNaN(r.getTime())) throw new Error("Invalid date/time value: " + newClientData);
 			return r.getTime();
+		},
+
+		updateAngularScope: function(clientValue, componentScope) {
+			// nothing to do here
 		}
 	});
 	// other small types can be added here

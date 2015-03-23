@@ -402,6 +402,20 @@ webSocketModule.factory('$webSocket',
 				return serverSentData;
 			};
 			
+			var updateAngularScope = function(value, conversionInfo, scope) {
+				if (typeof conversionInfo === 'string' || typeof conversionInfo === 'number') {
+					var customConverter = customPropertyConverters[conversionInfo];
+					if (customConverter) customConverter.updateAngularScope(value, scope);
+					else { //converter not found - will not convert
+						$log.error("cannot find type converter (to update scope) for: '" + conversionInfo + "'.");
+					}
+				} else if (conversionInfo) {
+					for (var conKey in conversionInfo) {
+						updateAngularScope(value[conKey], conversionInfo[conKey], scope); // TODO should componentScope really stay the same here? 
+					}
+				}
+			};
+			
 			// converts from a client property JS value to a JSON that can be sent to the server using the appropriate registered handler
 			var convertFromClientToServer = function(newClientData, conversionInfo, oldClientData) {
 				if (typeof conversionInfo === 'string' || typeof conversionInfo === 'number') {
@@ -447,6 +461,8 @@ webSocketModule.factory('$webSocket',
 				
 				convertFromClientToServer: convertFromClientToServer,
 				
+				updateAngularScope: updateAngularScope,
+				
 				/**
 				 * Registers a custom client side property handler into the system. These handlers are useful
 				 * for custom property types that require some special handling when received through JSON from server-side
@@ -479,6 +495,13 @@ webSocketModule.factory('$webSocket',
 				 *				//        conversion happens for service API call parameters for example...
 				 *				// @return the JSON value to send to the server.
 				 *				fromClientToServer: function(newClientData, oldClientData) { (...); return sendToServerJSON; }
+				 * 
+				 *				// Some 'smart' property types need an angular scope to register watches to; this method will get called on them
+				 *				// when the scope that they should use changed (old scope could get destroyed and then after a while a new one takes it's place).
+				 *				// This gives such property types a way to keep their watches operational even on the new scope.
+				 *				// @param clientValue the JS client side property value
+				 *				// @param scope the new scope. If null it means that the previous scope just got destroyed and property type should perform needed cleanup.
+				 *				updateAngularScope: function(clientValue, scope) { (...); }
 				 * 
 				 * }
 				 */

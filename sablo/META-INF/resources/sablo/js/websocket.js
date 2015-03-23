@@ -259,6 +259,12 @@ webSocketModule.factory('$webSocket',
 					return connected;
 				},
 				
+				disconnect: function() {
+					if(websocket) {
+						websocket.close();
+					}
+				},
+				
 				getURLParameter: getURLParameter
 			};
 		}).factory("$services", function($rootScope, $sabloConverters, $sabloUtils){

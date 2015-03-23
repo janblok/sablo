@@ -304,6 +304,10 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 			return wsSession
 		},
 
+		disconnect : function() {
+			$webSocket.disconnect();
+		},
+		
 		contributeFormResolver: function(contributedFormResolver) {
 			formResolver = contributedFormResolver;
 		},

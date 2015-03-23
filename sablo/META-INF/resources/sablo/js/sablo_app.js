@@ -124,7 +124,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		}
 	}
 
-	var updateScopeForState = function(formName, state, formScope) {
+	var updateScopeForState = function(formName, formScope, state) {
+		if (!state) state = formStates[formName];
+		
 		for (var componentName in state.model) {
 			if (componentName !== '') {
 				$sabloConverters.updateAngularScope(state.model[componentName],

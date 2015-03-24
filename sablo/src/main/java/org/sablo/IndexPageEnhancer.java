@@ -40,6 +40,11 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("nls")
 public class IndexPageEnhancer
 {
+	/**
+	 * Token in html page after which we add component contributions. They have to be before the solution stylesheet.
+	 */
+	private static final String COMPONENT_CONTRIBUTIONS = "<!-- component_contributions -->";
+
 	private static final Logger log = LoggerFactory.getLogger(IndexPageEnhancer.class.getCanonicalName());
 
 	private static String VAR_START = "##";
@@ -65,7 +70,7 @@ public class IndexPageEnhancer
 		String index_file = IOUtils.toString(resource);
 		String lowercase_index_file = index_file.toLowerCase();
 		int headstart = lowercase_index_file.indexOf("<head>");
-		int headend = lowercase_index_file.indexOf("</head>");
+		int headend = lowercase_index_file.indexOf(COMPONENT_CONTRIBUTIONS);
 
 		//use real html parser here instead?
 		if (variableSubstitution != null)
@@ -78,7 +83,7 @@ public class IndexPageEnhancer
 		}
 
 		StringBuilder sb = new StringBuilder(index_file);
-		sb.insert(headend, getAllContributions(cssContributions, jsContributions));
+		sb.insert(headend + COMPONENT_CONTRIBUTIONS.length(), getAllContributions(cssContributions, jsContributions));
 		sb.insert(headstart + 6, getBaseTag(contextPath));
 		writer.append(sb);
 	}

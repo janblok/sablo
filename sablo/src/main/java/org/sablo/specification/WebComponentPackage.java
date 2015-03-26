@@ -44,10 +44,6 @@ import javax.servlet.ServletContext;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONObject;
-import org.sablo.specification.property.types.DimensionPropertyType;
-import org.sablo.specification.property.types.IntPropertyType;
-import org.sablo.specification.property.types.PointPropertyType;
-import org.sablo.specification.property.types.TypesRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -192,15 +188,6 @@ public class WebComponentPackage
 							}
 							parsed.setDefinitionFileURL(reader.getUrlForPath(definition));
 						}
-
-						// add properties defined by us
-						// TODO this is servoy specific so remove?
-						if (parsed.getProperty("size") == null) parsed.putProperty("size",
-							new PropertyDescription("size", TypesRegistry.getType(DimensionPropertyType.TYPE_NAME)));
-						if (parsed.getProperty("location") == null) parsed.putProperty("location",
-							new PropertyDescription("location", TypesRegistry.getType(PointPropertyType.TYPE_NAME)));
-						if (parsed.getProperty("anchors") == null) parsed.putProperty("anchors",
-							new PropertyDescription("anchors", TypesRegistry.getType(IntPropertyType.TYPE_NAME)));
 						descriptions.put(parsed.getName(), parsed);
 					}
 					catch (Exception e)

@@ -127,12 +127,16 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 	var updateScopeForState = function(formName, formScope, state) {
 		if (!state) state = formStates[formName];
 		
-		for (var componentName in state.model) {
-			if (componentName !== '') {
-				$sabloConverters.updateAngularScope(state.model[componentName],
-						$sabloUtils.getInDepthProperty(formStatesConversionInfo, formName, componentName), formScope);
+		if (state && state.model) {
+			for (var componentName in state.model) {
+				if (componentName !== '') {
+					$sabloConverters.updateAngularScope(state.model[componentName],
+							$sabloUtils.getInDepthProperty(formStatesConversionInfo, formName, componentName), formScope);
+				}
 			}
-		}
+		} else if (formScope) {
+			$log.error("When updating scope - with non-null value state.model is undefined. This is unexpected...");
+		} // recreateUI destroying it completely? or complete form unload? or maybe partial load in hidden div interrupted by real show of same form?
 	}
 
 	var wsSession = null;

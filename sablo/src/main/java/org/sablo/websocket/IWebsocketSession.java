@@ -99,6 +99,8 @@ public interface IWebsocketSession
 	 */
 	IWindow getOrCreateWindow(String windowId, String windowName);
 
+	IWindow getActiveWindow(String windowName);
+
 	Collection< ? extends IWindow> getWindows();
 
 	/**

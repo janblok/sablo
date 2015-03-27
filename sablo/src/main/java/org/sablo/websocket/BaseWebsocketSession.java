@@ -115,6 +115,25 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		}
 	}
 
+	@Override
+	public IWindow getActiveWindow(String windowName)
+	{
+		synchronized (windows)
+		{
+			for (ObjectReference<IWindow> ref : windows)
+			{
+				IWindow window = ref.getObject();
+				if (ref.getRefcount() > 0 && ((windowName == null && window.getName() == null) || (windowName != null && windowName.equals(window.getName()))))
+				{
+					return window;
+				}
+			}
+		}
+
+		// not found
+		return null;
+	}
+
 	protected IWindow createWindow(String windowName)
 	{
 		return new BaseWindow(windowName);

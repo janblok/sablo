@@ -19,7 +19,6 @@ package org.sablo.websocket;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +37,6 @@ import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.property.DataConverterContext;
 import org.sablo.specification.property.types.AggregatedPropertyType;
-import org.sablo.specification.property.types.DatePropertyType;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.JSONUtils.ChangesToJSONConverter;
@@ -606,12 +604,6 @@ public class BaseWindow implements IWindow
 				}
 			}, FullValueToJSONConverter.INSTANCE, apiFunction.getBlockEventProcessing());
 
-
-			// convert dates back; TODO should this if be removed?; the JSONUtils.fromJSON below should do this anyway
-			if (ret instanceof Long && apiFunction.getReturnType().getType() instanceof DatePropertyType)
-			{
-				return new Date(((Long)ret).longValue());
-			}
 			if (apiFunction.getReturnType() != null)
 			{
 				try

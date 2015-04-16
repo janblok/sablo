@@ -26,7 +26,7 @@ public class StringPropertyType extends DefaultPropertyType<String>
 	public static final StringPropertyType INSTANCE = new StringPropertyType();
 	public static final String TYPE_NAME = "string";
 
-	private StringPropertyType()
+	protected StringPropertyType()
 	{
 	}
 

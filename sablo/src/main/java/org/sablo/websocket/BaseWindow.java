@@ -37,6 +37,7 @@ import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.property.DataConverterContext;
 import org.sablo.specification.property.types.AggregatedPropertyType;
+import org.sablo.websocket.impl.ClientService;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.JSONUtils.ChangesToJSONConverter;
@@ -380,7 +381,8 @@ public class BaseWindow implements IWindow
 			{
 				hasContentToSend = true;
 				clientDataConversions.pushNode("services");
-				FullValueToJSONConverter.INSTANCE.toJSONValue(w, "services", serviceCalls, serviceCallTypes, clientDataConversions, null);
+				FullValueToJSONConverter.INSTANCE.toJSONValue(w, "services", serviceCalls, serviceCallTypes, clientDataConversions,
+					(ClientService)session.getClientService((String)serviceCalls.get(0).get("name")));
 				clientDataConversions.popNode();
 			}
 

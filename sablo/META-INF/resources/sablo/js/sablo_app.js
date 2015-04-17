@@ -341,7 +341,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 
 		getFormStateWithData: getFormStateWithData,
 
-		// this method should only be used to manipulate pre-resolve state if apps. need any; the returned form state if defined will not have any data in it or operations DOM/directives
+		// this method should only be used to manipulate pre-resolve state if apps. need any; the returned form state if defined might not have any data in it or operational DOM/directives
 		getFormStateEvenIfNotYetResolved: function(name) { 
 			return formStates[name];
 		},

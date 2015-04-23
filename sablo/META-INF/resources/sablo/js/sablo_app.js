@@ -357,7 +357,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		hasFormStateWithData: function(name) {
 			return typeof(formStates[name]) !== 'undefined' && !formStates[name].initializing && formStates[name].resolved;
 		},
-
+		
 		clearFormState: function(formName) {
 			delete formStates[formName];
 		},
@@ -527,7 +527,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 //- this directive requires full jquery to be loaded before angular.js; jQuery lite that ships with angular doesn't
 //have trigger() that bubbles up; if needed that could be implemented using triggerHandler, going from parent to parent
 //- note: -2 means an element and it's children should be skipped by tabsequence
-.directive('sabloTabseq',  ['$parse', function ($parse) {
+.directive('sabloTabseq',  ['$parse', '$timeout', function ($parse,$timeout) {
 	return {
 		restrict: 'A',
 
@@ -542,15 +542,22 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 			var runtimeChildIndexes = {}; // map designChildIndex[i] -> runtimeIndex for child or designChildIndex[i] -> [runtimeIndex1, runtimeIndex2] in case there are multiple equal design time indexes
 			var runtimeIndex; // initialized a bit lower
 			var initializing = true;
-
+			var isEnabled = true;
+			
 			function recalculateChildRuntimeIndexesStartingAt(posInDesignArray /*inclusive*/, triggeredByParent) {
 				if (designTabSeq == -2) return;
 
-				if (designTabSeq == 0) {
+				if(!isEnabled || runtimeIndex.startIndex == -1) {
+
+					runtimeIndex.nextAvailableIndex = runtimeIndex.startIndex;
+					runtimeIndex.startIndex = -1;					
+				}
+				else if (designTabSeq == 0) {
 					// this element doesn't set any tabIndex attribute (default behavior)
 					runtimeIndex.nextAvailableIndex = runtimeIndex.startIndex;
 					runtimeIndex.startIndex = 0;
-				} else if (runtimeIndex.startIndex === 0) {
+				}
+				else if (runtimeIndex.startIndex === 0) {
 					runtimeIndex.nextAvailableIndex = 0;
 				} 
 				else if (runtimeIndex.nextAvailableIndex === -1)
@@ -586,7 +593,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 				if (initializing) initializing = undefined; // it's now considered initialized as first runtime index caluculation is done
 
 				var parentRecalculateNeeded;
-				if (runtimeIndex.startIndex !== 0) {
+				if (runtimeIndex.startIndex !== 0 && runtimeIndex.startIndex !== -1) {
 					var ownTabIndexBump = hasOwnTabIndex() ? 1 : 0;
 					parentRecalculateNeeded = (runtimeIndex.nextAvailableIndex < recalculateStartIndex + ownTabIndexBump);
 					var reservedGap = (config && config.reservedGap) ? config.reservedGap : 0;
@@ -675,7 +682,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 
 				if (!initializing) {
 					// a new child is ready/linked; recalculate tab indexes for it and after it
-					recalculateChildRuntimeIndexesStartingAt(designChildIndexToArrayPosition[designChildIndex], false);
+					var startIdx = (designChildIndexToArrayPosition && designChildIndexToArrayPosition[designChildIndex] != undefined) ? designChildIndexToArrayPosition[designChildIndex] : 0;
+					recalculateChildRuntimeIndexesStartingAt(startIdx, false);
 				} else if (initialRootRecalculate) {
 					// this is $rootScope (one $parent extra cause the directive creates it); we always assume a sabloTabseq directive is bound to it;
 					// now that it is linked we can do initial calculation of tre
@@ -705,17 +713,45 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 				}
 			});
 
+			function disableTabseq() {
+				isEnabled = false;
+				recalculateChildRuntimeIndexesStartingAt(0, true);
+				return false;
+			}
+			$element.on("disableTabseq", disableTabseq);
+			
+			function enableTabseq() {
+				isEnabled = true;
+				$element.parent().trigger("recalculatePSTS", [0]);
+				return false;
+			}			
+			$element.on("enableTabseq", enableTabseq);			
+			
 			if (designTabSeq != -2 && !(config && config.root)) {
-				$element.parent().trigger("registerCSTS", [designTabSeq, runtimeIndex]);
+				if($element.parent().length === 0) {
+					var elementWatch = $scope.$watch(function() { return $element.parent().length }, function(newValue) {
+						if(newValue == 1) {
+							$element.parent().trigger("registerCSTS", [designTabSeq, runtimeIndex]);
+							elementWatch();
+						}
+					});
+				}
+				else {
+					$element.parent().trigger("registerCSTS", [designTabSeq, runtimeIndex]);
+				}
 
 				function destroyHandler(event) {
 					// unregister current tabSeq from parent tabSeq container
 					$element.parent().trigger("unregisterCSTS", [designTabSeq, runtimeIndex]);
 
-					// clean-up listeners
-					$element.off("registerCSTS", registerChildHandler);
-					$element.off("unregisterCSTS", unregisterChildHandler);
-					$element.off("recalculatePSTS", recalculateIndexesHandler);
+					// clean-up listeners in timeout, because in case of a container
+					// if we would removed it now, the children would call unregister to
+					// the wrong container (the parent of the correct container)
+					$timeout(function(){
+						$element.off("registerCSTS", registerChildHandler);
+						$element.off("unregisterCSTS", unregisterChildHandler);
+						$element.off("recalculatePSTS", recalculateIndexesHandler);						
+					}, 0);
 					deregDestroy();
 					deregisterAttrObserver();
 
@@ -735,7 +771,19 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 				element.trigger("recalculatePSTS", [0, true]);
 			} else {
 				var designTabSeq = $parse(attrs.sabloTabseq)(scope);
-				if (designTabSeq != -2) element.parent().trigger("recalculatePSTS", [designTabSeq ? designTabSeq : 0]);
+				if (designTabSeq != -2) {
+					if(element.parent().length === 0) {
+						var elementWatch = scope.$watch(function() { return element.parent().length }, function(newValue) {
+							if(newValue == 1) {
+								element.parent().trigger("recalculatePSTS", [designTabSeq ? designTabSeq : 0]);
+								elementWatch();
+							}
+						});
+					}
+					else {
+						element.parent().trigger("recalculatePSTS", [designTabSeq ? designTabSeq : 0]);
+					}
+				}
 			}
 		}
 

@@ -24,6 +24,8 @@ import org.sablo.specification.property.CustomJSONArrayType;
 import org.sablo.specification.property.CustomJSONArrayTypeFactory;
 import org.sablo.specification.property.CustomJSONObjectType;
 import org.sablo.specification.property.CustomJSONObjectTypeFactory;
+import org.sablo.specification.property.CustomVariableArgsType;
+import org.sablo.specification.property.CustomVariableArgsTypeFactory;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IPropertyType;
 import org.slf4j.Logger;
@@ -68,6 +70,7 @@ public class TypesRegistry
 		addType(ScrollbarsPropertyType.INSTANCE);
 
 		addTypeFactory(CustomJSONArrayType.TYPE_NAME, new CustomJSONArrayTypeFactory());
+		addTypeFactory(CustomVariableArgsType.TYPE_NAME, new CustomVariableArgsTypeFactory());
 		addTypeFactory(CustomJSONObjectType.TYPE_NAME, new CustomJSONObjectTypeFactory());
 
 		addType(ProtectedPropertyType.INSTANCE);

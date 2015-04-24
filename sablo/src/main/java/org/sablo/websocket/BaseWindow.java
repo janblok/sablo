@@ -35,6 +35,7 @@ import org.sablo.Container;
 import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentApiDefinition;
+import org.sablo.specification.property.CustomVariableArgsType;
 import org.sablo.specification.property.DataConverterContext;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.impl.ClientService;
@@ -479,12 +480,28 @@ public class BaseWindow implements IWindow
 		PropertyDescription typesOfThisCall = AggregatedPropertyType.newAggregatedProperty();
 		serviceCall.put("name", serviceName);
 		serviceCall.put("call", functionName);
+		if (argumentTypes != null && argumentTypes.getProperties().size() > 0)
+		{
+			int typesNumber = argumentTypes.getProperties().size();
+			PropertyDescription pd = argumentTypes.getProperty(String.valueOf(typesNumber - 1));
+			if (pd.getType() instanceof CustomVariableArgsType && arguments.length > typesNumber)
+			{
+				// handle variable args
+				List<Object> varArgs = new ArrayList<Object>();
+				for (int i = typesNumber - 1; i < arguments.length; i++)
+				{
+					varArgs.add(arguments[i]);
+				}
+				arguments[typesNumber - 1] = varArgs;
+				arguments = Arrays.copyOf(arguments, typesNumber);
+			}
+		}
+
 		serviceCall.put("args", arguments);
 		if (argumentTypes != null) typesOfThisCall.putProperty("args", argumentTypes);
 		serviceCalls.add(serviceCall);
 		serviceCallTypes.putProperty(String.valueOf(serviceCalls.size() - 1), typesOfThisCall);
 	}
-
 
 	@Override
 	public boolean hasEndpoint()

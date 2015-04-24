@@ -33,6 +33,7 @@ import org.json.JSONObject;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.property.CustomJSONArrayType;
 import org.sablo.specification.property.CustomPropertyTypeResolver;
+import org.sablo.specification.property.CustomVariableArgsType;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.types.TypesRegistry;
@@ -197,15 +198,21 @@ public class WebComponentSpecification extends PropertyDescription
 	{
 		String property = propertyString.replaceAll("\\s", "");
 		boolean isArray = false;
+		boolean isVarArgs = false;
 		if (property.endsWith("[]"))
 		{
 			isArray = true;
 			property = property.substring(0, property.length() - 2);
 		}
+		else if (property.endsWith("..."))
+		{
+			isVarArgs = true;
+			property = property.substring(0, property.length() - 3);
+		}
 		// first check the local ones.
 		IPropertyType< ? > t = foundTypes.get(property);
 		if (t == null) t = TypesRegistry.getType(property);
-		return new ParsedProperty(t, isArray);
+		return new ParsedProperty(t, isArray, isVarArgs);
 	}
 
 	/**
@@ -309,6 +316,10 @@ public class WebComponentSpecification extends PropertyDescription
 		{
 			return TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, new PropertyDescription(ARRAY_ELEMENT_PD_NAME, pp.type));
 		}
+		if (pp.varArgs)
+		{
+			return TypesRegistry.createNewType(CustomVariableArgsType.TYPE_NAME, new PropertyDescription(ARRAY_ELEMENT_PD_NAME, pp.type));
+		}
 		return pp.type;
 	}
 
@@ -402,7 +413,7 @@ public class WebComponentSpecification extends PropertyDescription
 				if (pp != null && pp.type != null)
 				{
 					IPropertyType< ? > type = pp.type;
-					if (pp.array)
+					if (pp.array || pp.varArgs)
 					{
 						// here we could have something like { type: 'myprop[]', a: ..., b: ... } so with a config object;
 						// the config object will be used by the 'CustomJSONArray' type;
@@ -410,7 +421,14 @@ public class WebComponentSpecification extends PropertyDescription
 						JSONObject elementConfig = configObject != null ? configObject.optJSONObject(CustomJSONArrayType.ELEMENT_CONFIG_KEY) : null;
 						PropertyDescription elementDescription = new PropertyDescription(ARRAY_ELEMENT_PD_NAME, type, type.parseConfig(elementConfig),
 							defaultValue, values, tags, false);
-						type = TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, elementDescription);
+						if (pp.array)
+						{
+							type = TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, elementDescription);
+						}
+						else
+						{
+							type = TypesRegistry.createNewType(CustomVariableArgsType.TYPE_NAME, elementDescription);
+						}
 					}
 
 					pds.put(key, new PropertyDescription(key, type, type.parseConfig(configObject), defaultValue, values, tags, false));
@@ -430,11 +448,13 @@ public class WebComponentSpecification extends PropertyDescription
 	{
 		private final IPropertyType type;
 		private final boolean array;
+		private final boolean varArgs;
 
-		ParsedProperty(IPropertyType type, boolean array)
+		ParsedProperty(IPropertyType type, boolean array, boolean varArgs)
 		{
 			this.type = type;
 			this.array = array;
+			this.varArgs = varArgs;
 		}
 	}
 

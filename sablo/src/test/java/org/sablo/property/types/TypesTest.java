@@ -17,6 +17,7 @@ package org.sablo.property.types;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 
 import java.awt.Color;
@@ -30,6 +31,10 @@ import org.json.JSONStringer;
 import org.junit.Test;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.types.DimensionPropertyType;
+import org.sablo.specification.property.types.DoublePropertyType;
+import org.sablo.specification.property.types.FloatPropertyType;
+import org.sablo.specification.property.types.IntPropertyType;
+import org.sablo.specification.property.types.LongPropertyType;
 import org.sablo.specification.property.types.PointPropertyType;
 import org.sablo.specification.property.types.TypesRegistry;
 
@@ -111,4 +116,81 @@ public class TypesTest
 		assertSame(type, type2);
 	}
 
+	@Test
+	public void testNumberTypesToNullConversion()
+	{
+		assertNull(DoublePropertyType.INSTANCE.fromJSON(null, null, null));
+		assertNull(DoublePropertyType.INSTANCE.fromJSON("", null, null));
+
+		assertNull(IntPropertyType.INSTANCE.fromJSON(null, null, null));
+		assertNull(IntPropertyType.INSTANCE.fromJSON("", null, null));
+
+		assertNull(LongPropertyType.INSTANCE.fromJSON(null, null, null));
+		assertNull(LongPropertyType.INSTANCE.fromJSON("", null, null));
+
+		assertNull(FloatPropertyType.INSTANCE.fromJSON(null, null, null));
+		assertNull(FloatPropertyType.INSTANCE.fromJSON("", null, null));
+
+	}
+
+	@Test
+	public void testDoubleTypeConversion()
+	{
+		assertEquals(1, DoublePropertyType.INSTANCE.fromJSON(Double.valueOf(1), null, null).doubleValue(), 0);
+		assertEquals(1.1, DoublePropertyType.INSTANCE.fromJSON(Double.valueOf(1.1), null, null).doubleValue(), 0);
+		assertEquals(1, DoublePropertyType.INSTANCE.fromJSON("1", null, null).doubleValue(), 0);
+
+		// test with english locale
+//		assertEquals(1111.11, DoublePropertyType.INSTANCE.fromJSON("1,111.11", null, null).doubleValue(), 0);
+//		assertEquals(1.1, DoublePropertyType.INSTANCE.fromJSON("1.1", null, null).doubleValue(), 0);
+
+		// test with dutch locale
+//		assertEquals(1111.11, DoublePropertyType.INSTANCE.fromJSON("1.111,11", null, null).doubleValue(), 0);
+//		assertEquals(1.1, DoublePropertyType.INSTANCE.fromJSON("1,1", null, null).doubleValue(), 0);
+
+	}
+
+	@Test
+	public void testFloatTypeConversion()
+	{
+		assertEquals(1, FloatPropertyType.INSTANCE.fromJSON(Float.valueOf(1), null, null).floatValue(), 0);
+		assertEquals(1.1f, FloatPropertyType.INSTANCE.fromJSON(Float.valueOf(1.1f), null, null).floatValue(), 0);
+		assertEquals(1, FloatPropertyType.INSTANCE.fromJSON("1", null, null).doubleValue(), 0);
+
+		// test with english locale
+//		assertEquals(1111.11f, FloatPropertyType.INSTANCE.fromJSON("1,111.11", null, null).floatValue(), 0);
+//		assertEquals(1.1f, FloatPropertyType.INSTANCE.fromJSON("1.1", null, null).floatValue(), 0);
+
+		// test with dutch locale
+//		assertEquals(1111.11f, FloatPropertyType.INSTANCE.fromJSON("1.111,11", null, null).floatValue(), 0);
+//		assertEquals(1.1f, FloatPropertyType.INSTANCE.fromJSON("1,1", null, null).floatValue(), 0);
+
+	}
+
+	@Test
+	public void testIntegerTypeConversion()
+	{
+		assertEquals(1, IntPropertyType.INSTANCE.fromJSON(Integer.valueOf(1), null, null).intValue());
+		assertEquals(1, IntPropertyType.INSTANCE.fromJSON("1", null, null).intValue());
+
+		// test with english locale
+//		assertEquals(1111, IntPropertyType.INSTANCE.fromJSON("1,111", null, null).intValue());
+
+		// test with dutch locale
+//		assertEquals(1111, IntPropertyType.INSTANCE.fromJSON("1.111", null, null).intValue());
+
+	}
+
+	public void testLongTypeConversion()
+	{
+		assertEquals(1, LongPropertyType.INSTANCE.fromJSON(Long.valueOf(1), null, null).longValue());
+		assertEquals(1, LongPropertyType.INSTANCE.fromJSON("1", null, null).longValue());
+
+		// test with english locale
+//		assertEquals(1111, LongPropertyType.INSTANCE.fromJSON("1,111", null, null).intValue());
+
+		// test with dutch locale
+//		assertEquals(1111, LongPropertyType.INSTANCE.fromJSON("1.111", null, null).intValue());
+
+	}
 }

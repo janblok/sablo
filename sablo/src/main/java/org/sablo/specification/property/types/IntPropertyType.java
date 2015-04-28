@@ -15,14 +15,23 @@
  */
 package org.sablo.specification.property.types;
 
+import java.text.NumberFormat;
+import java.text.ParseException;
+
+import org.json.JSONException;
+import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.property.IDataConverterContext;
+import org.sablo.specification.property.IPropertyConverter;
+import org.sablo.websocket.utils.DataConversion;
+import org.sablo.websocket.utils.JSONUtils;
 
 
 /**
  * @author jcompagner
  *
  */
-public class IntPropertyType extends DefaultPropertyType<Integer>
+public class IntPropertyType extends DefaultPropertyType<Integer> implements IPropertyConverter<Number>
 {
 
 	public static final IntPropertyType INSTANCE = new IntPropertyType();
@@ -42,5 +51,37 @@ public class IntPropertyType extends DefaultPropertyType<Integer>
 	public Integer defaultValue(PropertyDescription pd)
 	{
 		return Integer.valueOf(0);
+	}
+
+	public Number fromJSON(Object newJSONValue, Number previousSabloValue, IDataConverterContext dataConverterContext)
+	{
+		if (newJSONValue == null || newJSONValue instanceof Integer) return (Integer)newJSONValue;
+		if (newJSONValue instanceof Number) return Integer.valueOf(((Number)newJSONValue).intValue());
+		if (newJSONValue instanceof String)
+		{
+			if (((String)newJSONValue).trim().length() == 0) return null;
+// TODO get the locale from the session?
+// IWebsocketSession session = CurrentWindow.get().getSession();
+			Number parsedValue;
+			try
+			{
+				parsedValue = NumberFormat.getIntegerInstance().parse((String)newJSONValue);
+				return parsedValue instanceof Integer ? (Integer)parsedValue : Integer.valueOf(parsedValue.intValue());
+			}
+			catch (ParseException e)
+			{
+				throw new RuntimeException(e);
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public JSONWriter toJSON(JSONWriter writer, String key, Number sabloValue, DataConversion clientConversion, IDataConverterContext dataConverterContext)
+		throws JSONException
+	{
+		JSONUtils.addKeyIfPresent(writer, key);
+		if (sabloValue != null) writer.value(sabloValue.intValue());
+		return writer;
 	}
 }

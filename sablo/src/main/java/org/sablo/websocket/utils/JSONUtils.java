@@ -31,7 +31,6 @@ import org.sablo.BaseWebObject;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.DataConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
-import org.sablo.specification.property.IConvertedPropertyType;
 import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.specification.property.IPropertyConverter;
 import org.sablo.specification.property.IPropertyType;
@@ -415,13 +414,12 @@ public class JSONUtils
 			if (value != null && valueType != null)
 			{
 				IPropertyType< ? > type = valueType.getType();
-				if (type instanceof IConvertedPropertyType)
+				if (type instanceof IPropertyConverter)
 				{
 					// good, we now know that it needs special conversion
 					try
 					{
-						return ((IConvertedPropertyType)type).toJSON(writer, key, value, browserConversionMarkers, new DataConverterContext(valueType,
-							webObject));
+						return ((IPropertyConverter)type).toJSON(writer, key, value, browserConversionMarkers, new DataConverterContext(valueType, webObject));
 					}
 					catch (Exception ex)
 					{

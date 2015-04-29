@@ -56,7 +56,7 @@ public class WebLayoutSpecification extends WebComponentSpecification
 		}
 		WebLayoutSpecification spec = new WebLayoutSpecification(json.getString("name"), packageName, json.optString("displayName", null), json.optString(
 			"categoryName", null), json.optString("icon", null), json.getString("definition"), jsonConfig, topContainer, children,
-			json.getString("designStyleClass"));
+			json.optString("designStyleClass"));
 
 		// properties
 		spec.putAll(spec.parseProperties("model", json));

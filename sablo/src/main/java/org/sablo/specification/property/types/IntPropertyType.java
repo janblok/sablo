@@ -81,7 +81,7 @@ public class IntPropertyType extends DefaultPropertyType<Integer> implements IPr
 		throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
-		if (sabloValue != null) writer.value(sabloValue.intValue());
+		writer.value(sabloValue);
 		return writer;
 	}
 }

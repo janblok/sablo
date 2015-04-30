@@ -82,7 +82,7 @@ public class FloatPropertyType extends DefaultPropertyType<Float> implements IPr
 		throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
-		if (sabloValue != null) writer.value(sabloValue.floatValue());
+		writer.value(sabloValue);
 		return writer;
 	}
 }

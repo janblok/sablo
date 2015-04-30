@@ -82,7 +82,7 @@ public class LongPropertyType extends DefaultPropertyType<Long> implements IProp
 		throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
-		if (sabloValue != null) writer.value(sabloValue.longValue());
+		writer.value(sabloValue);
 		return writer;
 	}
 }

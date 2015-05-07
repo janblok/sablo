@@ -13,6 +13,7 @@ module.exports = function(config){
 
     frameworks: ['jasmine'],
     browsers : ['PhantomJS'],
+    //browsers : ['PhantomJS', 'Chrome', 'Firefox', 'IE'],//
 
     /*plugins : [    <- not needed since karma loads by default all sibling plugins that start with karma-*
             'karma-junit-reporter',
@@ -22,6 +23,8 @@ module.exports = function(config){
             'karma-jasmine'
             ],*/
     singleRun: true,
+    //singleRun: false,
+    //browserNoActivityTimeout:999999,
     //autoWatch : true,
     reporters: ['dots', 'junit'],
     junitReporter: {

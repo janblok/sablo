@@ -216,6 +216,49 @@ describe('styles helpers', function() {
   		expect($(myDiv.children()[1]).attr('tabIndex')).toBe('151');
   	});
   	
+  	it("should apply tabIndex for children correctly in a ngRepeat with tabSeq based on $index", function() {
+  		// simulate record view form with 1 portal in body and an element in footer
+  		var template= '<div sablo-tabseq="1" sablo-tabseq-config="{root: true}">'
+  			+ '    <div class="btn-group" sablo-tabseq="model.tabSeq" sablo-tabseq-config="{container: true, reservedGap: 50}">'
+  			+ '       <label sablo-tabseq="$index + 1" class="btn btn-primary" ng-model="model.dataprovider" ng-repeat="item in model.valuelist" btn-radio="\'{{item.realValue}}\'">'
+  			+ '             {{item.displayValue}}'
+  			+ '       </label>'
+  			+ '    </div>'
+  			+ '</div>';
+  		$scope.model = {};
+  		$scope.model.tabSeq = 1;
+  		$scope.model.dataprovider = 222;
+  		$scope.model.valuelist = [{realValue: 111, displayValue:"One Hundred and Eleven"},
+  		                          {realValue: 222, displayValue:"Two Hundred and Twelve"},
+  		                          {realValue: 333, displayValue:"Three Hundred and Thirty-Three"}];
+  		$scope.$digest();
+  		
+  		var myDiv = $compile(template)($scope);
+  		$scope.$digest();
+
+  		expect(myDiv.attr('tabIndex')).toBe(undefined);
+  		expect($($(myDiv.children()[0]).children()[0]).attr('tabIndex')).toBe('1');
+  		expect($($(myDiv.children()[0]).children()[1]).attr('tabIndex')).toBe('2');
+  		expect($($(myDiv.children()[0]).children()[2]).attr('tabIndex')).toBe('3');
+  		
+  		// now disable tabSequences (this is used by modal dialogs) - it must not be called on root, only lower (otherwise re-enable will fail for now)
+  		$(myDiv.children()[0]).trigger("disableTabseq");
+  		$scope.$digest();
+  		expect(myDiv.attr('tabIndex')).toBe(undefined);
+  		expect($($(myDiv.children()[0]).children()[0]).attr('tabIndex')).toBe('-1');
+  		expect($($(myDiv.children()[0]).children()[1]).attr('tabIndex')).toBe('-1');
+  		expect($($(myDiv.children()[0]).children()[2]).attr('tabIndex')).toBe('-1');
+  		
+  		// re-enable them, they should be just as before
+  		$(myDiv.children()[0]).trigger("enableTabseq");
+  		$scope.$digest();
+  		expect(myDiv.attr('tabIndex')).toBe(undefined);
+  		expect($($(myDiv.children()[0]).children()[0]).attr('tabIndex')).toBe('1');
+  		expect($($(myDiv.children()[0]).children()[1]).attr('tabIndex')).toBe('2');
+  		expect($($(myDiv.children()[0]).children()[2]).attr('tabIndex')).toBe('3');
+  		
+  	});
+  	
   	it("should recalculate indexes if more are needed than reserved, due to adding rows at runtime", function() {
   		// simulate record view form with 1 portal in body and an element in footer
   		var template= '<div sablo-tabseq="1" sablo-tabseq-config="{root: true}">' +
@@ -237,7 +280,6 @@ describe('styles helpers', function() {
   		$scope.$digest();
   		
   		var myDiv = $compile(template)($scope);
-  		debugger;
   		$scope.$digest();
 
   		expect($(myDiv.children()[0]).children().length).toBe(2); //2 rows in portal

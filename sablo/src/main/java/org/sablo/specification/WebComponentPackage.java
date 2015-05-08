@@ -207,7 +207,7 @@ public class WebComponentPackage
 			}
 		}
 
-		return new WebComponentPackageSpecification<>(packageName, packageDisplayname, descriptions, cssLibrary, jsLibrary);
+		return new WebComponentPackageSpecification<>(packageName, packageDisplayname, descriptions, cssLibrary, jsLibrary, mf);
 	}
 
 	/**
@@ -271,7 +271,8 @@ public class WebComponentPackage
 				jsLibrary = mainAttrs.getValue(JS_LIB);
 			}
 		}
-		return new WebComponentPackageSpecification<>(packageName, packageDisplayname, descriptions, cssLibrary, jsLibrary);
+		return new WebComponentPackageSpecification<>(packageName, packageDisplayname, descriptions, cssLibrary, jsLibrary, mf);
+	});
 	}
 
 	private static List<String> getWebEntrySpecNames(Manifest mf, String attributeName)

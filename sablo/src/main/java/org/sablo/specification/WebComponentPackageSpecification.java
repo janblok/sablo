@@ -32,13 +32,14 @@ public class WebComponentPackageSpecification<T extends WebComponentSpecificatio
 	private final String jsLibrary;
 	private final Map<String, T> specifications;
 
-	public WebComponentPackageSpecification(String packageName, String packageDisplayname, Map<String, T> specifications, String cssLibrary, String jsLibrary)
+	public WebComponentPackageSpecification(String packageName, String packageDisplayname, Map<String, T> specifications, String cssLibrary, String jsLibrary, Manifest mf)
 	{
 		this.packageName = packageName;
 		this.packageDisplayname = packageDisplayname;
 		this.specifications = specifications;
 		this.cssLibrary = cssLibrary;
 		this.jsLibrary = jsLibrary;
+		this.mf = mf;
 	}
 
 	/**

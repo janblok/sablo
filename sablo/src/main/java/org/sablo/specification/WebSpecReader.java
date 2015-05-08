@@ -166,7 +166,7 @@ class WebSpecReader
 				webComponentPackageSpecification.getPackageName(),
 				new WebComponentPackageSpecification<>(webComponentPackageSpecification.getPackageName(),
 					webComponentPackageSpecification.getPackageDisplayname(), packageComponents, webComponentPackageSpecification.getCssLibrary(),
-					webComponentPackageSpecification.getJsLibrary()));
+					webComponentPackageSpecification.getJsLibrary(), webComponentPackageSpecification.getManifest()));
 		}
 	}
 

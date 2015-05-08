@@ -229,7 +229,7 @@ describe('styles helpers', function() {
   		$scope.model.tabSeq = 1;
   		$scope.model.dataprovider = 222;
   		$scope.model.valuelist = [{realValue: 111, displayValue:"One Hundred and Eleven"},
-  		                          {realValue: 222, displayValue:"Two Hundred and Twelve"},
+  		                          {realValue: 222, displayValue:"Two Hundred and Twenty-Two"},
   		                          {realValue: 333, displayValue:"Three Hundred and Thirty-Three"}];
   		$scope.$digest();
   		

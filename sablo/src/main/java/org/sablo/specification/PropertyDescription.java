@@ -109,7 +109,7 @@ public class PropertyDescription
 		List<PropertyDescription> filtered = new ArrayList<>(4);
 		for (PropertyDescription pd : properties.values())
 		{
-			if (pd.getType() == pt)
+			if (pt.getClass().isAssignableFrom(pd.getType().getClass()))
 			{
 				filtered.add(pd);
 			}

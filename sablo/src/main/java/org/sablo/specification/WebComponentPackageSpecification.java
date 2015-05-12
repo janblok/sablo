@@ -28,14 +28,17 @@ public class WebComponentPackageSpecification<T extends WebComponentSpecificatio
 
 	private final String packageName;
 	private final String packageDisplayname;
-
+	private final String cssLibrary;
+	private final String jsLibrary;
 	private final Map<String, T> specifications;
 
-	public WebComponentPackageSpecification(String packageName, String packageDisplayname, Map<String, T> specifications)
+	public WebComponentPackageSpecification(String packageName, String packageDisplayname, Map<String, T> specifications, String cssLibrary, String jsLibrary)
 	{
 		this.packageName = packageName;
 		this.packageDisplayname = packageDisplayname;
 		this.specifications = specifications;
+		this.cssLibrary = cssLibrary;
+		this.jsLibrary = jsLibrary;
 	}
 
 	/**
@@ -52,6 +55,22 @@ public class WebComponentPackageSpecification<T extends WebComponentSpecificatio
 	public String getPackageDisplayname()
 	{
 		return packageDisplayname == null ? packageName : packageDisplayname;
+	}
+
+	/**
+	 * @return the cssLibrary
+	 */
+	public String getCssLibrary()
+	{
+		return cssLibrary;
+	}
+
+	/**
+	 * @return the jsLibrary
+	 */
+	public String getJsLibrary()
+	{
+		return jsLibrary;
 	}
 
 	/**

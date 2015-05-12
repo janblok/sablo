@@ -55,6 +55,8 @@ public class WebComponentPackage
 {
 	private static final Logger log = LoggerFactory.getLogger(WebComponentPackage.class.getCanonicalName());
 	private static final String GLOBAL_TYPES_MANIFEST_ATTR = "Global-Types";
+	private static final String CSS_LIB = "CSS-Lib";
+	private static final String JS_LIB = "JS-Lib";
 	private static final String BUNDLE_SYMBOLIC_NAME = "Bundle-SymbolicName"; // for package name
 	private static final String BUNDLE_NAME = "Bundle-Name"; // for package display name
 
@@ -154,7 +156,8 @@ public class WebComponentPackage
 		String packageDisplayname = null;
 		Map<String, WebComponentSpecification> descriptions = new HashMap<>();
 		Manifest mf = reader.getManifest();
-
+		String cssLibrary = null;
+		String jsLibrary = null;
 		if (mf != null)
 		{
 			packageName = reader.getPackageName();
@@ -196,9 +199,15 @@ public class WebComponentPackage
 					}
 				}
 			}
+			Attributes mainAttrs = mf.getMainAttributes();
+			if (mainAttrs != null)
+			{
+				cssLibrary = mainAttrs.getValue(CSS_LIB);
+				jsLibrary = mainAttrs.getValue(JS_LIB);
+			}
 		}
 
-		return new WebComponentPackageSpecification<>(packageName, packageDisplayname, descriptions);
+		return new WebComponentPackageSpecification<>(packageName, packageDisplayname, descriptions, cssLibrary, jsLibrary);
 	}
 
 	/**
@@ -211,6 +220,8 @@ public class WebComponentPackage
 		String packageDisplayname = null;
 		Map<String, WebLayoutSpecification> descriptions = new HashMap<>();
 		Manifest mf = reader.getManifest();
+		String cssLibrary = null;
+		String jsLibrary = null;
 		if (mf != null)
 		{
 			packageName = reader.getPackageName();
@@ -253,8 +264,14 @@ public class WebComponentPackage
 					}
 				}
 			}
+			Attributes mainAttrs = mf.getMainAttributes();
+			if (mainAttrs != null)
+			{
+				cssLibrary = mainAttrs.getValue(CSS_LIB);
+				jsLibrary = mainAttrs.getValue(JS_LIB);
+			}
 		}
-		return new WebComponentPackageSpecification<>(packageName, packageDisplayname, descriptions);
+		return new WebComponentPackageSpecification<>(packageName, packageDisplayname, descriptions, cssLibrary, jsLibrary);
 	}
 
 	private static List<String> getWebEntrySpecNames(Manifest mf, String attributeName)

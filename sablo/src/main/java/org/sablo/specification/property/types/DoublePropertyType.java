@@ -17,12 +17,14 @@ package org.sablo.specification.property.types;
 
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.util.Locale;
 
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.specification.property.IPropertyConverter;
+import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 
@@ -60,12 +62,12 @@ public class DoublePropertyType extends DefaultPropertyType<Double> implements I
 		if (newJSONValue instanceof String)
 		{
 			if (((String)newJSONValue).trim().length() == 0) return null;
-// TODO get the locale from the session?
-// IWebsocketSession session = CurrentWindow.get().getSession();
+
+			Locale locale = CurrentWindow.get().getSession().getLocale();
 			Number parsedValue;
 			try
 			{
-				parsedValue = NumberFormat.getNumberInstance().parse((String)newJSONValue);
+				parsedValue = NumberFormat.getNumberInstance(locale).parse((String)newJSONValue);
 				return parsedValue instanceof Double ? (Double)parsedValue : Double.valueOf(parsedValue.doubleValue());
 			}
 			catch (ParseException e)

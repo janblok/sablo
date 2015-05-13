@@ -18,6 +18,7 @@ package org.sablo.websocket;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.json.JSONObject;
@@ -113,4 +114,6 @@ public interface IWebsocketSession
 	boolean checkForWindowActivity();
 
 	SabloService getSabloService();
+
+	Locale getLocale();
 }

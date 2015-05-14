@@ -72,26 +72,31 @@ public class WebComponentSpecification extends PropertyDescription
 
 	private URL definitionURL;
 
-	public WebComponentSpecification(String name, String packageName, String displayName, String categoryName, String icon, String definition, JSONArray libs)
+	private final String preview;
+
+	public WebComponentSpecification(String name, String packageName, String displayName, String categoryName, String icon, String preview, String definition,
+		JSONArray libs)
 	{
 		super(name, null);
 		this.packageName = packageName;
 		this.displayName = displayName;
 		this.categoryName = categoryName;
 		this.icon = icon;
+		this.preview = preview;
 		this.definition = definition;
 		this.libraries = libs != null ? libs : new JSONArray();
 		this.foundTypes = new HashMap<>();
 	}
 
-	public WebComponentSpecification(String name, String packageName, String displayName, String categoryName, String icon, String definition, JSONArray libs,
-		Object configObject)
+	public WebComponentSpecification(String name, String packageName, String displayName, String categoryName, String icon, String preview, String definition,
+		JSONArray libs, Object configObject)
 	{
 		super(name, null, configObject);
 		this.packageName = packageName;
 		this.displayName = displayName;
 		this.categoryName = categoryName;
 		this.icon = icon;
+		this.preview = preview;
 		this.definition = definition;
 		this.libraries = libs != null ? libs : new JSONArray();
 		this.foundTypes = new HashMap<>();
@@ -171,6 +176,11 @@ public class WebComponentSpecification extends PropertyDescription
 		return icon;
 	}
 
+	public String getPreview()
+	{
+		return preview;
+	}
+
 	public String getPackageName()
 	{
 		return packageName;
@@ -226,7 +236,7 @@ public class WebComponentSpecification extends PropertyDescription
 
 	public static Map<String, IPropertyType< ? >> getTypes(JSONObject typesContainer) throws JSONException
 	{
-		WebComponentSpecification spec = new WebComponentSpecification("", "", "", null, null, "", null);
+		WebComponentSpecification spec = new WebComponentSpecification("", "", "", null, null, null, "", null);
 		spec.parseTypes(typesContainer);
 		return spec.foundTypes;
 	}
@@ -237,7 +247,8 @@ public class WebComponentSpecification extends PropertyDescription
 		JSONObject json = new JSONObject(specfileContent);
 
 		WebComponentSpecification spec = new WebComponentSpecification(json.getString("name"), packageName, json.optString("displayName", null),
-			json.optString("categoryName", null), json.optString("icon", null), json.getString("definition"), json.optJSONArray("libraries"));
+			json.optString("categoryName", null), json.optString("icon", null), json.optString("preview", null), json.getString("definition"),
+			json.optJSONArray("libraries"));
 
 		if (json.has("serverscript"))
 		{

@@ -816,7 +816,7 @@ public class WebComponentSecurityPropertiesTest
 
 		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 
-		WebComponentSpecification formSpec = new WebComponentSpecification("form_spec", "", "", null, null, "", null);
+		WebComponentSpecification formSpec = new WebComponentSpecification("form_spec", "", "", null, null, null, "", null);
 		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
 		formSpec.putProperty("prot", new PropertyDescription("prot", ProtectedPropertyType.INSTANCE, ProtectedConfig.DEFAULTBLOCKING_TRUE));
 
@@ -910,7 +910,7 @@ public class WebComponentSecurityPropertiesTest
 
 		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 
-		WebComponentSpecification formSpec = new WebComponentSpecification("form_spec", "", "", null, null, "", null);
+		WebComponentSpecification formSpec = new WebComponentSpecification("form_spec", "", "", null, null, null, "", null);
 		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
 		formSpec.putProperty("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
 

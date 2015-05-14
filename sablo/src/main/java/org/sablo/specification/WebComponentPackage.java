@@ -272,7 +272,6 @@ public class WebComponentPackage
 			}
 		}
 		return new WebComponentPackageSpecification<>(packageName, packageDisplayname, descriptions, cssLibrary, jsLibrary, mf);
-	});
 	}
 
 	private static List<String> getWebEntrySpecNames(Manifest mf, String attributeName)

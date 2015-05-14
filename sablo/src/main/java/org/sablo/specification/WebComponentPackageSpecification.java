@@ -18,6 +18,7 @@ package org.sablo.specification;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.jar.Manifest;
 
 
 /**
@@ -31,8 +32,10 @@ public class WebComponentPackageSpecification<T extends WebComponentSpecificatio
 	private final String cssLibrary;
 	private final String jsLibrary;
 	private final Map<String, T> specifications;
+	private final Manifest mf;
 
-	public WebComponentPackageSpecification(String packageName, String packageDisplayname, Map<String, T> specifications, String cssLibrary, String jsLibrary, Manifest mf)
+	public WebComponentPackageSpecification(String packageName, String packageDisplayname, Map<String, T> specifications, String cssLibrary, String jsLibrary,
+		Manifest mf)
 	{
 		this.packageName = packageName;
 		this.packageDisplayname = packageDisplayname;
@@ -85,5 +88,13 @@ public class WebComponentPackageSpecification<T extends WebComponentSpecificatio
 	public T getSpecification(String name)
 	{
 		return specifications.get(name);
+	}
+
+	/**
+	 * @return the manifest
+	 */
+	public Manifest getManifest()
+	{
+		return mf;
 	}
 }

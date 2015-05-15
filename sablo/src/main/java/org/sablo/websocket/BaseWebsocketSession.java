@@ -390,6 +390,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	@Override
 	public void handleMessage(JSONObject obj)
 	{
+		log.info("Unknown message from client ignored: " + obj.toString());
 	}
 
 }

@@ -82,13 +82,10 @@ webSocketModule.factory('$webSocket',
 						}
 					}
 
-				} catch (e) {
-					$log.error("error (follows below) in parsing/processing message: " + message.data);
-					$log.error(e);
-				} finally {
 					if (obj && obj.smsgid) {
 						// server wants a response; responseValue may be a promise
 						$q.when(responseValue).then(function(ret) {
+							// success
 							var response = {
 									smsgid : obj.smsgid
 							}
@@ -96,12 +93,36 @@ webSocketModule.factory('$webSocket',
 								response.ret = $sabloUtils.convertClientObject(ret);
 							}
 							sendMessageObject(response);
+						}, function(reason) {
+							// error
+							$log.error("Error (follows below) in parsing/processing this message (async): " + message.data);
+							$log.error(reason);
+							// server wants a response; send failure so that browser side script doesn't hang
+							var response = {
+									smsgid : obj.smsgid,
+									err: "Error while executing ($q deferred) client side code. Please see browser console for more info. Error: " + reason
+							}
+							sendMessageObject(response);
 						});
+					}
+				} catch (e) {
+					$log.error("Error (follows below) in parsing/processing this message: " + message.data);
+					$log.error(e);
+					if (obj && obj.smsgid) {
+						// server wants a response; send failure so that browser side script doesn't hang
+						var response = {
+								smsgid : obj.smsgid,
+								err: "Error while executing client side code. Please see browser console for more info. Error: " + e
+						}
+						sendMessageObject(response);
 					}
 				}
 			}
 
 			var sendMessageObject = function(obj) {
+				if ($sabloUtils.getCurrentEventLevelForServer()) {
+					obj.prio = $sabloUtils.getCurrentEventLevelForServer();
+				}
 				var msg = JSON.stringify(obj)
 				if (connected) {
 					websocket.send(msg)
@@ -281,18 +302,12 @@ webSocketModule.factory('$webSocket',
 
 				   for (var prop in fulllist) {
 					   var changed = false;
-					   if (!prev) {
-						   changed = true;
+					   if (!(prev && now)) {
+							changed = true; // true if just one of them is undefined; both cannot be undefined at this point if we are already iterating on combined property names
+					   } else {
+					    	changed = $sabloUtils.isChanged(now[prop], prev[prop], beanConversionInfo ? beanConversionInfo[prop] : undefined)
 					   }
-					   else if (prev[prop] !== now[prop]) {
-						   if (typeof now[prop] == "object") {
-							   if ($sabloUtils.isChanged(now[prop], prev[prop], conversionInfo ? conversionInfo[prop] : undefined)) {
-								   changed = true;
-							   }
-						   } else {
-							   changed = true;
-						   }
-					   }
+
 					   if (changed) {
 						   if (conversionInfo && conversionInfo[prop]) changes[prop] = $sabloConverters.convertFromClientToServer(now[prop], conversionInfo[prop], prev ? prev[prop] : undefined);
 						   else changes[prop] = $sabloUtils.convertClientObject(now[prop])
@@ -533,6 +548,7 @@ webSocketModule.factory('$webSocket',
 					   return now[$sabloConverters.INTERNAL_IMPL].isChanged();
 				   }
 				   
+				   if (now === prev) return false;
 				   if (now && prev) {
 					   if (now instanceof Array) {
 						   if (prev instanceof Array) {
@@ -566,9 +582,25 @@ webSocketModule.factory('$webSocket',
 				   }
 				   return true;
 			   }
+			var currentEventLevelForServer;
 			var sabloUtils = {
+				 // execution priority on server value used when for example a blocking API call from server needs to request more data from the server through this change
+				 // or whenever during a (blocking) API call to client we want some messages sent to the server to still be processed.
+				EVENT_LEVEL_SYNC_API_CALL: 500,
+				
+				// eventLevelValue can be undefined for DEFAULT
+				setCurrentEventLevelForServer: function(eventLevelValue) {
+					$rootScope.$digest(); // make sure all previous pending changes are sent using the previous currentEventLevelForServer
+					currentEventLevelForServer = eventLevelValue;
+				},
+			
+				getCurrentEventLevelForServer: function() {
+					return currentEventLevelForServer;
+				},
+			
 				isChanged: isChanged,
 				getCombinedPropertyNames: getCombinedPropertyNames,
+				
 				convertClientObject : function(value) {
 					if (value instanceof Date) {
 						value = value.getTime();

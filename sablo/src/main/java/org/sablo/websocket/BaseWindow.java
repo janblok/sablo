@@ -621,7 +621,7 @@ public class BaseWindow implements IWindow
 					w.endObject();
 					return true;
 				}
-			}, FullValueToJSONConverter.INSTANCE, apiFunction.getBlockEventProcessing());
+			}, ChangesToJSONConverter.INSTANCE, apiFunction.getBlockEventProcessing());
 
 			if (apiFunction.getReturnType() != null)
 			{

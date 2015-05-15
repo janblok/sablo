@@ -59,27 +59,17 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 
 	var getComponentChanges = function(now, prev, beanConversionInfo, parentSize, changeNotifier, componentScope) {
 		// first build up a list of all the properties both have.
-		var fulllist = $sabloUtils.getCombinedPropertyNames(now,prev);
+		var fulllist = $sabloUtils.getCombinedPropertyNames(now, prev);
 		var changes = {}, prop;
 
 		for (prop in fulllist) {
 			var changed = false;
-			if (!prev) {
-				changed = true;
+			if (!(prev && now)) {
+				changed = true; // true if just one of them is undefined; both cannot be undefined at this point if we are already iterating on combined property names
+			} else {
+				changed = $sabloUtils.isChanged(now[prop], prev[prop], beanConversionInfo ? beanConversionInfo[prop] : undefined)
 			}
-			else if (now[prop] && now[prop][$sabloConverters.INTERNAL_IMPL] && now[prop][$sabloConverters.INTERNAL_IMPL].isChanged)
-			{
-				changed = now[prop][$sabloConverters.INTERNAL_IMPL].isChanged();
-			}
-			else if (prev[prop] !== now[prop]) {
-				if (typeof now[prop] == "object") {
-					if ($sabloUtils.isChanged(now[prop], prev[prop], beanConversionInfo ? beanConversionInfo[prop] : undefined)) {
-						changed = true;
-					}
-				} else {
-					changed = true;
-				}
-			}
+
 			if (changed) {
 				changes[prop] = now[prop];
 			}
@@ -97,7 +87,6 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		if (Object.getOwnPropertyNames(changes).length > 0) {
 			callService('formService', 'dataPush', {formname:formname,beanname:beanname,changes:changes}, true)
 		}
-		return changes
 	};
 
 	var applyBeanData = function(beanModel, beanData, containerSize, changeNotifier, beanConversionInfo, newConversionInfo, componentScope) {

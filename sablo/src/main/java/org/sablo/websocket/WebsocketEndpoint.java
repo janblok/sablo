@@ -210,7 +210,11 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 						// response message
 						Integer suspendID = new Integer(obj.optInt("smsgid"));
 						List<Object> ret = pendingMessages.remove(suspendID);
-						if (ret != null) ret.add(obj.opt("ret"));
+						if (ret != null)
+						{
+							ret.add(obj.opt("ret")); // first element is return value - even if it's null; TODO we should handle here javascript undefined as well (instead of treating it as null)
+							if (obj.has("err")) ret.add(obj.opt("err")); // second element is added only if an error happened while calling api in browser
+						}
 						else log.error("Discarded response for obsolete pending message (it probably timed - out waiting for response before it got one): " +
 							suspendID);
 
@@ -229,9 +233,10 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 				if (service != null)
 				{
 					final String methodName = obj.optString("methodname");
+					final int prio = obj.optInt("prio", IEventDispatcher.EVENT_LEVEL_DEFAULT);
 					final JSONObject arguments = obj.optJSONObject("args");
 					int eventLevel = (service instanceof IEventDispatchAwareServerService)
-						? ((IEventDispatchAwareServerService)service).getMethodEventThreadLevel(methodName, arguments) : IEventDispatcher.EVENT_LEVEL_DEFAULT;
+						? ((IEventDispatchAwareServerService)service).getMethodEventThreadLevel(methodName, arguments) : prio;
 
 					window.getSession().getEventDispatcher().addEvent(new Runnable()
 					{
@@ -281,21 +286,46 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 				}
 				else
 				{
-					log.info("unknown service called from the client: " + serviceName);
+					log.info("Unknown service called from the client: " + serviceName);
 				}
 			}
 
 			else if (obj.has("servicedatapush"))
 			{
-				String servicename = obj.optString("servicedatapush");
-				IClientService service = window.getSession().getClientService(servicename);
-				JSONObject changes = obj.optJSONObject("changes");
-				Iterator keys = changes.keys();
-				while (keys.hasNext())
+				final String serviceName = obj.optString("servicedatapush");
+				final IClientService service = window.getSession().getClientService(serviceName);
+				if (service != null)
 				{
-					String key = (String)keys.next();
-					service.putBrowserProperty(key, changes.opt(key));
+					final int eventLevel = obj.optInt("prio", IEventDispatcher.EVENT_LEVEL_DEFAULT);
+
+					window.getSession().getEventDispatcher().addEvent(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							try
+							{
+								JSONObject changes = obj.optJSONObject("changes");
+								Iterator keys = changes.keys();
+								while (keys.hasNext())
+								{
+									String key = (String)keys.next();
+									service.putBrowserProperty(key, changes.opt(key));
+								}
+							}
+							catch (JSONException e)
+							{
+								log.error("JSONException while executing service " + serviceName + " datachange.", e);
+								return;
+							}
+						}
+					}, eventLevel);
 				}
+				else
+				{
+					log.info("Unknown service datapush from client; ignoring: " + serviceName);
+				}
+
 			}
 
 			else
@@ -305,7 +335,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		}
 		catch (JSONException e)
 		{
-			log.error("JSONException", e);
+			log.error("JSONException while processing message from client:", e);
 			return;
 		}
 		finally
@@ -356,19 +386,24 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 	 */
 	public Object waitResponse(Integer messageId, String text, boolean blockEventProcessing) throws IOException, CancellationException, TimeoutException
 	{
-		List<Object> ret = new ArrayList<>(1);
+		List<Object> ret = new ArrayList<>(2); // 1st element is return value; should always be set by callback even if it's
 		pendingMessages.put(messageId, ret);
 
 		window.getSession().getEventDispatcher().suspend(messageId,
 			blockEventProcessing ? IEventDispatcher.EVENT_LEVEL_SYNC_API_CALL : IEventDispatcher.EVENT_LEVEL_DEFAULT,
 			blockEventProcessing ? EventDispatcher.CONFIGURED_TIMEOUT : IEventDispatcher.NO_TIMEOUT);
 
-		if (ret.size() == 0)
+		if (ret.size() == 2)
 		{
-			log.error("No response from client for message '" + text + "'");
-			// Or throw an exception here?
-			return null;
+			// this means an error happened on client
+			throw new RuntimeException(String.valueOf(ret.get(1)));
 		}
+		else if (ret.size() != 1)
+		{
+			throw new RuntimeException("Unexpected: Incorrect return value (" + ret.size() +
+				" - even null/undefined) from client for message even though it seems to have received a response.");
+		}
+
 		return ret.get(0);
 	}
 

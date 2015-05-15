@@ -368,7 +368,14 @@ public class BaseWindow implements IWindow
 		try
 		{
 			boolean hasContentToSend = false;
-			JSONStringer w = new JSONStringer();
+			JSONStringer w = new JSONStringer()
+			{
+				@Override
+				public String toString()
+				{
+					return writer.toString();
+				};
+			};
 			w.object();
 			DataConversion clientDataConversions = new DataConversion();
 
@@ -410,7 +417,6 @@ public class BaseWindow implements IWindow
 			throw new IOException(e);
 		}
 	}
-
 
 	public void sendChanges() throws IOException
 	{

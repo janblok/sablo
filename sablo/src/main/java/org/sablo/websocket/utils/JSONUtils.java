@@ -423,7 +423,7 @@ public class JSONUtils
 					}
 					catch (Exception ex)
 					{
-						log.error("Error while converting value: " + value + " to type: " + type, ex);
+						log.error("Error while converting value: " + value + " to type: " + type + " current json: " + writer.toString(), ex);
 						return writer;
 					}
 				}
@@ -436,7 +436,7 @@ public class JSONUtils
 					}
 					catch (Exception ex)
 					{
-						log.error("Error while converting value: " + value + " to type: " + type, ex);
+						log.error("Error while converting value: " + value + " to type: " + type + " current json: " + writer.toString(), ex);
 						return writer;
 					}
 				}
@@ -454,8 +454,8 @@ public class JSONUtils
 				// addKeyIfPresent(w, key);
 				// w = w.value(new JSONObject("{}"));
 				// write nothing here, neither key nor value as we know not how to do the conversion...
-				log.error("unsupported value type:" + valueType + " for value: " + value, new IllegalArgumentException("unsupported value type for value: " +
-					value));
+				log.error("unsupported value type:" + valueType + " for value: " + value + " current json: " + writer.toString(), new IllegalArgumentException(
+					"unsupported value type for value: " + value));
 			}
 
 			return writer;
@@ -484,7 +484,7 @@ public class JSONUtils
 					}
 					catch (Exception ex)
 					{
-						log.error("Error while writing changes for value: " + value + " to type: " + type, ex);
+						log.error("Error while writing changes for value: " + value + " to type: " + type + " current json: " + writer.toString(), ex);
 						return writer;
 					}
 				}

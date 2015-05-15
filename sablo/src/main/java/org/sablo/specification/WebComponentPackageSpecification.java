@@ -97,13 +97,4 @@ public class WebComponentPackageSpecification<T extends WebComponentSpecificatio
 	{
 		return mf;
 	}
-
-	/**
-	 * @param layoutType
-	 * @return
-	 */
-	public boolean isAccesibleInLayoutType(String layoutType)
-	{
-		return "True".equals(mf.getMainAttributes().getValue(layoutType));
-	}
 }

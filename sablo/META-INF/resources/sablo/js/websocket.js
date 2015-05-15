@@ -525,7 +525,7 @@ webSocketModule.factory('$webSocket',
 				}
 				
 			};
-		}).factory("$sabloUtils", function($log, $sabloConverters) {
+		}).factory("$sabloUtils", function($log, $sabloConverters, $rootScope) {
 			 var getCombinedPropertyNames = function(now,prev) {
 			       var fulllist = {}
 		    	   if (prev) {
@@ -590,7 +590,6 @@ webSocketModule.factory('$webSocket',
 				
 				// eventLevelValue can be undefined for DEFAULT
 				setCurrentEventLevelForServer: function(eventLevelValue) {
-					$rootScope.$digest(); // make sure all previous pending changes are sent using the previous currentEventLevelForServer
 					currentEventLevelForServer = eventLevelValue;
 				},
 			

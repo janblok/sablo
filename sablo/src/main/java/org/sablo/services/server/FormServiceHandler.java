@@ -24,7 +24,6 @@ import org.json.JSONObject;
 import org.json.JSONString;
 import org.sablo.Container;
 import org.sablo.WebComponent;
-import org.sablo.eventthread.IEventDispatcher;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.IEventDispatchAwareServerService;
 import org.sablo.websocket.IWebsocketEndpoint;
@@ -188,9 +187,9 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 	}
 
 	@Override
-	public int getMethodEventThreadLevel(String methodName, JSONObject arguments)
+	public int getMethodEventThreadLevel(String methodName, JSONObject arguments, int dontCareLevel)
 	{
-		return "requestData".equals(methodName) ? EVENT_LEVEL_INITIAL_FORM_DATA_REQUEST : IEventDispatcher.EVENT_LEVEL_DEFAULT;
+		return "requestData".equals(methodName) ? EVENT_LEVEL_INITIAL_FORM_DATA_REQUEST : dontCareLevel;
 	}
 
 }

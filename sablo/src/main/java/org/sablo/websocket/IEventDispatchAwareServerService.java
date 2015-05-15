@@ -33,9 +33,10 @@ public interface IEventDispatchAwareServerService extends IServerService
 	 *
 	 * @param methodName the method that will be scheduled for execution.
 	 * @param arguments the arguments it will receive.
+	 * @param dontCareLevel should be returned if this service doesn't have a special level for this particular method to use.
 	 *
 	 * @return the "eventLevel" used to schedule the event for executiong on the event dispatcher thread.
 	 */
-	public int getMethodEventThreadLevel(String methodName, JSONObject arguments);
+	public int getMethodEventThreadLevel(String methodName, JSONObject arguments, int dontCareLevel);
 
 }

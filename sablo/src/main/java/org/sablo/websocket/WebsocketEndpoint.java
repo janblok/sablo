@@ -236,7 +236,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 					final int prio = obj.optInt("prio", IEventDispatcher.EVENT_LEVEL_DEFAULT);
 					final JSONObject arguments = obj.optJSONObject("args");
 					int eventLevel = (service instanceof IEventDispatchAwareServerService)
-						? ((IEventDispatchAwareServerService)service).getMethodEventThreadLevel(methodName, arguments) : prio;
+						? ((IEventDispatchAwareServerService)service).getMethodEventThreadLevel(methodName, arguments, prio) : prio;
 
 					window.getSession().getEventDispatcher().addEvent(new Runnable()
 					{

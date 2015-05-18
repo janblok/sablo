@@ -563,6 +563,9 @@ webSocketModule.factory('$webSocket',
 						   }
 						   return true;
 					   }
+					   if (typeof now == 'string' || typeof prev == 'string') {
+						   return true;
+					   }
 					   if (now instanceof Object && !(prev instanceof Object)) return true;
 					   // first build up a list of all the properties both have.
 			    	   var fulllist = getCombinedPropertyNames(now,prev);

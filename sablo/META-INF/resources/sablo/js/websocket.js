@@ -305,7 +305,7 @@ webSocketModule.factory('$webSocket',
 					   if (!(prev && now)) {
 							changed = true; // true if just one of them is undefined; both cannot be undefined at this point if we are already iterating on combined property names
 					   } else {
-					    	changed = $sabloUtils.isChanged(now[prop], prev[prop], beanConversionInfo ? beanConversionInfo[prop] : undefined)
+					    	changed = $sabloUtils.isChanged(now[prop], prev[prop], conversionInfo ? conversionInfo[prop] : undefined)
 					   }
 
 					   if (changed) {

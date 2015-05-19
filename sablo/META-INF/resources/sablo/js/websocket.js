@@ -529,9 +529,7 @@ webSocketModule.factory('$webSocket',
 			 var getCombinedPropertyNames = function(now,prev) {
 			       var fulllist = {}
 		    	   if (prev) {
-		    		   console.log("calling getOwnPropertyNames on: "  + prev)
 			    	   var prevNames = Object.getOwnPropertyNames(prev);
-		    		   console.log("calling getOwnPropertyNames on: "  + prev + " got array: " + prevNames)
 			    	   for(var i=0;i<prevNames.length;i++) {
 			    		   fulllist[prevNames[i]] = true;
 			    	   }

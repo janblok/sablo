@@ -16,7 +16,9 @@
 
 package org.sablo.specification;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.jar.Manifest;
 
@@ -29,19 +31,19 @@ public class WebComponentPackageSpecification<T extends WebComponentSpecificatio
 
 	private final String packageName;
 	private final String packageDisplayname;
-	private final String cssLibrary;
-	private final String jsLibrary;
+	private final List<String> cssLibrary;
+	private final List<String> jsLibrary;
 	private final Map<String, T> specifications;
 	private final Manifest mf;
 
-	public WebComponentPackageSpecification(String packageName, String packageDisplayname, Map<String, T> specifications, String cssLibrary, String jsLibrary,
-		Manifest mf)
+	public WebComponentPackageSpecification(String packageName, String packageDisplayname, Map<String, T> specifications, List<String> cssLibrary,
+		List<String> jsLibrary, Manifest mf)
 	{
 		this.packageName = packageName;
 		this.packageDisplayname = packageDisplayname;
 		this.specifications = specifications;
-		this.cssLibrary = cssLibrary;
-		this.jsLibrary = jsLibrary;
+		this.cssLibrary = cssLibrary != null ? new ArrayList<String>(cssLibrary) : null;
+		this.jsLibrary = jsLibrary != null ? new ArrayList<String>(jsLibrary) : null;
 		this.mf = mf;
 	}
 
@@ -64,7 +66,7 @@ public class WebComponentPackageSpecification<T extends WebComponentSpecificatio
 	/**
 	 * @return the cssLibrary
 	 */
-	public String getCssLibrary()
+	public List<String> getCssLibrary()
 	{
 		return cssLibrary;
 	}
@@ -72,7 +74,7 @@ public class WebComponentPackageSpecification<T extends WebComponentSpecificatio
 	/**
 	 * @return the jsLibrary
 	 */
-	public String getJsLibrary()
+	public List<String> getJsLibrary()
 	{
 		return jsLibrary;
 	}

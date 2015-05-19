@@ -55,8 +55,8 @@ public class WebComponentPackage
 {
 	private static final Logger log = LoggerFactory.getLogger(WebComponentPackage.class.getCanonicalName());
 	private static final String GLOBAL_TYPES_MANIFEST_ATTR = "Global-Types";
-	private static final String CSS_LIB = "CSS-Lib";
-	private static final String JS_LIB = "JS-Lib";
+	private static final String CSS_LIBS = "CSS-Libs";
+	private static final String JS_LIBS = "JS-Libs";
 	private static final String BUNDLE_SYMBOLIC_NAME = "Bundle-SymbolicName"; // for package name
 	private static final String BUNDLE_NAME = "Bundle-Name"; // for package display name
 
@@ -156,8 +156,6 @@ public class WebComponentPackage
 		String packageDisplayname = null;
 		Map<String, WebComponentSpecification> descriptions = new HashMap<>();
 		Manifest mf = reader.getManifest();
-		String cssLibrary = null;
-		String jsLibrary = null;
 		if (mf != null)
 		{
 			packageName = reader.getPackageName();
@@ -199,15 +197,10 @@ public class WebComponentPackage
 					}
 				}
 			}
-			Attributes mainAttrs = mf.getMainAttributes();
-			if (mainAttrs != null)
-			{
-				cssLibrary = mainAttrs.getValue(CSS_LIB);
-				jsLibrary = mainAttrs.getValue(JS_LIB);
-			}
 		}
 
-		return new WebComponentPackageSpecification<>(packageName, packageDisplayname, descriptions, cssLibrary, jsLibrary, mf);
+		return new WebComponentPackageSpecification<>(packageName, packageDisplayname, descriptions, getAttributeValue(mf, CSS_LIBS), getAttributeValue(mf,
+			JS_LIBS), mf);
 	}
 
 	/**
@@ -220,8 +213,6 @@ public class WebComponentPackage
 		String packageDisplayname = null;
 		Map<String, WebLayoutSpecification> descriptions = new HashMap<>();
 		Manifest mf = reader.getManifest();
-		String cssLibrary = null;
-		String jsLibrary = null;
 		if (mf != null)
 		{
 			packageName = reader.getPackageName();
@@ -264,14 +255,26 @@ public class WebComponentPackage
 					}
 				}
 			}
+		}
+		return new WebComponentPackageSpecification<>(packageName, packageDisplayname, descriptions, getAttributeValue(mf, CSS_LIBS), getAttributeValue(mf,
+			JS_LIBS), mf);
+	}
+
+	private List<String> getAttributeValue(Manifest mf, String attributeName)
+	{
+		if (mf != null)
+		{
 			Attributes mainAttrs = mf.getMainAttributes();
 			if (mainAttrs != null)
 			{
-				cssLibrary = mainAttrs.getValue(CSS_LIB);
-				jsLibrary = mainAttrs.getValue(JS_LIB);
+				String value = mainAttrs.getValue(attributeName);
+				if (value != null)
+				{
+					return Arrays.asList(value.split(","));
+				}
 			}
 		}
-		return new WebComponentPackageSpecification<>(packageName, packageDisplayname, descriptions, cssLibrary, jsLibrary, mf);
+		return null;
 	}
 
 	private static List<String> getWebEntrySpecNames(Manifest mf, String attributeName)

@@ -16,10 +16,11 @@
 
 package org.sablo.specification;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 
@@ -29,22 +30,50 @@ import java.util.jar.Manifest;
 public class WebComponentPackageSpecification<T extends WebComponentSpecification>
 {
 
+	private static final String CSS_DESIGN_LIBS = "CSS-DesignLibs";
+	private static final String CSS_CLIENT_LIBS = "CSS-ClientLibs";
+	private static final String JS_DESIGN_LIBS = "JS-DesignLibs";
+	private static final String JS_CLIENT_LIBS = "JS-ClientLibs";
+
 	private final String packageName;
 	private final String packageDisplayname;
-	private final List<String> cssLibrary;
-	private final List<String> jsLibrary;
+	private final List<String> cssClientLibrary;
+	private final List<String> cssDesignLibrary;
+	private final List<String> jsClientLibrary;
+	private final List<String> jsDesignLibrary;
 	private final Map<String, T> specifications;
 	private final Manifest mf;
 
-	public WebComponentPackageSpecification(String packageName, String packageDisplayname, Map<String, T> specifications, List<String> cssLibrary,
-		List<String> jsLibrary, Manifest mf)
+	public WebComponentPackageSpecification(String packageName, String packageDisplayname, Map<String, T> specifications, Manifest mf)
 	{
 		this.packageName = packageName;
 		this.packageDisplayname = packageDisplayname;
-		this.specifications = specifications;
-		this.cssLibrary = cssLibrary != null ? new ArrayList<String>(cssLibrary) : null;
-		this.jsLibrary = jsLibrary != null ? new ArrayList<String>(jsLibrary) : null;
 		this.mf = mf;
+
+		this.specifications = specifications;
+
+		this.cssClientLibrary = getAttributeValue(mf, CSS_CLIENT_LIBS);
+		this.cssDesignLibrary = getAttributeValue(mf, CSS_DESIGN_LIBS);
+		this.jsClientLibrary = getAttributeValue(mf, JS_CLIENT_LIBS);
+		this.jsDesignLibrary = getAttributeValue(mf, JS_DESIGN_LIBS);
+
+	}
+
+	private List<String> getAttributeValue(Manifest mf, String attributeName)
+	{
+		if (mf != null)
+		{
+			Attributes mainAttrs = mf.getMainAttributes();
+			if (mainAttrs != null)
+			{
+				String value = mainAttrs.getValue(attributeName);
+				if (value != null)
+				{
+					return Arrays.asList(value.split(","));
+				}
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -63,20 +92,24 @@ public class WebComponentPackageSpecification<T extends WebComponentSpecificatio
 		return packageDisplayname == null ? packageName : packageDisplayname;
 	}
 
-	/**
-	 * @return the cssLibrary
-	 */
-	public List<String> getCssLibrary()
+	public List<String> getCssClientLibrary()
 	{
-		return cssLibrary;
+		return cssClientLibrary;
 	}
 
-	/**
-	 * @return the jsLibrary
-	 */
-	public List<String> getJsLibrary()
+	public List<String> getJsClientLibrary()
 	{
-		return jsLibrary;
+		return jsClientLibrary;
+	}
+
+	public List<String> getCssDesignLibrary()
+	{
+		return cssDesignLibrary;
+	}
+
+	public List<String> getJsDesignLibrary()
+	{
+		return jsDesignLibrary;
 	}
 
 	/**
@@ -92,9 +125,6 @@ public class WebComponentPackageSpecification<T extends WebComponentSpecificatio
 		return specifications.get(name);
 	}
 
-	/**
-	 * @return the manifest
-	 */
 	public Manifest getManifest()
 	{
 		return mf;

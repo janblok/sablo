@@ -165,8 +165,7 @@ class WebSpecReader
 			cachedDescriptions.put(
 				webComponentPackageSpecification.getPackageName(),
 				new WebComponentPackageSpecification<>(webComponentPackageSpecification.getPackageName(),
-					webComponentPackageSpecification.getPackageDisplayname(), packageComponents, webComponentPackageSpecification.getCssLibrary(),
-					webComponentPackageSpecification.getJsLibrary(), webComponentPackageSpecification.getManifest()));
+					webComponentPackageSpecification.getPackageDisplayname(), packageComponents, webComponentPackageSpecification.getManifest()));
 		}
 	}
 

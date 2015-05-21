@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.jar.Manifest;
 
 import javax.servlet.ServletContext;
 
@@ -79,7 +80,9 @@ public class WebServiceSpecProvider
 						{
 							if (resourcePath.toLowerCase().endsWith(".jar") || resourcePath.toLowerCase().endsWith(".zip"))
 							{
-								readers.add(new JarServletContextReader(servletContext, resourcePath));
+								IPackageReader reader = new JarServletContextReader(servletContext, resourcePath);
+								Manifest mf = reader.getManifest();
+								if (mf != null && mf.getEntries() != null && mf.getEntries().values().contains("Web-Service")) readers.add(reader);
 							}
 						}
 

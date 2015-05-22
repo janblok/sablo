@@ -17,6 +17,7 @@
 package org.sablo.example.endpoint;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.sablo.example.HelloWorldWindow;
@@ -63,5 +64,11 @@ public class HelloWorldWebsocketSession extends BaseWebsocketSession
 		if (CurrentWindow.get().getCurrentFormUrl() == null) {
 			CurrentWindow.get().setCurrentFormUrl("forms/mainForm.html");
 		}
+	}
+	
+	@Override
+	public Locale getLocale()
+	{
+		return Locale.getDefault();
 	}
 }

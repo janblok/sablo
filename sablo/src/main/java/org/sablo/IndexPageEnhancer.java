@@ -83,8 +83,22 @@ public class IndexPageEnhancer
 		}
 
 		StringBuilder sb = new StringBuilder(index_file);
-		sb.insert(headend + COMPONENT_CONTRIBUTIONS.length(), getAllContributions(cssContributions, jsContributions));
-		sb.insert(headstart + 6, getBaseTag(contextPath));
+		if (headend < 0)
+		{
+			log.warn("Could not find marker for component contributions: " + COMPONENT_CONTRIBUTIONS + " for resource " + resource);
+		}
+		else
+		{
+			sb.insert(headend + COMPONENT_CONTRIBUTIONS.length(), getAllContributions(cssContributions, jsContributions));
+		}
+		if (headstart < 0)
+		{
+			log.warn("Could not find empty head tag for base tag for resource " + resource);
+		}
+		else
+		{
+			sb.insert(headstart + 6, getBaseTag(contextPath));
+		}
 		writer.append(sb);
 	}
 

@@ -17,6 +17,8 @@
 package org.sablo.example;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -71,7 +73,12 @@ public class HelloWorld extends WebEntry
 	@Override
 	public void doFilter(ServletRequest request, ServletResponse response,
 			FilterChain chain) throws IOException, ServletException {
-		doFilter(request, response, chain, null,null,null);	
+		doFilter(request, response, chain, null, getJsContributions(), null);	
+	}
+
+	private Collection<String> getJsContributions()
+	{
+		return Arrays.asList("forms/mainForm.js", "forms/anotherForm.js");
 	}
 
 }

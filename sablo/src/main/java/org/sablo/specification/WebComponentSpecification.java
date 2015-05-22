@@ -278,7 +278,6 @@ public class WebComponentSpecification extends PropertyDescription
 				String func = itk.next();
 				JSONObject jsonDef = api.getJSONObject(func);
 				WebComponentApiDefinition def = new WebComponentApiDefinition(func);
-
 				Iterator<String> it = jsonDef.keys();
 				JSONObject customConfiguration = null;
 				while (it.hasNext())
@@ -291,9 +290,26 @@ public class WebComponentSpecification extends PropertyDescription
 						{
 							JSONObject param = params.getJSONObject(p);
 
-							ParsedProperty pp = spec.parsePropertyString(param.getString("type"));
-							// hmm why not set the array field instead of configObject here?
-							def.addParameter(new PropertyDescription((String)param.get("name"), resolveArrayType(pp), param, null, null, null,
+							IPropertyType< ? > propertyType;
+							Object config;
+							if (param.optJSONObject("type") != null)
+							{
+								JSONObject paramJSON = new JSONObject();
+								paramJSON.put((String)param.get("name"), param.get("type"));
+								JSONObject parseJSON = new JSONObject();
+								parseJSON.put("", paramJSON);
+								PropertyDescription propertyDescription = spec.parseProperties("", parseJSON).get(param.get("name"));
+								propertyType = propertyDescription.getType();
+								config = propertyDescription.getConfig();
+							}
+							else
+							{
+								ParsedProperty pp = spec.parsePropertyString(param.getString("type"));
+								propertyType = resolveArrayType(pp);
+								// hmm why not set the array field instead of configObject here?
+								config = param;
+							}
+							def.addParameter(new PropertyDescription((String)param.get("name"), propertyType, config, null, null, null,
 								Boolean.TRUE.equals(param.opt("optional"))));
 						}
 					}

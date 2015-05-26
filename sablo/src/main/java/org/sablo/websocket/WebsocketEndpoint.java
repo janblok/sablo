@@ -401,7 +401,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		else if (ret.size() != 1)
 		{
 			throw new RuntimeException("Unexpected: Incorrect return value (" + ret.size() +
-				" - even null/undefined) from client for message even though it seems to have received a response.");
+				" - even null/undefined) from client for message even though it seems to have received a response. Content: " + ret);
 		}
 
 		return ret.get(0);

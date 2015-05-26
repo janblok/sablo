@@ -525,7 +525,7 @@ webSocketModule.factory('$webSocket',
 		}
 
 	};
-}).factory("$sabloUtils", function($log, $sabloConverters, $rootScope) {
+}).factory("$sabloUtils", function($log, $sabloConverters) {
 	var getCombinedPropertyNames = function(now,prev) {
 		var fulllist = {}
 		if (prev) {
@@ -564,11 +564,7 @@ webSocketModule.factory('$webSocket',
 				return true;
 			}
 
-			var nObj = (now instanceof Object);
-			var pObj = (prev instanceof Object);
-			if ((nObj && !pObj) || (!nObj && pObj)) return true;
-
-			if (nObj && pObj) {
+			if ((now instanceof Object) && (prev instanceof Object)) {
 				// first build up a list of all the properties both have.
 				var fulllist = getCombinedPropertyNames(now, prev);
 				for (var prop in fulllist) {

@@ -72,6 +72,14 @@ public interface IEventDispatcher extends Runnable
 	void addEvent(Runnable event, int eventLevel);
 
 	/**
+	 * Adds an event event queue.
+	 * The event level is considered to be {@link #EVENT_LEVEL_DEFAULT} (0).
+	 *
+	 * @param event the event to be handled on the event dispatch thread.
+	 */
+	void postEvent(Runnable event);
+
+	/**
 	 * Works in tandem with {@link #resume(Object)}.
 	 * When suspend is called, the current event will stop executing and other events will continue being dispatched until {@link #resume(Object)} is called
 	 * using the same "suspendID" parameter.

@@ -163,23 +163,33 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		}
 		else
 		{
-			synchronized (events)
-			{
-				events.add(createEvent(event, eventLevel));
-				events.notifyAll();
-				// non-blocking
-//				while (!(event.isExecuted() || event.isSuspended() || event.isExecutingInBackground()))
+			postEvent(event, eventLevel);
+		}
+	}
+
+	public void postEvent(Runnable event)
+	{
+		postEvent(event, IEventDispatcher.EVENT_LEVEL_DEFAULT);
+	}
+
+	private void postEvent(Runnable event, int eventLevel)
+	{
+		synchronized (events)
+		{
+			events.add(createEvent(event, eventLevel));
+			events.notifyAll();
+			// non-blocking
+//			while (!(event.isExecuted() || event.isSuspended() || event.isExecutingInBackground()))
+//			{
+//				try
 //				{
-//					try
-//					{
-//						events.wait();
-//					}
-//					catch (InterruptedException e)
-//					{
-//						Debug.error(e);
-//					}
+//					events.wait();
 //				}
-			}
+//				catch (InterruptedException e)
+//				{
+//					Debug.error(e);
+//				}
+//			}
 		}
 	}
 

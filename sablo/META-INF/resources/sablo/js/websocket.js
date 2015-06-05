@@ -7,15 +7,15 @@ var webSocketModule = angular.module('webSocketModule', []);
  * Setup the $webSocket service.
  */
 webSocketModule.factory('$webSocket',
-		function($rootScope, $injector, $window, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers) {
+		function($rootScope, $injector, $window, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers, $interval) {
 
-	var websocket = null
+	var websocket = null;
 
-	var nextMessageId = 1
+	var nextMessageId = 1;
 
 	var getNextMessageId = function() {
-		return nextMessageId++
-	}
+		return nextMessageId++;
+	};
 
 	var deferredEvents = {};
 
@@ -23,7 +23,7 @@ webSocketModule.factory('$webSocket',
 		return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec($window.location.search)||[,""])[1].replace(/\+/g, '%20'))||null
 	};
 
-	var handleMessage = function(wsSession, message) {
+	var handleMessage = function(message) {
 		var obj
 		var responseValue
 		try {
@@ -180,10 +180,52 @@ webSocketModule.factory('$webSocket',
 			onMessageObjectHandlers.push(handler)
 		}
 	};
+	var wsSession = new WebsocketSession();
 
-	var connected = false;
+	var connected = undefined; // tri-state, undefined: not-connected-yet, true: connected, false: disconnected
 	var pendingMessages = undefined
 
+	// heartbeat, detect disconnects before websocket gives us connection-closed.
+	var heartbeatMonitor = undefined;
+	var lastHeartbeat = undefined;
+	function startHeartbeat() {
+		if (!angular.isDefined(heartbeatMonitor)) {
+			lastHeartbeat = new Date().getTime();
+			heartbeatMonitor = $interval(function() {
+
+				websocket.send("P"); // ping
+
+				if (connected) {
+					var milliseconds = new Date().getTime();
+					if (milliseconds - lastHeartbeat > 5000) {
+						// no response within 5 seconds
+						connected = false;
+					}
+				}
+			}, 1000);
+		}
+	}
+	
+	function stopHeartbeat() {
+		if (angular.isDefined(heartbeatMonitor)) {
+			$interval.cancel(heartbeatMonitor);
+			heartbeatMonitor = undefined;
+		}
+	}
+	
+	function handleHeartbeat(message) {
+		if (message.data == "p") { // pong
+			if (!connected) {
+				$rootScope.$apply(function() {
+					connected = true;
+				});
+			}
+			lastHeartbeat = new Date().getTime();
+			return true;
+		}
+		return false;
+	}
+	
 	/**
 	 * The $webSocket service API.
 	 */
@@ -235,9 +277,8 @@ webSocketModule.factory('$webSocket',
 				new_uri = new_uri.substring(0,new_uri.length-1);
 			}
 
-			websocket = new WebSocket(new_uri);
+			websocket = typeof(ReconnectingWebSocket) == 'undefined' ? new WebSocket(new_uri) : new ReconnectingWebSocket(new_uri);
 
-			var wsSession = new WebsocketSession()
 			websocket.onopen = function(evt) {
 				$rootScope.$apply(function() {
 					connected = true;
@@ -248,16 +289,19 @@ webSocketModule.factory('$webSocket',
 					}
 					pendingMessages = undefined
 				}
+				startHeartbeat();
 				for (var handler in onOpenHandlers) {
 					onOpenHandlers[handler](evt)
 				}
 			}
 			websocket.onerror = function(evt) {
+				stopHeartbeat();
 				for (var handler in onErrorHandlers) {
 					onErrorHandlers[handler](evt)
 				}
 			}
 			websocket.onclose = function(evt) {
+				stopHeartbeat();
 				$rootScope.$apply(function() {
 					connected = false;
 				})
@@ -266,7 +310,7 @@ webSocketModule.factory('$webSocket',
 				}
 			}
 			websocket.onmessage = function(message) {
-				handleMessage(wsSession, message)
+				handleHeartbeat(message) || handleMessage(message);
 			}
 
 			// todo should we just merge $websocket and $services into $sablo that just has all
@@ -276,8 +320,16 @@ webSocketModule.factory('$webSocket',
 			return wsSession
 		},
 
+		getSession: function() {
+			return wsSession;
+		},
+
 		isConnected: function() {
-			return connected;
+			return connected === true;
+		},
+
+		isDisconnected: function() {
+			return connected === false; // undefined means never connected, false means was connected but disconnected now
 		},
 
 		disconnect: function() {
@@ -724,4 +776,24 @@ webSocketModule.factory('$webSocket',
 	BUTTON2_DOWN_MASK : 2048,
 	DOWN_MASK : 4096,
 	ALT_GRAPH_DOWN_MASK : 8192
+	
+}).directive('sabloReconnectingFeedback', function ($webSocket) {
+
+  function reconnecting() { 
+		return $webSocket.isDisconnected(); 
+	}
+  
+  // TODO: should we not introduce a scope and just watch '$webSocket.isDisconnected()'?
+  return {
+    restrict: 'EA',
+    template: '<div ng-show="reconnecting()" ng-transclude></div>',
+    transclude: true,
+    scope: true,
+    controller: function($scope, $element, $attrs) {
+      $scope.reconnecting = reconnecting;
+    }
+  }
 });
+
+
+;

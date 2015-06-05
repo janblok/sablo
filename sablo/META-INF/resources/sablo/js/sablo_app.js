@@ -32,13 +32,13 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 	 * available and some code is interested in using form state only after it got the initialData (via "requestData"'s response) from server (needsInitialData = true)
 	 */
 	var getFormStateImpl = function(name, needsInitialData) { 
-		var defered = null
-		var deferredStates = (needsInitialData ? deferredFormStatesWithData : deferredFormStates);
-		if (!deferredStates[name]) {
-			var defered = $q.defer()
-			deferredStates[name] = defered;
+		var deferredStates = needsInitialData ? deferredFormStatesWithData : deferredFormStates;
+		var defered;
+		if (deferredStates[name]) {
+			defered = deferredStates[name];
 		} else {
-			defered = deferredStates[name]
+			defered = $q.defer()
+			deferredStates[name] = defered;
 		}
 
 		var formState = formStates[name];
@@ -63,11 +63,11 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		var changes = {}, prop;
 
 		for (prop in fulllist) {
-			var changed = false;
-			if (!(prev && now)) {
-				changed = true; // true if just one of them is undefined; both cannot be undefined at this point if we are already iterating on combined property names
-			} else {
+			var changed;
+			if (prev && now) {
 				changed = $sabloUtils.isChanged(now[prop], prev[prop], beanConversionInfo ? beanConversionInfo[prop] : undefined)
+			} else {
+				changed = true; // true if just one of them is undefined; both cannot be undefined at this point if we are already iterating on combined property names
 			}
 
 			if (changed) {

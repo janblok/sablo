@@ -155,34 +155,30 @@ webSocketModule.factory('$webSocket',
 		}
 	}
 
-	var onOpenHandlers = []
-	var onErrorHandlers = []
-	var onCloseHandlers = []
-	var onReconnectedHandlers = []
-	var onMessageObjectHandlers = []
+	var onOpenHandlers = [];
+	var onErrorHandlers = [];
+	var onCloseHandlers = [];
+	var onMessageObjectHandlers = [];
 
 	var WebsocketSession = function() {
 
 		// api
-		this.callService = callService
+		this.callService = callService;
 
 		this.sendMessageObject = sendMessageObject;
 
 		this.onopen = function(handler) {
 			onOpenHandlers.push(handler)
-		}
+		};
 		this.onerror = function(handler) {
 			onErrorHandlers.push(handler)
-		}
+		};
 		this.onclose = function(handler) {
 			onCloseHandlers.push(handler)
-		}
-		this.onreconnected = function(handler) {
-			onReconnectedHandlers.push(handler)
-		}
+		};
 		this.onMessageObject = function(handler) {
 			onMessageObjectHandlers.push(handler)
-		}
+		};
 	};
 	var wsSession = new WebsocketSession();
 
@@ -198,7 +194,6 @@ webSocketModule.factory('$webSocket',
 			heartbeatMonitor = $interval(function() {
 
 				websocket.send("P"); // ping
-
 				if (isConnected() && new Date().getTime() - lastHeartbeat > 5000) {
 					// no response within 5 seconds
 					connected = 'RECONNECTING';
@@ -216,18 +211,10 @@ webSocketModule.factory('$webSocket',
 	
 	function handleHeartbeat(message) {
 		if (message.data == "p") { // pong
-			if (!isConnected()) {
-				$rootScope.$apply(function() {
-					// reconnected
-					connected = 'CONNECTED';
-					for (var handler in onReconnectedHandlers) {
-						onReconnectedHandlers[handler]()
-					}
-				});
-			}
 			lastHeartbeat = new Date().getTime();
 			return true;
 		}
+
 		return false;
 	}
 	
@@ -237,8 +224,7 @@ webSocketModule.factory('$webSocket',
 
 	function isReconnecting() {
 		return connected == 'RECONNECTING';
-	}	
-	
+	}
 	/**
 	 * The $webSocket service API.
 	 */
@@ -295,7 +281,7 @@ webSocketModule.factory('$webSocket',
 			websocket.onopen = function(evt) {
 				$rootScope.$apply(function() {
 					connected = 'CONNECTED';
-				
+
 					if (pendingMessages) {
 						for (var i in pendingMessages) {
 							websocket.send(pendingMessages[i])
@@ -311,15 +297,16 @@ webSocketModule.factory('$webSocket',
 			websocket.onerror = function(evt) {
 				stopHeartbeat();
 				$rootScope.$apply(function() {
-					for (var handler in onErrorHandlers) {
-						onErrorHandlers[handler](evt)
-					}
+				for (var handler in onErrorHandlers) {
+					onErrorHandlers[handler](evt)
+				}
 				});
 			}
 			websocket.onclose = function(evt) {
 				stopHeartbeat();
 				$rootScope.$apply(function() {
-					connected = 'DISCONNECTED';
+					if (connected != 'CLOSED') connected = 'RECONNECTING';
+					
 					for (var handler in onCloseHandlers) {
 						onCloseHandlers[handler](evt)
 					}
@@ -353,9 +340,9 @@ webSocketModule.factory('$webSocket',
 		isConnected: isConnected,
 
 		isReconnecting: isReconnecting,
-		
+
 		disconnect: function() {
-			if (websocket) {
+			if(websocket) {
 				websocket.close();
 				connected = 'CLOSED';
 			}
@@ -797,7 +784,7 @@ webSocketModule.factory('$webSocket',
 	SERVICE_RESTART: 1012, // indicates that the service will be restarted.
 	TLS_HANDSHAKE_FAILURE: 1015, // is a reserved value and MUST NOT be set as a status code in a Close control frame by an endpoint.
 	TRY_AGAIN_LATER: 1013 // indicates that the service is experiencing overload
-}).value("$swingModifiers", {
+}).value("$swingModifiers" ,{
 	SHIFT_MASK : 1,
 	CTRL_MASK : 2,
 	META_MASK : 4,
@@ -832,6 +819,3 @@ webSocketModule.factory('$webSocket',
     }
   }
 });
-
-
-;

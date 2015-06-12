@@ -7,15 +7,15 @@ var webSocketModule = angular.module('webSocketModule', []);
  * Setup the $webSocket service.
  */
 webSocketModule.factory('$webSocket',
-		function($rootScope, $injector, $window, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers) {
+		function($rootScope, $injector, $window, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers, $interval, wsCloseCodes) {
 
-	var websocket = null
+	var websocket = null;
 
-	var nextMessageId = 1
+	var nextMessageId = 1;
 
 	var getNextMessageId = function() {
-		return nextMessageId++
-	}
+		return nextMessageId++;
+	};
 
 	var deferredEvents = {};
 
@@ -23,7 +23,7 @@ webSocketModule.factory('$webSocket',
 		return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec($window.location.search)||[,""])[1].replace(/\+/g, '%20'))||null
 	};
 
-	var handleMessage = function(wsSession, message) {
+	var handleMessage = function(message) {
 		var obj
 		var responseValue
 		try {
@@ -124,7 +124,7 @@ webSocketModule.factory('$webSocket',
 			obj.prio = $sabloUtils.getCurrentEventLevelForServer();
 		}
 		var msg = JSON.stringify(obj)
-		if (connected) {
+		if (isConnected()) {
 			websocket.send(msg)
 		}
 		else
@@ -155,35 +155,76 @@ webSocketModule.factory('$webSocket',
 		}
 	}
 
-	var onOpenHandlers = []
-	var onErrorHandlers = []
-	var onCloseHandlers = []
-	var onMessageObjectHandlers = []
+	var onOpenHandlers = [];
+	var onErrorHandlers = [];
+	var onCloseHandlers = [];
+	var onMessageObjectHandlers = [];
 
 	var WebsocketSession = function() {
 
 		// api
-		this.callService = callService
+		this.callService = callService;
 
 		this.sendMessageObject = sendMessageObject;
 
 		this.onopen = function(handler) {
 			onOpenHandlers.push(handler)
-		}
+		};
 		this.onerror = function(handler) {
 			onErrorHandlers.push(handler)
-		}
+		};
 		this.onclose = function(handler) {
 			onCloseHandlers.push(handler)
-		}
+		};
 		this.onMessageObject = function(handler) {
 			onMessageObjectHandlers.push(handler)
-		}
+		};
 	};
+	var wsSession = new WebsocketSession();
 
-	var connected = false;
+	var connected = 'INITIAL'; // INITIAL/CONNECTED/RECONNECTING/CLOSED
 	var pendingMessages = undefined
 
+	// heartbeat, detect disconnects before websocket gives us connection-closed.
+	var heartbeatMonitor = undefined;
+	var lastHeartbeat = undefined;
+	function startHeartbeat() {
+		if (!angular.isDefined(heartbeatMonitor)) {
+			lastHeartbeat = new Date().getTime();
+			heartbeatMonitor = $interval(function() {
+
+				websocket.send("P"); // ping
+				if (isConnected() && new Date().getTime() - lastHeartbeat > 5000) {
+					// no response within 5 seconds
+					connected = 'RECONNECTING';
+				}
+			}, 1000);
+		}
+	}
+	
+	function stopHeartbeat() {
+		if (angular.isDefined(heartbeatMonitor)) {
+			$interval.cancel(heartbeatMonitor);
+			heartbeatMonitor = undefined;
+		}
+	}
+	
+	function handleHeartbeat(message) {
+		if (message.data == "p") { // pong
+			lastHeartbeat = new Date().getTime();
+			return true;
+		}
+
+		return false;
+	}
+	
+	function isConnected() {
+		return connected == 'CONNECTED';
+	}
+
+	function isReconnecting() {
+		return connected == 'RECONNECTING';
+	}
 	/**
 	 * The $webSocket service API.
 	 */
@@ -235,38 +276,54 @@ webSocketModule.factory('$webSocket',
 				new_uri = new_uri.substring(0,new_uri.length-1);
 			}
 
-			websocket = new WebSocket(new_uri);
+			websocket = typeof(ReconnectingWebSocket) == 'undefined' ? new WebSocket(new_uri) : new ReconnectingWebSocket(new_uri);
 
-			var wsSession = new WebsocketSession()
 			websocket.onopen = function(evt) {
 				$rootScope.$apply(function() {
-					connected = true;
-				})
-				if (pendingMessages) {
-					for (var i in pendingMessages) {
-						websocket.send(pendingMessages[i])
+					connected = 'CONNECTED';
+
+					if (pendingMessages) {
+						for (var i in pendingMessages) {
+							websocket.send(pendingMessages[i])
+						}
+						pendingMessages = undefined
 					}
-					pendingMessages = undefined
-				}
-				for (var handler in onOpenHandlers) {
-					onOpenHandlers[handler](evt)
-				}
+					startHeartbeat();
+					for (var handler in onOpenHandlers) {
+						onOpenHandlers[handler](evt)
+					}
+				});
 			}
 			websocket.onerror = function(evt) {
+				stopHeartbeat();
+				$rootScope.$apply(function() {
 				for (var handler in onErrorHandlers) {
 					onErrorHandlers[handler](evt)
 				}
+				});
 			}
 			websocket.onclose = function(evt) {
+				stopHeartbeat();
 				$rootScope.$apply(function() {
-					connected = false;
+					if (connected != 'CLOSED') connected = 'RECONNECTING';
+					
+					for (var handler in onCloseHandlers) {
+						onCloseHandlers[handler](evt)
+					}
+				});
+			}
+			websocket.onconnecting = function(evt) {
+				// this event indicates we are trying to reconnect, the event has the close code and reason from the disconnect.
+				if (evt.code && evt.code != wsCloseCodes.CLOSED_ABNORMALLY) {
+					// server disconnected, do not try to reconnect
+					websocket.close()
+					$rootScope.$apply(function() {
+						connected = 'CLOSED';
 				})
-				for (var handler in onCloseHandlers) {
-					onCloseHandlers[handler](evt)
 				}
 			}
 			websocket.onmessage = function(message) {
-				handleMessage(wsSession, message)
+				handleHeartbeat(message) || handleMessage(message);
 			}
 
 			// todo should we just merge $websocket and $services into $sablo that just has all
@@ -276,13 +333,18 @@ webSocketModule.factory('$webSocket',
 			return wsSession
 		},
 
-		isConnected: function() {
-			return connected;
+		getSession: function() {
+			return wsSession;
 		},
+
+		isConnected: isConnected,
+
+		isReconnecting: isReconnecting,
 
 		disconnect: function() {
 			if(websocket) {
 				websocket.close();
+				connected = 'CLOSED';
 			}
 		},
 
@@ -707,6 +769,21 @@ webSocketModule.factory('$webSocket',
 	}
 
 	return sabloUtils;
+}).value("wsCloseCodes", {
+	NORMAL_CLOSURE: 1000, // indicates a normal closure, meaning that the purpose for which the connection was established has been fulfilled.
+	GOING_AWAY: 1001, // indicates that an endpoint is "going away", such as a server going down or a browser having navigated away from a page.
+	PROTOCOL_ERROR: 1002, // indicates that an endpoint is terminating the connection due to a protocol error.
+	CANNOT_ACCEPT: 1003, // indicates that an endpoint is terminating the connection because it has received a type of data it cannot accept (e.g., an endpoint that understands only text data MAY send this if it receives a binary message).
+	NO_STATUS_CODE: 1005, // is a reserved value and MUST NOT be set as a status code in a Close control frame by an endpoint.
+	CLOSED_ABNORMALLY: 1006, // is a reserved value and MUST NOT be set as a status code in a Close control frame by an endpoint.
+	NOT_CONSISTENT: 1007, // indicates that an endpoint is terminating the connection because it has received data within a message that was not consistent with the type of the message (e.g., non-UTF-8 data within a text message).
+	VIOLATED_POLICY: 1008, // indicates that an endpoint is terminating the connection because it has received a message that violates its policy.
+	TOO_BIG: 1009, // indicates that an endpoint is terminating the connection because it has received a message that is too big for it to process.
+	NO_EXTENSION: 1010, // indicates that an endpoint (client) is terminating the connection because it has expected the server to negotiate one or more extension, but the server didn't return them in the response message of the WebSocket handshake.
+	UNEXPECTED_CONDITION: 1011, // indicates that a server is terminating the connection because it encountered an unexpected condition that prevented it from fulfilling the request.
+	SERVICE_RESTART: 1012, // indicates that the service will be restarted.
+	TLS_HANDSHAKE_FAILURE: 1015, // is a reserved value and MUST NOT be set as a status code in a Close control frame by an endpoint.
+	TRY_AGAIN_LATER: 1013 // indicates that the service is experiencing overload
 }).value("$swingModifiers" ,{
 	SHIFT_MASK : 1,
 	CTRL_MASK : 2,
@@ -724,4 +801,21 @@ webSocketModule.factory('$webSocket',
 	BUTTON2_DOWN_MASK : 2048,
 	DOWN_MASK : 4096,
 	ALT_GRAPH_DOWN_MASK : 8192
+	
+}).directive('sabloReconnectingFeedback', function ($webSocket) {
+
+  function reconnecting() { 
+		return $webSocket.isReconnecting(); 
+	}
+  
+  // TODO: should we not introduce a scope and just watch '$webSocket.isReconnecting()'?
+  return {
+    restrict: 'EA',
+    template: '<div ng-show="reconnecting()" ng-transclude></div>',
+    transclude: true,
+    scope: true,
+    controller: function($scope, $element, $attrs) {
+      $scope.reconnecting = reconnecting;
+    }
+  }
 });

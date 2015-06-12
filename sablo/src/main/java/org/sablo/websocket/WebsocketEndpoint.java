@@ -194,6 +194,20 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 			incomingPartialMessage.setLength(0);
 		}
 
+		// handle heartbeats
+		if ("P".equals(message)) // ping
+		{
+			try
+			{
+				session.getBasicRemote().sendText("p"); // pong
+			}
+			catch (IOException e)
+			{
+				log.warn("could not reply to ping message for window " + window, e);
+			}
+			return;
+		}
+
 		CurrentWindow.set(window);
 		try
 		{

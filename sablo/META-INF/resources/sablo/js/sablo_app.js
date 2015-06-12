@@ -9,7 +9,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		});
 		return $delegate;
 	})
-}).factory('$sabloApplication', function ($rootScope, $timeout, $q, $log, $webSocket, $sabloConverters, $sabloUtils, webStorage) {
+}).factory('$sabloApplication', function ($rootScope, $window, $timeout, $q, $log, $webSocket, $sabloConverters, $sabloUtils, webStorage) {
 	// formName:[beanname:{property1:1,property2:"test"}] needs to be synced to and from server
 	// this holds the form model with all the data, per form is this the "synced" view of the the IFormUI on the server 
 	// (3 way binding)
@@ -208,6 +208,13 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 	return {
 		connect : function(context, args, queryArgs) {
 			wsSession = $webSocket.connect(context, args, queryArgs);
+			
+			wsSession.onopen(function(evt) {
+				if (evt.isReconnect) {
+					// reload site
+					$window.location.reload();
+				}
+			});
 
 			wsSession.onMessageObject(function (msg, conversionInfo) {
 				// data got back from the server

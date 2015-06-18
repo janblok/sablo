@@ -196,7 +196,10 @@ webSocketModule.factory('$webSocket',
 				websocket.send("P"); // ping
 				if (isConnected() && new Date().getTime() - lastHeartbeat > 5000) {
 					// no response within 5 seconds
-					connected = 'RECONNECTING';
+					//connected = 'RECONNECTING';
+					// we should force to close the websocket here, and then reopen,
+					// as the heartbeat timeout is not a guaranty that the websocket was closed, and so, that
+					// a reconnect will be done
 				}
 			}, 1000);
 		}

@@ -199,7 +199,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		{
 			try
 			{
-				session.getBasicRemote().sendText("p"); // pong
+				sendText("p"); // pong, has to be synchronized to prevent pong to interfere with regular messages
 			}
 			catch (IOException e)
 			{

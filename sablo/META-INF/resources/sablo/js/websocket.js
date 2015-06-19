@@ -209,14 +209,23 @@ webSocketModule.factory('$webSocket',
 		}
 	}
 	
+	function setConnected() {
+
+		connected = 'CONNECTED';
+
+		if (pendingMessages) {
+			for (var i in pendingMessages) {
+				websocket.send(pendingMessages[i])
+			}
+			pendingMessages = undefined
+		}
+	}
+	
 	function handleHeartbeat(message) {
 		lastHeartbeat = new Date().getTime(); // something is received, the server connection is up
 		if (isReconnecting()) {
-			$rootScope.$apply(function() {
-				connected = 'CONNECTED';
-			});
+			$rootScope.$apply(setConnected);
 		}
-
 		return message.data == "p"; // pong
 	}
 	
@@ -282,14 +291,7 @@ webSocketModule.factory('$webSocket',
 
 			websocket.onopen = function(evt) {
 				$rootScope.$apply(function() {
-					connected = 'CONNECTED';
-
-					if (pendingMessages) {
-						for (var i in pendingMessages) {
-							websocket.send(pendingMessages[i])
-						}
-						pendingMessages = undefined
-					}
+					setConnected();
 					startHeartbeat();
 					for (var handler in onOpenHandlers) {
 						onOpenHandlers[handler](evt)

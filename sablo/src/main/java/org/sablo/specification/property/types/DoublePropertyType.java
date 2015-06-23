@@ -83,7 +83,8 @@ public class DoublePropertyType extends DefaultPropertyType<Double> implements I
 		throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
-		writer.value(sabloValue);
+		if (sabloValue != null && Double.isNaN(sabloValue.doubleValue())) writer.value(null);
+		else writer.value(sabloValue);
 		return writer;
 	}
 }

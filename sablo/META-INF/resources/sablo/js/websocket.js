@@ -82,6 +82,16 @@ webSocketModule.factory('$webSocket',
 				}
 			}
 
+			// delayed calls
+			if (obj.calls)
+			{
+				for(var index = 0;index < obj.calls.length;index++) 
+				{
+					for (var handler in onMessageObjectHandlers) {
+						onMessageObjectHandlers[handler](obj.calls[index]);
+					}
+				}
+			}	
 			if (obj && obj.smsgid) {
 				// server wants a response; responseValue may be a promise
 				$q.when(responseValue).then(function(ret) {

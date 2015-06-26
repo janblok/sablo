@@ -35,6 +35,8 @@ public class WebComponentApiDefinition
 	private JSONObject customConfigOptions;
 	private String documentation;
 	private boolean blockEventProcessing = true;
+	private boolean delayUntilFormLoad = false;
+	private boolean globalExclusive = false;
 
 	public WebComponentApiDefinition(String name)
 	{
@@ -100,6 +102,38 @@ public class WebComponentApiDefinition
 	public boolean getBlockEventProcessing()
 	{
 		return blockEventProcessing;
+	}
+
+	/**
+	 * @return the delayUntilFormLoad
+	 */
+	public boolean isDelayUntilFormLoad()
+	{
+		return delayUntilFormLoad;
+	}
+
+	/**
+	 * @param delayUntilFormLoad the delayUntilFormLoad to set
+	 */
+	public void setDelayUntilFormLoad(boolean delayUntilFormLoad)
+	{
+		this.delayUntilFormLoad = delayUntilFormLoad;
+	}
+
+	/**
+	 * @return the globalExclusive
+	 */
+	public boolean isGlobalExclusive()
+	{
+		return globalExclusive;
+	}
+
+	/**
+	 * @param globalExclusive the globalExclusive to set
+	 */
+	public void setGlobalExclusive(boolean globalExclusive)
+	{
+		this.globalExclusive = globalExclusive;
 	}
 
 }

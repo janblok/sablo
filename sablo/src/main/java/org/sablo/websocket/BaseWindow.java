@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -66,6 +67,7 @@ public class BaseWindow implements IWindow
 	private final AtomicInteger nextMessageId = new AtomicInteger(0);
 
 	private final List<Map<String, ? >> serviceCalls = new ArrayList<>();
+	private final List<Map<String, Object>> delayedApiCalls = new ArrayList<>();
 	private final PropertyDescription serviceCallTypes = AggregatedPropertyType.newAggregatedProperty();
 
 	private final WeakHashMap<Container, Object> usedContainers = new WeakHashMap<>(3); // set of used container in order to collect all changes
@@ -356,9 +358,9 @@ public class BaseWindow implements IWindow
 	/**
 	 * Returns the text that it really sent...
 	 */
-	protected <X> String sendMessageInternal(IToJSONWriter<X> dataWriter, IToJSONConverter<X> converter, Integer smsgidOptional) throws IOException
+	protected <X> String sendMessageInternal(IToJSONWriter<X> dataWriter, IToJSONConverter converter, Integer smsgidOptional) throws IOException
 	{
-		if (dataWriter == null && serviceCalls.size() == 0) return null;
+		if (dataWriter == null && serviceCalls.size() == 0 && delayedApiCalls.size() == 0) return null;
 
 		if (endpoint == null)
 		{
@@ -393,7 +395,36 @@ public class BaseWindow implements IWindow
 					(ClientService)session.getClientService((String)serviceCalls.get(0).get("name")));
 				clientDataConversions.popNode();
 			}
-
+			if (delayedApiCalls.size() > 0)
+			{
+				Iterator<Map<String, Object>> it = delayedApiCalls.iterator();
+				boolean callObjectStarted = false;
+				while (it.hasNext())
+				{
+					Map<String, Object> delayedCall = it.next();
+					WebComponent component = (WebComponent)delayedCall.get("component");
+					if (formLoaded(component))
+					{
+						hasContentToSend = true;
+						delayedCall.remove("component");
+						it.remove();
+						if (!callObjectStarted)
+						{
+							callObjectStarted = true;
+							w.key("calls").array();
+						}
+						w.object().key("call").object();
+						clientDataConversions.pushNode("calls");
+						JSONUtils.writeData(converter, w, delayedCall, (PropertyDescription)delayedCall.get("callTypes"), clientDataConversions, component);
+						clientDataConversions.popNode();
+						w.endObject().endObject();
+					}
+				}
+				if (callObjectStarted)
+				{
+					w.endArray();
+				}
+			}
 			String text = null;
 
 			if (hasContentToSend)
@@ -586,6 +617,13 @@ public class BaseWindow implements IWindow
 		final PropertyDescription argumentTypes, final Map<String, Object> callContributions)
 	{
 		// {"call":{"form":"product","bean":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}}
+		if (isDelayedApiCall(receiver, apiFunction))
+		{
+			Map<String, Object> call = getApiCallObject(receiver, apiFunction, arguments, argumentTypes, callContributions);
+			call.put("component", receiver);
+			addDelayedCall(apiFunction, call);
+			return null;
+		}
 		try
 		{
 			Object ret = sendSyncMessage(new IToJSONWriter<BaseWebObject>()
@@ -600,27 +638,11 @@ public class BaseWindow implements IWindow
 					clientDataConversions.pushNode("forms");
 					writeAllComponentsChanges(w, "forms", converter, clientDataConversions);
 					clientDataConversions.popNode();
-
-					Map<String, Object> call = new HashMap<>();
-					PropertyDescription callTypes = AggregatedPropertyType.newAggregatedProperty();
-					if (callContributions != null) call.putAll(callContributions);
-					Container topContainer = receiver.getParent();
-					while (topContainer != null && topContainer.getParent() != null)
-					{
-						topContainer = topContainer.getParent();
-					}
-					call.put("form", topContainer.getName());
-					call.put("bean", receiver.getName());
-					call.put("api", apiFunction.getName());
-					if (arguments != null && arguments.length > 0)
-					{
-						call.put("args", arguments);
-						if (argumentTypes != null) callTypes.putProperty("args", argumentTypes);
-					}
+					Map<String, Object> call = getApiCallObject(receiver, apiFunction, arguments, argumentTypes, callContributions);
 
 					w.key("call").object();
 					clientDataConversions.pushNode("call");
-					JSONUtils.writeData(converter, w, call, callTypes, clientDataConversions, receiver);
+					JSONUtils.writeData(converter, w, call, (PropertyDescription)call.get("callTypes"), clientDataConversions, receiver);
 					clientDataConversions.popNode();
 					w.endObject();
 
@@ -659,5 +681,53 @@ public class BaseWindow implements IWindow
 		return null;
 	}
 
+	private Map<String, Object> getApiCallObject(final WebComponent receiver, final WebComponentApiDefinition apiFunction, final Object[] arguments,
+		final PropertyDescription argumentTypes, final Map<String, Object> callContributions)
+	{
+		Map<String, Object> call = new HashMap<>();
+		PropertyDescription callTypes = AggregatedPropertyType.newAggregatedProperty();
+		if (callContributions != null) call.putAll(callContributions);
+		Container topContainer = receiver.getParent();
+		while (topContainer != null && topContainer.getParent() != null)
+		{
+			topContainer = topContainer.getParent();
+		}
+		call.put("form", topContainer.getName());
+		call.put("bean", receiver.getName());
+		call.put("api", apiFunction.getName());
+		if (arguments != null && arguments.length > 0)
+		{
+			call.put("args", arguments);
+			if (argumentTypes != null) callTypes.putProperty("args", argumentTypes);
+		}
+		call.put("callTypes", callTypes);
+		return call;
+	}
 
+	protected void addDelayedCall(final WebComponentApiDefinition apiFunction, Map<String, Object> call)
+	{
+		if (apiFunction.isGlobalExclusive())
+		{
+			Iterator<Map<String, Object>> it = delayedApiCalls.iterator();
+			while (it.hasNext())
+			{
+				Map<String, Object> delayedCall = it.next();
+				if (apiFunction.getName().equals(delayedCall.get("api")))
+				{
+					it.remove();
+				}
+			}
+		}
+		delayedApiCalls.add(call);
+	}
+
+	protected boolean formLoaded(WebComponent component)
+	{
+		return true;
+	}
+
+	protected boolean isDelayedApiCall(WebComponent receiver, WebComponentApiDefinition apiFunction)
+	{
+		return apiFunction.getReturnType() == null && apiFunction.isDelayUntilFormLoad() && !formLoaded(receiver);
+	}
 }

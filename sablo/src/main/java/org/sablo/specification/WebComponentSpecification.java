@@ -323,6 +323,14 @@ public class WebComponentSpecification extends PropertyDescription
 					{
 						def.setBlockEventProcessing(jsonDef.getBoolean("blockEventProcessing"));
 					}
+					else if ("delayUntilFormLoad".equals(key))
+					{
+						def.setDelayUntilFormLoad(jsonDef.getBoolean("delayUntilFormLoad"));
+					}
+					else if ("globalExclusive".equals(key))
+					{
+						def.setGlobalExclusive(jsonDef.getBoolean("globalExclusive"));
+					}
 					else
 					{
 						if (customConfiguration == null) customConfiguration = new JSONObject();

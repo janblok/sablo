@@ -784,8 +784,55 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		}
 
 	};
-}])
-.run(function ($sabloConverters) {
+}]).factory('$propertyWatchesRegistry', function () {
+	var propertiesThatShouldBeAutoPushedToServer = {}; // key == ("components" or "services"), value = property names in the model that should be watched (for sending back to server the value); see setAutoWatchPropertiesList "autoWatchPropertiesPerBaseWebObject" argument for details
+	
+	function getPropertiesToAutoWatchForComponent(componentTypeName) {
+		return propertiesThatShouldBeAutoPushedToServer["components"][componentTypeName];
+	};
+	
+	function getPropertiesToAutoWatchForService(componentTypeName) {
+		return propertiesThatShouldBeAutoPushedToServer["services"][componentTypeName];
+	};
+	
+	// returns an array of watch unregister functions
+	function watchDumbProperties(scope, model, propertiesToAutoWatch, changedCallbackFunction) {
+		var unwatchF = [];
+		for (var p in propertiesToAutoWatch) {
+			unwatchF.push(scope.$watch(function() { return model[p] }, function(newValue, oldValue) {
+				if (oldValue === newValue) return;
+				changedCallbackFunction(newValue, oldValue);
+			}, propertiesToAutoWatch[p]));
+		}
+		return unwatchF;
+	}
+	
+	return {
+		
+		// returns an array of watch unregister functions
+		watchDumbPropertiesForComponent: function watchDumbPropertiesForComponent(scope, componentTypeName, model, changedCallbackFunction) {
+			return watchDumbProperties(scope, model, getPropertiesToAutoWatchForComponent(componentTypeName), changedCallbackFunction);
+		},
+		
+		// returns an array of watch unregister functions
+		watchDumbPropertiesForService: function watchDumbPropertiesForService(scope, serviceTypeName, model, changedCallbackFunction) {
+			return watchDumbProperties(scope, model, getPropertiesToAutoWatchForService(serviceTypeName), changedCallbackFunction);
+		},
+		
+		clearAutoWatchPropertiesList: function clearAutoWatchPropertiesList() {
+			propertiesThatShouldBeAutoPushedToServer = {};
+		},
+		
+		// categoryName can be "components" or "services"
+		// autoWatchPropertiesPerBaseWebObject is something like {
+		//                                                           "pck1Component1" : { "myDeepWatchedProperty" : true, "myShallowWatchedProperty" : false }
+		//                                                       }
+		setAutoWatchPropertiesList: function clearAutoWatchPropertiesList(categoryName, autoWatchPropertiesPerBaseWebObject) {
+			propertiesThatShouldBeAutoPushedToServer[categoryName] = autoWatchPropertiesPerBaseWebObject;
+		}
+		
+	};
+}).run(function ($sabloConverters) {
 	// Date type -----------------------------------------------
 	$sabloConverters.registerCustomPropertyHandler('Date', {
 		fromServerToClient: function (serverJSONValue, currentClientValue, scope, modelGetter) {

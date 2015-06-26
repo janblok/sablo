@@ -49,6 +49,8 @@ class WebSpecReader
 
 	private final String attributeName;
 
+	private long lastLoadTimestamp;
+
 	WebSpecReader(IPackageReader[] packageReaders, String attributeName)
 	{
 		this.packageReaders = packageReaders;
@@ -56,8 +58,17 @@ class WebSpecReader
 		load();
 	}
 
+	public long getLastLoadTimestamp()
+	{
+		return lastLoadTimestamp;
+	}
+
 	synchronized void load()
 	{
+		lastLoadTimestamp = System.currentTimeMillis();
+
+		cachedDescriptions.clear();
+		cachedLayoutDescriptions.clear();
 		allComponentSpecifications.clear();
 		allPackages.clear();
 		List<WebComponentPackage> packages = new ArrayList<>();

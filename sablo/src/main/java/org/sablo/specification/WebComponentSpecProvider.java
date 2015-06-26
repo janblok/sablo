@@ -104,6 +104,14 @@ public class WebComponentSpecProvider
 		return instance;
 	}
 
+	public static long getLastLoadTimestamp()
+	{
+		synchronized (WebComponentSpecProvider.class)
+		{
+			return instance.reader.getLastLoadTimestamp();
+		}
+	}
+
 	public static void reload()
 	{
 		synchronized (WebComponentSpecProvider.class)

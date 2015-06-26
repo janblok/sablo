@@ -98,6 +98,14 @@ public class WebServiceSpecProvider
 		return instance;
 	}
 
+	public static long getLastLoadTimestamp()
+	{
+		synchronized (WebServiceSpecProvider.class)
+		{
+			return instance.reader.getLastLoadTimestamp();
+		}
+	}
+
 	public static void reload()
 	{
 		synchronized (WebServiceSpecProvider.class)

@@ -755,22 +755,10 @@ webSocketModule.factory('$webSocket',
 				return ret;
 			},
 
-			//do not watch __internalState as that is handled by servoy code
-			generateWatchFunctionFor: function () {
-				var pathArg = arguments;
-				var filteredObject = function (scope) {
-					var result = {}; // deep watch doesn't care when object/array instances differ, going deeper for content so we just return a new obj. each time
-					var modelObject = sabloUtils.getInDepthProperty.apply(sabloUtils, pathArg);
-
-					for (k in modelObject) {
-						if (modelObject[k] && modelObject[k].__internalState && modelObject[k].__internalState.setChangeNotifier) {
-							continue;
-						}
-						result[k] = modelObject[k];
-					}
-					return result;
+			generateWatchFunctionFor: function (model) {
+				return function (scope) {
+					return model.dataProviderID;
 				};
-				return filteredObject;
 			}
 	}
 

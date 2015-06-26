@@ -191,7 +191,7 @@ webSocketModule.factory('$webSocket',
 	function startHeartbeat() {
 		if (!angular.isDefined(heartbeatMonitor)) {
 			lastHeartbeat = new Date().getTime();
-			heartbeatMonitor = setInterval(function() {
+			heartbeatMonitor = $interval(function() {
 				websocket.send("P"); // ping
 				if (isConnected() && new Date().getTime() - lastHeartbeat > 5000) {
 					// no response within 5 seconds
@@ -200,7 +200,7 @@ webSocketModule.factory('$webSocket',
 						$rootScope.$apply();
 					}
 				}
-			}, 1000);
+			}, 1000, 0, false);
 		}
 	}
 	
@@ -755,10 +755,22 @@ webSocketModule.factory('$webSocket',
 				return ret;
 			},
 
-			generateWatchFunctionFor: function (model) {
-				return function (scope) {
-					return model.dataProviderID;
+			//do not watch __internalState as that is handled by servoy code
+			generateWatchFunctionFor: function () {
+				var pathArg = arguments;
+				var filteredObject = function (scope) {
+					var result = {}; // deep watch doesn't care when object/array instances differ, going deeper for content so we just return a new obj. each time
+					var modelObject = sabloUtils.getInDepthProperty.apply(sabloUtils, pathArg);
+
+					for (k in modelObject) {
+						if (modelObject[k] && modelObject[k].__internalState && modelObject[k].__internalState.setChangeNotifier) {
+							continue;
+						}
+						result[k] = modelObject[k];
+					}
+					return result;
 				};
+				return filteredObject;
 			}
 	}
 

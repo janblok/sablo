@@ -304,29 +304,26 @@ webSocketModule.factory('$webSocket',
 			websocket.onopen = function(evt) {
 				$rootScope.$apply(function() {
 					setConnected();
-					startHeartbeat();
-					for (var handler in onOpenHandlers) {
-						onOpenHandlers[handler](evt)
-					}
 				});
+				startHeartbeat();
+				for (var handler in onOpenHandlers) {
+					onOpenHandlers[handler](evt);
+				}
 			}
 			websocket.onerror = function(evt) {
 				stopHeartbeat();
-				$rootScope.$apply(function() {
 				for (var handler in onErrorHandlers) {
-					onErrorHandlers[handler](evt)
+					onErrorHandlers[handler](evt);
 				}
-				});
 			}
 			websocket.onclose = function(evt) {
 				stopHeartbeat();
 				$rootScope.$apply(function() {
 					if (connected != 'CLOSED') connected = 'RECONNECTING';
-					
-					for (var handler in onCloseHandlers) {
-						onCloseHandlers[handler](evt)
-					}
 				});
+				for (var handler in onCloseHandlers) {
+					onCloseHandlers[handler](evt);
+				}
 			}
 			websocket.onconnecting = function(evt) {
 				// this event indicates we are trying to reconnect, the event has the close code and reason from the disconnect.

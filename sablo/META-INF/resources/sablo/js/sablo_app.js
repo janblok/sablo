@@ -158,8 +158,13 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 	}
 
 	function markServiceCallDone(arg) {
-		currentServiceCallDone = true
-		return arg
+		currentServiceCallDone = true;
+		return arg;
+	}
+	
+	function markServiceCallFailed(arg) {
+		currentServiceCallDone = true;
+		return $q.reject(arg);
 	}
 
 	function waitForServiceCallbacks(promise, times) {
@@ -171,7 +176,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		currentServiceCallDone = false
 		currentServiceCallWaiting = times.length
 		currentServiceCallTimeouts = times.map(function (t) { return setTimeout(callServiceCallbacksWhenDone, t) })
-		return  promise.then(markServiceCallDone, markServiceCallDone)
+		return promise.then(markServiceCallDone, markServiceCallFailed)
 	}
 
 	function callService(serviceName, methodName, argsObject, async) {
@@ -226,7 +231,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 					if (typeof(formStates[formname]) == 'undefined') continue;
 					// we just checked before that formStates exists so getFormState(formname) deferr below will actually be instant right
 					// it's called like this to reuse getFormState() similar to the rest of the code
-					getFormState(formname).then(getFormMessageHandler(formname, msg, conversionInfo));
+					getFormState(formname).then(getFormMessageHandler(formname, msg, conversionInfo), 
+							function(err) { $log.error("Error getting form state: " + err); });
 				}
 
 				if (conversionInfo && conversionInfo.call) msg.call = $sabloConverters.convertFromServerToClient(msg.call, conversionInfo.call, undefined, undefined, undefined);
@@ -274,7 +280,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 						if ($log.debugEnabled) $log.debug("sbl * Api call '" + call.api + "' to unresolved form " + call.form + "; will call prepareUnresolvedFormForUse.");
 						formResolver.prepareUnresolvedFormForUse(call.form);
 					}
-					return getFormState(call.form).then(executeAPICall);
+					return getFormState(call.form).then(executeAPICall, function(err) {
+						$log.error("Error getting form state: " + err);
+					});
 				}
 			});
 
@@ -466,7 +474,13 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 					if (requestDataCallback) {
 						requestDataCallback(initialFormData, formState);
 					}
+				},
+				function(err) {
+					$log.error("Error getting form state: " + err);
 				});
+			},
+			function(err) {
+				$log.error("Error requesting form data: " + err);
 			});
 		},
 
@@ -488,6 +502,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 						var cmd = {formname:formName,beanname:beanName,event:eventName,args:newargs,changes:data}
 						if (rowId) cmd.rowId = rowId
 						return callService('formService', 'executeEvent', cmd, false)
+					},
+					function(err) {
+						$log.error("Error getting form state: " + err);
 					});
 				}
 			}
@@ -501,8 +518,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 					callService('formService', 'getCurrentFormUrl', null, false)
 					.then(function(url) {
 						currentFormUrl = url;
-					}
-					, function(url) {
+					}, function(url) {
 						currentFormUrl = null;
 					});
 				return null;

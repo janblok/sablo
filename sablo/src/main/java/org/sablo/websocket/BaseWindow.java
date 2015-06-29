@@ -413,9 +413,10 @@ public class BaseWindow implements IWindow
 							callObjectStarted = true;
 							w.key("calls").array();
 						}
+						PropertyDescription callTypes = (PropertyDescription)delayedCall.remove("callTypes");
 						w.object().key("call").object();
 						clientDataConversions.pushNode("calls");
-						JSONUtils.writeData(converter, w, delayedCall, (PropertyDescription)delayedCall.get("callTypes"), clientDataConversions, component);
+						JSONUtils.writeData(converter, w, delayedCall, callTypes, clientDataConversions, component);
 						clientDataConversions.popNode();
 						w.endObject().endObject();
 					}
@@ -639,10 +640,10 @@ public class BaseWindow implements IWindow
 					writeAllComponentsChanges(w, "forms", converter, clientDataConversions);
 					clientDataConversions.popNode();
 					Map<String, Object> call = getApiCallObject(receiver, apiFunction, arguments, argumentTypes, callContributions);
-
+					PropertyDescription callTypes = (PropertyDescription)call.remove("callTypes");
 					w.key("call").object();
 					clientDataConversions.pushNode("call");
-					JSONUtils.writeData(converter, w, call, (PropertyDescription)call.get("callTypes"), clientDataConversions, receiver);
+					JSONUtils.writeData(converter, w, call, callTypes, clientDataConversions, receiver);
 					clientDataConversions.popNode();
 					w.endObject();
 

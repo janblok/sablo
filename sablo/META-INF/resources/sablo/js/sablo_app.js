@@ -9,7 +9,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		});
 		return $delegate;
 	})
-}).factory('$sabloApplication', function ($rootScope, $window, $timeout, $q, $log, $webSocket, $sabloConverters, $sabloUtils, webStorage) {
+}).value("$sabloConstants",  {
+	modelChangeNotifier: "$modelChangeNotifier"
+}).factory('$sabloApplication', function ($rootScope, $window, $timeout, $q, $log, $webSocket, $sabloConverters, $sabloUtils, $sabloConstants, webStorage) {
 	// formName:[beanname:{property1:1,property2:"test"}] needs to be synced to and from server
 	// this holds the form model with all the data, per form is this the "synced" view of the the IFormUI on the server 
 	// (3 way binding)
@@ -110,6 +112,13 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 
 			// also make location and size available in model
 			beanModel[key] = beanData[key];
+		}
+		// if the model had a change notifier call it now after everything is set.
+		var modelChangeFunction = beanModel[$sabloConstants.modelChangeNotifier];
+		if (modelChangeFunction){
+			for(var key in beanData) {
+				modelChangeFunction(key,beanModel[key]);
+			}
 		}
 	}
 

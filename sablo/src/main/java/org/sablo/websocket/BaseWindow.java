@@ -729,6 +729,6 @@ public class BaseWindow implements IWindow
 
 	protected boolean isDelayedApiCall(WebComponent receiver, WebComponentApiDefinition apiFunction)
 	{
-		return apiFunction.getReturnType() == null && apiFunction.isDelayUntilFormLoad() && !formLoaded(receiver);
+		return apiFunction.getReturnType() == null && apiFunction.isDelayUntilFormLoad();
 	}
 }

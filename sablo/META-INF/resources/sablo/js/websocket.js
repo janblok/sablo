@@ -537,13 +537,16 @@ webSocketModule.factory('$webSocket',
 			if (angular.isUndefined(optionalInternalStateValue)) optionalInternalStateValue = {};
 
 			if (Object.defineProperty) {
-				// try to avoid unwanted iteration/non-intended interference over the private property state
-				Object.defineProperty(propertyValue, this.INTERNAL_IMPL, {
-					configurable: false,
-					enumerable: false,
-					writable: false,
-					value: optionalInternalStateValue
-				});
+				if (!propertyValue.hasOwnProperty(this.INTERNAL_IMPL))
+				{
+					// try to avoid unwanted iteration/non-intended interference over the private property state
+					Object.defineProperty(propertyValue, this.INTERNAL_IMPL, {
+						configurable: false,
+						enumerable: false,
+						writable: false,
+						value: optionalInternalStateValue
+					});
+				}
 			} else propertyValue[$sabloConverters.INTERNAL_IMPL] = optionalInternalStateValue;
 		},
 

@@ -21,7 +21,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 
 	var deferredFormStates = {};
 	var deferredFormStatesWithData = {};
-	var getChangeNotifier = function(formName, beanName) {
+	var getChangeNotifier = function(formName, beanName, property) {
 		return function() {
 			// will be called by the custom property when it needs to send changes server size
 			var beanModel = formStates[formName].model[beanName];
@@ -59,31 +59,38 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		return getFormStateImpl(name, true);
 	}
 
-	var getComponentChanges = function(now, prev, beanConversionInfo, parentSize, changeNotifier, componentScope) {
-		// first build up a list of all the properties both have.
-		var fulllist = $sabloUtils.getCombinedPropertyNames(now, prev);
-		var changes = {}, prop;
-
-		for (prop in fulllist) {
-			var changed;
-			if (prev && now) {
-				changed = $sabloUtils.isChanged(now[prop], prev[prop], beanConversionInfo ? beanConversionInfo[prop] : undefined)
-			} else {
-				changed = true; // true if just one of them is undefined; both cannot be undefined at this point if we are already iterating on combined property names
-			}
-
-			if (changed) {
-				changes[prop] = now[prop];
-			}
+	var getComponentChanges = function(now, prev, beanConversionInfo, parentSize, changeNotifier, componentScope,property) {
+		var changes = {}
+		if (property) {
+			if (beanConversionInfo && beanConversionInfo[property]) changes[property] = $sabloConverters.convertFromClientToServer(now, beanConversionInfo[property], prev);
+			else changes[property] = $sabloUtils.convertClientObject(now)
 		}
-		for (prop in changes) {
-			if (beanConversionInfo && beanConversionInfo[prop]) changes[prop] = $sabloConverters.convertFromClientToServer(changes[prop], beanConversionInfo[prop], prev ? prev[prop] : undefined);
-			else changes[prop] = $sabloUtils.convertClientObject(changes[prop])
+		else {
+			// first build up a list of all the properties both have.
+			var fulllist = $sabloUtils.getCombinedPropertyNames(now, prev);
+			var prop;
+	
+			for (prop in fulllist) {
+				var changed;
+				if (prev && now) {
+					changed = $sabloUtils.isChanged(now[prop], prev[prop], beanConversionInfo ? beanConversionInfo[prop] : undefined)
+				} else {
+					changed = true; // true if just one of them is undefined; both cannot be undefined at this point if we are already iterating on combined property names
+				}
+	
+				if (changed) {
+					changes[prop] = now[prop];
+				}
+			}
+			for (prop in changes) {
+				if (beanConversionInfo && beanConversionInfo[prop]) changes[prop] = $sabloConverters.convertFromClientToServer(changes[prop], beanConversionInfo[prop], prev ? prev[prop] : undefined);
+				else changes[prop] = $sabloUtils.convertClientObject(changes[prop])
+			}
 		}
 		return changes;
 	};
 
-	var sendChanges = function(now, prev, formname, beanname) {
+	var sendChanges = function(now, prev, formname, beanname, property) {
 		var changes = getComponentChanges(now, prev, $sabloUtils.getInDepthProperty(formStatesConversionInfo, formname, beanname),
 				formStates[formname].properties.designSize, getChangeNotifier(formname, beanname), formStates[formname].getScope());
 		if (Object.getOwnPropertyNames(changes).length > 0) {
@@ -823,11 +830,19 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 	// returns an array of watch unregister functions
 	function watchDumbProperties(scope, model, propertiesToAutoWatch, changedCallbackFunction) {
 		var unwatchF = [];
-		for (var p in propertiesToAutoWatch) {
-			unwatchF.push(scope.$watch(function() { return model[p] }, function(newValue, oldValue) {
+		function getChangeFunction(property) {
+			return function(newValue, oldValue) {
 				if (oldValue === newValue) return;
-				changedCallbackFunction(newValue, oldValue);
-			}, propertiesToAutoWatch[p]));
+				changedCallbackFunction(newValue, oldValue, property);
+			}
+		}
+		function getWatchFunction(property) {
+			return function() { 
+				return model[property] 
+			}
+		}
+		for (var p in propertiesToAutoWatch) {
+			unwatchF.push(scope.$watch(getWatchFunction(p), getChangeFunction(p), propertiesToAutoWatch[p]));
 		}
 		return unwatchF;
 	}

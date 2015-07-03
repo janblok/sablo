@@ -92,7 +92,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 
 	var sendChanges = function(now, prev, formname, beanname, property) {
 		var changes = getComponentChanges(now, prev, $sabloUtils.getInDepthProperty(formStatesConversionInfo, formname, beanname),
-				formStates[formname].properties.designSize, getChangeNotifier(formname, beanname), formStates[formname].getScope());
+				formStates[formname].properties.designSize, getChangeNotifier(formname, beanname), formStates[formname].getScope(), property);
 		if (Object.getOwnPropertyNames(changes).length > 0) {
 			callService('formService', 'dataPush', {formname:formname,beanname:beanname,changes:changes}, true)
 		}
@@ -859,7 +859,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 			return watchDumbProperties(scope, model, getPropertiesToAutoWatchForService(serviceTypeName), changedCallbackFunction);
 		},
 		
-		clearAutoWatchPropertiesList: function clearAutoWatchPropertiesList() {
+		clearAutoWatchPropertiesList: function () {
 			propertiesThatShouldBeAutoPushedToServer = {};
 		},
 		
@@ -867,7 +867,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		// autoWatchPropertiesPerBaseWebObject is something like {
 		//                                                           "pck1Component1" : { "myDeepWatchedProperty" : true, "myShallowWatchedProperty" : false }
 		//                                                       }
-		setAutoWatchPropertiesList: function clearAutoWatchPropertiesList(categoryName, autoWatchPropertiesPerBaseWebObject) {
+		setAutoWatchPropertiesList: function (categoryName, autoWatchPropertiesPerBaseWebObject) {
 			propertiesThatShouldBeAutoPushedToServer[categoryName] = autoWatchPropertiesPerBaseWebObject;
 		}
 		

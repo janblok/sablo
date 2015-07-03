@@ -31,8 +31,10 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.sablo.services.template.ModifiablePropertiesGenerator;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebServiceSpecProvider;
+import org.sablo.util.HTTPUtils;
 import org.sablo.websocket.IWebsocketSessionFactory;
 import org.sablo.websocket.WebsocketSessionManager;
 
@@ -92,6 +94,24 @@ public abstract class WebEntry implements Filter
 		Collection<String> jsContributions, Map<String, String> variableSubstitution) throws IOException, ServletException
 	{
 		HttpServletRequest request = (HttpServletRequest)servletRequest;
+
+		String uri = request.getRequestURI();
+		if (uri.endsWith("spec/" + ModifiablePropertiesGenerator.TWO_WAY_BINDINGS_LIST + ".js"))
+		{
+			long lastSpecLoadTime = Math.max(WebComponentSpecProvider.getLastLoadTimestamp(), WebServiceSpecProvider.getLastLoadTimestamp());
+			if (HTTPUtils.checkAndSetUnmodified(((HttpServletRequest)servletRequest), ((HttpServletResponse)servletResponse), lastSpecLoadTime)) return;
+
+			HTTPUtils.setNoCacheHeaders((HttpServletResponse)servletResponse);
+
+			PrintWriter w = servletResponse.getWriter();
+			ModifiablePropertiesGenerator.start(w);
+			ModifiablePropertiesGenerator.appendAll(w, WebComponentSpecProvider.getInstance().getAllWebComponentSpecifications(), "components");
+			ModifiablePropertiesGenerator.appendAll(w, WebServiceSpecProvider.getInstance().getAllWebServiceSpecifications(), "services");
+			ModifiablePropertiesGenerator.finish(w);
+			w.flush();
+
+			return;
+		}
 
 		URL indexPageResource = getIndexPageResource(request);
 		if (indexPageResource != null)

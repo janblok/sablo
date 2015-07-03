@@ -1,4 +1,4 @@
-angular.module('sampleApp', ['sabloApp', '$sabloService', 'webStorageModule', 'mylabel', 'mybutton', 'mytextfield', 'mycounter']).config(function() {
+angular.module('sampleApp', ['sabloApp', '$sabloService', 'propsToWatch', 'webStorageModule', 'mylabel', 'mybutton', 'mytextfield', 'mycounter']).config(function() {
 }).controller("SampleController", function($scope, $rootScope, $window, $sabloApplication, $webSocket, webStorage) {
 	$scope.windowTitle = 'Sample Application';
 	$scope.getCurrentFormUrl = function() {

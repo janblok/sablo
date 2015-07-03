@@ -1,4 +1,4 @@
-angular.module('sampleApp').controller("mainForm", function($scope, $window, $sabloApplication, $sabloUtils, webStorage) {
+angular.module('sampleApp').controller("mainForm", function($scope, $window, $sabloApplication, $propertyWatchesRegistry, webStorage) {
 
 //	$window.alert(' starting mainForm');
 
@@ -11,6 +11,14 @@ angular.module('sampleApp').controller("mainForm", function($scope, $window, $sa
 			thetextfield: 	 { value : 'should be replaced with server data' },
 			thecounter: 	 { n: 3 }
 	};
+    
+	var beanTypes = {
+			thelabel: 'mylabel',
+			thebutton: 'mybutton',
+			thebutton2: 'mybutton',
+			thetextfield: 'mytextfield',
+			thecounter: 'mycounter'
+	}
 	
 	// TODO: to sablo_app
 	function getExecutor(name, event, args) {
@@ -42,12 +50,13 @@ angular.module('sampleApp').controller("mainForm", function($scope, $window, $sa
 	if (formState.initializing) $sabloApplication.requestInitialData(formName);
 	
 	// TODO: to sablo_app (install watches)
+	
 	var wrapper = function(beanName) {
-		return function(newvalue,oldvalue) {
-			if(oldvalue !== newvalue) $sabloApplication.sendChanges(newvalue,oldvalue, formName, beanName);
+		return function(newvalue,oldvalue,property) {
+				if(oldvalue !== newvalue) $sabloApplication.sendChanges(newvalue, oldvalue, formName, beanName, property);
 		};
 	};
-	
+
 	var watches = {};
 
 	// TODO: create automatically
@@ -55,12 +64,12 @@ angular.module('sampleApp').controller("mainForm", function($scope, $window, $sa
 	formState.addWatches = function (beanNames) {
 		if (beanNames) {
 		 	for (var beanName in beanNames) {
-		 		watches[beanName] = $scope.$watch($sabloUtils.generateWatchFunctionFor($scope, "model", beanName), wrapper(beanName), true);
+		 		watches[beanName] =	$propertyWatchesRegistry.watchDumbPropertiesForComponent($scope, beanTypes[beanName], $scope.model[beanName], wrapper(beanName));
 			}
 		}
 		else {
 			 for (var beanName in beans) {
-				 watches[beanName] = $scope.$watch($sabloUtils.generateWatchFunctionFor($scope, "model", beanName), wrapper(beanName), true);
+				 watches[beanName] = $propertyWatchesRegistry.watchDumbPropertiesForComponent($scope, beanTypes[beanName], $scope.model[beanName], wrapper(beanName));
 			 }
 		}
 	};
@@ -70,12 +79,12 @@ angular.module('sampleApp').controller("mainForm", function($scope, $window, $sa
 		
 		if (beanNames) {
 		 	for (var beanName in beanNames) {
-			 	if (watches[beanName]) watches[beanName]();
+				if (watches[beanName]) for (unW in watches[beanName]) watches[beanName][unW]();
 			}
 		}
 		else {
 			 for (var beanName in watches) {
-			 	watches[beanName]();
+				 for (unW in watches[beanName]) watches[beanName][unW]();
 			 }
 		}
 		return true;

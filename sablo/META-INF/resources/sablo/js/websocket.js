@@ -461,7 +461,9 @@ webSocketModule.factory('$webSocket',
 				}
 				// register a new watch
 				watches[servicename] = serviceScopes[servicename].$watch("model",watch(servicename),true);
-				serviceScopes[servicename].$digest();
+				if ($rootScope.$$asyncQueue.length > 0) 
+					$rootScope.$digest();
+				else serviceScopes[servicename].$digest();
 			}
 		},
 		digest: function(servicename) {

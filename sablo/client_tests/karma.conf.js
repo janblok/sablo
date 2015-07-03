@@ -2,13 +2,18 @@ module.exports = function(config){
   config.set({
     basePath : '.',
     files : [
-       'lib/jquery.js',
-       'lib/angular_1.4.0b5.js',
-       'lib/angular-mocks_1.4.0b5.js',
-       'lib/angular-webstorage.js',
-       '../META-INF/resources/sablo/js/*.js',
-       'lib/phantomjs.polyfill.js',
-       './test/**/*.js',	  
+		// libraries for testing and angular
+		'lib/jquery.js',
+		'lib/phantomjs.polyfill.js',
+		'lib/angular_1.*.js',
+		'lib/angular-mocks*.js',
+		'lib/angular-webstorage.js',
+
+		// sablo scripts
+		'../META-INF/resources/sablo/js/*.js',
+		
+		// test scripts
+		'test/**/*.js'
     ],
 
     frameworks: ['jasmine'],

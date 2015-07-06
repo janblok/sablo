@@ -21,13 +21,15 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 
 	var deferredFormStates = {};
 	var deferredFormStatesWithData = {};
-	var getChangeNotifier = function(formName, beanName, property) {
+	var getChangeNotifierGenerator = function(formName, beanName) {
+		return function(property) {
 		return function() {
 			// will be called by the custom property when it needs to send changes server size
 			var beanModel = formStates[formName].model[beanName];
-			sendChanges(beanModel, beanModel, formName, beanName);
+				sendChanges(beanModel[property], beanModel[property], formName, beanName, property);
+			};
+		};
 		}
-	}
 
 	/*
 	 * Some code is interested in form state immediately after it's loaded/initialized (needsInitialData = false) in which case only some template values might be
@@ -59,7 +61,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		return getFormStateImpl(name, true);
 	}
 
-	var getComponentChanges = function(now, prev, beanConversionInfo, parentSize, changeNotifier, componentScope,property) {
+	var getComponentChanges = function(now, prev, beanConversionInfo, parentSize, changeNotifierGenerator, componentScope,property) {
 		var changes = {}
 		if (property) {
 			if (beanConversionInfo && beanConversionInfo[property]) changes[property] = $sabloConverters.convertFromClientToServer(now, beanConversionInfo[property], prev);
@@ -92,13 +94,13 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 
 	var sendChanges = function(now, prev, formname, beanname, property) {
 		var changes = getComponentChanges(now, prev, $sabloUtils.getInDepthProperty(formStatesConversionInfo, formname, beanname),
-				formStates[formname].properties.designSize, getChangeNotifier(formname, beanname), formStates[formname].getScope(), property);
+				formStates[formname].properties.designSize, getChangeNotifierGenerator(formname, beanname), formStates[formname].getScope(), property);
 		if (Object.getOwnPropertyNames(changes).length > 0) {
 			callService('formService', 'dataPush', {formname:formname,beanname:beanname,changes:changes}, true)
 		}
 	};
 
-	var applyBeanData = function(beanModel, beanData, containerSize, changeNotifier, beanConversionInfo, newConversionInfo, componentScope) {
+	var applyBeanData = function(beanModel, beanData, containerSize, changeNotifierGenerator, beanConversionInfo, newConversionInfo, componentScope) {
 
 		if (newConversionInfo) { // then means beanConversionInfo should also be defined - we assume that
 			// beanConversionInfo will be granularly updated in the loop below
@@ -112,7 +114,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 				// if the value changed and it wants to be in control of it's changes, or if the conversion info for this value changed (thus possibly preparing an old value for being change-aware without changing the value reference)
 				if ((beanModel[key] !== beanData[key] || beanConversionInfo[key] !== newConversionInfo[key])
 						&& beanData[key] && beanData[key][$sabloConverters.INTERNAL_IMPL] && beanData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
-					beanData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier(changeNotifier);
+					beanData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier(changeNotifierGenerator(key));
 				}
 				beanConversionInfo[key] = newConversionInfo[key];
 			} else if (beanConversionInfo && angular.isDefined(beanConversionInfo[key])) delete beanConversionInfo[key]; // this prop. no longer has conversion info!
@@ -324,7 +326,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 							if (beanname != '') {
 								var newBeanConversionInfo = newFormConversionInfo ? newFormConversionInfo[beanname] : undefined;
 								var beanConversionInfo = newBeanConversionInfo ? $sabloUtils.getOrCreateInDepthProperty(formStatesConversionInfo, formname, beanname) : $sabloUtils.getInDepthProperty(formStatesConversionInfo, formname, beanname);
-								applyBeanData(formModel[beanname], newFormData[beanname], formState.properties.designSize, getChangeNotifier(formname, beanname), beanConversionInfo, newBeanConversionInfo, formState.getScope());
+								applyBeanData(formModel[beanname], newFormData[beanname], formState.properties.designSize, getChangeNotifierGenerator(formname, beanname), beanConversionInfo, newBeanConversionInfo, formState.getScope());
 							}
 						}
 					}
@@ -355,7 +357,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		// used by custom property component[] to implement nested component logic
 		applyBeanData: applyBeanData,
 		getComponentChanges: getComponentChanges,
-		getChangeNotifier: getChangeNotifier,
+		getChangeNotifierGenerator: getChangeNotifierGenerator,
 
 		getFormState: getFormState,
 
@@ -474,7 +476,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 							if (beanname != '') {
 								var initialBeanConversionInfo = conversionInfo ? conversionInfo[beanname] : undefined;
 								var beanConversionInfo = initialBeanConversionInfo ? $sabloUtils.getOrCreateInDepthProperty(formStatesConversionInfo, formName, beanname) : $sabloUtils.getInDepthProperty(formStatesConversionInfo, formName, beanname);
-								applyBeanData(formModel[beanname], initialFormData[beanname], formState.properties.designSize, getChangeNotifier(formName, beanname), beanConversionInfo, initialBeanConversionInfo, formState.getScope());
+								applyBeanData(formModel[beanname], initialFormData[beanname], formState.properties.designSize, getChangeNotifierGenerator(formName, beanname), beanConversionInfo, initialBeanConversionInfo, formState.getScope());
 							}
 						}
 					}
@@ -830,12 +832,14 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		return propertiesThatShouldBeAutoPushedToServer["components"][componentTypeName];
 	};
 	
-	function getPropertiesToAutoWatchForService(componentTypeName) {
-		return propertiesThatShouldBeAutoPushedToServer["services"][componentTypeName];
+	function getPropertiesToAutoWatchForService(serviceTypeName) {
+		return propertiesThatShouldBeAutoPushedToServer["services"][serviceTypeName];
 	};
 	
 	// returns an array of watch unregister functions
-	function watchDumbProperties(scope, model, propertiesToAutoWatch, changedCallbackFunction) {
+	// propertiesToAutoWatch is meant to be the return value of getPropertiesToAutoWatchForComponent or getPropertiesToAutoWatchForService
+	// extraPropertiesToWatch can be undefined and is meant to contain any hard-coded/implementation specific properties that should be watched for the given model
+	function watchDumbProperties(scope, model, propertiesToAutoWatch, changedCallbackFunction/*, extraPropertiesToWatch*/) {
 		var unwatchF = [];
 		function getChangeFunction(property) {
 			return function(newValue, oldValue) {
@@ -851,19 +855,24 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		for (var p in propertiesToAutoWatch) {
 			unwatchF.push(scope.$watch(getWatchFunction(p), getChangeFunction(p), propertiesToAutoWatch[p]));
 		}
+		
+//		if (extraPropertiesToWatch) for (var p in extraPropertiesToWatch) {
+//			unwatchF.push(scope.$watch(getWatchFunction(p), getChangeFunction(p), extraPropertiesToWatch[p]));
+//		}
+//		
 		return unwatchF;
 	}
 	
 	return {
 		
 		// returns an array of watch unregister functions
-		watchDumbPropertiesForComponent: function watchDumbPropertiesForComponent(scope, componentTypeName, model, changedCallbackFunction) {
-			return watchDumbProperties(scope, model, getPropertiesToAutoWatchForComponent(componentTypeName), changedCallbackFunction);
+		watchDumbPropertiesForComponent: function watchDumbPropertiesForComponent(scope, componentTypeName, model, changedCallbackFunction/*, extraPropertiesToWatch*/) {
+			return watchDumbProperties(scope, model, getPropertiesToAutoWatchForComponent(componentTypeName), changedCallbackFunction/*, extraPropertiesToWatch*/);
 		},
 		
 		// returns an array of watch unregister functions
-		watchDumbPropertiesForService: function watchDumbPropertiesForService(scope, serviceTypeName, model, changedCallbackFunction) {
-			return watchDumbProperties(scope, model, getPropertiesToAutoWatchForService(serviceTypeName), changedCallbackFunction);
+		watchDumbPropertiesForService: function watchDumbPropertiesForService(scope, serviceTypeName, model, changedCallbackFunction/*, extraPropertiesToWatch*/) {
+			return watchDumbProperties(scope, model, getPropertiesToAutoWatchForService(serviceTypeName), changedCallbackFunction/*, extraPropertiesToWatch*/);
 		},
 		
 		clearAutoWatchPropertiesList: function () {

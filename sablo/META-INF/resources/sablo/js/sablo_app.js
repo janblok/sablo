@@ -838,8 +838,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 	
 	// returns an array of watch unregister functions
 	// propertiesToAutoWatch is meant to be the return value of getPropertiesToAutoWatchForComponent or getPropertiesToAutoWatchForService
-	// extraPropertiesToWatch can be undefined and is meant to contain any hard-coded/implementation specific properties that should be watched for the given model
-	function watchDumbProperties(scope, model, propertiesToAutoWatch, changedCallbackFunction/*, extraPropertiesToWatch*/) {
+	function watchDumbProperties(scope, model, propertiesToAutoWatch, changedCallbackFunction) {
 		var unwatchF = [];
 		function getChangeFunction(property) {
 			return function(newValue, oldValue) {
@@ -856,23 +855,19 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 			unwatchF.push(scope.$watch(getWatchFunction(p), getChangeFunction(p), propertiesToAutoWatch[p]));
 		}
 		
-//		if (extraPropertiesToWatch) for (var p in extraPropertiesToWatch) {
-//			unwatchF.push(scope.$watch(getWatchFunction(p), getChangeFunction(p), extraPropertiesToWatch[p]));
-//		}
-//		
 		return unwatchF;
 	}
 	
 	return {
 		
 		// returns an array of watch unregister functions
-		watchDumbPropertiesForComponent: function watchDumbPropertiesForComponent(scope, componentTypeName, model, changedCallbackFunction/*, extraPropertiesToWatch*/) {
-			return watchDumbProperties(scope, model, getPropertiesToAutoWatchForComponent(componentTypeName), changedCallbackFunction/*, extraPropertiesToWatch*/);
+		watchDumbPropertiesForComponent: function watchDumbPropertiesForComponent(scope, componentTypeName, model, changedCallbackFunction) {
+			return watchDumbProperties(scope, model, getPropertiesToAutoWatchForComponent(componentTypeName), changedCallbackFunction);
 		},
 		
 		// returns an array of watch unregister functions
-		watchDumbPropertiesForService: function watchDumbPropertiesForService(scope, serviceTypeName, model, changedCallbackFunction/*, extraPropertiesToWatch*/) {
-			return watchDumbProperties(scope, model, getPropertiesToAutoWatchForService(serviceTypeName), changedCallbackFunction/*, extraPropertiesToWatch*/);
+		watchDumbPropertiesForService: function watchDumbPropertiesForService(scope, serviceTypeName, model, changedCallbackFunction) {
+			return watchDumbProperties(scope, model, getPropertiesToAutoWatchForService(serviceTypeName), changedCallbackFunction);
 		},
 		
 		clearAutoWatchPropertiesList: function () {

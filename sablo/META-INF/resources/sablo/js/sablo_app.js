@@ -61,7 +61,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		return getFormStateImpl(name, true);
 	}
 
-	var getComponentChanges = function(now, prev, beanConversionInfo, parentSize, changeNotifierGenerator, componentScope,property) {
+	var getComponentChanges = function(now, prev, beanConversionInfo, parentSize, changeNotifierGenerator, componentScope, property) {
 		var changes = {}
 		if (property) {
 			if (beanConversionInfo && beanConversionInfo[property]) changes[property] = $sabloConverters.convertFromClientToServer(now, beanConversionInfo[property], prev);

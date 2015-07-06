@@ -1,4 +1,4 @@
-angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(function($provide, $logProvider) {
+angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(function($provide, $logProvider,$rootScopeProvider) {
 	____logProvider = $logProvider; // just in case someone wants to alter debug at runtime from browser console for example
 	$logProvider.debugEnabled(false);
 	$provide.decorator("$log", function($delegate) {
@@ -9,6 +9,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		});
 		return $delegate;
 	})
+	$rootScopeProvider.digestTtl(15); 
 }).value("$sabloConstants",  {
 	modelChangeNotifier: "$modelChangeNotifier"
 }).factory('$sabloApplication', function ($rootScope, $window, $timeout, $q, $log, $webSocket, $sabloConverters, $sabloUtils, $sabloConstants, webStorage) {

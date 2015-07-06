@@ -44,7 +44,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		}
 
 		var formState = formStates[name];
-		if (formState && formState.resolved && !(formState.initializing && needsInitialData) && formState.resolved) {
+		if (formState && formState.resolved && !(formState.initializing && needsInitialData)) {
 			defered.resolve(formStates[name]); // then handlers are called even if they are applied after it is resolved
 			delete deferredStates[name];
 		}			   
@@ -406,13 +406,20 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 
 		// form state has is now ready for use (even though it might not have initial data)
 		resolveFormState: function(formName) {
-			formStates[formName].resolved = true;
-			if (!formStates[formName].initializing) formStates[formName].addWatches(); // so it already got initial data a while ago - restore watches then
+			var formState = formStates[formName];
+			if (!formState.resolving) {
+				if ($log.debugEnabled) $log.debug('sbl * form: ' + formName + ' was not in resolving state anymore ');
+				return null;
+			}
+			delete formState.resolving;
+			formState.resolved = true;
+			if (!formState.initializing) formState.addWatches(); // so it already got initial data a while ago - restore watches then
 			if (deferredFormStates[formName]) {
-				if (typeof(formStates[formName]) !== 'undefined') deferredFormStates[formName].resolve(formStates[formName]);
+				if (typeof(formState) !== 'undefined') deferredFormStates[formName].resolve(formState);
 				delete deferredFormStates[formName];
 			}
 			if ($log.debugEnabled) $log.debug('sbl * Resolved form: ' + formName);
+			return formState;
 		},
 
 		// form state has data but is not ready to be used (maybe it was hidden / temporarily with DOM disposed)

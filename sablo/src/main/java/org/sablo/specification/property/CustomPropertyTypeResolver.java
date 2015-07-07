@@ -95,4 +95,9 @@ public class CustomPropertyTypeResolver
 		}
 		return propertyType;
 	}
+
+	public void clearCache()
+	{
+		cache.clear();
+	}
 }

@@ -54,6 +54,12 @@ public class WebServiceSpecProvider
 		instance = new WebServiceSpecProvider(new WebSpecReader(locations, "Web-Service"));
 	}
 
+	public static void disposeInstance()
+	{
+		instance = null;
+	}
+
+
 	/**
 	 * @param servletContext
 	 * @param webComponentBundleNames

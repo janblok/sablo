@@ -861,6 +861,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 	
 	return {
 		
+		getPropertiesToAutoWatchForComponent: getPropertiesToAutoWatchForComponent,
+		
 		// returns an array of watch unregister functions
 		watchDumbPropertiesForComponent: function watchDumbPropertiesForComponent(scope, componentTypeName, model, changedCallbackFunction) {
 			return watchDumbProperties(scope, model, getPropertiesToAutoWatchForComponent(componentTypeName), changedCallbackFunction);

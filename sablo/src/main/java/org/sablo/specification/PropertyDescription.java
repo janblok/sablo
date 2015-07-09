@@ -233,7 +233,7 @@ public class PropertyDescription
 	{
 		if (properties == null) properties = new HashMap<>();
 		if (proptype == null) properties.remove(propname);
-		properties.put(propname, proptype);
+		else properties.put(propname, proptype);
 		return this;
 	}
 

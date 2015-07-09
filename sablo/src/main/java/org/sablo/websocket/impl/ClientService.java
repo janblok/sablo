@@ -27,6 +27,7 @@ import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.WebComponentSpecification;
 import org.sablo.specification.WebServiceSpecProvider;
 import org.sablo.specification.property.DataConverterContext;
+import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.IClientService;
 import org.sablo.websocket.TypedData;
@@ -60,9 +61,16 @@ public class ClientService extends BaseWebObject implements IClientService
 		}
 
 		TypedData<Map<String, Object>> serviceChanges = getAndClearChanges();
-		Object retValue = CurrentWindow.get().executeServiceCall(name, functionName, arguments, getParameterTypes(functionName),
+		Object retValue = CurrentWindow.get().executeServiceCall(
+			name,
+			functionName,
+			arguments,
+			getParameterTypes(functionName),
 			serviceChanges.content.isEmpty() ? null : Collections.singletonMap("services", Collections.singletonMap(getName(), serviceChanges.content)),
-			serviceChanges.contentType, apiFunction != null ? apiFunction.getBlockEventProcessing() : true);
+			AggregatedPropertyType.newAggregatedProperty().putProperty("services",
+				AggregatedPropertyType.newAggregatedProperty().putProperty(getName(), serviceChanges.contentType)),
+			apiFunction != null ? apiFunction.getBlockEventProcessing() : true);
+
 		if (retValue != null)
 		{
 			if (spec != null)

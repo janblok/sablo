@@ -17,10 +17,12 @@
 package org.sablo.services.template;
 
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Collection;
 
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentSpecification;
+import org.sablo.specification.WebComponentSpecification.TwoWayValue;
 
 /**
  * In order to improve performance, not all properties on all components/services are watched for client/browser changes in angular.
@@ -34,9 +36,6 @@ import org.sablo.specification.WebComponentSpecification;
 public class ModifiablePropertiesGenerator
 {
 	public final static String TWO_WAY_BINDINGS_LIST = "propsToWatch";
-	public final static String TWO_WAY = "twoWay";
-	public final static String DEEP_WATCH = "deep";
-	public final static String SHALLOW_WATCH = "shallow";
 
 	/**
 	 * @param w writer used to write the JSON.
@@ -62,7 +61,15 @@ public class ModifiablePropertiesGenerator
 		boolean first1 = true;
 		for (WebComponentSpecification webComponentSpec : webComponentSpecifications)
 		{
-			Collection<PropertyDescription> twoWayProps = webComponentSpec.getTaggedProperties(TWO_WAY);
+			Collection<PropertyDescription> twoWayProps = new ArrayList<>();
+			for (PropertyDescription desc : webComponentSpec.getProperties().values())
+			{
+				if (desc.getTwoWay() != null)
+				{
+					twoWayProps.add(desc);
+				}
+			}
+
 			if (twoWayProps.size() > 0)
 			{
 				if (!first1) w.println(',');
@@ -78,7 +85,7 @@ public class ModifiablePropertiesGenerator
 					w.print("      '");
 					w.print(prop.getName());
 					w.print("': ");
-					w.print(DEEP_WATCH.equals(prop.getTag(TWO_WAY)));
+					w.print(prop.getTwoWay() == TwoWayValue.deep);
 				}
 				if (!first2) w.println("");
 				w.print("    }");

@@ -26,6 +26,7 @@ import java.util.Map.Entry;
 
 import org.json.JSONObject;
 import org.sablo.specification.IYieldingType.YieldDescriptionArguments;
+import org.sablo.specification.WebComponentSpecification.TwoWayValue;
 import org.sablo.specification.property.CustomJSONPropertyType;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
@@ -43,6 +44,7 @@ public class PropertyDescription
 	private final boolean optional;
 	private final Object defaultValue;
 	private final List<Object> values;
+	private final TwoWayValue twoWay;
 	private final JSONObject tags;
 
 	//case of nested type
@@ -52,28 +54,30 @@ public class PropertyDescription
 
 	public PropertyDescription(String name, IPropertyType< ? > type)
 	{
-		this(name, type, null, null, null, null, false);
+		this(name, type, null, null, null, null, null, false);
 	}
 
 	public PropertyDescription(String name, IPropertyType< ? > type, Object config)
 	{
-		this(name, type, config, null, null, null, false);
+		this(name, type, config, null, null, null, null, false);
 	}
 
-	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Object defaultValue, List<Object> values, JSONObject tags, boolean optional)
+	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Object defaultValue, List<Object> values, TwoWayValue twoWay,
+		JSONObject tags, boolean optional)
 	{
 		this.name = name;
 		if (type instanceof IYieldingType)
 		{
-			YieldDescriptionArguments params = new YieldDescriptionArguments(config, defaultValue, values, tags, optional);
+			YieldDescriptionArguments params = new YieldDescriptionArguments(config, defaultValue, values, twoWay, tags, optional);
 			this.type = ((IYieldingType< ? , ? >)type).yieldToOtherIfNeeded(name, params);
 
 			if (this.type != type)
 			{
 				// it yielded; use new argument values in case yielding required it
-				this.config = params.config;
+				this.config = params.getConfig();
 				this.defaultValue = params.defaultValue;
 				this.values = params.values;
+				this.twoWay = params.twoWay;
 				this.tags = params.tags;
 				this.optional = params.optional;
 			}
@@ -83,6 +87,7 @@ public class PropertyDescription
 				this.config = config;
 				this.defaultValue = defaultValue;
 				this.values = values;
+				this.twoWay = twoWay;
 				this.tags = tags;
 				this.optional = optional;
 			}
@@ -94,6 +99,7 @@ public class PropertyDescription
 			this.config = config;
 			this.defaultValue = defaultValue;
 			this.values = values;
+			this.twoWay = twoWay;
 			this.tags = tags;
 			this.optional = optional;
 		}
@@ -173,6 +179,11 @@ public class PropertyDescription
 	public List<Object> getValues()
 	{
 		return values == null ? Collections.emptyList() : Collections.unmodifiableList(values);
+	}
+
+	public TwoWayValue getTwoWay()
+	{
+		return twoWay;
 	}
 
 	public Object getTag(String tag)

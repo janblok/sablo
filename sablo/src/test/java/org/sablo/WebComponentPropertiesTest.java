@@ -19,6 +19,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
@@ -31,6 +32,7 @@ import org.junit.Test;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
+import org.sablo.specification.WebComponentSpecification.TwoWayValue;
 
 /**
  * @author rgansevles
@@ -58,8 +60,10 @@ public class WebComponentPropertiesTest
 			"\n   \"abool\": \"boolean\"" + //
 			"\n  ,\"aint\": \"int\"" + //
 			"\n  ,\"tagged\": {\"type\": \"int\", \"tags\": {\"special\": 42}}" + //
+			"\n  ,\"twdeep\": {\"type\": \"object\", \"twoWay\": \"deep\" }" + //
+			"\n  ,\"twshallow\": {\"type\": \"double\", \"twoWay\": \"shallow\" }" + //
 			"\n}" + //
-			"\n}"; // 
+			"\n}"; //
 
 		Map<String, String> components = new HashMap<>();
 		components.put("testcomponent.spec", testcomponentspec);
@@ -157,4 +161,13 @@ public class WebComponentPropertiesTest
 		assertEquals(new Integer(42), specialComponents.iterator().next().getTag("special"));
 	}
 
+	@Test
+	public void testTwoWay()
+	{
+		WebComponent testcomponent = new WebComponent("testcomponent", "test");
+
+		assertNull(testcomponent.getSpecification().getProperty("aint").getTwoWay());
+		assertSame(TwoWayValue.deep, testcomponent.getSpecification().getProperty("twdeep").getTwoWay());
+		assertSame(TwoWayValue.shallow, testcomponent.getSpecification().getProperty("twshallow").getTwoWay());
+	}
 }

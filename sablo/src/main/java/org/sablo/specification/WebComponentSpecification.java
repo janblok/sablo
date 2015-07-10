@@ -46,7 +46,6 @@ import org.slf4j.LoggerFactory;
  */
 public class WebComponentSpecification extends PropertyDescription
 {
-
 	/**
 	 * Property descriptions that are array element property descriptions will have this name.
 	 */
@@ -55,6 +54,19 @@ public class WebComponentSpecification extends PropertyDescription
 	private static final Logger log = LoggerFactory.getLogger(WebComponentSpecification.class.getCanonicalName());
 
 	public static final String TYPES_KEY = "types";
+
+	public final static String TWO_WAY = "twoWay";
+
+	public enum TwoWayValue
+	{
+		deep, shallow;
+
+		public static TwoWayValue fromString(String s)
+		{
+			return s == null ? null : valueOf(s);
+		}
+	}
+
 	private final Map<String, PropertyDescription> handlers = new HashMap<>(); // second String is always a "function" for now, but in the future it will probably contain more (to specify sent args/types...)
 	private final Map<String, WebComponentApiDefinition> apis = new HashMap<>();
 	private final String definition;
@@ -309,7 +321,7 @@ public class WebComponentSpecification extends PropertyDescription
 								// hmm why not set the array field instead of configObject here?
 								config = param;
 							}
-							def.addParameter(new PropertyDescription((String)param.get("name"), propertyType, config, null, null, null,
+							def.addParameter(new PropertyDescription((String)param.get("name"), propertyType, config, null, null, null, null,
 								Boolean.TRUE.equals(param.opt("optional"))));
 						}
 					}
@@ -421,6 +433,7 @@ public class WebComponentSpecification extends PropertyDescription
 
 				JSONObject configObject = null;
 				Object defaultValue = null;
+				TwoWayValue twoWay = null;
 				JSONObject tags = null;
 				List<Object> values = null;
 				ParsedProperty pp = null;
@@ -433,6 +446,7 @@ public class WebComponentSpecification extends PropertyDescription
 					pp = parsePropertyString(((JSONObject)value).getString("type"));
 					configObject = ((JSONObject)value);
 					defaultValue = configObject.opt("default");
+					twoWay = TwoWayValue.fromString(configObject.optString(TWO_WAY, null));
 					tags = configObject.optJSONObject("tags");
 
 					JSONArray valuesArray = configObject.optJSONArray("values");
@@ -455,7 +469,7 @@ public class WebComponentSpecification extends PropertyDescription
 						// a config for the element type can be specified like this: { type: 'myprop[]', a: ..., b: ..., elementConfig: {...} } and we could give that to the elementDescription instead
 						JSONObject elementConfig = configObject != null ? configObject.optJSONObject(CustomJSONArrayType.ELEMENT_CONFIG_KEY) : null;
 						PropertyDescription elementDescription = new PropertyDescription(ARRAY_ELEMENT_PD_NAME, type, type.parseConfig(elementConfig),
-							defaultValue, values, tags, false);
+							defaultValue, values, twoWay, tags, false);
 						if (pp.array)
 						{
 							type = TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, elementDescription);
@@ -466,7 +480,7 @@ public class WebComponentSpecification extends PropertyDescription
 						}
 					}
 
-					pds.put(key, new PropertyDescription(key, type, type.parseConfig(configObject), defaultValue, values, tags, false));
+					pds.put(key, new PropertyDescription(key, type, type.parseConfig(configObject), defaultValue, values, twoWay, tags, false));
 				}
 			}
 		}

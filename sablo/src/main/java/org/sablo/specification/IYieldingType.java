@@ -19,6 +19,7 @@ package org.sablo.specification;
 import java.util.List;
 
 import org.json.JSONObject;
+import org.sablo.specification.WebComponentSpecification.TwoWayValue;
 import org.sablo.specification.property.IPropertyType;
 
 /**
@@ -54,21 +55,34 @@ public interface IYieldingType<T, YT> extends IPropertyType<T>
 	 */
 	public class YieldDescriptionArguments
 	{
-		public YieldDescriptionArguments(Object config, Object defaultValue, List<Object> values, JSONObject tags, boolean optional)
+
+		public YieldDescriptionArguments(Object config, Object defaultValue, List<Object> values, TwoWayValue twoWay, JSONObject tags, boolean optional)
 		{
 			this.config = config;
 			this.defaultValue = defaultValue;
 			this.values = values;
+			this.twoWay = twoWay;
 			this.tags = tags;
 			this.optional = optional;
 		}
 
-		public Object config;
-		public Object defaultValue;
-		public List<Object> values;
-		public JSONObject tags;
-		public boolean optional;
+		public final Object defaultValue;
+		public final List<Object> values;
+		public final TwoWayValue twoWay;
+		public final JSONObject tags;
+		public final boolean optional;
 
+		private Object config;
+
+		public Object getConfig()
+		{
+			return config;
+		}
+
+		public void setConfig(Object config)
+		{
+			this.config = config;
+		}
 	}
 
 }

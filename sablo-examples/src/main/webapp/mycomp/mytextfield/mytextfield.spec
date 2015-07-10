@@ -4,6 +4,6 @@
 	"definition": "mycomp/mytextfield/mytextfield.js",
 	"model":
 	{
-		 "value" : { type: "string", "tags": { "twoWay": "shallow" } }
+		 "value" : { type: "string", "twoWay": "shallow" }
 	}
 }

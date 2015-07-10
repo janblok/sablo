@@ -400,7 +400,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 				}
 			}
 
-			if (resolve || resolve === undefined) this.resolveFormState(formName);
+			if (resolve || resolve === undefined) this.resolveFormState(formName, false);
 
 			return state;
 		},
@@ -408,9 +408,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		updateScopeForState: updateScopeForState,
 
 		// form state has is now ready for use (even though it might not have initial data)
-		resolveFormState: function(formName) {
+		resolveFormState: function(formName, testResolving) {
 			var formState = formStates[formName];
-			if (!formState.resolving) {
+			if (testResolving && !formState.resolving) {
 				if ($log.debugEnabled) $log.debug('sbl * form: ' + formName + ' was not in resolving state anymore ');
 				return null;
 			}

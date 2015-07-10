@@ -29,6 +29,7 @@ angular.module('sampleApp').controller("anotherForm", function($scope, $window, 
 	
 	var formState = $sabloApplication.initFormState(formName, beans, formProperties);
 	// TODO: to sablo_app
+	formState.resolving = true;
 	$scope.model = formState.model;
 	$scope.api = formState.api;
 	$scope.layout = formState.layout;

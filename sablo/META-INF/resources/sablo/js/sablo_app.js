@@ -841,19 +841,27 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 	// propertiesToAutoWatch is meant to be the return value of getPropertiesToAutoWatchForComponent or getPropertiesToAutoWatchForService
 	function watchDumbProperties(scope, model, propertiesToAutoWatch, changedCallbackFunction) {
 		var unwatchF = [];
-		function getChangeFunction(property) {
+		function getChangeFunction(property, initialV) {
 			return function(newValue, oldValue) {
+				if (typeof initialV !== 'undefined') {
+					// value from server should not be sent back; but as directives in their controller methods can already change the values or properties
+					// (so before the first watch execution) we can't just rely only on the "if (oldValue === newValue) return;" below cause in that case it won't send
+					// a value that actually changed to server
+					oldValue = initialV;
+					initialV = undefined;
+				}
 				if (oldValue === newValue) return;
 				changedCallbackFunction(newValue, oldValue, property);
 			}
 		}
 		function getWatchFunction(property) {
 			return function() { 
-				return model[property] 
+				return model[property];
 			}
 		}
 		for (var p in propertiesToAutoWatch) {
-			unwatchF.push(scope.$watch(getWatchFunction(p), getChangeFunction(p), propertiesToAutoWatch[p]));
+			var wf = getWatchFunction(p);
+			unwatchF.push(scope.$watch(wf, getChangeFunction(p, wf()), propertiesToAutoWatch[p]));
 		}
 		
 		return unwatchF;

@@ -19,6 +19,7 @@ package org.sablo;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -66,7 +67,7 @@ public class IndexPageEnhancer
 	 * @throws IOException
 	 */
 	public static void enhance(URL resource, String contextPath, Collection<String> cssContributions, Collection<String> jsContributions,
-		Map<String, String> variableSubstitution, Writer writer) throws IOException
+		Map<String, String> variableSubstitution, Writer writer, IContributionFilter contributionFilter) throws IOException
 	{
 		String index_file = IOUtils.toString(resource);
 		String lowercase_index_file = index_file.toLowerCase();
@@ -90,7 +91,7 @@ public class IndexPageEnhancer
 		}
 		else
 		{
-			sb.insert(headend + COMPONENT_CONTRIBUTIONS.length(), getAllContributions(cssContributions, jsContributions));
+			sb.insert(headend + COMPONENT_CONTRIBUTIONS.length(), getAllContributions(cssContributions, jsContributions, contributionFilter));
 		}
 		if (headstart < 0)
 		{
@@ -117,22 +118,23 @@ public class IndexPageEnhancer
 	 * Returns the contributions for webcomponents and services
 	 * @return headContributions
 	 */
-	static String getAllContributions(Collection<String> cssContributions, Collection<String> jsContributions)
+	static String getAllContributions(Collection<String> cssContributions, Collection<String> jsContributions, IContributionFilter contributionFilter)
 	{
-		StringBuilder retval = new StringBuilder();
+		ArrayList<String> allCSSContributions = new ArrayList<String>();
+		ArrayList<String> allJSContributions = new ArrayList<String>();
 
 		WebComponentSpecification[] webComponentDescriptions = WebComponentSpecProvider.getInstance().getAllWebComponentSpecifications();
 		LinkedHashMap<String, JSONObject> allLibraries = new LinkedHashMap<>();
 		for (WebComponentSpecification spec : webComponentDescriptions)
 		{
-			retval.append(String.format("<script src=\"%s\"></script>\n", spec.getDefinition()));
+			allJSContributions.add(spec.getDefinition());
 			mergeLibs(allLibraries, spec.getLibraries());
 		}
 
 		WebComponentSpecification[] webServiceDescriptions = WebServiceSpecProvider.getInstance().getAllWebServiceSpecifications();
 		for (WebComponentSpecification spec : webServiceDescriptions)
 		{
-			retval.append(String.format("<script src=\"%s\"></script>\n", spec.getDefinition()));
+			allJSContributions.add(spec.getDefinition());
 			mergeLibs(allLibraries, spec.getLibraries());
 		}
 
@@ -141,10 +143,10 @@ public class IndexPageEnhancer
 			switch (lib.optString("mimetype"))
 			{
 				case "text/javascript" :
-					retval.append(String.format("<script src=\"%s\"></script>\n", lib.optString("url")));
+					allJSContributions.add(lib.optString("url"));
 					break;
 				case "text/css" :
-					retval.append(String.format("<link rel=\"stylesheet\" href=\"%s\"/>\n", lib.optString("url")));
+					allCSSContributions.add(lib.optString("url"));
 					break;
 				default :
 					log.warn("Unknown mimetype " + lib);
@@ -153,19 +155,28 @@ public class IndexPageEnhancer
 
 		if (cssContributions != null)
 		{
-			for (String lib : cssContributions)
-			{
-				retval.append(String.format("<link rel=\"stylesheet\" href=\"%s\"/>\n", lib));
-			}
+			allCSSContributions.addAll(cssContributions);
 		}
 
 		if (jsContributions != null)
 		{
-			for (String lib : jsContributions)
-			{
-				retval.append(String.format("<script src=\"%s\"></script>\n", lib));
-			}
+			allJSContributions.addAll(jsContributions);
 		}
+
+		StringBuilder retval = new StringBuilder();
+		ArrayList<String> filteredCSSContributions = contributionFilter != null ? contributionFilter.filterCSSContributions(allCSSContributions)
+			: allCSSContributions;
+		for (String lib : filteredCSSContributions)
+		{
+			retval.append(String.format("<link rel=\"stylesheet\" href=\"%s\"/>\n", lib));
+		}
+		ArrayList<String> filteredJSContributions = contributionFilter != null ? contributionFilter.filterJSContributions(allJSContributions)
+			: allJSContributions;
+		for (String lib : filteredJSContributions)
+		{
+			retval.append(String.format("<script src=\"%s\"></script>\n", lib));
+		}
+
 
 		// lists properties that need to be watched for client to server changes for each component/service type
 		retval.append("<script src=\"spec/").append(ModifiablePropertiesGenerator.TWO_WAY_BINDINGS_LIST).append(".js\"></script>\n");

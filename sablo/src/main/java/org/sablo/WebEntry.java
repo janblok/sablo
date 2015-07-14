@@ -19,6 +19,7 @@ package org.sablo;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
@@ -43,7 +44,7 @@ import org.sablo.websocket.WebsocketSessionManager;
  * Subclasses should carry the @WebFilter annotation
  * @author jblok
  */
-public abstract class WebEntry implements Filter
+public abstract class WebEntry implements Filter, IContributionFilter
 {
 
 	private final String endpointType;
@@ -119,12 +120,22 @@ public abstract class WebEntry implements Filter
 			((HttpServletResponse)servletResponse).setContentType("text/html");
 
 			PrintWriter w = servletResponse.getWriter();
-			IndexPageEnhancer.enhance(indexPageResource, request.getContextPath(), cssContributions, jsContributions, variableSubstitution, w);
+			IndexPageEnhancer.enhance(indexPageResource, request.getContextPath(), cssContributions, jsContributions, variableSubstitution, w, this);
 			w.flush();
 			return;
 		}
 
 		filterChain.doFilter(servletRequest, servletResponse);
+	}
+
+	public ArrayList<String> filterCSSContributions(ArrayList<String> cssContributions)
+	{
+		return cssContributions;
+	}
+
+	public ArrayList<String> filterJSContributions(ArrayList<String> jsContributions)
+	{
+		return jsContributions;
 	}
 
 	protected URL getIndexPageResource(HttpServletRequest request) throws IOException

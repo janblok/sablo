@@ -29,6 +29,13 @@ webSocketModule.factory('$webSocket',
 		try {
 			obj = JSON.parse(message.data);
 
+			// if the indicator is showing and this object wants a return message then hide the indicator until we send the response
+			var hideIndicator = obj && obj.smsgid && $sabloLoadingIndicator.isShowing();
+			// if a request to a service is being done then this could be a blocking 
+			if (hideIndicator) {
+				$sabloLoadingIndicator.hideLoading();
+			}
+			
 			// data got back from the server
 			if (obj.cmsgid) { // response to event
 				var deferredEvent = deferredEvents[obj.cmsgid];
@@ -103,6 +110,9 @@ webSocketModule.factory('$webSocket',
 					if (ret != undefined) {
 						response.ret = $sabloUtils.convertClientObject(ret);
 					}
+					if (hideIndicator) {
+						$sabloLoadingIndicator.showLoading();
+					}
 					sendMessageObject(response);
 				}, function(reason) {
 					// error
@@ -112,6 +122,9 @@ webSocketModule.factory('$webSocket',
 					var response = {
 							smsgid : obj.smsgid,
 							err: "Error while executing ($q deferred) client side code. Please see browser console for more info. Error: " + reason
+					}
+					if (hideIndicator) {
+						$sabloLoadingIndicator.showLoading();
 					}
 					sendMessageObject(response);
 				});
@@ -124,6 +137,9 @@ webSocketModule.factory('$webSocket',
 				var response = {
 						smsgid : obj.smsgid,
 						err: "Error while executing client side code. Please see browser console for more info. Error: " + e
+				}
+				if (hideIndicator) {
+					$sabloLoadingIndicator.showLoading();
 				}
 				sendMessageObject(response);
 			}
@@ -844,7 +860,7 @@ webSocketModule.factory('$webSocket',
 		// if there is none then use the default, that uses a class to make sure the wait cursor is shown/set on all dom elements.
 		var style = $window.document.createElement('style');
 		style.type = 'text/css';
-		style.innerHTML = '.wait, .wait * { cursor: wait !important; }';
+		style.innerHTML = '.sablowaitcursor, .sablowaitcursor * { cursor: wait !important; }';
 		document.getElementsByTagName('head')[0].appendChild(style);
 	}
 	var showCounter = 0;
@@ -858,7 +874,7 @@ webSocketModule.factory('$webSocket',
 					timeoutPromise = null;
 				} else {
 					if (custom) custom.showLoading();
-					else $($window.document.body).addClass("wait");
+					else $($window.document.body).addClass("sablowaitcursor");
 				}
 			}
 		},
@@ -868,9 +884,12 @@ webSocketModule.factory('$webSocket',
 				timeoutPromise = $timeout(function() {
 					timeoutPromise = null;
 					if (custom) custom.hideLoading()
-					else $($window.document.body).removeClass("wait");
+					else $($window.document.body).removeClass("sablowaitcursor");
 				},50);
 			}
+		},
+		isShowing: function() {
+			return showCounter > 0;
 		}
 	};
 });

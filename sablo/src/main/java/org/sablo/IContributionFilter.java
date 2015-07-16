@@ -16,7 +16,7 @@
 
 package org.sablo;
 
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author gboros
@@ -24,7 +24,7 @@ import java.util.ArrayList;
  */
 public interface IContributionFilter
 {
-	ArrayList<String> filterCSSContributions(ArrayList<String> cssContributions);
+	List<String> filterCSSContributions(List<String> cssContributions);
 
-	ArrayList<String> filterJSContributions(ArrayList<String> jsContributions);
+	List<String> filterJSContributions(List<String> jsContributions);
 }

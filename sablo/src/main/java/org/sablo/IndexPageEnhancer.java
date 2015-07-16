@@ -22,6 +22,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 
@@ -164,14 +165,13 @@ public class IndexPageEnhancer
 		}
 
 		StringBuilder retval = new StringBuilder();
-		ArrayList<String> filteredCSSContributions = contributionFilter != null ? contributionFilter.filterCSSContributions(allCSSContributions)
+		List<String> filteredCSSContributions = contributionFilter != null ? contributionFilter.filterCSSContributions(allCSSContributions)
 			: allCSSContributions;
 		for (String lib : filteredCSSContributions)
 		{
 			retval.append(String.format("<link rel=\"stylesheet\" href=\"%s\"/>\n", lib));
 		}
-		ArrayList<String> filteredJSContributions = contributionFilter != null ? contributionFilter.filterJSContributions(allJSContributions)
-			: allJSContributions;
+		List<String> filteredJSContributions = contributionFilter != null ? contributionFilter.filterJSContributions(allJSContributions) : allJSContributions;
 		for (String lib : filteredJSContributions)
 		{
 			retval.append(String.format("<script src=\"%s\"></script>\n", lib));

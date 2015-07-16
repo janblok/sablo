@@ -7,7 +7,7 @@ var webSocketModule = angular.module('webSocketModule', []);
  * Setup the $webSocket service.
  */
 webSocketModule.factory('$webSocket',
-		function($rootScope, $injector, $window, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers, $interval, wsCloseCodes) {
+		function($rootScope, $injector, $window, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers, $interval, wsCloseCodes,$sabloLoadingIndicator) {
 
 	var websocket = null;
 
@@ -51,6 +51,7 @@ webSocketModule.factory('$webSocket',
 					}
 				} else $log.warn("Response to an unknown handler call dismissed; can happen (normal) if a handler call gets interrupted by a full browser refresh.");
 				delete deferredEvents[obj.cmsgid];
+				$sabloLoadingIndicator.hideLoading();
 			}
 
 			if (obj.msg && obj.msg.services) {
@@ -159,6 +160,7 @@ webSocketModule.factory('$webSocket',
 			var deferred = $q.defer();
 			var cmsgid = getNextMessageId()
 			deferredEvents[cmsgid] = deferred
+			$sabloLoadingIndicator.showLoading();
 			cmd.cmsgid = cmsgid
 			sendMessageObject(cmd)
 			return deferred.promise;
@@ -828,4 +830,48 @@ webSocketModule.factory('$webSocket',
       $scope.reconnecting = reconnecting;
     }
   }
+}).factory("$sabloLoadingIndicator", function($injector, $window,$log,$timeout) {
+	// look for a custom implementation of the indicator
+	var custom = null;
+	if ($injector.has("loadingIndicator")) {
+		custom = $injector.get("loadingIndicator");
+		if (custom && (custom.showLoading == undefined || custom.hideLoading == undefined)){
+			custom = null;
+			$log.warn("a custom loading indicator is defined but doesn't have the 2 functions: showLoading or hideLoading")
+		}
+	}
+	if (custom == null) {
+		// if there is none then use the default, that uses a class to make sure the wait cursor is shown/set on all dom elements.
+		var style = $window.document.createElement('style');
+		style.type = 'text/css';
+		style.innerHTML = '.wait, .wait * { cursor: wait !important; }';
+		document.getElementsByTagName('head')[0].appendChild(style);
+	}
+	var showCounter = 0;
+	var timeoutPromise = null;
+	return {
+		showLoading: function() {
+			showCounter++;
+			if (showCounter == 1) {
+				if (timeoutPromise) {
+					$timeout.cancel(timeoutPromise);
+					timeoutPromise = null;
+				} else {
+					if (custom) custom.showLoading();
+					else $($window.document.body).addClass("wait");
+				}
+			}
+		},
+		hideLoading: function() {
+			showCounter--;
+			if (showCounter == 0) {
+				timeoutPromise = $timeout(function() {
+					timeoutPromise = null;
+					if (custom) custom.hideLoading()
+					else $($window.document.body).removeClass("wait");
+				},50);
+			}
+		}
+	};
 });
+

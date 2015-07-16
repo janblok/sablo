@@ -712,11 +712,15 @@ webSocketModule.factory('$webSocket',
 						eventObj.y= $event.pageY;
 						arg = eventObj
 					}
-					else if (arg instanceof Event || arg instanceof $.Event) {
+					else 
+					{
 						var eventObj = {}
 						eventObj.type = 'event'; 
-						eventObj.eventName = eventName; 
-						eventObj.timestamp = arg.timeStamp;
+						eventObj.eventName = eventName;
+						if (arg instanceof Event || arg instanceof $.Event)
+						{
+							eventObj.timestamp = arg.timeStamp;
+						}	
 						arg = eventObj
 					}
 					newargs.push(arg)

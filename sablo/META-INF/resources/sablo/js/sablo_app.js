@@ -400,7 +400,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 				}
 			}
 
-			if (resolve || resolve === undefined) this.resolveFormState(formName, false);
+			if (resolve || resolve === undefined) this.resolveFormState(formName, true);
 
 			return state;
 		},
@@ -408,10 +408,12 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		updateScopeForState: updateScopeForState,
 
 		// form state has is now ready for use (even though it might not have initial data)
-		resolveFormState: function(formName, testResolving) {
+		resolveFormState: function(formName, skipTestResolving) {
 			var formState = formStates[formName];
-			if (testResolving && !formState.resolving) {
+			if (!skipTestResolving && !formState.resolving) {
 				if ($log.debugEnabled) $log.debug('sbl * form: ' + formName + ' was not in resolving state anymore ');
+				if (deferredFormStates[formName]) deferredFormStates[formName].reject(); 
+				delete deferredFormStates[formName];
 				return null;
 			}
 			delete formState.resolving;
@@ -427,7 +429,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 
 		// form state has data but is not ready to be used (maybe it was hidden / temporarily with DOM disposed)
 		unResolveFormState: function(formName) {
-			if (formStates[formName] && formStates[formName].resolved) {
+			if (formStates[formName]) {
+				delete formStates[formName].resolving;
 				delete formStates[formName].resolved;
 			}
 			if ($log.debugEnabled) $log.debug('sbl * Unresolved form: ' + formName);
@@ -463,7 +466,6 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 
 						var formModel = formState.model;
 						var initialFormProperties = initialFormData['']; // form properties
-
 						if (initialFormProperties) {
 							if (conversionInfo && conversionInfo['']) initialFormProperties = $sabloConverters.convertFromServerToClient(initialFormProperties, conversionInfo[''], formModel[''], formState.getScope(), function () { return formModel[''] });
 							if (!formModel['']) formModel[''] = {};

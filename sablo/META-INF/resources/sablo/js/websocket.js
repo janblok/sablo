@@ -864,27 +864,37 @@ webSocketModule.factory('$webSocket',
 		document.getElementsByTagName('head')[0].appendChild(style);
 	}
 	var showCounter = 0;
-	var timeoutPromise = null;
+	var timeoutHidePromise = null;
+	var timeoutShowPromise = null;
 	return {
 		showLoading: function() {
 			showCounter++;
 			if (showCounter == 1) {
-				if (timeoutPromise) {
-					$timeout.cancel(timeoutPromise);
-					timeoutPromise = null;
-				} else {
-					if (custom) custom.showLoading();
-					else $($window.document.body).addClass("sablowaitcursor");
+				if (timeoutHidePromise) {
+					$timeout.cancel(timeoutHidePromise);
+					timeoutHidePromise = null;
+				} else if (!timeoutShowPromise) {
+					timeoutShowPromise = $timeout(function(){
+						timeoutShowPromise = null;
+						if (custom) custom.showLoading();
+						else $($window.document.body).addClass("sablowaitcursor");
+					},400)
 				}
 			}
 		},
 		hideLoading: function() {
 			showCounter--;
 			if (showCounter == 0) {
-				timeoutPromise = $timeout(function() {
-					timeoutPromise = null;
-					if (custom) custom.hideLoading()
-					else $($window.document.body).removeClass("sablowaitcursor");
+				timeoutHidePromise = $timeout(function() {
+					timeoutHidePromise = null;
+					if (timeoutShowPromise) {
+						$timeout.cancel(timeoutShowPromise);
+						timeoutShowPromise = null;
+					}
+					else {
+						if (custom) custom.hideLoading()
+						else $($window.document.body).removeClass("sablowaitcursor");
+					}
 				},50);
 			}
 		},

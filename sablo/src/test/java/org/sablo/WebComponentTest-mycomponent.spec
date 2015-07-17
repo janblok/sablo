@@ -5,12 +5,18 @@
 	"libraries": [],
 	"model":
 	{
-	        "background": "color", 
-	        "size": "dimension",
-	        "location": "point",
-	        "font": "font",
-	        "atype": "mytype",
-	        "types": "mytype[]"
+	        "background": { "type": "color", "pushToServer": "allow" },
+	        "size": { "type": "dimension", "pushToServer": "allow" },
+	        "location": { "type": "point", "pushToServer": "allow" },
+	        "font": { "type": "font", "pushToServer": "allow" },
+	        "atype": { "type": "mytype", "pushToServer": "allow" },
+	        "types": { "type": "mytype[]", "pushToServer": "allow" },
+	        "nochangeint1" : "int",
+	        "nochangeint2" : { "type": "int" },
+	        "nochangeint3" : { "type": "int", "pushToServer": "reject" },
+	        "changeintallow" : { "type": "int", "pushToServer": "allow" },
+	        "changeintshallow" : { "type": "int", "pushToServer": "shallow" },
+	        "changeintdeep" : { "type": "int", "pushToServer": "deep" }
 	},
 	"types": {
 	  "mytype": {

@@ -37,7 +37,7 @@ import org.sablo.specification.property.types.VisiblePropertyType;
 
 /**
  * Test protected and visibility properties.
- * 
+ *
  * @author rgansevles
  *
  */
@@ -70,7 +70,7 @@ public class WebComponentSecurityPropertiesTest
 			"\n{" + //
 			"\n   \"abool\": \"boolean\"" + //
 			"\n}" + //
-			"\n}"; // 
+			"\n}"; //
 
 		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 
@@ -95,14 +95,14 @@ public class WebComponentSecurityPropertiesTest
 			"\n\"libraries\": []," + //
 			"\n\"model\":" + //
 			"\n{" + //
-			"\n   \"astr\": \"string\"" + //
+			"\n   \"astr\": { \"type\": \"string\", \"pushToServer\": \"allow\" }" + //
 			"\n  ,\"vis\": \"visible\"" + //
 			"\n}," + //
 			"\n\"handlers\":" + //
 			"\n{" + //
 			"\n   \"callme\": \"function\"" + //
 			"\n}" + //
-			"\n}"; // 
+			"\n}"; //
 
 		doTestComponentVisibileWithDefaults(testcomponentspec);
 	}
@@ -120,14 +120,14 @@ public class WebComponentSecurityPropertiesTest
 			"\n\"libraries\": []," + //
 			"\n\"model\":" + //
 			"\n{" + //
-			"\n   \"astr\": \"string\"" + //
+			"\n   \"astr\": { \"type\": \"string\", \"pushToServer\": \"allow\" }" + //
 			"\n  ,\"vis\": { \"type\": \"visible\" }" + // slightly different spec from previous test, still uses defaults
 			"\n}," + //
 			"\n\"handlers\":" + //
 			"\n{" + //
 			"\n   \"callme\": \"function\"" + //
 			"\n}" + //
-			"\n}"; // 
+			"\n}"; //
 
 		doTestComponentVisibileWithDefaults(testcomponentspec);
 	}
@@ -260,12 +260,12 @@ public class WebComponentSecurityPropertiesTest
 			"\n\"libraries\": []," + //
 			"\n\"model\":" + //
 			"\n{" + //
-			"\n   \"astr1\": \"string\"" + //
-			"\n  ,\"astr2\": \"string\"" + //
+			"\n   \"astr1\": { \"type\": \"string\", \"pushToServer\": \"allow\" }" + //
+			"\n  ,\"astr2\": { \"type\": \"string\", \"pushToServer\": \"allow\" }" + //
 			"\n  ,\"vis\": \"visible\"" + //
-			"\n  ,\"visforastr2\": { \"type\": \"visible\", \"for\": \"astr2\" }" + //	
+			"\n  ,\"visforastr2\": { \"type\": \"visible\", \"for\": \"astr2\" }" + //
 			"\n}" + //
-			"\n}"; // 
+			"\n}"; //
 
 		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 
@@ -379,14 +379,14 @@ public class WebComponentSecurityPropertiesTest
 			"\n\"libraries\": []," + //
 			"\n\"model\":" + //
 			"\n{" + //
-			"\n   \"aint\": \"int\"" + //
+			"\n   \"aint\": { \"type\": \"int\", \"pushToServer\": \"allow\" }" + //
 			"\n  ,\"prot\": \"protected\"" + //
 			"\n}," + //
 			"\n\"handlers\":" + //
 			"\n{" + //
 			"\n   \"callme\": \"function\"" + //
 			"\n}" + //
-			"\n}"; // 
+			"\n}"; //
 
 		doTestComponentProtectedPropertyDefaults(testcomponentspec);
 	}
@@ -404,14 +404,14 @@ public class WebComponentSecurityPropertiesTest
 			"\n\"libraries\": []," + //
 			"\n\"model\":" + //
 			"\n{" + //
-			"\n   \"aint\": \"int\"" + //
+			"\n   \"aint\": { \"type\": \"int\", \"pushToServer\": \"allow\" }" + //
 			"\n  ,\"prot\": { \"type\": \"protected\" }" + // slightly different spec from previous test, still uses defaults
 			"\n}," + //
 			"\n\"handlers\":" + //
 			"\n{" + //
 			"\n   \"callme\": \"function\"" + //
 			"\n}" + //
-			"\n}"; // 
+			"\n}"; //
 
 		doTestComponentProtectedPropertyDefaults(testcomponentspec);
 	}
@@ -488,14 +488,14 @@ public class WebComponentSecurityPropertiesTest
 			"\n\"libraries\": []," + //
 			"\n\"model\":" + //
 			"\n{" + //
-			"\n   \"aint\": \"int\"" + //
+			"\n   \"aint\": { \"type\": \"int\", \"pushToServer\": \"allow\" }" + //
 			"\n  ,\"prot\": { \"type\": \"protected\", \"default\": true, \"blockingOn\": false  }" + //
 			"\n}," + //
 			"\n\"handlers\":" + //
 			"\n{" + //
 			"\n   \"callme\": \"function\"" + //
 			"\n}" + //
-			"\n}"; // 
+			"\n}"; //
 
 		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 
@@ -616,12 +616,12 @@ public class WebComponentSecurityPropertiesTest
 			"\n\"libraries\": []," + //
 			"\n\"model\":" + //
 			"\n{" + //
-			"\n   \"aint1\": \"int\"" + //
-			"\n  ,\"aint2\": \"int\"" + //
-			"\n  ,\"aint3\": \"int\"" + //
+			"\n   \"aint1\": { \"type\": \"int\", \"pushToServer\": \"allow\" }" + //
+			"\n  ,\"aint2\": { \"type\": \"int\", \"pushToServer\": \"allow\" }" + //
+			"\n  ,\"aint3\": { \"type\": \"int\", \"pushToServer\": \"allow\" }" + //
 			"\n  ,\"prot\": { \"type\": \"protected\", \"default\": true, \"blockingOn\": false, \"for\": [\"aint1\", \"aint3\"] }" + //
 			"\n}" + //
-			"\n}"; // 
+			"\n}"; //
 
 		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 
@@ -697,7 +697,7 @@ public class WebComponentSecurityPropertiesTest
 			"\n   \"callme1\": \"function\"" + //
 			"\n  ,\"callme2\": \"function\"" + //
 			"\n}" + //
-			"\n}"; // 
+			"\n}"; //
 
 		doTestProtectedFunction(testcomponentspec, true);
 	}
@@ -720,7 +720,7 @@ public class WebComponentSecurityPropertiesTest
 			"\n   \"callme1\": \"function\"" + //
 			"\n  ,\"callme2\": \"function\"" + //
 			"\n}" + //
-			"\n}"; // 
+			"\n}"; //
 
 		doTestProtectedFunction(testcomponentspec, false);
 	}
@@ -806,13 +806,13 @@ public class WebComponentSecurityPropertiesTest
 			"\n\"libraries\": []," + //
 			"\n\"model\":" + //
 			"\n{" + //
-			"\n   \"aint\": \"int\"" + //
+			"\n   \"aint\": { \"type\": \"int\", \"pushToServer\": \"allow\" }" + //
 			"\n}," + //
 			"\n\"handlers\":" + //
 			"\n{" + //
 			"\n   \"callme\": \"function\"" + //
 			"\n}" + //
-			"\n}"; // 
+			"\n}"; //
 
 		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 
@@ -900,13 +900,13 @@ public class WebComponentSecurityPropertiesTest
 			"\n\"libraries\": []," + //
 			"\n\"model\":" + //
 			"\n{" + //
-			"\n   \"aint\": \"int\"" + //
+			"\n   \"aint\": { \"type\": \"int\", \"pushToServer\": \"allow\" }" + //
 			"\n}," + //
 			"\n\"handlers\":" + //
 			"\n{" + //
 			"\n   \"callme\": \"function\"" + //
 			"\n}" + //
-			"\n}"; // 
+			"\n}"; //
 
 		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 

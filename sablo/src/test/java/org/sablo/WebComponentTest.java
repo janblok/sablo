@@ -332,6 +332,60 @@ public class WebComponentTest
 		assertEquals("myname3", ((Map< ? , ? >)array3.get(2)).get("name"));
 		assertEquals(Color.red, ((Map< ? , ? >)array3.get(1)).get("foreground"));
 		assertNull(((Map< ? , ? >)array3.get(2)).get("foreground"));
-
 	}
+
+	@Test(expected = IllegalComponentAccessException.class)
+	public void shouldNotAllowSetValueByDefault() throws Exception
+	{
+		new WebComponent("mycomponent", "test").putBrowserProperty("nochangeint1", Integer.valueOf(42));
+	}
+
+	@Test(expected = IllegalComponentAccessException.class)
+	public void shouldNotAllowSetValueByDefaultType() throws Exception
+	{
+		new WebComponent("mycomponent", "test").putBrowserProperty("nochangeint2", Integer.valueOf(42));
+	}
+
+	@Test(expected = IllegalComponentAccessException.class)
+	public void shouldNotAllowSetValueWhenReject() throws Exception
+	{
+		new WebComponent("mycomponent", "test").putBrowserProperty("nochangeint3", Integer.valueOf(42));
+	}
+
+	@Test
+	public void shouldAllowSetValueAllow() throws Exception
+	{
+		WebComponent webComponent = new WebComponent("mycomponent", "test");
+
+		assertEquals(Integer.valueOf(0), webComponent.getProperty("changeintallow"));
+
+		webComponent.putBrowserProperty("changeintallow", Integer.valueOf(42));
+
+		assertEquals(Integer.valueOf(42), webComponent.getProperty("changeintallow"));
+	}
+
+	@Test
+	public void shouldAllowSetValueShallow() throws Exception
+	{
+		WebComponent webComponent = new WebComponent("mycomponent", "test");
+
+		assertEquals(Integer.valueOf(0), webComponent.getProperty("changeintshallow"));
+
+		webComponent.putBrowserProperty("changeintshallow", Integer.valueOf(42));
+
+		assertEquals(Integer.valueOf(42), webComponent.getProperty("changeintshallow"));
+	}
+
+	@Test
+	public void shouldAllowSetValueDeep() throws Exception
+	{
+		WebComponent webComponent = new WebComponent("mycomponent", "test");
+
+		assertEquals(Integer.valueOf(0), webComponent.getProperty("changeintdeep"));
+
+		webComponent.putBrowserProperty("changeintdeep", Integer.valueOf(42));
+
+		assertEquals(Integer.valueOf(42), webComponent.getProperty("changeintdeep"));
+	}
+
 }

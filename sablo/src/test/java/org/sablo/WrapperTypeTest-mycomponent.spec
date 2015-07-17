@@ -5,7 +5,7 @@
 	"libraries": [],
 	"model":
 	{
-	        "somepropp": "mywrapper"
+	        "somepropp": { "type": "mywrapper", "pushToServer": "allow" }
 	}
 }
  

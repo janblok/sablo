@@ -26,7 +26,7 @@ import java.util.Map.Entry;
 
 import org.json.JSONObject;
 import org.sablo.specification.IYieldingType.YieldDescriptionArguments;
-import org.sablo.specification.WebComponentSpecification.TwoWayValue;
+import org.sablo.specification.WebComponentSpecification.PushToServerValue;
 import org.sablo.specification.property.CustomJSONPropertyType;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
@@ -44,7 +44,7 @@ public class PropertyDescription
 	private final boolean optional;
 	private final Object defaultValue;
 	private final List<Object> values;
-	private final TwoWayValue twoWay;
+	private final PushToServerValue pushToServer;
 	private final JSONObject tags;
 
 	//case of nested type
@@ -57,18 +57,23 @@ public class PropertyDescription
 		this(name, type, null, null, null, null, null, false);
 	}
 
+	public PropertyDescription(String name, IPropertyType< ? > type, PushToServerValue pushToServer)
+	{
+		this(name, type, null, null, null, pushToServer, null, false);
+	}
+
 	public PropertyDescription(String name, IPropertyType< ? > type, Object config)
 	{
 		this(name, type, config, null, null, null, null, false);
 	}
 
-	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Object defaultValue, List<Object> values, TwoWayValue twoWay,
+	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Object defaultValue, List<Object> values, PushToServerValue pushToServer,
 		JSONObject tags, boolean optional)
 	{
 		this.name = name;
 		if (type instanceof IYieldingType)
 		{
-			YieldDescriptionArguments params = new YieldDescriptionArguments(config, defaultValue, values, twoWay, tags, optional);
+			YieldDescriptionArguments params = new YieldDescriptionArguments(config, defaultValue, values, pushToServer, tags, optional);
 			this.type = ((IYieldingType< ? , ? >)type).yieldToOtherIfNeeded(name, params);
 
 			if (this.type != type)
@@ -77,7 +82,7 @@ public class PropertyDescription
 				this.config = params.getConfig();
 				this.defaultValue = params.defaultValue;
 				this.values = params.values;
-				this.twoWay = params.twoWay;
+				this.pushToServer = params.pushToServer;
 				this.tags = params.tags;
 				this.optional = params.optional;
 			}
@@ -87,7 +92,7 @@ public class PropertyDescription
 				this.config = config;
 				this.defaultValue = defaultValue;
 				this.values = values;
-				this.twoWay = twoWay;
+				this.pushToServer = pushToServer;
 				this.tags = tags;
 				this.optional = optional;
 			}
@@ -99,7 +104,7 @@ public class PropertyDescription
 			this.config = config;
 			this.defaultValue = defaultValue;
 			this.values = values;
-			this.twoWay = twoWay;
+			this.pushToServer = pushToServer;
 			this.tags = tags;
 			this.optional = optional;
 		}
@@ -181,9 +186,9 @@ public class PropertyDescription
 		return values == null ? Collections.emptyList() : Collections.unmodifiableList(values);
 	}
 
-	public TwoWayValue getTwoWay()
+	public PushToServerValue getPushToServer()
 	{
-		return twoWay;
+		return pushToServer;
 	}
 
 	public Object getTag(String tag)

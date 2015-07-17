@@ -97,7 +97,7 @@ public abstract class WebEntry implements Filter, IContributionFilter
 		HttpServletRequest request = (HttpServletRequest)servletRequest;
 
 		String uri = request.getRequestURI();
-		if (uri.endsWith("spec/" + ModifiablePropertiesGenerator.TWO_WAY_BINDINGS_LIST + ".js"))
+		if (uri.endsWith("spec/" + ModifiablePropertiesGenerator.PUSH_TO_SERVER_BINDINGS_LIST + ".js"))
 		{
 			long lastSpecLoadTime = Math.max(WebComponentSpecProvider.getLastLoadTimestamp(), WebServiceSpecProvider.getLastLoadTimestamp());
 			if (HTTPUtils.checkAndSetUnmodified(((HttpServletRequest)servletRequest), ((HttpServletResponse)servletResponse), lastSpecLoadTime)) return;

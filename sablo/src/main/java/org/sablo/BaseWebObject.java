@@ -15,10 +15,12 @@
  */
 package org.sablo;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -31,6 +33,7 @@ import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebComponentSpecification;
+import org.sablo.specification.WebComponentSpecification.PushToServerValue;
 import org.sablo.specification.property.DataConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IPropertyType;
@@ -53,8 +56,10 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BaseWebObject
 {
-	static final TypedData<Map<String, Object>> EMPTY_PROPERTIES = new TypedData<Map<String, Object>>(Collections.<String, Object> emptyMap(), null);
+	private static final List<PushToServerValue> PUSH_TO_SERVER_ALLOW = Arrays.asList(PushToServerValue.allow, PushToServerValue.shallow,
+		PushToServerValue.deep);
 
+	private static final TypedData<Map<String, Object>> EMPTY_PROPERTIES = new TypedData<Map<String, Object>>(Collections.<String, Object> emptyMap(), null);
 
 	private static final Logger log = LoggerFactory.getLogger(BaseWebObject.class.getCanonicalName());
 
@@ -114,7 +119,7 @@ public abstract class BaseWebObject
 	 * @param eventType
 	 * @param args
 	 * @return
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public final Object executeEvent(String eventType, Object[] args) throws Exception
 	{
@@ -253,9 +258,19 @@ public abstract class BaseWebObject
 	protected void checkForProtectedProperty(String propName)
 	{
 		PropertyDescription property = specification.getProperty(propName);
-		if (property != null && property.getType().isProtecting())
+		if (property != null)
 		{
-			throw new IllegalComponentAccessException("protecting", getName(), propName);
+			if (property.getType().isProtecting())
+			{
+				// property is protected, i.e. it cannot be set from the client
+				throw new IllegalComponentAccessException("protecting", getName(), propName);
+			}
+
+			if (!PUSH_TO_SERVER_ALLOW.contains(property.getPushToServer()))
+			{
+				// pushToServer not set to allowed, it should not be set from the client
+				throw new IllegalComponentAccessException("pushToServer-reject", getName(), propName);
+			}
 		}
 
 		// ok

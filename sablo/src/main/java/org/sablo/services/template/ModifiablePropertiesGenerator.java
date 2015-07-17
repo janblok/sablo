@@ -22,7 +22,7 @@ import java.util.Collection;
 
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentSpecification;
-import org.sablo.specification.WebComponentSpecification.TwoWayValue;
+import org.sablo.specification.WebComponentSpecification.PushToServerValue;
 
 /**
  * In order to improve performance, not all properties on all components/services are watched for client/browser changes in angular.
@@ -35,7 +35,7 @@ import org.sablo.specification.WebComponentSpecification.TwoWayValue;
 @SuppressWarnings("nls")
 public class ModifiablePropertiesGenerator
 {
-	public final static String TWO_WAY_BINDINGS_LIST = "propsToWatch";
+	public final static String PUSH_TO_SERVER_BINDINGS_LIST = "propsToWatch";
 
 	/**
 	 * @param w writer used to write the JSON.
@@ -43,7 +43,7 @@ public class ModifiablePropertiesGenerator
 	public static void start(PrintWriter w)
 	{
 		w.print("angular.module('");
-		w.print(ModifiablePropertiesGenerator.TWO_WAY_BINDINGS_LIST);
+		w.print(ModifiablePropertiesGenerator.PUSH_TO_SERVER_BINDINGS_LIST);
 		w.println("',['sabloApp']).run(function ($propertyWatchesRegistry) {");
 		w.println("  $propertyWatchesRegistry.clearAutoWatchPropertiesList();");
 	}
@@ -61,16 +61,16 @@ public class ModifiablePropertiesGenerator
 		boolean first1 = true;
 		for (WebComponentSpecification webComponentSpec : webComponentSpecifications)
 		{
-			Collection<PropertyDescription> twoWayProps = new ArrayList<>();
+			Collection<PropertyDescription> pushToServerWatchProps = new ArrayList<>();
 			for (PropertyDescription desc : webComponentSpec.getProperties().values())
 			{
-				if (desc.getTwoWay() != null)
+				if (desc.getPushToServer() == PushToServerValue.deep || desc.getPushToServer() == PushToServerValue.shallow)
 				{
-					twoWayProps.add(desc);
+					pushToServerWatchProps.add(desc);
 				}
 			}
 
-			if (twoWayProps.size() > 0)
+			if (pushToServerWatchProps.size() > 0)
 			{
 				if (!first1) w.println(',');
 				first1 = false;
@@ -78,14 +78,14 @@ public class ModifiablePropertiesGenerator
 				w.print(webComponentSpec.getName()); // use just name for now as if two packages define components with the exact same name that won't work correctly anyway
 				w.println("': {");
 				boolean first2 = true;
-				for (PropertyDescription prop : twoWayProps)
+				for (PropertyDescription prop : pushToServerWatchProps)
 				{
 					if (!first2) w.println(',');
 					first2 = false;
 					w.print("      '");
 					w.print(prop.getName());
 					w.print("': ");
-					w.print(prop.getTwoWay() == TwoWayValue.deep);
+					w.print(prop.getPushToServer() == PushToServerValue.deep);
 				}
 				if (!first2) w.println("");
 				w.print("    }");

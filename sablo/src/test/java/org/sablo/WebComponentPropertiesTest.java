@@ -32,7 +32,7 @@ import org.junit.Test;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
-import org.sablo.specification.WebComponentSpecification.TwoWayValue;
+import org.sablo.specification.WebComponentSpecification.PushToServerValue;
 
 /**
  * @author rgansevles
@@ -57,11 +57,14 @@ public class WebComponentPropertiesTest
 			"\n\"libraries\": []," + //
 			"\n\"model\":" + //
 			"\n{" + //
-			"\n   \"abool\": \"boolean\"" + //
-			"\n  ,\"aint\": \"int\"" + //
+			"\n   \"abool\": {\"type\": \"boolean\", \"pushToServer\": \"allow\" }" + //
+			"\n  ,\"aint\": {\"type\": \"int\", \"pushToServer\": \"allow\" }" + //
 			"\n  ,\"tagged\": {\"type\": \"int\", \"tags\": {\"special\": 42}}" + //
-			"\n  ,\"twdeep\": {\"type\": \"object\", \"twoWay\": \"deep\" }" + //
-			"\n  ,\"twshallow\": {\"type\": \"double\", \"twoWay\": \"shallow\" }" + //
+			"\n  ,\"p2sreject\": {\"type\": \"object\", \"pushToServer\": \"reject\" }" + //
+			"\n  ,\"p2sdefault1\": {\"type\": \"object\" }" + //
+			"\n  ,\"p2sdefault2\": \"object\"" + //
+			"\n  ,\"p2sdeep\": {\"type\": \"object\", \"pushToServer\": \"deep\" }" + //
+			"\n  ,\"p2sshallow\": {\"type\": \"double\", \"pushToServer\": \"shallow\" }" + //
 			"\n}" + //
 			"\n}"; //
 
@@ -162,12 +165,14 @@ public class WebComponentPropertiesTest
 	}
 
 	@Test
-	public void testTwoWay()
+	public void testPushToServer()
 	{
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 
-		assertNull(testcomponent.getSpecification().getProperty("aint").getTwoWay());
-		assertSame(TwoWayValue.deep, testcomponent.getSpecification().getProperty("twdeep").getTwoWay());
-		assertSame(TwoWayValue.shallow, testcomponent.getSpecification().getProperty("twshallow").getTwoWay());
+		assertSame(PushToServerValue.reject, testcomponent.getSpecification().getProperty("p2sreject").getPushToServer());
+		assertSame(PushToServerValue.reject, testcomponent.getSpecification().getProperty("p2sdefault1").getPushToServer());
+		assertSame(PushToServerValue.reject, testcomponent.getSpecification().getProperty("p2sdefault2").getPushToServer());
+		assertSame(PushToServerValue.deep, testcomponent.getSpecification().getProperty("p2sdeep").getPushToServer());
+		assertSame(PushToServerValue.shallow, testcomponent.getSpecification().getProperty("p2sshallow").getPushToServer());
 	}
 }

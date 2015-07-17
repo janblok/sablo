@@ -179,7 +179,7 @@ public class IndexPageEnhancer
 
 
 		// lists properties that need to be watched for client to server changes for each component/service type
-		retval.append("<script src=\"spec/").append(ModifiablePropertiesGenerator.TWO_WAY_BINDINGS_LIST).append(".js\"></script>\n");
+		retval.append("<script src=\"spec/").append(ModifiablePropertiesGenerator.PUSH_TO_SERVER_BINDINGS_LIST).append(".js\"></script>\n");
 
 		return retval.toString();
 	}

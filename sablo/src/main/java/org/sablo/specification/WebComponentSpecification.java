@@ -55,13 +55,17 @@ public class WebComponentSpecification extends PropertyDescription
 
 	public static final String TYPES_KEY = "types";
 
-	public final static String TWO_WAY = "twoWay";
+	public final static String PUSH_TO_SERVER_KEY = "pushToServer";
 
-	public enum TwoWayValue
+	public enum PushToServerValue
 	{
-		deep, shallow;
+		reject, // default, throw exception when updates are pushed to server
+		allow, // allow changes, not default implementation in sablo
+		shallow, // allow changes, implementation in sablo by creating watcher on client with objectEquality = false
+		deep // allow changes, implementation in sablo by creating watcher on client with objectEquality = true
+		;
 
-		public static TwoWayValue fromString(String s)
+		public static PushToServerValue fromString(String s)
 		{
 			return s == null ? null : valueOf(s);
 		}
@@ -380,9 +384,9 @@ public class WebComponentSpecification extends PropertyDescription
 	void parseTypes(JSONObject json) throws JSONException
 	{
 		String specName = json.optString("name", null);
-		if (json.has("types"))
+		if (json.has(TYPES_KEY))
 		{
-			JSONObject jsonObject = json.getJSONObject("types");
+			JSONObject jsonObject = json.getJSONObject(TYPES_KEY);
 			// first create all types
 			Iterator<String> types = jsonObject.keys();
 			while (types.hasNext())
@@ -433,7 +437,7 @@ public class WebComponentSpecification extends PropertyDescription
 
 				JSONObject configObject = null;
 				Object defaultValue = null;
-				TwoWayValue twoWay = null;
+				PushToServerValue pushToServer = PushToServerValue.reject;
 				JSONObject tags = null;
 				List<Object> values = null;
 				ParsedProperty pp = null;
@@ -446,7 +450,7 @@ public class WebComponentSpecification extends PropertyDescription
 					pp = parsePropertyString(((JSONObject)value).getString("type"));
 					configObject = ((JSONObject)value);
 					defaultValue = configObject.opt("default");
-					twoWay = TwoWayValue.fromString(configObject.optString(TWO_WAY, null));
+					pushToServer = PushToServerValue.fromString(configObject.optString(PUSH_TO_SERVER_KEY, pushToServer.name()));
 					tags = configObject.optJSONObject("tags");
 
 					JSONArray valuesArray = configObject.optJSONArray("values");
@@ -469,7 +473,7 @@ public class WebComponentSpecification extends PropertyDescription
 						// a config for the element type can be specified like this: { type: 'myprop[]', a: ..., b: ..., elementConfig: {...} } and we could give that to the elementDescription instead
 						JSONObject elementConfig = configObject != null ? configObject.optJSONObject(CustomJSONArrayType.ELEMENT_CONFIG_KEY) : null;
 						PropertyDescription elementDescription = new PropertyDescription(ARRAY_ELEMENT_PD_NAME, type, type.parseConfig(elementConfig),
-							defaultValue, values, twoWay, tags, false);
+							defaultValue, values, pushToServer, tags, false);
 						if (pp.array)
 						{
 							type = TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, elementDescription);
@@ -480,7 +484,7 @@ public class WebComponentSpecification extends PropertyDescription
 						}
 					}
 
-					pds.put(key, new PropertyDescription(key, type, type.parseConfig(configObject), defaultValue, values, twoWay, tags, false));
+					pds.put(key, new PropertyDescription(key, type, type.parseConfig(configObject), defaultValue, values, pushToServer, tags, false));
 				}
 			}
 		}

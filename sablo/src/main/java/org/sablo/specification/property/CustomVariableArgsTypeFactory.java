@@ -26,7 +26,7 @@ import org.sablo.specification.property.types.IPropertyTypeFactory;
 public class CustomVariableArgsTypeFactory implements IPropertyTypeFactory<PropertyDescription, Object>
 {
 	@Override
-	public IPropertyType<Object> createType(PropertyDescription definition)
+	public IAdjustablePropertyType<Object> createType(PropertyDescription definition)
 	{
 		return new CustomVariableArgsType(definition);
 	}

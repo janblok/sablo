@@ -28,7 +28,7 @@ public class CustomJSONArrayTypeFactory implements IPropertyTypeFactory<Property
 {
 
 	@Override
-	public IPropertyType<Object> createType(PropertyDescription definition)
+	public IAdjustablePropertyType<Object> createType(PropertyDescription definition)
 	{
 		return new CustomJSONArrayType(definition);
 	}

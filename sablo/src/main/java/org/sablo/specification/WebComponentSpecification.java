@@ -242,10 +242,9 @@ public class WebComponentSpecification extends PropertyDescription
 	}
 
 	/**
-	 *
 	 * @return the types parsed from the "types" attribute.
 	 */
-	public Map<String, IPropertyType< ? >> getFoundTypes()
+	public Map<String, IPropertyType< ? >> getDeclaredCustomObjectTypes()
 	{
 		return foundTypes;
 	}
@@ -510,16 +509,6 @@ public class WebComponentSpecification extends PropertyDescription
 			this.varArgs = varArgs;
 		}
 	}
-
-	/**
-	 * @param dropTargetFieldName
-	 */
-	public boolean isArrayReturnType(String dropTargetFieldName)
-	{
-		if (getProperty(dropTargetFieldName) != null && getProperty(dropTargetFieldName).getType() instanceof CustomJSONArrayType< ? , ? >) return true;
-		return false;
-	}
-
 
 	/**
 	 * Get the location of the specFile inside.

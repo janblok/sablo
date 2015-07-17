@@ -397,11 +397,8 @@ public abstract class BaseWebObject
 	}
 
 	/**
-	 * Set the defaults property value that is not send to the browser.
+	 * Set the defaults property value that is not sent to the browser.
 	 * This should/can reflect the values that are set in the template as default values.
-	 *
-	 * @param propertyName
-	 * @param propertyValue
 	 */
 	public void setDefaultProperty(String propertyName, Object propertyValue)
 	{
@@ -416,9 +413,7 @@ public abstract class BaseWebObject
 	/**
 	 * Setting new data and recording this as change.
 	 *
-	 * @param propertyName
-	 * @param propertyValue
-	 * @return true is was change
+	 * @return true if it was changed.
 	 */
 	@SuppressWarnings("nls")
 	public boolean setProperty(String propertyName, Object propertyValue)
@@ -506,19 +501,19 @@ public abstract class BaseWebObject
 		if (oldValue == null && !properties.containsKey(firstProperty))
 		{
 			Object defaultProperty = defaultPropertiesUnwrapped.get(firstProperty);
-			if (defaultProperty == null && !defaultPropertiesUnwrapped.containsKey(firstProperty))
-			{
-				// default value based o
-				PropertyDescription propertyDesc = specification.getProperty(firstProperty);
-				if (propertyDesc != null)
-				{
-					defaultProperty = propertyDesc.getDefaultValue();
-					if (defaultProperty == null && propertyDesc.getType() != null)
-					{
-						defaultProperty = propertyDesc.getType().defaultValue(propertyDesc);
-					}
-				}
-			}
+//			if (defaultProperty == null && !defaultPropertiesUnwrapped.containsKey(firstProperty))
+//			{
+//				// default value based on spec
+//				PropertyDescription propertyDesc = specification.getProperty(firstProperty);
+//				if (propertyDesc != null)
+//				{
+//					defaultProperty = propertyDesc.getDefaultValue();
+//					if (defaultProperty == null && propertyDesc.getType() != null)
+//					{
+//						defaultProperty = propertyDesc.getType().defaultValue(propertyDesc);
+//					}
+//				}
+//			}
 
 			if (defaultProperty != null)
 			{

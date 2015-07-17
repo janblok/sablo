@@ -200,10 +200,6 @@ public class WebComponentPackage
 		return new WebComponentPackageSpecification<>(packageName, packageDisplayname, descriptions, mf);
 	}
 
-	/**
-	 * @return
-	 * @throws IOException
-	 */
 	public WebComponentPackageSpecification<WebLayoutSpecification> getLayoutDescriptions() throws IOException
 	{
 		String packageName = null;

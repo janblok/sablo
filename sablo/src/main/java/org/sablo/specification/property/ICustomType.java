@@ -25,8 +25,10 @@ public interface ICustomType<T> extends IPropertyType<T>
 {
 
 	/**
-	 * Can be null; if it's not null then this type was defined as a custom type in JSON. It could also have special handling attached to it,
-	 * depending on what other method return.
+	 * Can be null while instance initializes; if it's not null then this type was defined as a custom type in JSON.
+	 * It could also have special handling attached to it, depending on what other methods return. (so you could potentially declare a custom json type that has an implementation different then standard,
+	 * but in designer still have default properties view usage TODO this might not work right now - as this was intended for foundset/-component type usage in desiger but those have special designer handling instead)
+	 *
 	 * @return the corresponding (JSON based) representation of this type's definition.
 	 */
 	PropertyDescription getCustomJSONTypeDefinition();

@@ -16,7 +16,7 @@
 
 package org.sablo.specification.property.types;
 
-import org.sablo.specification.property.IPropertyType;
+import org.sablo.specification.property.IAdjustablePropertyType;
 
 /**
  * One can register type factories instead of direct types to a name.</BR>
@@ -27,6 +27,12 @@ import org.sablo.specification.property.IPropertyType;
 public interface IPropertyTypeFactory<ParamT, T>
 {
 
-	IPropertyType<T> createType(ParamT params);
+	/**
+	 * Usually type factories are registered in order to create parameterized types.
+	 * So the return value will be an instance of {@link IAdjustablePropertyType}.
+	 * @param params the parameters that tweak the type's behavior.
+	 * @return a type instance for the given parameters.
+	 */
+	IAdjustablePropertyType<T> createType(ParamT params);
 
 }

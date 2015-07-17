@@ -30,13 +30,18 @@ import org.sablo.websocket.utils.JSONUtils;
  * @author lvostinar
  *
  */
-public class CustomVariableArgsType extends CustomJSONPropertyType<Object> implements IConvertedPropertyType<Object>
+public class CustomVariableArgsType extends CustomJSONPropertyType<Object> implements IAdjustablePropertyType<Object>, IConvertedPropertyType<Object>
 {
 	public static final String TYPE_NAME = "var_args";
 
 	public CustomVariableArgsType(PropertyDescription definition)
 	{
 		super(definition.getType().getName(), definition);
+	}
+
+	public String getGenericName()
+	{
+		return TYPE_NAME;
 	}
 
 	@Override

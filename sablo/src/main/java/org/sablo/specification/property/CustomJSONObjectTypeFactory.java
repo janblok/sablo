@@ -29,7 +29,7 @@ public class CustomJSONObjectTypeFactory implements IPropertyTypeFactory<String,
 {
 
 	@Override
-	public IPropertyType<Map<String, ? >> createType(String customTypeName)
+	public IAdjustablePropertyType<Map<String, ? >> createType(String customTypeName)
 	{
 		return new CustomJSONObjectType(customTypeName, null); // that null is temporary - it will get populated later
 	}

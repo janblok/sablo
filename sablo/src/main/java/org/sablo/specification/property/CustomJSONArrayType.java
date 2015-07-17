@@ -38,8 +38,8 @@ import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
  * @author acostescu
  */
 @SuppressWarnings("nls")
-public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> implements IWrapperType<Object, ChangeAwareList<ET, WT>>,
-	ISupportsGranularUpdates<ChangeAwareList<ET, WT>>
+public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> implements IAdjustablePropertyType<Object>,
+	IWrapperType<Object, ChangeAwareList<ET, WT>>, ISupportsGranularUpdates<ChangeAwareList<ET, WT>>
 {
 
 	public static final String TYPE_NAME = "JSON_arr";
@@ -60,6 +60,11 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 	public CustomJSONArrayType(PropertyDescription definition)
 	{
 		super(definition.getType().getName(), definition);
+	}
+
+	public String getGenericName()
+	{
+		return TYPE_NAME;
 	}
 
 	@Override

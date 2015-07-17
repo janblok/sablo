@@ -30,6 +30,7 @@ import org.sablo.specification.WebComponentSpecification.PushToServerValue;
 import org.sablo.specification.property.CustomJSONPropertyType;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
+import org.sablo.websocket.utils.PropertyUtils;
 
 /**
  * Property description as parsed from web component spec file.
@@ -282,7 +283,25 @@ public class PropertyDescription
 	public Map<String, PropertyDescription> getProperties()
 	{
 		if (properties != null) return Collections.unmodifiableMap(properties);
+		else if (type instanceof CustomJSONPropertyType)
+		{
+			return ((CustomJSONPropertyType< ? >)type).getCustomJSONTypeDefinition().getProperties();
+		}
+
 		return Collections.emptyMap();
+	}
+
+	public Map<String, PropertyDescription> getCustomJSONProperties()
+	{
+		HashMap<String, PropertyDescription> retVal = new HashMap<String, PropertyDescription>();
+		if (properties != null)
+		{
+			for (Entry<String, PropertyDescription> e : properties.entrySet())
+			{
+				if (PropertyUtils.isCustomJSONProperty(e.getValue().getType())) retVal.put(e.getKey(), e.getValue());
+			}
+		}
+		return retVal;
 	}
 
 	public void putAll(Map<String, PropertyDescription> map)
@@ -334,6 +353,12 @@ public class PropertyDescription
 		{
 			b.append(' ');
 		}
+	}
+
+	public boolean isArrayReturnType(String dropTargetFieldName)
+	{
+		if (getProperty(dropTargetFieldName) != null) return PropertyUtils.isCustomJSONArrayPropertyType(getProperty(dropTargetFieldName).getType());
+		return false;
 	}
 
 }

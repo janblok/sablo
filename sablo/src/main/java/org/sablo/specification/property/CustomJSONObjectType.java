@@ -41,8 +41,8 @@ import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
  */
 @SuppressWarnings("nls")
 // TODO these ET and WT are improper - as for object type they can represent multiple types (a different set for each child key), but they help to avoid some bugs at compile-time
-public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<String, ET>> implements IWrapperType<Map<String, ET>, ChangeAwareMap<ET, WT>>,
-	ISupportsGranularUpdates<ChangeAwareMap<ET, WT>>
+public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<String, ET>> implements IAdjustablePropertyType<Map<String, ET>>,
+	IWrapperType<Map<String, ET>, ChangeAwareMap<ET, WT>>, ISupportsGranularUpdates<ChangeAwareMap<ET, WT>>
 {
 
 	public static final String TYPE_NAME = "JSON_obj";
@@ -78,6 +78,11 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		// this type will wrap an [] or List into a list; unwrap will simply return that list that will further wrap/unwrap elements as needed on any operation
 		// look at this wrapped list as the external portal of the list property as far as BaseWebObjects are concerned
 		return value;
+	}
+
+	public String getGenericName()
+	{
+		return TYPE_NAME;
 	}
 
 	@Override

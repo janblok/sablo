@@ -19,8 +19,8 @@ package org.sablo;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.Filter;
@@ -128,12 +128,12 @@ public abstract class WebEntry implements Filter, IContributionFilter
 		filterChain.doFilter(servletRequest, servletResponse);
 	}
 
-	public ArrayList<String> filterCSSContributions(ArrayList<String> cssContributions)
+	public List<String> filterCSSContributions(List<String> cssContributions)
 	{
 		return cssContributions;
 	}
 
-	public ArrayList<String> filterJSContributions(ArrayList<String> jsContributions)
+	public List<String> filterJSContributions(List<String> jsContributions)
 	{
 		return jsContributions;
 	}

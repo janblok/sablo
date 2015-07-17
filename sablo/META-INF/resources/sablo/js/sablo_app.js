@@ -412,8 +412,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 			var formState = formStates[formName];
 			if (!skipTestResolving && !formState.resolving) {
 				if ($log.debugEnabled) $log.debug('sbl * form: ' + formName + ' was not in resolving state anymore ');
-				if (deferredFormStates[formName]) deferredFormStates[formName].reject(); 
-				delete deferredFormStates[formName];
+				if (deferredFormStates[formName]) console.log("form " + formName + " has a deferredFormState");
+//				if (deferredFormStates[formName]) deferredFormStates[formName].reject(); 
+//				delete deferredFormStates[formName];
 				return null;
 			}
 			delete formState.resolving;

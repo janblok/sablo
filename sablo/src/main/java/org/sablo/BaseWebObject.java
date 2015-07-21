@@ -284,7 +284,7 @@ public abstract class BaseWebObject
 	 */
 	public Object getProperty(String propertyName)
 	{
-		return unwrapValue(propertyName, getRawPropertyValue(propertyName));
+		return unwrapValue(propertyName, getRawPropertyValue(propertyName, true));
 	}
 
 	protected Object unwrapValue(String propertyName, Object object)
@@ -404,7 +404,7 @@ public abstract class BaseWebObject
 	{
 		Object oldUnwrappedV = getProperty(propertyName);
 		defaultPropertiesUnwrapped.put(propertyName, propertyValue);
-		Object newUnwrappedV = unwrapValue(propertyName, getRawPropertyValue(propertyName)); // a default value wrap/unwrap might result in a different value
+		Object newUnwrappedV = unwrapValue(propertyName, getRawPropertyValue(propertyName, false)); // a default value wrap/unwrap might result in a different value
 		if (newUnwrappedV != propertyValue) defaultPropertiesUnwrapped.put(propertyName, newUnwrappedV);
 
 		if (newUnwrappedV != oldUnwrappedV) onPropertyChange(propertyName, oldUnwrappedV, newUnwrappedV);
@@ -431,7 +431,7 @@ public abstract class BaseWebObject
 			for (int i = 0; i < parts.length - 1; i++)
 			{
 				path += parts[i];
-				Map<String, Object> propertyMap = (Map<String, Object>)getRawPropertyValue(path);
+				Map<String, Object> propertyMap = (Map<String, Object>)getRawPropertyValue(path, false); // arg is false cause spec. default values for custom object types cannot be java maps directly but JOSNObjects so they would have wrong type; we expect the default value to be already converted and set into "defaultPropertiesUnwrapped" in this case...
 				if (propertyMap == null)
 				{
 					propertyMap = new HashMap<>();
@@ -446,7 +446,7 @@ public abstract class BaseWebObject
 		{
 			try
 			{
-				Object oldValue = getRawPropertyValue(propertyName);
+				Object oldValue = getRawPropertyValue(propertyName, true);
 				canBeWrapped = wrapPropertyValue(propertyName, oldValue, propertyValue);
 			}
 			catch (Exception e)
@@ -491,9 +491,12 @@ public abstract class BaseWebObject
 	/**
 	 * Gets the current value from the properties, if not set then it fallbacks to the default properties (which it then wraps)
 	 * DO NOT USE THIS METHOD; when possible please use {@link #getProperty(String)}, {@link #getProperties()} or {@link #getAllPropertyNames(boolean)} instead.
+	 *
+	 * @param getDefaultFromSpecAsWellIfNeeded some property type implementations might use the spec default value to generate a more complex runtime value for themselfes and put that in defaultPropertiesUnwrapped map.
+	 * In this case getting the default value directly from spec file and using it unchanged as a runtime value can cause problems as it's an incorrect value type...
 	 */
 	@SuppressWarnings("nls")
-	public Object getRawPropertyValue(String propertyName)
+	public Object getRawPropertyValue(String propertyName, boolean getDefaultFromSpecAsWellIfNeeded)
 	{
 		String[] parts = propertyName.split("\\.");
 		String firstProperty = parts[0];
@@ -501,19 +504,20 @@ public abstract class BaseWebObject
 		if (oldValue == null && !properties.containsKey(firstProperty))
 		{
 			Object defaultProperty = defaultPropertiesUnwrapped.get(firstProperty);
-//			if (defaultProperty == null && !defaultPropertiesUnwrapped.containsKey(firstProperty))
-//			{
-//				// default value based on spec
-//				PropertyDescription propertyDesc = specification.getProperty(firstProperty);
-//				if (propertyDesc != null)
-//				{
-//					defaultProperty = propertyDesc.getDefaultValue();
-//					if (defaultProperty == null && propertyDesc.getType() != null)
-//					{
-//						defaultProperty = propertyDesc.getType().defaultValue(propertyDesc);
-//					}
-//				}
-//			}
+			if (defaultProperty == null && !defaultPropertiesUnwrapped.containsKey(firstProperty))
+			{
+				// default value based on spec
+				PropertyDescription propertyDesc = specification.getProperty(firstProperty);
+				if (propertyDesc != null)
+				{
+					if (getDefaultFromSpecAsWellIfNeeded) defaultProperty = propertyDesc.getDefaultValue();
+
+					if (defaultProperty == null && propertyDesc.getType() != null)
+					{
+						defaultProperty = propertyDesc.getType().defaultValue(propertyDesc);
+					}
+				}
+			}
 
 			if (defaultProperty != null)
 			{
@@ -555,7 +559,7 @@ public abstract class BaseWebObject
 
 	protected void doPutBrowserProperty(String propertyName, Object propertyValue) throws JSONException
 	{
-		Object oldWrappedValue = getRawPropertyValue(propertyName);
+		Object oldWrappedValue = getRawPropertyValue(propertyName, true);
 		Object newWrappedValue = convertValueFromJSON(propertyName, oldWrappedValue, propertyValue);
 		properties.put(propertyName, newWrappedValue);
 

@@ -410,13 +410,18 @@ public abstract class BaseWebObject
 		if (newUnwrappedV != oldUnwrappedV) onPropertyChange(propertyName, oldUnwrappedV, newUnwrappedV);
 	}
 
+	public boolean setProperty(String propertyName, Object propertyValue)
+	{
+		return setProperty(propertyName, propertyValue, true);
+	}
+
 	/**
 	 * Setting new data and recording this as change.
 	 *
 	 * @return true if it was changed.
 	 */
 	@SuppressWarnings("nls")
-	public boolean setProperty(String propertyName, Object propertyValue)
+	public boolean setProperty(String propertyName, Object propertyValue, boolean fireChange)
 	{
 		Object canBeWrapped = propertyValue;
 
@@ -463,9 +468,12 @@ public abstract class BaseWebObject
 			map.put(lastPropertyPart, canBeWrapped);
 			propertyValue = getProperty(propertyName); // this is required as a wrap + unwrap might result in a different object then the initial one
 
-			// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
-			// TODO if this is a sub property then we fire here the onproperty change for the top level property with the values of a subproperty..
-			onPropertyChange(firstPropertyPart, oldValue, propertyValue);
+			if (fireChange)
+			{
+				// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
+				// TODO if this is a sub property then we fire here the onproperty change for the top level property with the values of a subproperty..
+				onPropertyChange(firstPropertyPart, oldValue, propertyValue);
+			}
 
 			if ((oldValue != null && !oldValue.equals(propertyValue)) || (propertyValue != null && !propertyValue.equals(oldValue)))
 			{
@@ -479,8 +487,11 @@ public abstract class BaseWebObject
 			map.put(lastPropertyPart, canBeWrapped);
 			propertyValue = getProperty(propertyName); // this is required as a wrap + unwrap might result in a different object then the initial one
 
-			// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
-			onPropertyChange(firstPropertyPart, null, propertyValue);
+			if (fireChange)
+			{
+				// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
+				onPropertyChange(firstPropertyPart, null, propertyValue);
+			}
 
 			flagPropertyAsDirty(firstPropertyPart, true);
 			return true;

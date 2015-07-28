@@ -402,7 +402,7 @@ public abstract class BaseWebObject
 	 */
 	public void setDefaultProperty(String propertyName, Object propertyValue)
 	{
-		Object oldUnwrappedV = getProperty(propertyName);
+		Object oldUnwrappedV = unwrapValue(propertyName, getRawPropertyValue(propertyName, false));
 		defaultPropertiesUnwrapped.put(propertyName, propertyValue);
 		Object newUnwrappedV = unwrapValue(propertyName, getRawPropertyValue(propertyName, false)); // a default value wrap/unwrap might result in a different value
 		if (newUnwrappedV != propertyValue) defaultPropertiesUnwrapped.put(propertyName, newUnwrappedV);

@@ -36,6 +36,7 @@ import org.sablo.specification.property.CustomPropertyTypeResolver;
 import org.sablo.specification.property.CustomVariableArgsType;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
+import org.sablo.specification.property.types.FunctionPropertyType;
 import org.sablo.specification.property.types.TypesRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -290,74 +291,102 @@ public class WebComponentSpecification extends PropertyDescription
 			Iterator<String> itk = api.keys();
 			while (itk.hasNext())
 			{
-				String func = itk.next();
-				JSONObject jsonDef = api.getJSONObject(func);
-				WebComponentApiDefinition def = new WebComponentApiDefinition(func);
-				Iterator<String> it = jsonDef.keys();
-				JSONObject customConfiguration = null;
-				while (it.hasNext())
-				{
-					String key = it.next();
-					if ("parameters".equals(key))
-					{
-						JSONArray params = jsonDef.getJSONArray("parameters");
-						for (int p = 0; p < params.length(); p++)
-						{
-							JSONObject param = params.getJSONObject(p);
+				WebComponentApiDefinition def = parseFunctionDefinition(spec, api, itk.next());
+				spec.addApiFunction(def);
+			}
+		}
+		return spec;
+	}
 
-							IPropertyType< ? > propertyType;
-							Object config;
-							if (param.optJSONObject("type") != null)
-							{
-								JSONObject paramJSON = new JSONObject();
-								paramJSON.put((String)param.get("name"), param.get("type"));
-								JSONObject parseJSON = new JSONObject();
-								parseJSON.put("", paramJSON);
-								PropertyDescription propertyDescription = spec.parseProperties("", parseJSON).get(param.get("name"));
-								propertyType = propertyDescription.getType();
-								config = propertyDescription.getConfig();
-							}
-							else
-							{
-								ParsedProperty pp = spec.parsePropertyString(param.getString("type"));
-								propertyType = resolveArrayType(pp);
-								// hmm why not set the array field instead of configObject here?
-								config = param;
-							}
-							def.addParameter(new PropertyDescription((String)param.get("name"), propertyType, config, null, null, null, null,
-								Boolean.TRUE.equals(param.opt("optional"))));
+	/**
+	 * @param spec
+	 * @param api
+	 * @param func
+	 * @return
+	 * @throws JSONException
+	 */
+	private static WebComponentApiDefinition parseFunctionDefinition(WebComponentSpecification spec, JSONObject api, String func) throws JSONException
+	{
+		WebComponentApiDefinition def = new WebComponentApiDefinition(func);
+		if (api.get(func) instanceof JSONObject)
+		{
+			JSONObject jsonDef = api.getJSONObject(func);
+			Iterator<String> it = jsonDef.keys();
+			JSONObject customConfiguration = null;
+			while (it.hasNext())
+			{
+				String key = it.next();
+				if ("parameters".equals(key))
+				{
+					JSONArray params = jsonDef.getJSONArray("parameters");
+					for (int p = 0; p < params.length(); p++)
+					{
+						JSONObject param = params.getJSONObject(p);
+
+						IPropertyType< ? > propertyType;
+						Object config;
+						if (param.optJSONObject("type") != null)
+						{
+							JSONObject paramJSON = new JSONObject();
+							paramJSON.put((String)param.get("name"), param.get("type"));
+							JSONObject parseJSON = new JSONObject();
+							parseJSON.put("", paramJSON);
+							PropertyDescription propertyDescription = spec.parseProperties("", parseJSON).get(param.get("name"));
+							propertyType = propertyDescription.getType();
+							config = propertyDescription.getConfig();
 						}
+						else
+						{
+							ParsedProperty pp = spec.parsePropertyString(param.getString("type"));
+							propertyType = resolveArrayType(pp);
+							// hmm why not set the array field instead of configObject here?
+							config = param;
+						}
+						def.addParameter(new PropertyDescription((String)param.get("name"), propertyType, config, null, null, null, null,
+							Boolean.TRUE.equals(param.opt("optional"))));
 					}
-					else if ("returns".equals(key))
+				}
+				else if ("returns".equals(key))
+				{
+					if (jsonDef.get("returns") instanceof JSONObject)
+					{
+						JSONObject returnType = jsonDef.getJSONObject("returns");
+						ParsedProperty pp = spec.parsePropertyString(returnType.getString("type"));
+						PropertyDescription desc = new PropertyDescription("return", resolveArrayType(pp));
+						def.setReturnType(desc);
+					}
+					else
 					{
 						ParsedProperty pp = spec.parsePropertyString(jsonDef.getString("returns"));
 						PropertyDescription desc = new PropertyDescription("return", resolveArrayType(pp));
 						def.setReturnType(desc);
 					}
-					else if ("blockEventProcessing".equals(key))
-					{
-						def.setBlockEventProcessing(jsonDef.getBoolean("blockEventProcessing"));
-					}
-					else if ("delayUntilFormLoad".equals(key))
-					{
-						def.setDelayUntilFormLoad(jsonDef.getBoolean("delayUntilFormLoad"));
-					}
-					else if ("globalExclusive".equals(key))
-					{
-						def.setGlobalExclusive(jsonDef.getBoolean("globalExclusive"));
-					}
-					else
-					{
-						if (customConfiguration == null) customConfiguration = new JSONObject();
-						customConfiguration.put(key, jsonDef.get(key));
-					}
 				}
-				if (customConfiguration != null) def.setCustomConfigOptions(customConfiguration);
-
-				spec.addApiFunction(def);
+				else if ("blockEventProcessing".equals(key))
+				{
+					def.setBlockEventProcessing(jsonDef.getBoolean("blockEventProcessing"));
+				}
+				else if ("delayUntilFormLoad".equals(key))
+				{
+					def.setDelayUntilFormLoad(jsonDef.getBoolean("delayUntilFormLoad"));
+				}
+				else if ("globalExclusive".equals(key))
+				{
+					def.setGlobalExclusive(jsonDef.getBoolean("globalExclusive"));
+				}
+				else if ("description".equals(key))
+				{
+					def.setDocumentation(jsonDef.getString("description"));
+				}
+				else
+				{
+					if (customConfiguration == null) customConfiguration = new JSONObject();
+					customConfiguration.put(key, jsonDef.get(key));
+				}
 			}
+			if (customConfiguration != null) def.setCustomConfigOptions(customConfiguration);
 		}
-		return spec;
+		return def;
 	}
 
 	private static IPropertyType< ? > resolveArrayType(ParsedProperty pp)
@@ -461,6 +490,10 @@ public class WebComponentSpecification extends PropertyDescription
 							values.add(valuesArray.get(i));
 						}
 					}
+				}
+				else if (value instanceof JSONObject && "handlers".equals(propKey))
+				{
+					pds.put(key, new PropertyDescription(key, FunctionPropertyType.INSTANCE, value));
 				}
 				if (pp != null && pp.type != null)
 				{

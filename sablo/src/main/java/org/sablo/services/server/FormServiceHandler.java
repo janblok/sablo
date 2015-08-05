@@ -176,11 +176,28 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 
 			String beanName = obj.optString("beanname");
 
+			JSONObject oldvalues = obj.optJSONObject("oldvalues");
+
 			WebComponent webComponent = beanName.length() > 0 ? form.getComponent(beanName) : (WebComponent)form;
 			Iterator<String> keys = changes.keys();
 			while (keys.hasNext())
 			{
 				String key = keys.next();
+				if (oldvalues != null)
+				{
+					Object oldValue = oldvalues.opt(key);
+					Object currentValue = webComponent.getProperty(key);
+					if (oldValue != null && currentValue != null && !oldValue.equals(currentValue))
+					{
+						if (!(oldValue instanceof Number && currentValue instanceof Number &&
+							((Number)oldValue).doubleValue() == ((Number)currentValue).doubleValue()))
+						{
+							log.trace("skipping setting key " + key + " to the the value " + changes.get(key) +
+								" because the the current value in the component " + currentValue + " is not equals to old value the browser has " + oldValue);
+							continue;
+						}
+					}
+				}
 				webComponent.putBrowserProperty(key, changes.get(key));
 			}
 		}

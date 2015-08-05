@@ -193,4 +193,13 @@ public class WebComponentSpecProvider
 		return pkg == null ? Collections.<String> emptyList() : pkg.getSpecifications().keySet();
 
 	}
+
+	/**
+	 * Get a list of all layouts contained by provided package name
+	 */
+	public Collection<String> getLayoutsInPackage(String packageName)
+	{
+		WebComponentPackageSpecification<WebLayoutSpecification> pkg = reader.getLayoutSpecifications().get(packageName);
+		return pkg == null ? Collections.<String> emptyList() : pkg.getSpecifications().keySet();
+	}
 }

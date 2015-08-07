@@ -554,11 +554,10 @@ webSocketModule.factory('$webSocket',
 		INTERNAL_IMPL: '__internalState',
 
 		prepareInternalState: function(propertyValue, optionalInternalStateValue) {
-			if (angular.isUndefined(optionalInternalStateValue)) optionalInternalStateValue = {};
-
-			if (Object.defineProperty) {
-				if (!propertyValue.hasOwnProperty(this.INTERNAL_IMPL))
-				{
+			if (!propertyValue.hasOwnProperty(this.INTERNAL_IMPL))
+			{
+				if (angular.isUndefined(optionalInternalStateValue)) optionalInternalStateValue = {};
+				if (Object.defineProperty) {
 					// try to avoid unwanted iteration/non-intended interference over the private property state
 					Object.defineProperty(propertyValue, this.INTERNAL_IMPL, {
 						configurable: false,
@@ -566,8 +565,8 @@ webSocketModule.factory('$webSocket',
 						writable: false,
 						value: optionalInternalStateValue
 					});
-				}
-			} else propertyValue[$sabloConverters.INTERNAL_IMPL] = optionalInternalStateValue;
+				} else propertyValue[$sabloConverters.INTERNAL_IMPL] = optionalInternalStateValue;
+			} else $log.warn("An attempt to prepareInternalState on value '" + propertyValue + "' which already has internal state was ignored.");
 		},
 
 		convertFromServerToClient: convertFromServerToClient,

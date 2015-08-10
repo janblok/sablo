@@ -24,9 +24,12 @@ import org.json.JSONObject;
 import org.json.JSONString;
 import org.sablo.Container;
 import org.sablo.WebComponent;
+import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.property.DataConverterContext;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.IEventDispatchAwareServerService;
 import org.sablo.websocket.IWebsocketEndpoint;
+import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.JSONUtils.EmbeddableJSONWriter;
 import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
@@ -187,6 +190,8 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 				{
 					Object oldValue = oldvalues.opt(key);
 					Object currentValue = webComponent.getProperty(key);
+					PropertyDescription propertyDesc = webComponent.getSpecification().getProperty(key);
+					oldValue = propertyDesc != null ? JSONUtils.fromJSON(currentValue, oldValue, new DataConverterContext(propertyDesc, webComponent)) : null;
 					if (oldValue != null && currentValue != null && !oldValue.equals(currentValue))
 					{
 						if (!(oldValue instanceof Number && currentValue instanceof Number &&

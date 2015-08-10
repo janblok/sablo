@@ -191,7 +191,7 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 					Object oldValue = oldvalues.opt(key);
 					Object currentValue = webComponent.getProperty(key);
 					PropertyDescription propertyDesc = webComponent.getSpecification().getProperty(key);
-					oldValue = propertyDesc != null ? JSONUtils.fromJSON(currentValue, oldValue, new DataConverterContext(propertyDesc, webComponent)) : null;
+					oldValue = propertyDesc != null ? JSONUtils.fromJSON(null, oldValue, new DataConverterContext(propertyDesc, webComponent)) : null;
 					if (oldValue != null && currentValue != null && !oldValue.equals(currentValue))
 					{
 						if (!(oldValue instanceof Number && currentValue instanceof Number &&

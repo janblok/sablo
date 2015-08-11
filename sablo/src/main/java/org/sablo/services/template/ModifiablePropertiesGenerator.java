@@ -35,7 +35,7 @@ import org.sablo.specification.WebComponentSpecification.PushToServerValue;
 @SuppressWarnings("nls")
 public class ModifiablePropertiesGenerator
 {
-	public final static String PUSH_TO_SERVER_BINDINGS_LIST = "propsToWatch";
+	public final static String PUSH_TO_SERVER_BINDINGS_LIST = "pushToServerData";
 
 	/**
 	 * @param w writer used to write the JSON.
@@ -44,7 +44,7 @@ public class ModifiablePropertiesGenerator
 	{
 		w.print("angular.module('");
 		w.print(ModifiablePropertiesGenerator.PUSH_TO_SERVER_BINDINGS_LIST);
-		w.println("',['sabloApp']).run(function ($propertyWatchesRegistry) {");
+		w.println("',['pushToServer']).run(function ($propertyWatchesRegistry) {");
 		w.println("  $propertyWatchesRegistry.clearAutoWatchPropertiesList();");
 	}
 

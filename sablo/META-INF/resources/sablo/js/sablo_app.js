@@ -24,13 +24,13 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 	var deferredFormStatesWithData = {};
 	var getChangeNotifierGenerator = function(formName, beanName) {
 		return function(property) {
-		return function() {
-			// will be called by the custom property when it needs to send changes server size
-			var beanModel = formStates[formName].model[beanName];
+			return function() {
+				// will be called by the custom property when it needs to send changes server size
+				var beanModel = formStates[formName].model[beanName];
 				sendChanges(beanModel[property], beanModel[property], formName, beanName, property);
 			};
 		};
-		}
+	}
 
 	/*
 	 * Some code is interested in form state immediately after it's loaded/initialized (needsInitialData = false) in which case only some template values might be
@@ -67,8 +67,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		if (property) {
 			if (beanConversionInfo && beanConversionInfo[property]) changes[property] = $sabloConverters.convertFromClientToServer(now, beanConversionInfo[property], prev);
 			else changes[property] = $sabloUtils.convertClientObject(now)
-		}
-		else {
+		} else {
 			// first build up a list of all the properties both have.
 			var fulllist = $sabloUtils.getCombinedPropertyNames(now, prev);
 			var prop;
@@ -839,75 +838,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		}
 
 	};
-}]).factory('$propertyWatchesRegistry', function () {
-	var propertiesThatShouldBeAutoPushedToServer = {}; // key == ("components" or "services"), value = property names in the model that should be watched (for sending back to server the value); see setAutoWatchPropertiesList "autoWatchPropertiesPerBaseWebObject" argument for details
-	
-	function getPropertiesToAutoWatchForComponent(componentTypeName) {
-		return propertiesThatShouldBeAutoPushedToServer["components"][componentTypeName];
-	};
-	
-	function getPropertiesToAutoWatchForService(serviceTypeName) {
-		return propertiesThatShouldBeAutoPushedToServer["services"][serviceTypeName];
-	};
-	
-	// returns an array of watch unregister functions
-	// propertiesToAutoWatch is meant to be the return value of getPropertiesToAutoWatchForComponent or getPropertiesToAutoWatchForService
-	function watchDumbProperties(scope, model, propertiesToAutoWatch, changedCallbackFunction) {
-		var unwatchF = [];
-		function getChangeFunction(property, initialV) {
-			return function(newValue, oldValue) {
-				if (typeof initialV !== 'undefined') {
-					// value from server should not be sent back; but as directives in their controller methods can already change the values or properties
-					// (so before the first watch execution) we can't just rely only on the "if (oldValue === newValue) return;" below cause in that case it won't send
-					// a value that actually changed to server
-					oldValue = initialV;
-					initialV = undefined;
-				}
-				if (oldValue === newValue) return;
-				changedCallbackFunction(newValue, oldValue, property);
-			}
-		}
-		function getWatchFunction(property) {
-			return function() { 
-				return model[property];
-			}
-		}
-		for (var p in propertiesToAutoWatch) {
-			var wf = getWatchFunction(p);
-			unwatchF.push(scope.$watch(wf, getChangeFunction(p, wf()), propertiesToAutoWatch[p]));
-		}
-		
-		return unwatchF;
-	}
-	
-	return {
-		
-		getPropertiesToAutoWatchForComponent: getPropertiesToAutoWatchForComponent,
-		
-		// returns an array of watch unregister functions
-		watchDumbPropertiesForComponent: function watchDumbPropertiesForComponent(scope, componentTypeName, model, changedCallbackFunction) {
-			return watchDumbProperties(scope, model, getPropertiesToAutoWatchForComponent(componentTypeName), changedCallbackFunction);
-		},
-		
-		// returns an array of watch unregister functions
-		watchDumbPropertiesForService: function watchDumbPropertiesForService(scope, serviceTypeName, model, changedCallbackFunction) {
-			return watchDumbProperties(scope, model, getPropertiesToAutoWatchForService(serviceTypeName), changedCallbackFunction);
-		},
-		
-		clearAutoWatchPropertiesList: function () {
-			propertiesThatShouldBeAutoPushedToServer = {};
-		},
-		
-		// categoryName can be "components" or "services"
-		// autoWatchPropertiesPerBaseWebObject is something like {
-		//                                                           "pck1Component1" : { "myDeepWatchedProperty" : true, "myShallowWatchedProperty" : false }
-		//                                                       }
-		setAutoWatchPropertiesList: function (categoryName, autoWatchPropertiesPerBaseWebObject) {
-			propertiesThatShouldBeAutoPushedToServer[categoryName] = autoWatchPropertiesPerBaseWebObject;
-		}
-		
-	};
-}).run(function ($sabloConverters) {
+}]).run(function ($sabloConverters) {
 	// Date type -----------------------------------------------
 	$sabloConverters.registerCustomPropertyHandler('Date', {
 		fromServerToClient: function (serverJSONValue, currentClientValue, scope, modelGetter) {

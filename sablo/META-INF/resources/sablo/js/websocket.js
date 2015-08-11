@@ -1,7 +1,79 @@
 /**
  * Setup the webSocketModule.
  */
-var webSocketModule = angular.module('webSocketModule', []);
+var webSocketModule = angular.module('webSocketModule', ['pushToServerData']);
+
+// declare module pushToServer that generated module "pushToServerData" depends on - so that all pushToServer information is already present when starting 'webSocketModule'
+angular.module('pushToServer', []).factory('$propertyWatchesRegistry', function () {
+	var propertiesThatShouldBeAutoPushedToServer = {}; // key == ("components" or "services"), value = property names in the model that should be watched (for sending back to server the value); see setAutoWatchPropertiesList "autoWatchPropertiesPerBaseWebObject" argument for details
+	
+	function getPropertiesToAutoWatchForComponent(componentTypeName) {
+		return propertiesThatShouldBeAutoPushedToServer["components"][componentTypeName];
+	};
+	
+	function getPropertiesToAutoWatchForService(serviceTypeName) {
+		return propertiesThatShouldBeAutoPushedToServer["services"][serviceTypeName];
+	};
+	
+	// returns an array of watch unregister functions
+	// propertiesToAutoWatch is meant to be the return value of getPropertiesToAutoWatchForComponent or getPropertiesToAutoWatchForService
+	function watchDumbProperties(scope, model, propertiesToAutoWatch, changedCallbackFunction) {
+		var unwatchF = [];
+		function getChangeFunction(property, initialV) {
+			return function(newValue, oldValue) {
+				if (typeof initialV !== 'undefined') {
+					// value from server should not be sent back; but as directives in their controller methods can already change the values or properties
+					// (so before the first watch execution) we can't just rely only on the "if (oldValue === newValue) return;" below cause in that case it won't send
+					// a value that actually changed to server
+					oldValue = initialV;
+					initialV = undefined;
+				}
+				if (oldValue === newValue) return;
+				changedCallbackFunction(newValue, oldValue, property);
+			}
+		}
+		function getWatchFunction(property) {
+			return function() { 
+				return model[property];
+			}
+		}
+		for (var p in propertiesToAutoWatch) {
+			var wf = getWatchFunction(p);
+			unwatchF.push(scope.$watch(wf, getChangeFunction(p, wf()), propertiesToAutoWatch[p]));
+		}
+		
+		return unwatchF;
+	}
+	
+	return {
+		
+		getPropertiesToAutoWatchForComponent: getPropertiesToAutoWatchForComponent,
+		
+		// returns an array of watch unregister functions
+		watchDumbPropertiesForComponent: function watchDumbPropertiesForComponent(scope, componentTypeName, model, changedCallbackFunction) {
+			return watchDumbProperties(scope, model, getPropertiesToAutoWatchForComponent(componentTypeName), changedCallbackFunction);
+		},
+		
+		// returns an array of watch unregister functions
+		watchDumbPropertiesForService: function watchDumbPropertiesForService(scope, serviceTypeName, model, changedCallbackFunction) {
+			return watchDumbProperties(scope, model, getPropertiesToAutoWatchForService(serviceTypeName), changedCallbackFunction);
+		},
+		
+		clearAutoWatchPropertiesList: function () {
+			propertiesThatShouldBeAutoPushedToServer = {};
+		},
+		
+		// categoryName can be "components" or "services"
+		// autoWatchPropertiesPerBaseWebObject is something like {
+		//                                                           "pck1Component1" : { "myDeepWatchedProperty" : true, "myShallowWatchedProperty" : false }
+		//                                                       }
+		setAutoWatchPropertiesList: function (categoryName, autoWatchPropertiesPerBaseWebObject) {
+			propertiesThatShouldBeAutoPushedToServer[categoryName] = autoWatchPropertiesPerBaseWebObject;
+		}
+		
+	};
+});
+
 
 /**
  * Setup the $webSocket service.
@@ -381,29 +453,35 @@ webSocketModule.factory('$webSocket',
 
 		getURLParameter: getURLParameter
 	};
-}).factory("$services", function($rootScope, $sabloConverters, $sabloUtils){
+}).factory("$services", function($rootScope, $sabloConverters, $sabloUtils, $propertyWatchesRegistry){
 	// serviceName:{} service model
 	var serviceScopes = $rootScope.$new(true);
 	var serviceScopesConversionInfo = {};
 	var watches = {}
 	var wsSession = null;
-	var sendServiceChanges = function(now, prev, servicename) {
-		// first build up a list of all the properties both have.
-		var fulllist = $sabloUtils.getCombinedPropertyNames(now,prev);
+	var sendServiceChanges = function(now, prev, servicename, property) {
+		var changes = {}
 		var conversionInfo = serviceScopesConversionInfo[servicename];
-		var changes = {}, prop;
-
-		for (var prop in fulllist) {
-			var changed = false;
-			if (!(prev && now)) {
-				changed = true; // true if just one of them is undefined; both cannot be undefined at this point if we are already iterating on combined property names
-			} else {
-				changed = $sabloUtils.isChanged(now[prop], prev[prop], conversionInfo ? conversionInfo[prop] : undefined)
-			}
-
-			if (changed) {
-				if (conversionInfo && conversionInfo[prop]) changes[prop] = $sabloConverters.convertFromClientToServer(now[prop], conversionInfo[prop], prev ? prev[prop] : undefined);
-				else changes[prop] = $sabloUtils.convertClientObject(now[prop])
+		if (property) {
+			if (conversionInfo && conversionInfo[property]) changes[property] = $sabloConverters.convertFromClientToServer(now, conversionInfo[property], prev);
+			else changes[property] = $sabloUtils.convertClientObject(now)
+		} else {
+			// first build up a list of all the properties both have.
+			var fulllist = $sabloUtils.getCombinedPropertyNames(now,prev);
+			var changes = {}, prop;
+			
+			for (var prop in fulllist) {
+				var changed = false;
+				if (!(prev && now)) {
+					changed = true; // true if just one of them is undefined; both cannot be undefined at this point if we are already iterating on combined property names
+				} else {
+					changed = $sabloUtils.isChanged(now[prop], prev[prop], conversionInfo ? conversionInfo[prop] : undefined)
+				}
+				
+				if (changed) {
+					if (conversionInfo && conversionInfo[prop]) changes[prop] = $sabloConverters.convertFromClientToServer(now[prop], conversionInfo[prop], prev ? prev[prop] : undefined);
+					else changes[prop] = $sabloUtils.convertClientObject(now[prop])
+				}
 			}
 		}
 		for (prop in changes) {
@@ -411,16 +489,10 @@ webSocketModule.factory('$webSocket',
 			return;
 		}
 	};
-	var getChangeNotifier = function(servicename) {
+	var getChangeNotifier = function(servicename, property) {
 		return function() {
 			var serviceModel = serviceScopes[servicename];
-			sendServiceChanges(serviceModel, serviceModel, servicename);
-		}
-	};
-	var watch = function(servicename) {
-		return function(newVal, oldVal) {
-			if (newVal === oldVal) return;
-			sendServiceChanges(newVal,oldVal,servicename);
+			sendServiceChanges(serviceModel, serviceModel, servicename, property);
 		}
 	};
 	return {
@@ -428,7 +500,10 @@ webSocketModule.factory('$webSocket',
 			if (!serviceScopes[serviceName]) {
 				serviceScopes[serviceName] = serviceScopes.$new(true);
 				serviceScopes[serviceName].model = {};
-				watches[serviceName] = serviceScopes[serviceName].$watch("model",watch(serviceName),true);
+				
+				watches[serviceName] = $propertyWatchesRegistry.watchDumbPropertiesForService(serviceScopes[serviceName], serviceName, serviceScopes[serviceName].model, function(newValue, oldValue, property) {
+					sendServiceChanges(newValue, oldValue, serviceName, property);
+				});
 			}
 			return serviceScopes[serviceName];
 		},
@@ -437,27 +512,29 @@ webSocketModule.factory('$webSocket',
 				// current model
 				var serviceScope = serviceScopes[servicename];
 				if (!serviceScope) {
-					serviceScopes[serviceName] = serviceScopes.$new(true);
+					serviceScope = serviceScopes[serviceName] = serviceScopes.$new(true);
 					// so no previous service state; set it now
 					if (conversionInfo && conversionInfo[servicename]) {
 						// convert all properties, remember type for when a client-server conversion will be needed
-						services[servicename] = $sabloConverters.convertFromServerToClient(services[servicename], conversionInfo[servicename], undefined, serviceScopes[serviceName], function() { return serviceScopes[serviceName].model })
-						var changeNotifier = getChangeNotifier(servicename);
+						services[servicename] = $sabloConverters.convertFromServerToClient(services[servicename], conversionInfo[servicename], undefined, serviceScope, function() { return serviceScope.model })
+						
 						for (var pn in conversionInfo[servicename]) {
 							if (services[servicename][pn] && services[servicename][pn][$sabloConverters.INTERNAL_IMPL]
 							&& services[servicename][pn][$sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
-								services[servicename][pn][$sabloConverters.INTERNAL_IMPL].setChangeNotifier(changeNotifier);
+								services[servicename][pn][$sabloConverters.INTERNAL_IMPL].setChangeNotifier(getChangeNotifier(servicename, pn));
 							}
 						}
 						serviceScopesConversionInfo[servicename] = conversionInfo[servicename];
 					}
-					serviceScopes[servicename].model = services[servicename];
+					serviceScope.model = services[servicename];
 				}
 				else {
 					var serviceData = services[servicename];
-					// unregister the watch.
-					watches[servicename]();
-					var changeNotifier = (conversionInfo && conversionInfo[servicename]) ? getChangeNotifier(servicename) : undefined;
+
+					// unregister the watches
+					if (watches[servicename]) watches[servicename].forEach(function (unwatchFunctionElement, index, array) {
+						unwatchFunctionElement();
+					});
 
 					for(var key in serviceData) {
 						if (conversionInfo && conversionInfo[servicename] && conversionInfo[servicename][key]) {
@@ -467,7 +544,7 @@ webSocketModule.factory('$webSocket',
 
 							if ((serviceData[key] !== serviceScope.model[key] || serviceScopesConversionInfo[servicename][key] !== conversionInfo[servicename][key]) && serviceData[key]
 							&& serviceData[key][$sabloConverters.INTERNAL_IMPL] && serviceData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
-								serviceData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier(changeNotifier);
+								serviceData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier(getChangeNotifier(servicename, key));
 							}
 							serviceScopesConversionInfo[servicename][key] = conversionInfo[servicename][key];
 						} else if (angular.isDefined(serviceScopesConversionInfo[servicename]) && angular.isDefined(serviceScopesConversionInfo[servicename][key])) {
@@ -477,8 +554,12 @@ webSocketModule.factory('$webSocket',
 						serviceScope.model[key] = serviceData[key];
 					}
 				}
+				
 				// register a new watch
-				watches[servicename] = serviceScopes[servicename].$watch("model",watch(servicename),true);
+				watches[servicename] = $propertyWatchesRegistry.watchDumbPropertiesForService(serviceScope, servicename, serviceScope.model, function(newValue, oldValue, property) {
+					sendServiceChanges(newValue, oldValue, servicename, property);
+				});
+
 				if ($rootScope.$$asyncQueue.length > 0) 
 					$rootScope.$digest();
 				else serviceScopes[servicename].$digest();

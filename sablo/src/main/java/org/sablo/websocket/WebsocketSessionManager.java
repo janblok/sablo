@@ -16,6 +16,7 @@
 
 package org.sablo.websocket;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -49,6 +50,18 @@ public class WebsocketSessionManager
 
 	public static void removeSession(String uuid)
 	{
+		// if there is a current window, first send all pending changes
+		if (CurrentWindow.exists())
+		{
+			try
+			{
+				CurrentWindow.get().sendChanges();
+			}
+			catch (IOException e)
+			{
+				log.error("Error sending changes when session is removed", e);
+			}
+		}
 		IWebsocketSession websocketSession;
 		synchronized (wsSessions)
 		{

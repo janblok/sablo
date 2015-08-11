@@ -19,6 +19,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 	var currentFormUrl = null;
 	var formStates = {};
 	var formStatesConversionInfo = {};
+	
+	var locale = null;
 
 	var deferredFormStates = {};
 	var deferredFormStatesWithData = {};
@@ -547,7 +549,17 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 				}
 			}
 		},
-
+		getLocale: function() {
+			if (!locale) {
+				var lang = $window.navigator.languages? $window.navigator.languages[0] : ($window.navigator.language || $window.navigator.userLanguage);
+				var array = lang.split("-");
+				locale = {language:array[0],country:array[1]};
+			}
+			return locale;
+		}, 
+		setLocale: function(loc) {
+			locale = loc;
+		},
 		// Get the current form url, when not set yet start getting it from the server (when fetch is not false)
 		getCurrentFormUrl: function(fetch) {
 			if (currentFormUrl == null && fetch != false) {

@@ -7,7 +7,9 @@ describe('styles helpers', function() {
 	   // 1. Include your application module for testing.
 	  module('sabloApp');
 	  
-      // 2. Define a new mock module. (don't need to mock the servoy module for tabpanel since it receives it's dependencies with attributes in the isolated scope)
+	  angular.module('pushToServerData', ['pushToServer']);
+	  
+	  // 2. Define a new mock module. (don't need to mock the servoy module for tabpanel since it receives it's dependencies with attributes in the isolated scope)
       // 3. Define a provider with the same name as the one you want to mock (in our case we want to mock 'servoy' dependency.
 //      angular.module('servoyMock', [])
 //          .factory('$X', function(){

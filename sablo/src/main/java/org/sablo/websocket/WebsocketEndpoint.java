@@ -94,6 +94,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		try
 		{
 			window.setEndpoint(this);
+			final IWindow win = window;
 
 			// send initial setup to client in separate thread in order to release current connection
 			wsSession.getEventDispatcher().addEvent(new Runnable()
@@ -101,8 +102,11 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 				@Override
 				public void run()
 				{
-					window.onOpen();
-					wsSession.onOpen(session.getRequestParameterMap());
+					if (CurrentWindow.safeGet() == win) // window my already be closed
+					{
+						win.onOpen();
+						wsSession.onOpen(session.getRequestParameterMap());
+					}
 				}
 			});
 		}

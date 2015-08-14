@@ -540,6 +540,19 @@ public abstract class BaseWebObject
 		return oldValue;
 	}
 
+	/** Check if a property can be modified from the outside (browser client).
+	 *
+	 * @param propertyName
+	 *
+	 * @throws IllegalComponentAccessException when modification is denied.
+	 */
+	public final void checkPropertyProtection(String propertyName)
+	{
+		checkProtection(propertyName);
+
+		checkForProtectedProperty(propertyName);
+	}
+
 	/**
 	 * put property from the outside world, not recording changes. converting to
 	 * the right type.
@@ -550,9 +563,7 @@ public abstract class BaseWebObject
 	 */
 	public final void putBrowserProperty(String propertyName, Object propertyValue) throws JSONException
 	{
-		checkProtection(propertyName);
-
-		checkForProtectedProperty(propertyName);
+		checkPropertyProtection(propertyName);
 
 		doPutBrowserProperty(propertyName, propertyValue);
 	}

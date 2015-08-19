@@ -25,7 +25,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
-import org.sablo.BaseWebObject;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
 import org.sablo.websocket.utils.DataConversion;
@@ -217,7 +216,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 						}
 
 						// full replace
-						return fullValueReplaceFromBrowser(previousChangeAwareList, dataConverterContext, clientReceivedJSON.getJSONArray(VALUE));
+						return fullValueReplaceFromBrowser(previousChangeAwareList, pd, dataConverterContext, clientReceivedJSON.getJSONArray(VALUE));
 					}
 				}
 				else
@@ -264,7 +263,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 
 			// this can happen if the property was undefined before (so not even aware of type client side) and it was assigned a complete array value client side;
 			// in this case we must update server value and send a request back to client containing the type and letting it know that it must start watching the new value (for granular updates)
-			ChangeAwareList<ET, WT> newChangeAwareList = fullValueReplaceFromBrowser(previousChangeAwareList, dataConverterContext, (JSONArray)newJSONValue);
+			ChangeAwareList<ET, WT> newChangeAwareList = fullValueReplaceFromBrowser(previousChangeAwareList, pd, dataConverterContext, (JSONArray)newJSONValue);
 			newChangeAwareList.markMustSendTypeToClient();
 			return newChangeAwareList;
 		}
@@ -275,8 +274,8 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 		}
 	}
 
-	private ChangeAwareList<ET, WT> fullValueReplaceFromBrowser(ChangeAwareList<ET, WT> previousChangeAwareList, IBrowserConverterContext dataConverterContext,
-		JSONArray array)
+	private ChangeAwareList<ET, WT> fullValueReplaceFromBrowser(ChangeAwareList<ET, WT> previousChangeAwareList, PropertyDescription pd,
+		IBrowserConverterContext dataConverterContext, JSONArray array)
 	{
 		List<WT> list = new ArrayList<WT>();
 		List<WT> previousWrappedBaseList = (previousChangeAwareList != null ? previousChangeAwareList.getWrappedBaseListForReadOnly() : null);
@@ -304,7 +303,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 		{
 			IWrappingContext wrappingContext = (dataConverterContext instanceof IWrappingContext ? (IWrappingContext)dataConverterContext
 				: new WrappingContext(dataConverterContext.getWebObject()));
-			newBaseList = new WrapperList<ET, WT>(list, (IWrapperType<ET, WT>)elementType, wrappingContext);
+			newBaseList = new WrapperList<ET, WT>(list, (IWrapperType<ET, WT>)elementType, pd, wrappingContext);
 		}
 		else
 		{

@@ -58,18 +58,35 @@ public class WebComponentSpecification extends PropertyDescription
 
 	public final static String PUSH_TO_SERVER_KEY = "pushToServer";
 
-	public enum PushToServerValue
+	public enum PushToServerEnum
 	{
+
+		// keep them ordered (in code checks for < and > can be used; so for example allow.compareTo(pushToServer) <= 0  can be used to check that a property can change on server due to client change)
+
 		reject, // default, throw exception when updates are pushed to server
 		allow, // allow changes, not default implementation in sablo
 		shallow, // allow changes, implementation in sablo by creating watcher on client with objectEquality = false
 		deep // allow changes, implementation in sablo by creating watcher on client with objectEquality = true
 		;
 
-		public static PushToServerValue fromString(String s)
+		public static PushToServerEnum fromString(String s)
 		{
 			return s == null ? null : valueOf(s);
 		}
+
+		/**
+		 * If the given value 'newLevel' is more 'restrictive' then current it will return the 'newLevel'; otherwise it will just return this.
+		 * @param newLevel the newLevel to check for.
+		 *
+		 * Useful for example in nested properties where parent is for example 'deep' and child could be 'shallow' or 'restrict' (TODO do we want this in the future?).
+		 *
+		 * @return the most restrictive setting of the two.
+		 */
+		public PushToServerEnum restrictIfNeeded(PushToServerEnum newLevel)
+		{
+			return (this.compareTo(newLevel) > 0 ? newLevel : this);
+		}
+
 	}
 
 	private final Map<String, PropertyDescription> handlers = new HashMap<>(); // second String is always a "function" for now, but in the future it will probably contain more (to specify sent args/types...)
@@ -465,7 +482,7 @@ public class WebComponentSpecification extends PropertyDescription
 
 				JSONObject configObject = null;
 				Object defaultValue = null;
-				PushToServerValue pushToServer = PushToServerValue.reject;
+				PushToServerEnum pushToServer = PushToServerEnum.reject;
 				JSONObject tags = null;
 				List<Object> values = null;
 				ParsedProperty pp = null;
@@ -478,7 +495,7 @@ public class WebComponentSpecification extends PropertyDescription
 					pp = parsePropertyString(((JSONObject)value).getString("type"));
 					configObject = ((JSONObject)value);
 					defaultValue = configObject.opt("default");
-					pushToServer = PushToServerValue.fromString(configObject.optString(PUSH_TO_SERVER_KEY, pushToServer.name()));
+					pushToServer = PushToServerEnum.fromString(configObject.optString(PUSH_TO_SERVER_KEY, pushToServer.name()));
 					tags = configObject.optJSONObject("tags");
 
 					JSONArray valuesArray = configObject.optJSONArray("values");

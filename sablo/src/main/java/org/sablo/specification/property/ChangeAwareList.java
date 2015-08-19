@@ -44,7 +44,6 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	// the browser changes when this happens through the 'version' mechanism
 	private int version;
 
-	protected IDataConverterContext dataConverterContext;
 	protected List<ET> baseList;
 
 	protected List<IndexChangeListener> changeHandlers = new ArrayList<>();
@@ -59,14 +58,13 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	protected boolean mustSendTypeToClient;
 
 
-	public ChangeAwareList(List<ET> baseList, IDataConverterContext dataConverterContext)
+	public ChangeAwareList(List<ET> baseList)
 	{
-		this(baseList, dataConverterContext, 1);
+		this(baseList, 1);
 	}
 
-	public ChangeAwareList(List<ET> baseList, IDataConverterContext dataConverterContext, int initialVersion)
+	public ChangeAwareList(List<ET> baseList, int initialVersion)
 	{
-		this.dataConverterContext = dataConverterContext;
 		this.baseList = baseList;
 		this.version = initialVersion;
 

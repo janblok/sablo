@@ -22,8 +22,8 @@ import java.util.Locale;
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.property.IDataConverterContext;
-import org.sablo.specification.property.IPropertyConverter;
+import org.sablo.specification.property.IBrowserConverterContext;
+import org.sablo.specification.property.IPropertyConverterForBrowser;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
@@ -33,7 +33,7 @@ import org.sablo.websocket.utils.JSONUtils;
  * @author jcompagner
  *
  */
-public class LongPropertyType extends DefaultPropertyType<Long> implements IPropertyConverter<Number>
+public class LongPropertyType extends DefaultPropertyType<Long> implements IPropertyConverterForBrowser<Number>
 {
 
 	public static final LongPropertyType INSTANCE = new LongPropertyType();
@@ -56,7 +56,7 @@ public class LongPropertyType extends DefaultPropertyType<Long> implements IProp
 	}
 
 	@Override
-	public Number fromJSON(Object newJSONValue, Number previousSabloValue, IDataConverterContext dataConverterContext)
+	public Number fromJSON(Object newJSONValue, Number previousSabloValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
 	{
 		if (newJSONValue == null || newJSONValue instanceof Long) return (Long)newJSONValue;
 		if (newJSONValue instanceof Number) return Long.valueOf(((Number)newJSONValue).longValue());
@@ -80,8 +80,8 @@ public class LongPropertyType extends DefaultPropertyType<Long> implements IProp
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, Number sabloValue, DataConversion clientConversion, IDataConverterContext dataConverterContext)
-		throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Number sabloValue, PropertyDescription pd, DataConversion clientConversion,
+		IBrowserConverterContext dataConverterContext) throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
 		writer.value(sabloValue);

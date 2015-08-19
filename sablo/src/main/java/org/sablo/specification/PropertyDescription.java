@@ -26,7 +26,7 @@ import java.util.Map.Entry;
 
 import org.json.JSONObject;
 import org.sablo.specification.IYieldingType.YieldDescriptionArguments;
-import org.sablo.specification.WebComponentSpecification.PushToServerValue;
+import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
 import org.sablo.specification.property.CustomJSONPropertyType;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
@@ -45,7 +45,7 @@ public class PropertyDescription
 	private final boolean optional;
 	private final Object defaultValue;
 	private final List<Object> values;
-	private final PushToServerValue pushToServer;
+	private final PushToServerEnum pushToServer;
 	private final JSONObject tags;
 
 	//case of nested type
@@ -58,7 +58,7 @@ public class PropertyDescription
 		this(name, type, null, null, null, null, null, false);
 	}
 
-	public PropertyDescription(String name, IPropertyType< ? > type, PushToServerValue pushToServer)
+	public PropertyDescription(String name, IPropertyType< ? > type, PushToServerEnum pushToServer)
 	{
 		this(name, type, null, null, null, pushToServer, null, false);
 	}
@@ -68,7 +68,7 @@ public class PropertyDescription
 		this(name, type, config, null, null, null, null, false);
 	}
 
-	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Object defaultValue, List<Object> values, PushToServerValue pushToServer,
+	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Object defaultValue, List<Object> values, PushToServerEnum pushToServer,
 		JSONObject tags, boolean optional)
 	{
 		this.name = name;
@@ -187,7 +187,7 @@ public class PropertyDescription
 		return values == null ? Collections.emptyList() : Collections.unmodifiableList(values);
 	}
 
-	public PushToServerValue getPushToServer()
+	public PushToServerEnum getPushToServer()
 	{
 		return pushToServer;
 	}

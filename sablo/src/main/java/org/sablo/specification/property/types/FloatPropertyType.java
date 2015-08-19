@@ -22,8 +22,8 @@ import java.util.Locale;
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.property.IDataConverterContext;
-import org.sablo.specification.property.IPropertyConverter;
+import org.sablo.specification.property.IBrowserConverterContext;
+import org.sablo.specification.property.IPropertyConverterForBrowser;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
@@ -33,7 +33,7 @@ import org.sablo.websocket.utils.JSONUtils;
  * @author jcompagner
  *
  */
-public class FloatPropertyType extends DefaultPropertyType<Float> implements IPropertyConverter<Number>
+public class FloatPropertyType extends DefaultPropertyType<Float> implements IPropertyConverterForBrowser<Number>
 {
 
 	public static final FloatPropertyType INSTANCE = new FloatPropertyType();
@@ -56,7 +56,7 @@ public class FloatPropertyType extends DefaultPropertyType<Float> implements IPr
 	}
 
 	@Override
-	public Number fromJSON(Object newJSONValue, Number previousSabloValue, IDataConverterContext dataConverterContext)
+	public Number fromJSON(Object newJSONValue, Number previousSabloValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
 	{
 		if (newJSONValue == null || newJSONValue instanceof Float) return (Float)newJSONValue;
 		if (newJSONValue instanceof Number) return Float.valueOf(((Number)newJSONValue).floatValue());
@@ -80,8 +80,8 @@ public class FloatPropertyType extends DefaultPropertyType<Float> implements IPr
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, Number sabloValue, DataConversion clientConversion, IDataConverterContext dataConverterContext)
-		throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Number sabloValue, PropertyDescription pd, DataConversion clientConversion,
+		IBrowserConverterContext dataConverterContext) throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
 		writer.value(sabloValue);

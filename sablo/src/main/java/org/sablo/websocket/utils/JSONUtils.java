@@ -27,12 +27,11 @@ import org.json.JSONObject;
 import org.json.JSONString;
 import org.json.JSONStringer;
 import org.json.JSONWriter;
-import org.sablo.BaseWebObject;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.property.DataConverterContext;
+import org.sablo.specification.property.BrowserConverterContext;
+import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
-import org.sablo.specification.property.IDataConverterContext;
-import org.sablo.specification.property.IPropertyConverter;
+import org.sablo.specification.property.IPropertyConverterForBrowser;
 import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.ISupportsGranularUpdates;
 import org.sablo.specification.property.IWrapperType;
@@ -71,10 +70,10 @@ public class JSONUtils
 		}
 	}
 
-	public static JSONWriter writeDataWithConversions(JSONWriter writer, Map<String, ? > data, PropertyDescription dataTypes, BaseWebObject webObject)
+	public static JSONWriter writeDataWithConversions(JSONWriter writer, Map<String, ? > data, PropertyDescription dataTypes, BrowserConverterContext context)
 		throws JSONException
 	{
-		return writeDataWithConversions(FullValueToJSONConverter.INSTANCE, writer, data, dataTypes, webObject);
+		return writeDataWithConversions(FullValueToJSONConverter.INSTANCE, writer, data, dataTypes, context);
 	}
 
 	public static <ContextT> JSONWriter writeDataWithConversions(IToJSONConverter<ContextT> converter, JSONWriter writer, Map<String, ? > data,
@@ -110,14 +109,14 @@ public class JSONUtils
 		}
 	}
 
-	public static String writeDataWithConversions(Map<String, ? > data, PropertyDescription dataTypes, BaseWebObject webObject) throws JSONException
+	public static String writeDataWithConversions(Map<String, ? > data, PropertyDescription dataTypes, BrowserConverterContext context) throws JSONException
 	{
-		return writeDataWithConversions(FullValueToJSONConverter.INSTANCE, data, dataTypes, webObject);
+		return writeDataWithConversions(FullValueToJSONConverter.INSTANCE, data, dataTypes, context);
 	}
 
-	public static String writeChangesWithConversions(Map<String, ? > data, PropertyDescription dataTypes, BaseWebObject webObject) throws JSONException
+	public static String writeChangesWithConversions(Map<String, ? > data, PropertyDescription dataTypes, BrowserConverterContext context) throws JSONException
 	{
-		return writeDataWithConversions(ChangesToJSONConverter.INSTANCE, data, dataTypes, webObject);
+		return writeDataWithConversions(ChangesToJSONConverter.INSTANCE, data, dataTypes, context);
 	}
 
 	public static <ContextT> String writeDataWithConversions(IToJSONConverter<ContextT> converter, Map<String, ? > data, PropertyDescription dataTypes,
@@ -150,9 +149,9 @@ public class JSONUtils
 	 * key is null and you want to write the converted value write only the converted value to the writer, ignore the key.
 	 */
 	public static JSONWriter toBrowserJSONFullValue(JSONWriter writer, String key, Object value, PropertyDescription valueType,
-		DataConversion clientConversion, BaseWebObject webObject) throws JSONException, IllegalArgumentException
+		DataConversion clientConversion, BrowserConverterContext context) throws JSONException, IllegalArgumentException
 	{
-		return JSONUtils.FullValueToJSONConverter.INSTANCE.toJSONValue(writer, key, value, valueType, clientConversion, webObject);
+		return JSONUtils.FullValueToJSONConverter.INSTANCE.toJSONValue(writer, key, value, valueType, clientConversion, context);
 	}
 
 	/**
@@ -163,9 +162,9 @@ public class JSONUtils
 	 * key is null and you want to write the converted value write only the converted value to the writer, ignore the key.
 	 */
 	public static JSONWriter changesToBrowserJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType,
-		DataConversion clientConversion, BaseWebObject webObject) throws JSONException, IllegalArgumentException
+		DataConversion clientConversion, IBrowserConverterContext context) throws JSONException, IllegalArgumentException
 	{
-		return JSONUtils.ChangesToJSONConverter.INSTANCE.toJSONValue(writer, key, value, valueType, clientConversion, webObject);
+		return JSONUtils.ChangesToJSONConverter.INSTANCE.toJSONValue(writer, key, value, valueType, clientConversion, context);
 	}
 
 	public static JSONWriter addKeyIfPresent(JSONWriter writer, String key) throws JSONException
@@ -307,14 +306,14 @@ public class JSONUtils
 		return true;
 	}
 
-	public static Object fromJSONUnwrapped(Object previousComponentValue, Object newJSONValue, DataConverterContext dataConversionContext) throws JSONException
+	public static Object fromJSONUnwrapped(Object previousComponentValue, Object newJSONValue, PropertyDescription pd,
+		IBrowserConverterContext dataConversionContext) throws JSONException
 	{
-		Object value = fromJSON(previousComponentValue, newJSONValue, dataConversionContext);
-		PropertyDescription propDesc = dataConversionContext.getPropertyDescription();
-		if (propDesc != null && propDesc.getType() instanceof IWrapperType< ? , ? >)
+		Object value = fromJSON(previousComponentValue, newJSONValue, pd, dataConversionContext);
+		if (pd != null && pd.getType() instanceof IWrapperType< ? , ? >)
 		{
 			// will probably never happen as all this fromJSON thing was only meant for Dates (at least currently)
-			IWrapperType wType = ((IWrapperType< ? , ? >)propDesc.getType());
+			IWrapperType wType = ((IWrapperType< ? , ? >)pd.getType());
 			value = wType.unwrap(value);
 		}
 		return value;
@@ -324,16 +323,16 @@ public class JSONUtils
 	 * Returns the object to be set directly in a BaseWebObject properties map. For wrapper types this means a wrapped value directly.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static Object fromJSON(Object oldValue, Object newValue, IDataConverterContext dataConversionContext) throws JSONException
+	public static Object fromJSON(Object oldValue, Object newValue, PropertyDescription pd, IBrowserConverterContext dataConversionContext)
+		throws JSONException
 	{
 		if (newValue == JSONObject.NULL) newValue = null;
-		PropertyDescription desc = dataConversionContext.getPropertyDescription();
-		if (desc != null)
+		if (pd != null)
 		{
-			IPropertyType< ? > type = desc.getType();
-			if (type instanceof IPropertyConverter< ? >)
+			IPropertyType< ? > type = pd.getType();
+			if (type instanceof IPropertyConverterForBrowser< ? >)
 			{
-				return ((IPropertyConverter)type).fromJSON(newValue, oldValue, dataConversionContext);
+				return ((IPropertyConverterForBrowser)type).fromJSON(newValue, oldValue, pd, dataConversionContext);
 			}
 		}
 		return newValue;
@@ -402,24 +401,24 @@ public class JSONUtils
 
 	}
 
-	public static class FullValueToJSONConverter implements IToJSONConverter<BaseWebObject>
+	public static class FullValueToJSONConverter implements IToJSONConverter<IBrowserConverterContext>
 	{
 
 		public static final FullValueToJSONConverter INSTANCE = new FullValueToJSONConverter();
 
 		@Override
 		public JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion browserConversionMarkers,
-			BaseWebObject webObject) throws JSONException, IllegalArgumentException
+			IBrowserConverterContext context) throws JSONException, IllegalArgumentException
 		{
 			if (value != null && valueType != null)
 			{
 				IPropertyType< ? > type = valueType.getType();
-				if (type instanceof IPropertyConverter)
+				if (type instanceof IPropertyConverterForBrowser)
 				{
 					// good, we now know that it needs special conversion
 					try
 					{
-						return ((IPropertyConverter)type).toJSON(writer, key, value, browserConversionMarkers, new DataConverterContext(valueType, webObject));
+						return ((IPropertyConverterForBrowser)type).toJSON(writer, key, value, valueType, browserConversionMarkers, context);
 					}
 					catch (Exception ex)
 					{
@@ -432,7 +431,7 @@ public class JSONUtils
 					// good, we now know that it needs special conversion
 					try
 					{
-						return ((IWrapperType)type).toJSON(writer, key, value, browserConversionMarkers, new DataConverterContext(valueType, webObject));
+						return ((IWrapperType)type).toJSON(writer, key, value, valueType, browserConversionMarkers, context);
 					}
 					catch (Exception ex)
 					{
@@ -446,10 +445,10 @@ public class JSONUtils
 			IClassPropertyType<Object> classType = (IClassPropertyType<Object>)(value == null ? null : TypesRegistry.getType(value.getClass()));
 			if (classType != null)
 			{
-				return classType.toJSON(writer, key, value, browserConversionMarkers, new DataConverterContext(valueType, webObject));
+				return classType.toJSON(writer, key, value, valueType, browserConversionMarkers, context);
 			}
 
-			if (!defaultToJSONValue(this, writer, key, value, valueType, browserConversionMarkers, webObject))
+			if (!defaultToJSONValue(this, writer, key, value, valueType, browserConversionMarkers, context))
 			{
 				// addKeyIfPresent(w, key);
 				// w = w.value(new JSONObject("{}"));
@@ -469,7 +468,7 @@ public class JSONUtils
 
 		@Override
 		public JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion browserConversionMarkers,
-			BaseWebObject webObject) throws JSONException, IllegalArgumentException
+			IBrowserConverterContext context) throws JSONException, IllegalArgumentException
 		{
 			if (value != null && valueType != null)
 			{
@@ -479,8 +478,7 @@ public class JSONUtils
 					// good, we now know that it can send changes only
 					try
 					{
-						return ((ISupportsGranularUpdates)type).changesToJSON(writer, key, value, browserConversionMarkers, new DataConverterContext(valueType,
-							webObject));
+						return ((ISupportsGranularUpdates)type).changesToJSON(writer, key, value, valueType, browserConversionMarkers, context);
 					}
 					catch (Exception ex)
 					{
@@ -491,7 +489,7 @@ public class JSONUtils
 			}
 
 			// for most values that don't support granular updates use full value to JSON
-			super.toJSONValue(writer, key, value, valueType, browserConversionMarkers, webObject);
+			super.toJSONValue(writer, key, value, valueType, browserConversionMarkers, context);
 
 			return writer;
 		}
@@ -570,8 +568,7 @@ public class JSONUtils
 		}
 	}
 
-	// TODO this can be moved to JSONUtils if we remove the "Pair" dependency
-	public static IJSONStringWithConversions writeToJSONString(IToJSONWriter toJSONWriter, IToJSONConverter converter) throws JSONException
+	public static <X> IJSONStringWithConversions writeToJSONString(IToJSONWriter<X> toJSONWriter, IToJSONConverter<X> converter) throws JSONException
 	{
 		EmbeddableJSONWriter rowData = new EmbeddableJSONWriter();
 		DataConversion clientConversionInfo = new DataConversion();

@@ -25,8 +25,9 @@ import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.WebComponentSpecification;
+import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
 import org.sablo.specification.WebServiceSpecProvider;
-import org.sablo.specification.property.DataConverterContext;
+import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.IClientService;
@@ -79,7 +80,8 @@ public class ClientService extends BaseWebObject implements IClientService
 				{
 					try
 					{
-						return JSONUtils.fromJSONUnwrapped(null, retValue, new DataConverterContext(apiFunction.getReturnType(), this));
+						return JSONUtils.fromJSONUnwrapped(null, retValue, apiFunction.getReturnType(), new BrowserConverterContext(this,
+							PushToServerEnum.allow));
 					}
 					catch (JSONException e)
 					{

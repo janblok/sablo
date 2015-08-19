@@ -36,8 +36,10 @@ import org.sablo.Container;
 import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentApiDefinition;
+import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
+import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.CustomVariableArgsType;
-import org.sablo.specification.property.DataConverterContext;
+import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.impl.ClientService;
 import org.sablo.websocket.utils.DataConversion;
@@ -268,14 +270,14 @@ public class BaseWindow implements IWindow
 	 * @param converter converter for values to json.
 	 * @throws IOException when such an exception occurs.
 	 */
-	protected <ContextT> void sendAsyncMessage(final Map<String, ? > data, final PropertyDescription dataTypes, IToJSONConverter<ContextT> converter)
+	protected void sendAsyncMessage(final Map<String, ? > data, final PropertyDescription dataTypes, IToJSONConverter<IBrowserConverterContext> converter)
 		throws IOException
 	{
-		sendAsyncMessage((data == null || data.size() == 0) ? null : new IToJSONWriter<ContextT>()
+		sendAsyncMessage((data == null || data.size() == 0) ? null : new IToJSONWriter<IBrowserConverterContext>()
 		{
 			@Override
-			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<ContextT> converterParam, DataConversion clientDataConversions)
-				throws JSONException
+			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converterParam,
+				DataConversion clientDataConversions) throws JSONException
 			{
 				if (data != null && data.size() > 0)
 				{
@@ -303,14 +305,14 @@ public class BaseWindow implements IWindow
 	 * @throws CancellationException if cancelled for some reason while waiting for response
 	 * @throws TimeoutException if it timed out while waiting for a response value. This can happen if blockEventProcessing == true.
 	 */
-	protected <ContextT> Object sendSyncMessage(final Map<String, ? > data, final PropertyDescription dataTypes, IToJSONConverter<ContextT> converter,
+	protected Object sendSyncMessage(final Map<String, ? > data, final PropertyDescription dataTypes, IToJSONConverter<IBrowserConverterContext> converter,
 		boolean blockEventProcessing) throws IOException, CancellationException, TimeoutException
 	{
-		return sendSyncMessage((data == null || data.size() == 0) ? null : new IToJSONWriter<ContextT>()
+		return sendSyncMessage((data == null || data.size() == 0) ? null : new IToJSONWriter<IBrowserConverterContext>()
 		{
 			@Override
-			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<ContextT> converterParam, DataConversion clientDataConversions)
-				throws JSONException
+			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converterParam,
+				DataConversion clientDataConversions) throws JSONException
 			{
 				if (data != null && data.size() > 0)
 				{
@@ -333,8 +335,8 @@ public class BaseWindow implements IWindow
 	 * @throws CancellationException if cancelled for some reason while waiting for response
 	 * @throws TimeoutException if it timed out while waiting for a response value. This can happen if blockEventProcessing == true.
 	 */
-	protected <X> Object sendSyncMessage(IToJSONWriter<X> dataWriter, IToJSONConverter<X> converter, boolean blockEventProcessing) throws IOException,
-		CancellationException, TimeoutException
+	protected Object sendSyncMessage(IToJSONWriter<IBrowserConverterContext> dataWriter, IToJSONConverter<IBrowserConverterContext> converter,
+		boolean blockEventProcessing) throws IOException, CancellationException, TimeoutException
 	{
 		Integer messageId = new Integer(nextMessageId.incrementAndGet());
 		String sentText = sendMessageInternal(dataWriter, converter, messageId);
@@ -350,7 +352,8 @@ public class BaseWindow implements IWindow
 	 * @param converter converter for values to json.
 	 * @throws IOException when such an exception occurs.
 	 */
-	protected <X> void sendAsyncMessage(IToJSONWriter<X> dataWriter, IToJSONConverter<X> converter) throws IOException
+	protected void sendAsyncMessage(IToJSONWriter<IBrowserConverterContext> dataWriter, IToJSONConverter<IBrowserConverterContext> converter)
+		throws IOException
 	{
 		sendMessageInternal(dataWriter, converter, null);
 	}
@@ -358,7 +361,8 @@ public class BaseWindow implements IWindow
 	/**
 	 * Returns the text that it really sent...
 	 */
-	protected <X> String sendMessageInternal(IToJSONWriter<X> dataWriter, IToJSONConverter converter, Integer smsgidOptional) throws IOException
+	protected String sendMessageInternal(IToJSONWriter<IBrowserConverterContext> dataWriter, IToJSONConverter<IBrowserConverterContext> converter,
+		Integer smsgidOptional) throws IOException
 	{
 		if (dataWriter == null && serviceCalls.size() == 0 && delayedApiCalls.size() == 0) return null;
 
@@ -392,7 +396,7 @@ public class BaseWindow implements IWindow
 				hasContentToSend = true;
 				clientDataConversions.pushNode("services");
 				FullValueToJSONConverter.INSTANCE.toJSONValue(w, "services", serviceCalls, serviceCallTypes, clientDataConversions,
-					(ClientService)session.getClientService((String)serviceCalls.get(0).get("name")));
+					new BrowserConverterContext((ClientService)session.getClientService((String)serviceCalls.get(0).get("name")), PushToServerEnum.allow));
 				clientDataConversions.popNode();
 			}
 			if (delayedApiCalls.size() > 0)
@@ -416,7 +420,8 @@ public class BaseWindow implements IWindow
 						PropertyDescription callTypes = (PropertyDescription)delayedCall.remove("callTypes");
 						w.object().key("call").object();
 						clientDataConversions.pushNode("calls");
-						JSONUtils.writeData(converter, w, delayedCall, callTypes, clientDataConversions, component);
+						JSONUtils.writeData(converter, w, delayedCall, callTypes, clientDataConversions, new BrowserConverterContext(component,
+							PushToServerEnum.allow));
 						clientDataConversions.popNode();
 						w.endObject().endObject();
 					}
@@ -454,11 +459,11 @@ public class BaseWindow implements IWindow
 	{
 		// TODO this should not send to the currently active end-point, but to each of all end-points their own changes...
 		// so that any change from 1 end-point request ends up in all the end points.
-		sendAsyncMessage(new IToJSONWriter<BaseWebObject>()
+		sendAsyncMessage(new IToJSONWriter<IBrowserConverterContext>()
 		{
 			@Override
-			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<BaseWebObject> converter, DataConversion clientDataConversions)
-				throws JSONException
+			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
+				DataConversion clientDataConversions) throws JSONException
 			{
 				JSONUtils.addKeyIfPresent(w, keyInParent);
 				w.object();
@@ -556,8 +561,8 @@ public class BaseWindow implements IWindow
 	}
 
 	@Override
-	public synchronized boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter converter, DataConversion clientDataConversions)
-		throws JSONException
+	public synchronized boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
+		DataConversion clientDataConversions) throws JSONException
 	{
 		boolean contentHasBeenWritten = false;
 
@@ -581,8 +586,8 @@ public class BaseWindow implements IWindow
 		return contentHasBeenWritten;
 	}
 
-	public boolean writeAllServicesChanges(JSONWriter w, String keyInParent, IToJSONConverter converter, DataConversion clientDataConversions)
-		throws JSONException
+	public boolean writeAllServicesChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
+		DataConversion clientDataConversions) throws JSONException
 	{
 		boolean contentHasBeenWritten = false;
 		for (IClientService service : getSession().getServices().toArray(new IClientService[0])) // toArray is used here to try to avoid a ConcurrentModificationException while looping
@@ -599,7 +604,8 @@ public class BaseWindow implements IWindow
 				String childName = service.getName();
 				w.key(childName).object();
 				clientDataConversions.pushNode(childName);
-				JSONUtils.writeData(converter, w, changes.content, changes.contentType, clientDataConversions, (BaseWebObject)service);
+				JSONUtils.writeData(converter, w, changes.content, changes.contentType, clientDataConversions, new BrowserConverterContext(
+					(BaseWebObject)service, PushToServerEnum.allow));
 				clientDataConversions.popNode();
 				w.endObject();
 			}
@@ -627,10 +633,10 @@ public class BaseWindow implements IWindow
 		}
 		try
 		{
-			Object ret = sendSyncMessage(new IToJSONWriter<BaseWebObject>()
+			Object ret = sendSyncMessage(new IToJSONWriter<IBrowserConverterContext>()
 			{
 				@Override
-				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<BaseWebObject> converter,
+				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
 					DataConversion clientDataConversions) throws JSONException
 				{
 					JSONUtils.addKeyIfPresent(w, keyInParent);
@@ -643,7 +649,7 @@ public class BaseWindow implements IWindow
 					PropertyDescription callTypes = (PropertyDescription)call.remove("callTypes");
 					w.key("call").object();
 					clientDataConversions.pushNode("call");
-					JSONUtils.writeData(converter, w, call, callTypes, clientDataConversions, receiver);
+					JSONUtils.writeData(converter, w, call, callTypes, clientDataConversions, new BrowserConverterContext(receiver, PushToServerEnum.allow));
 					clientDataConversions.popNode();
 					w.endObject();
 
@@ -656,7 +662,7 @@ public class BaseWindow implements IWindow
 			{
 				try
 				{
-					return JSONUtils.fromJSON(null, ret, new DataConverterContext(apiFunction.getReturnType(), receiver));
+					return JSONUtils.fromJSON(null, ret, apiFunction.getReturnType(), new BrowserConverterContext(receiver, PushToServerEnum.allow));
 				}
 				catch (Exception e)
 				{

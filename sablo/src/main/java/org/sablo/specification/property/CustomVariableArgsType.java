@@ -45,15 +45,15 @@ public class CustomVariableArgsType extends CustomJSONPropertyType<Object> imple
 	}
 
 	@Override
-	public Object fromJSON(Object newJSONValue, Object previousSabloValue, IDataConverterContext dataConverterContext)
+	public Object fromJSON(Object newJSONValue, Object previousSabloValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
 	{
 		//not needed for now, this type is for passing variable number of parameters
 		return null;
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, Object sabloValue, DataConversion clientConversion, IDataConverterContext dataConverterContext)
-		throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Object sabloValue, PropertyDescription pd, DataConversion clientConversion,
+		IBrowserConverterContext dataConverterContext) throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
 		writer.array();
@@ -62,13 +62,13 @@ public class CustomVariableArgsType extends CustomJSONPropertyType<Object> imple
 			for (int i = 0; i < ((List)sabloValue).size(); i++)
 			{
 				JSONUtils.FullValueToJSONConverter.INSTANCE.toJSONValue(writer, null, ((List)sabloValue).get(i), getCustomJSONTypeDefinition(),
-					clientConversion, dataConverterContext.getWebObject());
+					clientConversion, dataConverterContext);
 			}
 		}
 		else
 		{
 			JSONUtils.FullValueToJSONConverter.INSTANCE.toJSONValue(writer, null, sabloValue, getCustomJSONTypeDefinition(), clientConversion,
-				dataConverterContext.getWebObject());
+				dataConverterContext);
 		}
 		writer.endArray();
 		return writer;

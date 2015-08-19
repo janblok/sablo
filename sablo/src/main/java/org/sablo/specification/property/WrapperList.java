@@ -18,6 +18,8 @@ package org.sablo.specification.property;
 
 import java.util.List;
 
+import org.sablo.specification.PropertyDescription;
+
 /**
  * This list is able to do the SABLO wrap/unwrap operations that (Sablo) base objects usually do internally.
  * <br/><br/>
@@ -29,21 +31,25 @@ import java.util.List;
 public class WrapperList<ExternalT, BaseT> extends ConvertedList<ExternalT, BaseT> implements IWrappedBaseListProvider
 {
 
-	protected IWrapperType<ExternalT, BaseT> type;
-	protected IDataConverterContext dataConverterContext;
+	protected final IWrapperType<ExternalT, BaseT> type;
+	protected final IWrappingContext dataConverterContext;
+	protected final PropertyDescription pd;
 
-	public WrapperList(List<ExternalT> external, IWrapperType<ExternalT, BaseT> type, IDataConverterContext dataConverterContext, boolean flag) // this last arg is just to disambiguate the between constructors */
+	public WrapperList(List<ExternalT> external, IWrapperType<ExternalT, BaseT> type, PropertyDescription pd, IWrappingContext dataConverterContext,
+		boolean flag) // this last arg is just to disambiguate the between constructors */
 	{
 		super();
 		this.type = type;
+		this.pd = pd;
 		this.dataConverterContext = dataConverterContext;
 		initFromExternal(external);
 	}
 
-	public WrapperList(List<BaseT> base, IWrapperType<ExternalT, BaseT> type, IDataConverterContext dataConverterContext)
+	public WrapperList(List<BaseT> base, IWrapperType<ExternalT, BaseT> type, PropertyDescription pd, IWrappingContext dataConverterContext)
 	{
 		super(base);
 		this.type = type;
+		this.pd = pd;
 		this.dataConverterContext = dataConverterContext;
 	}
 
@@ -56,7 +62,7 @@ public class WrapperList<ExternalT, BaseT> extends ConvertedList<ExternalT, Base
 	@Override
 	protected BaseT convertToBase(int previousIndexOfThisElement, ExternalT value)
 	{
-		return type.wrap(value, previousIndexOfThisElement < 0 ? null : baseList.get(previousIndexOfThisElement), dataConverterContext);
+		return type.wrap(value, previousIndexOfThisElement < 0 ? null : baseList.get(previousIndexOfThisElement), pd, dataConverterContext);
 	}
 
 	public List<BaseT> getWrappedBaseList()

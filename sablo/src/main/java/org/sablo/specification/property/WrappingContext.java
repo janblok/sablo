@@ -15,20 +15,26 @@
  */
 package org.sablo.specification.property;
 
-import org.sablo.specification.PropertyDescription;
-
+import org.sablo.BaseWebObject;
 
 /**
- * Property types that are wrapped into a custom class.<br/>
- * This is also a JSON converting type, but conversions happen to and from wrapped value directly.
+ * Context for wrapping/unwrapping.
  *
- * @author gboros
+ * @author acostescu
  */
-public interface IWrapperType<T, W> extends IPropertyType<T>, IPropertyConverterForBrowser<W>
+public class WrappingContext implements IWrappingContext
 {
 
-	T unwrap(W value);
+	protected final BaseWebObject webObject;
 
-	W wrap(T value, W previousValue, PropertyDescription propertyDescription, IWrappingContext dataConverterContext);
+	public WrappingContext(BaseWebObject webObject)
+	{
+		this.webObject = webObject;
+	}
+
+	public BaseWebObject getWebObject()
+	{
+		return webObject;
+	}
 
 }

@@ -19,7 +19,7 @@ package org.sablo.specification;
 import java.util.List;
 
 import org.json.JSONObject;
-import org.sablo.specification.WebComponentSpecification.PushToServerValue;
+import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
 import org.sablo.specification.property.IPropertyType;
 
 /**
@@ -56,7 +56,7 @@ public interface IYieldingType<T, YT> extends IPropertyType<T>
 	public class YieldDescriptionArguments
 	{
 
-		public YieldDescriptionArguments(Object config, Object defaultValue, List<Object> values, PushToServerValue pushToServer, JSONObject tags,
+		public YieldDescriptionArguments(Object config, Object defaultValue, List<Object> values, PushToServerEnum pushToServer, JSONObject tags,
 			boolean optional)
 		{
 			this.config = config;
@@ -69,7 +69,7 @@ public interface IYieldingType<T, YT> extends IPropertyType<T>
 
 		public final Object defaultValue;
 		public final List<Object> values;
-		public final PushToServerValue pushToServer;
+		public final PushToServerEnum pushToServer;
 		public final JSONObject tags;
 		public final boolean optional;
 

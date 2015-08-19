@@ -22,8 +22,8 @@ import java.util.Locale;
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.property.IDataConverterContext;
-import org.sablo.specification.property.IPropertyConverter;
+import org.sablo.specification.property.IBrowserConverterContext;
+import org.sablo.specification.property.IPropertyConverterForBrowser;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
@@ -33,7 +33,7 @@ import org.sablo.websocket.utils.JSONUtils;
  * @author jcompagner
  *
  */
-public class IntPropertyType extends DefaultPropertyType<Integer> implements IPropertyConverter<Number>
+public class IntPropertyType extends DefaultPropertyType<Integer> implements IPropertyConverterForBrowser<Number>
 {
 
 	public static final IntPropertyType INSTANCE = new IntPropertyType();
@@ -55,7 +55,8 @@ public class IntPropertyType extends DefaultPropertyType<Integer> implements IPr
 		return Integer.valueOf(0);
 	}
 
-	public Number fromJSON(Object newJSONValue, Number previousSabloValue, IDataConverterContext dataConverterContext)
+	@Override
+	public Number fromJSON(Object newJSONValue, Number previousSabloValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
 	{
 		if (newJSONValue == null || newJSONValue instanceof Integer) return (Integer)newJSONValue;
 		if (newJSONValue instanceof Number) return Integer.valueOf(((Number)newJSONValue).intValue());
@@ -79,8 +80,8 @@ public class IntPropertyType extends DefaultPropertyType<Integer> implements IPr
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, Number sabloValue, DataConversion clientConversion, IDataConverterContext dataConverterContext)
-		throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Number sabloValue, PropertyDescription pd, DataConversion clientConversion,
+		IBrowserConverterContext dataConverterContext) throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
 		writer.value(sabloValue);

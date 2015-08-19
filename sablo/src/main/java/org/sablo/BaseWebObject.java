@@ -33,12 +33,14 @@ import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebComponentSpecification;
-import org.sablo.specification.WebComponentSpecification.PushToServerValue;
-import org.sablo.specification.property.DataConverterContext;
+import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
+import org.sablo.specification.property.BrowserConverterContext;
+import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.ISmartPropertyValue;
 import org.sablo.specification.property.IWrapperType;
+import org.sablo.specification.property.WrappingContext;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.specification.property.types.ProtectedConfig;
 import org.sablo.specification.property.types.VisiblePropertyType;
@@ -56,8 +58,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BaseWebObject
 {
-	private static final List<PushToServerValue> PUSH_TO_SERVER_ALLOW = Arrays.asList(PushToServerValue.allow, PushToServerValue.shallow,
-		PushToServerValue.deep);
+	private static final List<PushToServerEnum> PUSH_TO_SERVER_ALLOW = Arrays.asList(PushToServerEnum.allow, PushToServerEnum.shallow, PushToServerEnum.deep);
 
 	private static final TypedData<Map<String, Object>> EMPTY_PROPERTIES = new TypedData<Map<String, Object>>(Collections.<String, Object> emptyMap(), null);
 
@@ -640,8 +641,8 @@ public abstract class BaseWebObject
 		return dirty ? changedProperties.add(key) : changedProperties.remove(key);
 	}
 
-	protected boolean writeComponentProperties(JSONWriter w, IToJSONConverter converter, String nodeName, DataConversion clientDataConversions)
-		throws JSONException
+	protected boolean writeComponentProperties(JSONWriter w, IToJSONConverter<IBrowserConverterContext> converter, String nodeName,
+		DataConversion clientDataConversions) throws JSONException
 	{
 		TypedData<Map<String, Object>> typedProperties = getProperties();
 		if (typedProperties.content.isEmpty())
@@ -669,7 +670,7 @@ public abstract class BaseWebObject
 			}
 		}
 
-		JSONUtils.writeData(converter, w, data, typedProperties.contentType, clientDataConversions, this);
+		JSONUtils.writeData(converter, w, data, typedProperties.contentType, clientDataConversions, new BrowserConverterContext(this, PushToServerEnum.allow));
 		clientDataConversions.popNode();
 		w.endObject();
 
@@ -681,7 +682,7 @@ public abstract class BaseWebObject
 	{
 		PropertyDescription propertyDesc = specification.getProperty(propertyName);
 		IPropertyType<Object> type = propertyDesc != null ? (IPropertyType<Object>)propertyDesc.getType() : null;
-		Object object = (type instanceof IWrapperType) ? ((IWrapperType)type).wrap(newValue, oldValue, new DataConverterContext(propertyDesc, this)) : newValue;
+		Object object = (type instanceof IWrapperType) ? ((IWrapperType)type).wrap(newValue, oldValue, propertyDesc, new WrappingContext(this)) : newValue;
 		if (type instanceof IClassPropertyType && object != null && !((IClassPropertyType< ? >)type).getTypeClass().isAssignableFrom(object.getClass()))
 		{
 			log.info("property: " + propertyName + " of component " + getName() + " set with value: " + newValue + " which is not of type: " +
@@ -710,7 +711,8 @@ public abstract class BaseWebObject
 		if (newJSONValue == JSONObject.NULL) newJSONValue = null;
 
 		PropertyDescription propertyDesc = specification.getProperty(propertyName);
-		Object value = propertyDesc != null ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, new DataConverterContext(propertyDesc, this)) : null;
+		Object value = propertyDesc != null ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDesc, new BrowserConverterContext(this,
+			propertyDesc.getPushToServer())) : null;
 		return value;
 	}
 

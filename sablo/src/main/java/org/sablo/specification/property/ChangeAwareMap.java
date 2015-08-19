@@ -46,7 +46,6 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	private int version;
 
 	protected IPropertyType<ET> type;
-	protected IDataConverterContext dataConverterContext;
 	protected Map<String, ET> baseMap;
 
 	protected Map<String, KeyChangeListener> changeHandlers = new HashMap<>();
@@ -62,14 +61,13 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 
 	protected EntrySet entrySet;
 
-	public ChangeAwareMap(Map<String, ET> baseMap, IDataConverterContext dataConverterContext)
+	public ChangeAwareMap(Map<String, ET> baseMap)
 	{
-		this(baseMap, dataConverterContext, 1);
+		this(baseMap, 1);
 	}
 
-	public ChangeAwareMap(Map<String, ET> baseMap, IDataConverterContext dataConverterContext, int initialVersion)
+	public ChangeAwareMap(Map<String, ET> baseMap, int initialVersion)
 	{
-		this.dataConverterContext = dataConverterContext;
 		this.baseMap = baseMap;
 		this.version = initialVersion;
 

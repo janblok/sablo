@@ -19,8 +19,9 @@ import java.util.Date;
 
 import org.json.JSONException;
 import org.json.JSONWriter;
+import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
-import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 
@@ -54,15 +55,15 @@ public class DatePropertyType extends DefaultPropertyType<Date> implements IClas
 	}
 
 	@Override
-	public Date fromJSON(Object newValue, Date previousValue, IDataConverterContext dataConverterContext)
+	public Date fromJSON(Object newValue, Date previousValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
 	{
 		if (newValue instanceof Long) return new Date(((Long)newValue).longValue());
 		return null;
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, Date value, DataConversion clientConversion, IDataConverterContext dataConverterContext)
-		throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Date value, PropertyDescription pd, DataConversion clientConversion,
+		IBrowserConverterContext dataConverterContext) throws JSONException
 	{
 		if (clientConversion != null) clientConversion.convert("Date");
 		JSONUtils.addKeyIfPresent(writer, key);

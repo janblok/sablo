@@ -25,7 +25,9 @@ import org.json.JSONString;
 import org.sablo.Container;
 import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.property.DataConverterContext;
+import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
+import org.sablo.specification.property.BrowserConverterContext;
+import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.IEventDispatchAwareServerService;
 import org.sablo.websocket.IWebsocketEndpoint;
@@ -158,7 +160,7 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 		return initialFormDataWriter;
 	}
 
-	protected IToJSONConverter getInitialRequestDataConverter()
+	protected IToJSONConverter<IBrowserConverterContext> getInitialRequestDataConverter()
 	{
 		return FullValueToJSONConverter.INSTANCE;
 	}
@@ -191,11 +193,11 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 					Object oldValue = oldvalues.opt(key);
 					Object currentValue = webComponent.getProperty(key);
 					PropertyDescription propertyDesc = webComponent.getSpecification().getProperty(key);
-					oldValue = propertyDesc != null ? JSONUtils.fromJSON(null, oldValue, new DataConverterContext(propertyDesc, webComponent)) : null;
+					oldValue = propertyDesc != null ? JSONUtils.fromJSON(null, oldValue, propertyDesc, new BrowserConverterContext(webComponent,
+						PushToServerEnum.allow)) : null;
 					if (oldValue != null && currentValue != null && !oldValue.equals(currentValue))
 					{
-						if (!(oldValue instanceof Number && currentValue instanceof Number &&
-							((Number)oldValue).doubleValue() == ((Number)currentValue).doubleValue()))
+						if (!(oldValue instanceof Number && currentValue instanceof Number && ((Number)oldValue).doubleValue() == ((Number)currentValue).doubleValue()))
 						{
 							log.trace("skipping setting key " + key + " to the the value " + changes.get(key) +
 								" because the the current value in the component " + currentValue + " is not equals to old value the browser has " + oldValue);

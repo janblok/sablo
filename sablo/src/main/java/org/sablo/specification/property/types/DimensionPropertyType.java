@@ -21,8 +21,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
-import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 
@@ -47,7 +47,7 @@ public class DimensionPropertyType extends DefaultPropertyType<Dimension> implem
 	}
 
 	@Override
-	public Dimension fromJSON(Object newValue, Dimension previousValue, IDataConverterContext dataConverterContext)
+	public Dimension fromJSON(Object newValue, Dimension previousValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
 	{
 		if (newValue instanceof JSONObject)
 		{
@@ -58,8 +58,8 @@ public class DimensionPropertyType extends DefaultPropertyType<Dimension> implem
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, Dimension object, DataConversion clientConversion, IDataConverterContext dataConverterContext)
-		throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Dimension object, PropertyDescription pd, DataConversion clientConversion,
+		IBrowserConverterContext dataConverterContext) throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
 		return writer.object().key("width").value(object.getWidth()).key("height").value(object.getHeight()).endObject();

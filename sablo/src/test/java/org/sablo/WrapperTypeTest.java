@@ -31,8 +31,10 @@ import org.junit.Test;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
-import org.sablo.specification.property.IDataConverterContext;
+import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IWrapperType;
+import org.sablo.specification.property.IWrappingContext;
+import org.sablo.specification.property.WrappingContext;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.specification.property.types.TypesRegistry;
 import org.sablo.websocket.TypedData;
@@ -79,7 +81,7 @@ public class WrapperTypeTest
 		}
 
 		@Override
-		public MyWrapper wrap(String value, MyWrapper previousValue, IDataConverterContext dataConverterContext)
+		public MyWrapper wrap(String value, MyWrapper previousValue, PropertyDescription pd, IWrappingContext dataConverterContext)
 		{
 			if (previousValue == null) previousValue = new MyWrapper();
 			previousValue.string = value;
@@ -88,22 +90,26 @@ public class WrapperTypeTest
 		}
 
 		@Override
-		public MyWrapper fromJSON(Object newValue, MyWrapper previousValue, IDataConverterContext dataConverterContext)
+		public MyWrapper fromJSON(Object newValue, MyWrapper previousValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
 		{
 			if (newValue instanceof JSONObject)
 			{
-				return wrap(((JSONObject)newValue).optString("string"), previousValue, dataConverterContext);
+				if (dataConverterContext instanceof IWrappingContext) return wrap(((JSONObject)newValue).optString("string"), previousValue, pd,
+					(IWrappingContext)dataConverterContext);
+				else return wrap(((JSONObject)newValue).optString("string"), previousValue, pd, new WrappingContext(dataConverterContext.getWebObject()));
+
 			}
 			else if (newValue instanceof String)
 			{
-				return wrap((String)newValue, previousValue, dataConverterContext);
+				if (dataConverterContext instanceof IWrappingContext) return wrap((String)newValue, previousValue, pd, (IWrappingContext)dataConverterContext);
+				else return wrap((String)newValue, previousValue, pd, new WrappingContext(dataConverterContext.getWebObject()));
 			}
 			return null;
 		}
 
 		@Override
-		public JSONWriter toJSON(JSONWriter writer, String key, MyWrapper object, DataConversion clientConversion, IDataConverterContext dataConverterContext)
-			throws JSONException
+		public JSONWriter toJSON(JSONWriter writer, String key, MyWrapper object, PropertyDescription pd, DataConversion clientConversion,
+			IBrowserConverterContext dataConverterContext) throws JSONException
 		{
 			JSONUtils.addKeyIfPresent(writer, key);
 			writer.object();

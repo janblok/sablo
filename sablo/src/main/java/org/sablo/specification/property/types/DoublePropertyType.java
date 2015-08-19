@@ -22,8 +22,8 @@ import java.util.Locale;
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.property.IDataConverterContext;
-import org.sablo.specification.property.IPropertyConverter;
+import org.sablo.specification.property.IBrowserConverterContext;
+import org.sablo.specification.property.IPropertyConverterForBrowser;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
@@ -33,7 +33,7 @@ import org.sablo.websocket.utils.JSONUtils;
  * @author jcompagner
  *
  */
-public class DoublePropertyType extends DefaultPropertyType<Double> implements IPropertyConverter<Number>
+public class DoublePropertyType extends DefaultPropertyType<Double> implements IPropertyConverterForBrowser<Number>
 {
 	public static final DoublePropertyType INSTANCE = new DoublePropertyType();
 	public static final String TYPE_NAME = "double";
@@ -55,7 +55,7 @@ public class DoublePropertyType extends DefaultPropertyType<Double> implements I
 	}
 
 	@Override
-	public Number fromJSON(Object newJSONValue, Number previousSabloValue, IDataConverterContext dataConverterContext)
+	public Number fromJSON(Object newJSONValue, Number previousSabloValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
 	{
 		if (newJSONValue == null || newJSONValue instanceof Double) return (Double)newJSONValue;
 		if (newJSONValue instanceof Number) return Double.valueOf(((Number)newJSONValue).doubleValue());
@@ -79,8 +79,8 @@ public class DoublePropertyType extends DefaultPropertyType<Double> implements I
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, Number sabloValue, DataConversion clientConversion, IDataConverterContext dataConverterContext)
-		throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Number sabloValue, PropertyDescription pd, DataConversion clientConversion,
+		IBrowserConverterContext dataConverterContext) throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
 		if (sabloValue != null && Double.isNaN(sabloValue.doubleValue())) writer.value(null);

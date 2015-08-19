@@ -22,7 +22,7 @@ import java.util.Collection;
 
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentSpecification;
-import org.sablo.specification.WebComponentSpecification.PushToServerValue;
+import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
 
 /**
  * In order to improve performance, not all properties on all components/services are watched for client/browser changes in angular.
@@ -64,7 +64,7 @@ public class ModifiablePropertiesGenerator
 			Collection<PropertyDescription> pushToServerWatchProps = new ArrayList<>();
 			for (PropertyDescription desc : webComponentSpec.getProperties().values())
 			{
-				if (desc.getPushToServer() == PushToServerValue.deep || desc.getPushToServer() == PushToServerValue.shallow)
+				if (desc.getPushToServer() == PushToServerEnum.deep || desc.getPushToServer() == PushToServerEnum.shallow)
 				{
 					pushToServerWatchProps.add(desc);
 				}
@@ -85,7 +85,7 @@ public class ModifiablePropertiesGenerator
 					w.print("      '");
 					w.print(prop.getName());
 					w.print("': ");
-					w.print(prop.getPushToServer() == PushToServerValue.deep);
+					w.print(prop.getPushToServer() == PushToServerEnum.deep);
 				}
 				if (!first2) w.println("");
 				w.print("    }");

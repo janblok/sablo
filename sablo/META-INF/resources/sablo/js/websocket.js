@@ -5,7 +5,9 @@ var webSocketModule = angular.module('webSocketModule', ['pushToServerData']);
 
 // declare module pushToServer that generated module "pushToServerData" depends on - so that all pushToServer information is already present when starting 'webSocketModule'
 angular.module('pushToServer', []).factory('$propertyWatchesRegistry', function () {
-	var propertiesThatShouldBeAutoPushedToServer = {}; // key == ("components" or "services"), value = property names in the model that should be watched (for sending back to server the value); see setAutoWatchPropertiesList "autoWatchPropertiesPerBaseWebObject" argument for details
+	var propertiesThatShouldBeAutoPushedToServer = {}; // key == ("components" or "services"), value is something like {
+	//                                                           "pck1Component1" : { "myDeepWatchedProperty" : true, "myShallowWatchedProperty" : false }
+	//                                                       }
 	
 	function getPropertiesToAutoWatchForComponent(componentTypeName) {
 		return propertiesThatShouldBeAutoPushedToServer["components"][componentTypeName];

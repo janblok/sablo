@@ -25,6 +25,7 @@ import org.sablo.Container;
 import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentApiDefinition;
+import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.websocket.IWebsocketEndpoint;
 import org.sablo.websocket.IWebsocketSession;
 import org.sablo.websocket.IWindow;
@@ -168,8 +169,8 @@ public class WebsocketSessionWindows implements IWindow
 	}
 
 	@Override
-	public boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter converter, DataConversion clientDataConversions)
-		throws JSONException
+	public boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
+		DataConversion clientDataConversions) throws JSONException
 	{
 		return false;
 	}

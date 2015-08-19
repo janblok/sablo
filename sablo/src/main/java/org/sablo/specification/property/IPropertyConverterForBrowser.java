@@ -13,22 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.sablo.specification.property;
 
-import org.sablo.specification.PropertyDescription;
+package org.sablo.specification.property;
 
 
 /**
- * Property types that are wrapped into a custom class.<br/>
- * This is also a JSON converting type, but conversions happen to and from wrapped value directly.
+ * A property type that needs special (JSON) conversion for web-socket traffic.<br/>
  *
- * @author gboros
+ * @author acostescu
+ * @param JT java class type to and from which JSON conversions take place.
  */
-public interface IWrapperType<T, W> extends IPropertyType<T>, IPropertyConverterForBrowser<W>
+public interface IPropertyConverterForBrowser<JT> extends IPropertyConverter<JT, IBrowserConverterContext>
 {
-
-	T unwrap(W value);
-
-	W wrap(T value, W previousValue, PropertyDescription propertyDescription, IWrappingContext dataConverterContext);
 
 }

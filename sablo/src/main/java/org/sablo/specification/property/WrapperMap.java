@@ -18,6 +18,8 @@ package org.sablo.specification.property;
 
 import java.util.Map;
 
+import org.sablo.specification.PropertyDescription;
+
 /**
  * This map is able to do the SABLO wrap/unwrap operations that (Sablo) base objects usually do internally.
  * <br/><br/>
@@ -30,21 +32,24 @@ import java.util.Map;
 public class WrapperMap<ExternalT, BaseT> extends ConvertedMap<ExternalT, BaseT> implements IWrappedBaseMapProvider
 {
 
-	protected Map<String, IWrapperType<ExternalT, BaseT>> types;
-	protected IDataConverterContext dataConverterContext;
+	protected final Map<String, IWrapperType<ExternalT, BaseT>> types;
+	protected final IWrappingContext dataConverterContext;
+	protected final PropertyDescription pd;
 
-	public WrapperMap(Map<String, ExternalT> external, Map<String, IWrapperType<ExternalT, BaseT>> types, IDataConverterContext dataConverterContext,
-		boolean dummyFlag) // this last arg is just to disambiguate the between constructors */
+	public WrapperMap(Map<String, ExternalT> external, Map<String, IWrapperType<ExternalT, BaseT>> types, PropertyDescription pd,
+		IWrappingContext dataConverterContext, boolean dummyFlag) // this last arg is just to disambiguate the between constructors */
 	{
 		super();
+		this.pd = pd;
 		this.types = types;
 		this.dataConverterContext = dataConverterContext;
 		initFromExternal(external);
 	}
 
-	public WrapperMap(Map<String, BaseT> base, Map<String, IWrapperType<ExternalT, BaseT>> types, IDataConverterContext dataConverterContext)
+	public WrapperMap(Map<String, BaseT> base, Map<String, IWrapperType<ExternalT, BaseT>> types, PropertyDescription pd, IWrappingContext dataConverterContext)
 	{
 		super(base);
+		this.pd = pd;
 		this.types = types;
 		this.dataConverterContext = dataConverterContext;
 	}
@@ -60,7 +65,7 @@ public class WrapperMap<ExternalT, BaseT> extends ConvertedMap<ExternalT, BaseT>
 	protected BaseT convertToBase(String key, boolean ignoreOldValue, ExternalT value)
 	{
 		IWrapperType<ExternalT, BaseT> wt = types.get(key);
-		return wt != null ? wt.wrap(value, key == null ? null : baseMap.get(key), dataConverterContext) : (BaseT)value;
+		return wt != null ? wt.wrap(value, key == null ? null : baseMap.get(key), pd, dataConverterContext) : (BaseT)value;
 	}
 
 	public Map<String, BaseT> getWrappedBaseMap()

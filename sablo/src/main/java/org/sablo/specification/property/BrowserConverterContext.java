@@ -16,34 +16,21 @@
 package org.sablo.specification.property;
 
 import org.sablo.BaseWebObject;
-import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
 
 /**
  * Context for data converters
  * @author gboros
  */
-public class DataConverterContext implements IDataConverterContext
+public class BrowserConverterContext extends WrappingContext implements IBrowserConverterContext
 {
 
-	private final PropertyDescription propertyDescription;
-	private final BaseWebObject webObject;
+	private final PushToServerEnum parentPropertyPushToServerValue;
 
-	public DataConverterContext(PropertyDescription propertyDescription, BaseWebObject webObject)
+	public BrowserConverterContext(BaseWebObject webObject, PushToServerEnum rootPropertyPushToServerValue)
 	{
-		this.propertyDescription = propertyDescription;
-		this.webObject = webObject;
-	}
-
-	@Override
-	public PropertyDescription getPropertyDescription()
-	{
-		return propertyDescription;
-	}
-
-	@Override
-	public BaseWebObject getWebObject()
-	{
-		return webObject;
+		super(webObject);
+		this.parentPropertyPushToServerValue = rootPropertyPushToServerValue;
 	}
 
 	@Override
@@ -51,7 +38,7 @@ public class DataConverterContext implements IDataConverterContext
 	{
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((propertyDescription == null) ? 0 : propertyDescription.hashCode());
+		result = prime * result + ((parentPropertyPushToServerValue == null) ? 0 : parentPropertyPushToServerValue.hashCode());
 		result = prime * result + ((webObject == null) ? 0 : webObject.hashCode());
 		return result;
 	}
@@ -62,18 +49,24 @@ public class DataConverterContext implements IDataConverterContext
 		if (this == obj) return true;
 		if (obj == null) return false;
 		if (getClass() != obj.getClass()) return false;
-		DataConverterContext other = (DataConverterContext)obj;
-		if (propertyDescription == null)
+		BrowserConverterContext other = (BrowserConverterContext)obj;
+		if (parentPropertyPushToServerValue == null)
 		{
-			if (other.propertyDescription != null) return false;
+			if (other.parentPropertyPushToServerValue != null) return false;
 		}
-		else if (!propertyDescription.equals(other.propertyDescription)) return false;
+		else if (!parentPropertyPushToServerValue.equals(other.parentPropertyPushToServerValue)) return false;
 		if (webObject == null)
 		{
 			if (other.webObject != null) return false;
 		}
 		else if (!webObject.equals(other.webObject)) return false;
 		return true;
+	}
+
+	@Override
+	public PushToServerEnum getParentPropertyPushToServerValue()
+	{
+		return parentPropertyPushToServerValue;
 	}
 
 }

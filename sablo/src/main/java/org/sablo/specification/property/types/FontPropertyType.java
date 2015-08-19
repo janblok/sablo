@@ -20,8 +20,9 @@ import java.awt.Font;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
+import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
-import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 
@@ -46,7 +47,7 @@ public class FontPropertyType extends DefaultPropertyType<Font> implements IClas
 	}
 
 	@Override
-	public Font fromJSON(Object newValue, Font previousValue, IDataConverterContext dataConverterContext)
+	public Font fromJSON(Object newValue, Font previousValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
 	{
 		String fontFamily = previousValue != null ? previousValue.getFamily() : null;
 		int size = previousValue != null ? previousValue.getSize() : 12;
@@ -77,8 +78,8 @@ public class FontPropertyType extends DefaultPropertyType<Font> implements IClas
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter w, String key, Font font, DataConversion clientConversion, IDataConverterContext dataConverterContext)
-		throws JSONException
+	public JSONWriter toJSON(JSONWriter w, String key, Font font, PropertyDescription pd, DataConversion clientConversion,
+		IBrowserConverterContext dataConverterContext) throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(w, key);
 		w.object();

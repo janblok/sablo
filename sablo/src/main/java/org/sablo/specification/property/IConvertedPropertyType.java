@@ -22,7 +22,7 @@ package org.sablo.specification.property;
  *
  * @author acostescu
  */
-public interface IConvertedPropertyType<T> extends IPropertyType<T>, IPropertyConverter<T>
+public interface IConvertedPropertyType<T> extends IPropertyType<T>, IPropertyConverterForBrowser<T>
 {
 
 }

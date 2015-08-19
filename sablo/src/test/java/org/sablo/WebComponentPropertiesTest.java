@@ -32,7 +32,7 @@ import org.junit.Test;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
-import org.sablo.specification.WebComponentSpecification.PushToServerValue;
+import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
 
 /**
  * @author rgansevles
@@ -169,10 +169,10 @@ public class WebComponentPropertiesTest
 	{
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 
-		assertSame(PushToServerValue.reject, testcomponent.getSpecification().getProperty("p2sreject").getPushToServer());
-		assertSame(PushToServerValue.reject, testcomponent.getSpecification().getProperty("p2sdefault1").getPushToServer());
-		assertSame(PushToServerValue.reject, testcomponent.getSpecification().getProperty("p2sdefault2").getPushToServer());
-		assertSame(PushToServerValue.deep, testcomponent.getSpecification().getProperty("p2sdeep").getPushToServer());
-		assertSame(PushToServerValue.shallow, testcomponent.getSpecification().getProperty("p2sshallow").getPushToServer());
+		assertSame(PushToServerEnum.reject, testcomponent.getSpecification().getProperty("p2sreject").getPushToServer());
+		assertSame(PushToServerEnum.reject, testcomponent.getSpecification().getProperty("p2sdefault1").getPushToServer());
+		assertSame(PushToServerEnum.reject, testcomponent.getSpecification().getProperty("p2sdefault2").getPushToServer());
+		assertSame(PushToServerEnum.deep, testcomponent.getSpecification().getProperty("p2sdeep").getPushToServer());
+		assertSame(PushToServerEnum.shallow, testcomponent.getSpecification().getProperty("p2sshallow").getPushToServer());
 	}
 }

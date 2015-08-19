@@ -18,15 +18,16 @@ package org.sablo.specification.property;
 
 import org.json.JSONException;
 import org.json.JSONWriter;
+import org.sablo.specification.PropertyDescription;
 import org.sablo.websocket.utils.DataConversion;
 
 /**
- * A property type that needs special (JSON) conversion for web-socket traffic.<br/>
+ * A property type that needs special (JSON) conversion (for example for web-socket traffic).<br/>
  *
  * @author acostescu
  * @param JT java class type to and from which JSON conversions take place.
  */
-public interface IPropertyConverter<JT>
+public interface IPropertyConverter<JT, ContextT>
 {
 
 	/**
@@ -37,10 +38,11 @@ public interface IPropertyConverter<JT>
 	 *
 	 * @param newJSONValue the JSON received from browser (can be whole value or just updates).
 	 * @param previousValue the previous value of this property as available in the component.
-	 * @param dataConverterContext runtime context
+	 * @param propertyDescription the description of the property that is being converted.
+	 * @param context runtime context
 	 * @return the new sablo value for this property to be put in component.
 	 */
-	JT fromJSON(Object newJSONValue, JT previousSabloValue, IDataConverterContext dataConverterContext);
+	JT fromJSON(Object newJSONValue, JT previousSabloValue, PropertyDescription propertyDescription, ContextT context);
 
 	/**
 	 * It generates (full value) JSON that will be sent to the browser for the given property value. So this sends the entire value
@@ -50,16 +52,17 @@ public interface IPropertyConverter<JT>
 	 * @param key if this value will be part of a JSONObject then key is non-null and you MUST do writer.key(...) before adding the converted value. This
 	 * is useful for cases when you don't want the value written at all in resulting JSON in which case you don't write neither key or value. If
 	 * key is null and you want to write the converted value write only the converted value to the writer, ignore the key.
-	 * @param object the value to convert to JSON.
+	 * @param sabloValue the value to convert to JSON.
+	 * @param propertyDescription the description of the property that is being converted.
 	 * @param clientConversion can be use to mark needed client/browser side conversion types.
 	 * @param fullValue if true, a full value is requested from the property, as if no other value was previously available client side; if false, then
 	 * only changes are requested. For most types this flag can be ignored and the whole value sent. It is only useful for types that can send granular
 	 * updates and have their own JSON protocol (for example object and array types are implemented to support this).
-	 * @param dataConverterContext runtime context
+	 * @param context runtime context
 	 * @return the writer for cascaded usage.
 	 * @throws JSONException if a JSON exception happens.
 	 */
-	JSONWriter toJSON(JSONWriter writer, String key, JT sabloValue, DataConversion clientConversion, IDataConverterContext dataConverterContext)
-		throws JSONException;
+	JSONWriter toJSON(JSONWriter writer, String key, JT sabloValue, PropertyDescription propertyDescription, DataConversion clientConversion,
+		ContextT dataConverterContext) throws JSONException;
 
 }

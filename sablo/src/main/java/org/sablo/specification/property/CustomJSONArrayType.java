@@ -27,6 +27,7 @@ import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.sablo.BaseWebObject;
 import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
@@ -39,7 +40,7 @@ import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
  */
 @SuppressWarnings("nls")
 public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> implements IAdjustablePropertyType<Object>,
-	IWrapperType<Object, ChangeAwareList<ET, WT>>, ISupportsGranularUpdates<ChangeAwareList<ET, WT>>
+	IWrapperType<Object, ChangeAwareList<ET, WT>>, ISupportsGranularUpdates<ChangeAwareList<ET, WT>>, IPushToServerSpecialType
 {
 
 	public static final String TYPE_NAME = "JSON_arr";
@@ -48,6 +49,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 	protected static final String UPDATES = "u";
 	protected static final String INDEX = "i";
 	protected static final String VALUE = "v";
+	protected static final String PUSH_TO_SERVER = "w";
 	protected static final String INITIALIZE = "in";
 	protected static final String NO_OP = "n";
 
@@ -76,16 +78,16 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 	}
 
 	@Override
-	public ChangeAwareList<ET, WT> wrap(Object value, ChangeAwareList<ET, WT> previousValue, IDataConverterContext dataConverterContext)
+	public ChangeAwareList<ET, WT> wrap(Object value, ChangeAwareList<ET, WT> previousValue, PropertyDescription pd, IWrappingContext dataConverterContext)
 	{
 		if (value instanceof ChangeAwareList< ? , ? >) return (ChangeAwareList<ET, WT>)value;
 
-		List<ET> wrappedList = wrapList(value, dataConverterContext);
+		List<ET> wrappedList = wrapList(value, pd, dataConverterContext);
 		if (wrappedList != null)
 		{
 			// ok now we have the list or wrap list (depending on if type is IWrapperType or not)
 			// wrap this further into a change-aware list; this is used to be able to track changes and perform server to browser full or granular updates
-			return new ChangeAwareList<ET, WT>(wrappedList, dataConverterContext, previousValue != null ? previousValue.getListContentVersion() + 1 : 1);
+			return new ChangeAwareList<ET, WT>(wrappedList/* , dataConverterContext */, previousValue != null ? previousValue.getListContentVersion() + 1 : 1);
 		}
 		return null;
 	}
@@ -95,7 +97,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 		return (IPropertyType<ET>)getCustomJSONTypeDefinition().getType();
 	}
 
-	private List<ET> wrapList(Object value, IDataConverterContext dataConverterContext)
+	private List<ET> wrapList(Object value, PropertyDescription pd, IWrappingContext dataConverterContext)
 	{
 		// this type will wrap (if needed; that means it will end up as a normal list if element type is not wrapped type
 		// or a WrapperList otherwise) an [] or List into a list; unwrap will simply return that list that will further
@@ -123,13 +125,13 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 			else
 			{
 				log.error("The value of this the property was supposed to be a native Array, a List or null, but it was " +
-					value.getClass().getCanonicalName() + ".\nProperty description: " + dataConverterContext.getPropertyDescription());
+					value.getClass().getCanonicalName() + ".\nProperty description: " + pd);
 				return null;
 			}
 
 			if (elementType instanceof IWrapperType< ? , ? >)
 			{
-				return new WrapperList<ET, WT>(baseList, (IWrapperType<ET, WT>)elementType, dataConverterContext, true);
+				return new WrapperList<ET, WT>(baseList, (IWrapperType<ET, WT>)elementType, pd, dataConverterContext, true);
 			}
 			else
 			{
@@ -140,8 +142,11 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 	}
 
 	@Override
-	public ChangeAwareList<ET, WT> fromJSON(Object newJSONValue, ChangeAwareList<ET, WT> previousChangeAwareList, IDataConverterContext dataConverterContext)
+	public ChangeAwareList<ET, WT> fromJSON(Object newJSONValue, ChangeAwareList<ET, WT> previousChangeAwareList, PropertyDescription pd,
+		IBrowserConverterContext dataConverterContext)
 	{
+		PushToServerEnum pushToServer = dataConverterContext.getParentPropertyPushToServerValue();
+
 		if (newJSONValue instanceof JSONObject)
 		{
 			JSONObject clientReceivedJSON = (JSONObject)newJSONValue;
@@ -155,49 +160,70 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 					{
 						if (previousChangeAwareList == null)
 						{
-							log.warn("property " + dataConverterContext.getPropertyDescription().getName() +
+							log.warn("property " + pd.getName() +
 								" is typed as array; it got browser updates but server-side it is null; ignoring browser update.");
 						}
 						else
 						{
-							JSONObject updates = (JSONObject)newJSONValue;
-
-							// here we operate directly on (wrapper) base list as this change doesn't need to be sent back to browser
-							// as browser initiated it; also JSON conversions work on wrapped values
-							List<WT> wrappedBaseListReadOnly = previousChangeAwareList.getWrappedBaseListForReadOnly();
-
-							JSONArray updatedRows = updates.getJSONArray(UPDATES);
-							for (int i = updatedRows.length() - 1; i >= 0; i--)
+							if ((getCustomJSONTypeDefinition().getType() instanceof IPushToServerSpecialType && ((IPushToServerSpecialType)getCustomJSONTypeDefinition().getType()).shouldAlwaysAllowIncommingJSON()) ||
+								PushToServerEnum.allow.compareTo(pushToServer) <= 0)
 							{
-								JSONObject row = updatedRows.getJSONObject(i);
-								int idx = row.getInt(INDEX);
-								Object val = row.get(VALUE);
+								JSONObject updates = (JSONObject)newJSONValue;
 
-								if (wrappedBaseListReadOnly.size() > idx)
+								// here we operate directly on (wrapper) base list as this change doesn't need to be sent back to browser
+								// as browser initiated it; also JSON conversions work on wrapped values
+								List<WT> wrappedBaseListReadOnly = previousChangeAwareList.getWrappedBaseListForReadOnly();
+
+								JSONArray updatedRows = updates.getJSONArray(UPDATES);
+								for (int i = updatedRows.length() - 1; i >= 0; i--)
 								{
-									WT newWrappedEl = (WT)JSONUtils.fromJSON(wrappedBaseListReadOnly.get(idx), val, new DataConverterContext(
-										getCustomJSONTypeDefinition(), dataConverterContext.getWebObject()));
-									previousChangeAwareList.setInWrappedBaseList(idx, newWrappedEl, false);
+									JSONObject row = updatedRows.getJSONObject(i);
+									int idx = row.getInt(INDEX);
+									Object val = row.get(VALUE);
+
+									if (wrappedBaseListReadOnly.size() > idx)
+									{
+										WT newWrappedEl = (WT)JSONUtils.fromJSON(wrappedBaseListReadOnly.get(idx), val, getCustomJSONTypeDefinition(),
+											dataConverterContext);
+										previousChangeAwareList.setInWrappedBaseList(idx, newWrappedEl, false);
+									}
+									else
+									{
+										log.error("Custom array property updates from browser are incorrect. Index out of bounds: idx (" +
+											wrappedBaseListReadOnly.size() + ")");
+									}
 								}
-								else
-								{
-									log.error("Custom array property updates from browser are incorrect. Index out of bounds: idx (" +
-										wrappedBaseListReadOnly.size() + ")");
-								}
+							}
+							else
+							{
+								log.error("Property (" +
+									pd +
+									") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to update array element values serverside. Denying and attempting to send back full value!");
+								if (previousChangeAwareList != null) previousChangeAwareList.markAllChanged();
+								return previousChangeAwareList;
 							}
 						}
 						return previousChangeAwareList;
 					}
 					else
 					{
+						if (PushToServerEnum.allow.compareTo(pushToServer) > 0)
+						{
+							log.error("Property (" +
+								pd +
+								") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full array value serverside. Denying and attempting to send back full value!");
+							if (previousChangeAwareList != null) previousChangeAwareList.markAllChanged();
+							return previousChangeAwareList;
+						}
+
 						// full replace
 						return fullValueReplaceFromBrowser(previousChangeAwareList, dataConverterContext, clientReceivedJSON.getJSONArray(VALUE));
 					}
 				}
 				else
 				{
-					log.warn("property " + dataConverterContext.getPropertyDescription().getName() + " is typed as array; it got browser updates (" +
-						clientReceivedJSON.getInt(CONTENT_VERSION) + ") but expected server version (" + (previousChangeAwareList.getListContentVersion() + 1) +
+					log.warn("property " + pd.getName() + " is typed as array; it got browser updates (" + clientReceivedJSON.getInt(CONTENT_VERSION) +
+						") but expected server version (" + (previousChangeAwareList.getListContentVersion() + 1) +
 						")  - so server changed meanwhile; ignoring browser update.");
 
 					// dropped browser update because server object changed meanwhile;
@@ -215,10 +241,27 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 		}
 		else if (newJSONValue == null)
 		{
+			if (previousChangeAwareList != null && PushToServerEnum.allow.compareTo(pushToServer) > 0)
+			{
+				log.error("Property (" +
+					pd +
+					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the array value serverside to null. Denying and attempting to send back full value!");
+				previousChangeAwareList.markAllChanged();
+				return previousChangeAwareList;
+			}
 			return null;
 		}
 		else if (newJSONValue instanceof JSONArray)
 		{
+			if (PushToServerEnum.allow.compareTo(pushToServer) > 0)
+			{
+				log.error("Property (" +
+					pd +
+					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full array value serverside (uoc). Denying and attempting to send back full value!");
+				if (previousChangeAwareList != null) previousChangeAwareList.markAllChanged();
+				return previousChangeAwareList;
+			}
+
 			// this can happen if the property was undefined before (so not even aware of type client side) and it was assigned a complete array value client side;
 			// in this case we must update server value and send a request back to client containing the type and letting it know that it must start watching the new value (for granular updates)
 			ChangeAwareList<ET, WT> newChangeAwareList = fullValueReplaceFromBrowser(previousChangeAwareList, dataConverterContext, (JSONArray)newJSONValue);
@@ -227,13 +270,12 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 		}
 		else
 		{
-			log.error("property " + dataConverterContext.getPropertyDescription().getName() +
-				" is typed as array, but the value is not an JSONArray or supported update value: " + newJSONValue);
+			log.error("property " + pd.getName() + " is typed as array, but the value is not an JSONArray or supported update value: " + newJSONValue);
 			return previousChangeAwareList;
 		}
 	}
 
-	private ChangeAwareList<ET, WT> fullValueReplaceFromBrowser(ChangeAwareList<ET, WT> previousChangeAwareList, IDataConverterContext dataConverterContext,
+	private ChangeAwareList<ET, WT> fullValueReplaceFromBrowser(ChangeAwareList<ET, WT> previousChangeAwareList, IBrowserConverterContext dataConverterContext,
 		JSONArray array)
 	{
 		List<WT> list = new ArrayList<WT>();
@@ -248,8 +290,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 			}
 			try
 			{
-				list.add((WT)JSONUtils.fromJSON(oldVal, array.opt(i),
-					new DataConverterContext(getCustomJSONTypeDefinition(), dataConverterContext.getWebObject())));
+				list.add((WT)JSONUtils.fromJSON(oldVal, array.opt(i), getCustomJSONTypeDefinition(), dataConverterContext));
 			}
 			catch (JSONException e)
 			{
@@ -261,7 +302,9 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 		IPropertyType<ET> elementType = getElementType();
 		if (elementType instanceof IWrapperType< ? , ? >)
 		{
-			newBaseList = new WrapperList<ET, WT>(list, (IWrapperType<ET, WT>)elementType, dataConverterContext);
+			IWrappingContext wrappingContext = (dataConverterContext instanceof IWrappingContext ? (IWrappingContext)dataConverterContext
+				: new WrappingContext(dataConverterContext.getWebObject()));
+			newBaseList = new WrapperList<ET, WT>(list, (IWrapperType<ET, WT>)elementType, wrappingContext);
 		}
 		else
 		{
@@ -269,26 +312,26 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 		}
 
 		// TODO how to handle previous null value here; do we need to re-send to client or not (for example initially both client and server had values, at the same time server==null client sends full update); how do we kno case server version is unknown then
-		return new ChangeAwareList<ET, WT>(newBaseList, dataConverterContext, previousChangeAwareList != null
+		return new ChangeAwareList<ET, WT>(newBaseList/* , dataConverterContext */, previousChangeAwareList != null
 			? previousChangeAwareList.increaseContentVersion() : 1);
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, DataConversion conversionMarkers,
-		IDataConverterContext dataConverterContext) throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, PropertyDescription pd, DataConversion conversionMarkers,
+		IBrowserConverterContext dataConverterContext) throws JSONException
 	{
-		return toJSON(writer, key, changeAwareList, conversionMarkers, true, JSONUtils.FullValueToJSONConverter.INSTANCE, dataConverterContext.getWebObject());
+		return toJSON(writer, key, changeAwareList, conversionMarkers, true, JSONUtils.FullValueToJSONConverter.INSTANCE, dataConverterContext);
 	}
 
 	@Override
-	public JSONWriter changesToJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, DataConversion conversionMarkers,
-		IDataConverterContext dataConverterContext) throws JSONException
+	public JSONWriter changesToJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, PropertyDescription pd,
+		DataConversion conversionMarkers, IBrowserConverterContext dataConverterContext) throws JSONException
 	{
-		return toJSON(writer, key, changeAwareList, conversionMarkers, false, JSONUtils.FullValueToJSONConverter.INSTANCE, dataConverterContext.getWebObject());
+		return toJSON(writer, key, changeAwareList, conversionMarkers, false, JSONUtils.FullValueToJSONConverter.INSTANCE, dataConverterContext);
 	}
 
 	protected JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, DataConversion conversionMarkers, boolean fullValue,
-		IToJSONConverter toJSONConverterForFullValue, BaseWebObject webObject) throws JSONException
+		IToJSONConverter<IBrowserConverterContext> toJSONConverterForFullValue, IBrowserConverterContext dataConverterContext) throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
 		if (changeAwareList != null)
@@ -304,15 +347,23 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 				// send all (currently we don't support granular updates for add/remove but we could in the future)
 				DataConversion arrayConversionMarkers = new DataConversion();
 				writer.key(CONTENT_VERSION).value(changeAwareList.increaseContentVersion());
+
+				PushToServerEnum pushToServer = dataConverterContext.getParentPropertyPushToServerValue();
+				if (pushToServer == PushToServerEnum.shallow || pushToServer == PushToServerEnum.deep)
+				{
+					writer.key(PUSH_TO_SERVER).value(pushToServer == PushToServerEnum.shallow ? false : true);
+				}
+
 				writer.key(VALUE).array();
 				for (int i = 0; i < wrappedBaseListReadOnly.size(); i++)
 				{
 					arrayConversionMarkers.pushNode(String.valueOf(i));
 					toJSONConverterForFullValue.toJSONValue(writer, null, wrappedBaseListReadOnly.get(i), getCustomJSONTypeDefinition(),
-						arrayConversionMarkers, webObject);
+						arrayConversionMarkers, dataConverterContext);
 					arrayConversionMarkers.popNode();
 				}
 				writer.endArray();
+
 				if (arrayConversionMarkers.getConversions().size() > 0)
 				{
 					writer.key("conversions").object();
@@ -339,7 +390,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 					writer.object().key(INDEX).value(idx);
 					arrayConversionMarkers.pushNode(VALUE);
 					JSONUtils.changesToBrowserJSONValue(writer, VALUE, wrappedBaseListReadOnly.get(idx.intValue()), getCustomJSONTypeDefinition(),
-						arrayConversionMarkers, webObject);
+						arrayConversionMarkers, dataConverterContext);
 					arrayConversionMarkers.popNode();
 					writer.endObject();
 					arrayConversionMarkers.popNode();
@@ -370,6 +421,12 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 			writer.value(JSONObject.NULL); // TODO how to handle null values which have no version info (special watches/complete array set from client)? if null is on server and something is set on client or the other way around?
 		}
 		return writer;
+	}
+
+	@Override
+	public boolean shouldAlwaysAllowIncommingJSON()
+	{
+		return true;
 	}
 
 }

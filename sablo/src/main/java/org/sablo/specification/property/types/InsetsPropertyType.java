@@ -20,8 +20,9 @@ import java.awt.Insets;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
+import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
-import org.sablo.specification.property.IDataConverterContext;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 
@@ -46,7 +47,7 @@ public class InsetsPropertyType extends DefaultPropertyType<Insets> implements I
 	}
 
 	@Override
-	public Insets fromJSON(Object newValue, Insets previousValue, IDataConverterContext dataConverterContext)
+	public Insets fromJSON(Object newValue, Insets previousValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
 	{
 		int top = 0;
 		int right = 0;
@@ -68,8 +69,8 @@ public class InsetsPropertyType extends DefaultPropertyType<Insets> implements I
 
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, Insets i, DataConversion clientConversion, IDataConverterContext dataConverterContext)
-		throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Insets i, PropertyDescription pd, DataConversion clientConversion,
+		IBrowserConverterContext dataConverterContext) throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
 		writer.object();

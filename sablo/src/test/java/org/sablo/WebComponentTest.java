@@ -41,6 +41,8 @@ import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebComponentSpecification;
+import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
+import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.ChangeAwareList;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.specification.property.types.DimensionPropertyType;
@@ -183,8 +185,7 @@ public class WebComponentTest
 		data.put("msg", properties);
 
 		String msg = JSONUtils.writeDataWithConversions(data, null, null);
-		assertEquals("{\"msg\":{\"font\":{\"fontWeight\":\"bold\",\"fontSize\":\"12px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"},\"name\":\"test\"}}",
-			msg);
+		assertEquals("{\"msg\":{\"font\":{\"fontWeight\":\"bold\",\"fontSize\":\"12px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"},\"name\":\"test\"}}", msg);
 
 		component.putBrowserProperty("font", new JSONObject("{\"italic\":\"italic\",\"fontSize\":\"10px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"}"));
 		properties = component.getRawPropertiesWithoutDefaults();
@@ -256,8 +257,8 @@ public class WebComponentTest
 		String msg = JSONUtils.writeDataWithConversions(data, null, null);
 		assertEquals("{\"msg\":{\"atype\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"},\"name\":\"test\"}}", msg);
 
-		component.putBrowserProperty("atype",
-			new JSONObject("{\"vEr\":1,\"v\":{\"name\":\"myname\",\"active\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}}"));
+		component.putBrowserProperty("atype", new JSONObject(
+			"{\"vEr\":1,\"v\":{\"name\":\"myname\",\"active\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}}"));
 		properties = component.getRawPropertiesWithoutDefaults();
 		assertNotNull(properties.get("atype"));
 		assertSame(properties.get("atype"), component.getProperty("atype"));
@@ -269,8 +270,8 @@ public class WebComponentTest
 
 		// TODO also for custom types none existing properties should just be added? Like in the component itself?
 		// for now we dont allow it..
-		component.putBrowserProperty("atype",
-			new JSONObject("{\"vEr\":2,\"v\":{\"name\":\"myname\",\"notintype\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}}"));
+		component.putBrowserProperty("atype", new JSONObject(
+			"{\"vEr\":2,\"v\":{\"name\":\"myname\",\"notintype\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}}"));
 		properties = component.getRawPropertiesWithoutDefaults();
 		assertNotNull(properties.get("atype"));
 		assertSame(properties.get("atype"), component.getProperty("atype"));
@@ -289,6 +290,8 @@ public class WebComponentTest
 	public void testCustomTypeAsArray() throws JSONException
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
+		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow);
+		BrowserConverterContext shallowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.shallow);
 		assertNull(component.getProperty("types"));
 
 		// custom types are always a Map of values..
@@ -321,15 +324,20 @@ public class WebComponentTest
 		PropertyDescription messageTypes = AggregatedPropertyType.newAggregatedProperty();
 		messageTypes.putProperty("msg", properties.contentType);
 
-		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, null);
+		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
 		assertEquals(
 			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"conversions\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"conversions\":{\"msg\":{\"types\":\"JSON_arr\"}}}",
 			msg);
 
-		component.putBrowserProperty("types",
-			new JSONObject("{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}}," +
-				"{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"}}," +
-				"{\"vEr\":2,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}]}"));
+		msg = JSONUtils.writeDataWithConversions(data, messageTypes, shallowDataConverterContext);
+		assertEquals(
+			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":3,\"w\":false,\"v\":[{\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"conversions\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"conversions\":{\"msg\":{\"types\":\"JSON_arr\"}}}",
+			msg);
+
+		component.putBrowserProperty("types", new JSONObject(
+			"{\"vEr\":3,\"v\":[{\"vEr\":3,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},"
+				+ "{\"vEr\":3,\"v\":{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"}},"
+				+ "{\"vEr\":3,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}]}"));
 
 		ChangeAwareList<Object, Object> array3 = (ChangeAwareList)component.getProperty("types");
 

@@ -70,7 +70,7 @@ public class ClientService extends BaseWebObject implements IClientService
 			serviceChanges.content.isEmpty() ? null : Collections.singletonMap("services", Collections.singletonMap(getName(), serviceChanges.content)),
 			AggregatedPropertyType.newAggregatedProperty().putProperty("services",
 				AggregatedPropertyType.newAggregatedProperty().putProperty(getName(), serviceChanges.contentType)),
-			apiFunction != null ? apiFunction.getBlockEventProcessing() : true);
+			apiFunction != null ? apiFunction.getBlockEventProcessing() : true, this);
 
 		if (retValue != null)
 		{

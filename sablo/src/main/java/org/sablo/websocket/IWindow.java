@@ -25,6 +25,7 @@ import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.property.IBrowserConverterContext;
+import org.sablo.websocket.impl.ClientService;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
@@ -116,7 +117,7 @@ public interface IWindow
 	 * @throws IOException if such an exception happens.
 	 */
 	Object executeServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes, Map<String, ? > changes,
-		PropertyDescription changesTypes, boolean blockEventProcessing) throws IOException;
+		PropertyDescription changesTypes, boolean blockEventProcessing, ClientService service) throws IOException;
 
 	/**
 	 * Invoke an function on the webcomponent

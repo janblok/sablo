@@ -183,7 +183,7 @@ public class BaseWindow implements IWindow
 		}
 		if (data.size() > 0)
 		{
-			sendAsyncMessage(data, dataTypes, FullValueToJSONConverter.INSTANCE);
+			sendAsyncMessage(data, dataTypes, FullValueToJSONConverter.INSTANCE); // TODO fix this! this sendAsyncMessage will use IToJSONConverter.toJSON with a null BaseWebObject which is wrong!
 		}
 	}
 
@@ -306,7 +306,7 @@ public class BaseWindow implements IWindow
 	 * @throws TimeoutException if it timed out while waiting for a response value. This can happen if blockEventProcessing == true.
 	 */
 	protected Object sendSyncMessage(final Map<String, ? > data, final PropertyDescription dataTypes, IToJSONConverter<IBrowserConverterContext> converter,
-		boolean blockEventProcessing) throws IOException, CancellationException, TimeoutException
+		boolean blockEventProcessing, final ClientService service) throws IOException, CancellationException, TimeoutException
 	{
 		return sendSyncMessage((data == null || data.size() == 0) ? null : new IToJSONWriter<IBrowserConverterContext>()
 		{
@@ -317,7 +317,7 @@ public class BaseWindow implements IWindow
 				if (data != null && data.size() > 0)
 				{
 					JSONUtils.addKeyIfPresent(w, keyInParent);
-					converterParam.toJSONValue(w, null, data, dataTypes, clientDataConversions, new BrowserConverterContext(null, PushToServerEnum.allow));
+					converterParam.toJSONValue(w, null, data, dataTypes, clientDataConversions, new BrowserConverterContext(service, PushToServerEnum.allow));
 					return true;
 				}
 				return false;
@@ -491,12 +491,12 @@ public class BaseWindow implements IWindow
 
 	@Override
 	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes, Map<String, ? > changes,
-		PropertyDescription changesTypes, boolean blockEventProcessing) throws IOException
+		PropertyDescription changesTypes, boolean blockEventProcessing, ClientService service) throws IOException
 	{
 		addServiceCall(serviceName, functionName, arguments, argumentTypes);
 		try
 		{
-			return sendSyncMessage(changes, changesTypes, ChangesToJSONConverter.INSTANCE, blockEventProcessing); // will return response from last service call
+			return sendSyncMessage(changes, changesTypes, ChangesToJSONConverter.INSTANCE, blockEventProcessing, service); // will return response from last service call
 		}
 		catch (CancellationException e)
 		{

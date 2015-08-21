@@ -15,12 +15,10 @@
  */
 package org.sablo;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -38,6 +36,7 @@ import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IPropertyType;
+import org.sablo.specification.property.IPushToServerSpecialType;
 import org.sablo.specification.property.ISmartPropertyValue;
 import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.WrappingContext;
@@ -58,7 +57,6 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BaseWebObject
 {
-	private static final List<PushToServerEnum> PUSH_TO_SERVER_ALLOW = Arrays.asList(PushToServerEnum.allow, PushToServerEnum.shallow, PushToServerEnum.deep);
 
 	private static final TypedData<Map<String, Object>> EMPTY_PROPERTIES = new TypedData<Map<String, Object>>(Collections.<String, Object> emptyMap(), null);
 
@@ -267,7 +265,8 @@ public abstract class BaseWebObject
 				throw new IllegalComponentAccessException("protecting", getName(), propName);
 			}
 
-			if (!PUSH_TO_SERVER_ALLOW.contains(property.getPushToServer()))
+			if (PushToServerEnum.allow.compareTo(property.getPushToServer()) > 0 &&
+				(!(property.getType() instanceof IPushToServerSpecialType) || !((IPushToServerSpecialType)property.getType()).shouldAlwaysAllowIncommingJSON()))
 			{
 				// pushToServer not set to allowed, it should not be set from the client
 				throw new IllegalComponentAccessException("pushToServer-reject", getName(), propName);

@@ -280,7 +280,15 @@ public class JSONUtils
 		else if (converted instanceof Number)
 		{
 			addKeyIfPresent(w, key);
-			w = w.value(((Number)converted).doubleValue());
+			double convertedDouble = ((Number)converted).doubleValue();
+			if (Double.isNaN(convertedDouble) || Double.isInfinite(convertedDouble))
+			{
+				w = w.value(null);
+			}
+			else
+			{
+				w = w.value(convertedDouble);
+			}
 		}
 		else if (converted instanceof String)
 		{

@@ -64,7 +64,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		return getFormStateImpl(name, true);
 	}
 
-	var getComponentChanges = function(now, prev, beanConversionInfo, parentSize, changeNotifierGenerator, componentScope, property) {
+	var getComponentChanges = function(now, prev, beanConversionInfo, parentSize, property) {
 		var changes = {}
 		if (property) {
 			if (beanConversionInfo && beanConversionInfo[property]) changes[property] = $sabloConverters.convertFromClientToServer(now, beanConversionInfo[property], prev);
@@ -96,8 +96,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 
 	var sendChanges = function(now, prev, formname, beanname, property) {
 		var beanConversionInfo = $sabloUtils.getInDepthProperty(formStatesConversionInfo, formname, beanname);
-		var changes = getComponentChanges(now, prev, beanConversionInfo,
-				formStates[formname].properties.designSize, getChangeNotifierGenerator(formname, beanname), formStates[formname].getScope(), property);
+		
+		var changes = getComponentChanges(now, prev, beanConversionInfo, formStates[formname].properties.designSize, property);
 		if (Object.getOwnPropertyNames(changes).length > 0) {
 			// if this is a simple property change without any special conversions then then push the old value.
 			if (angular.isDefined(property) && !(beanConversionInfo && beanConversionInfo[property])) {

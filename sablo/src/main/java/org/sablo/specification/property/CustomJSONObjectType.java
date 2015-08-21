@@ -27,7 +27,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
-import org.sablo.BaseWebObject;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
 import org.sablo.websocket.utils.DataConversion;
@@ -153,7 +152,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 	public ChangeAwareMap<ET, WT> fromJSON(Object newJSONValue, ChangeAwareMap<ET, WT> previousChangeAwareMap, PropertyDescription pd,
 		IBrowserConverterContext dataConverterContext)
 	{
-		PushToServerEnum pushToServer = dataConverterContext.getParentPropertyPushToServerValue();
+		PushToServerEnum pushToServer = BrowserConverterContext.getPushToServerValue(dataConverterContext);
 
 		JSONObject clientReceivedJSON;
 		if (newJSONValue instanceof JSONObject && (clientReceivedJSON = (JSONObject)newJSONValue).has(CONTENT_VERSION) &&
@@ -336,8 +335,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		}
 
 		// TODO how to handle previous null value here; do we need to re-send to client or not (for example initially both client and server had values, at the same time server==null client sends full update); how do we kno case server version is unknown then
-		return new ChangeAwareMap<ET, WT>(newBaseMap, previousChangeAwareMap != null
-			? previousChangeAwareMap.increaseContentVersion() : 1);
+		return new ChangeAwareMap<ET, WT>(newBaseMap, previousChangeAwareMap != null ? previousChangeAwareMap.increaseContentVersion() : 1);
 	}
 
 	@Override
@@ -371,7 +369,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 				DataConversion objConversionMarkers = new DataConversion();
 				writer.key(CONTENT_VERSION).value(changeAwareMap.increaseContentVersion());
 
-				PushToServerEnum pushToServer = dataConverterContext.getParentPropertyPushToServerValue();
+				PushToServerEnum pushToServer = BrowserConverterContext.getPushToServerValue(dataConverterContext);
 				if (pushToServer == PushToServerEnum.shallow || pushToServer == PushToServerEnum.deep)
 				{
 					writer.key(PUSH_TO_SERVER).value(pushToServer == PushToServerEnum.shallow ? false : true);

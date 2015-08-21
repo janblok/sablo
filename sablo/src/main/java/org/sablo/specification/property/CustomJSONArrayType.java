@@ -144,7 +144,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 	public ChangeAwareList<ET, WT> fromJSON(Object newJSONValue, ChangeAwareList<ET, WT> previousChangeAwareList, PropertyDescription pd,
 		IBrowserConverterContext dataConverterContext)
 	{
-		PushToServerEnum pushToServer = dataConverterContext.getParentPropertyPushToServerValue();
+		PushToServerEnum pushToServer = BrowserConverterContext.getPushToServerValue(dataConverterContext);
 
 		if (newJSONValue instanceof JSONObject)
 		{
@@ -347,7 +347,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 				DataConversion arrayConversionMarkers = new DataConversion();
 				writer.key(CONTENT_VERSION).value(changeAwareList.increaseContentVersion());
 
-				PushToServerEnum pushToServer = dataConverterContext.getParentPropertyPushToServerValue();
+				PushToServerEnum pushToServer = BrowserConverterContext.getPushToServerValue(dataConverterContext);
 				if (pushToServer == PushToServerEnum.shallow || pushToServer == PushToServerEnum.deep)
 				{
 					writer.key(PUSH_TO_SERVER).value(pushToServer == PushToServerEnum.shallow ? false : true);

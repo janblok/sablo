@@ -27,7 +27,7 @@ import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
  *
  * For example a type might want to request certain data from server without modifying any data on the server, so in spec it doesn't have 'allow' but the request
  * from client shouldn't be blocked by the system. The type will be responsible for blocking that itself based on
- * {@link IConvertedPropertyType#fromJSON(Object, Object, IBrowserConverterContext)}'s {@link IBrowserConverterContext#getParentPropertyPushToServerValue()}.
+ * {@link IConvertedPropertyType#fromJSON(Object, Object, IBrowserConverterContext)}'s {@link IBrowserConverterContext#getPushToServerValue()}.
  *
  * @author acostescu
  *

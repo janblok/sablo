@@ -17,6 +17,8 @@ package org.sablo.specification.property;
 
 import org.sablo.BaseWebObject;
 import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Context for data converters
@@ -25,6 +27,7 @@ import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
 public class BrowserConverterContext extends WrappingContext implements IBrowserConverterContext
 {
 
+	protected static final Logger log = LoggerFactory.getLogger(BrowserConverterContext.class.getCanonicalName());
 	private final PushToServerEnum parentPropertyPushToServerValue;
 
 	public BrowserConverterContext(BaseWebObject webObject, PushToServerEnum rootPropertyPushToServerValue)
@@ -64,9 +67,28 @@ public class BrowserConverterContext extends WrappingContext implements IBrowser
 	}
 
 	@Override
-	public PushToServerEnum getParentPropertyPushToServerValue()
+	public PushToServerEnum getPushToServerValue()
 	{
 		return parentPropertyPushToServerValue;
+	}
+
+	public static PushToServerEnum getPushToServerValue(IBrowserConverterContext context)
+	{
+		if (context == null)
+		{
+			log.warn("No IBrowserConverterContext present to get \"pushToServer\" value from. Will default to 'reject'. This is where it happened: ",
+				new RuntimeException("Just for showing the execution stack"));
+			return PushToServerEnum.reject; // should never happen (BrowserConverterContext should always be present); but just in case to avoid a possible NPE breaking more unrelated functionality
+		}
+		PushToServerEnum v = context.getPushToServerValue();
+		if (v == null)
+		{
+			log.warn("No PushToServerEnum present in an IBrowserConverterContext instance. Will default to 'reject'. This is where it happened: ",
+				new RuntimeException("Just for showing the execution stack"));
+			return PushToServerEnum.reject; // should never happen (BrowserConverterContext should always be present and with pushToServer value set); but just in case to avoid a possible NPE breaking more unrelated functionality
+		}
+
+		return v;
 	}
 
 }

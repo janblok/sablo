@@ -24,11 +24,8 @@ import java.util.Map;
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.WebComponentSpecification;
-import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
-import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.websocket.CurrentWindow;
-import org.sablo.websocket.TypedData;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
@@ -101,38 +98,15 @@ public abstract class Container extends WebComponent
 	public boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
 		DataConversion clientDataConversions) throws JSONException
 	{
-		boolean contentHasBeenWritten = writeComponentChanges(w, keyInParent, this, "", converter, clientDataConversions);
+		boolean contentHasBeenWritten = this.writeOwnComponentChanges(w, keyInParent, "", converter, clientDataConversions);
 		for (WebComponent wc : getComponents())
 		{
-			contentHasBeenWritten = writeComponentChanges(w, contentHasBeenWritten ? null : keyInParent, wc, wc.getName(), converter, clientDataConversions) ||
+			contentHasBeenWritten = wc.writeOwnComponentChanges(w, contentHasBeenWritten ? null : keyInParent, wc.getName(), converter, clientDataConversions) ||
 				contentHasBeenWritten;
 		}
 		if (contentHasBeenWritten) w.endObject();
 		changed = false;
 		return contentHasBeenWritten;
-	}
-
-	protected boolean writeComponentChanges(JSONWriter w, String keyInParent, WebComponent wc, String nodeName,
-		IToJSONConverter<IBrowserConverterContext> converter, DataConversion clientDataConversions) throws JSONException
-	{
-		TypedData<Map<String, Object>> changes = wc.getAndClearChanges();
-		if (changes.content.isEmpty())
-		{
-			return false;
-		}
-
-		if (keyInParent != null)
-		{
-			w.key(keyInParent).object();
-		}
-
-		w.key(nodeName).object();
-		clientDataConversions.pushNode(nodeName);
-		JSONUtils.writeData(converter, w, changes.content, changes.contentType, clientDataConversions, new BrowserConverterContext(wc, PushToServerEnum.allow));
-		clientDataConversions.popNode();
-		w.endObject();
-
-		return true;
 	}
 
 	public boolean writeAllComponentsProperties(JSONWriter w, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException

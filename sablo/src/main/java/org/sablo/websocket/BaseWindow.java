@@ -19,6 +19,7 @@ package org.sablo.websocket;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -31,7 +32,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.json.JSONException;
 import org.json.JSONStringer;
 import org.json.JSONWriter;
-import org.sablo.BaseWebObject;
 import org.sablo.Container;
 import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
@@ -158,11 +158,11 @@ public class BaseWindow implements IWindow
 	protected void sendServices() throws IOException
 	{
 		// send all the service data to the browser.
-		Map<String, Object> data = new HashMap<>(3);
-		Map<String, Map<String, Object>> serviceData = new HashMap<>();
-		PropertyDescription serviceDataTypes = AggregatedPropertyType.newAggregatedProperty();
+		final Map<String, Map<String, Object>> serviceData = new HashMap<>();
+		final PropertyDescription serviceDataTypes = AggregatedPropertyType.newAggregatedProperty();
 
-		for (IClientService service : getSession().getServices())
+		final Collection<IClientService> services = getSession().getServices();
+		for (IClientService service : services)
 		{
 			TypedData<Map<String, Object>> sd = service.getProperties();
 			if (!sd.content.isEmpty())
@@ -171,19 +171,46 @@ public class BaseWindow implements IWindow
 			}
 			if (sd.contentType != null) serviceDataTypes.putProperty(service.getName(), sd.contentType);
 		}
+
 		if (serviceData.size() > 0)
 		{
-			data.put("services", serviceData);
-		}
-		PropertyDescription dataTypes = null;
-		if (serviceDataTypes.hasChildProperties())
-		{
-			dataTypes = AggregatedPropertyType.newAggregatedProperty();
-			dataTypes.putProperty("services", serviceDataTypes);
-		}
-		if (data.size() > 0)
-		{
-			sendAsyncMessage(data, dataTypes, FullValueToJSONConverter.INSTANCE); // TODO fix this! this sendAsyncMessage will use IToJSONConverter.toJSON with a null BaseWebObject which is wrong!
+			// we send each service changes independently so that the IBrowserConverterContext instance is correct (it needs the property type of each service property to be correct)
+			sendAsyncMessage(new IToJSONWriter<IBrowserConverterContext>()
+			{
+
+				@Override
+				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
+					DataConversion clientDataConversions) throws JSONException
+				{
+					if (serviceData != null && serviceData.size() > 0)
+					{
+						JSONUtils.addKeyIfPresent(w, keyInParent);
+						w.object().key("services").object();
+						clientDataConversions.pushNode("services");
+
+						for (IClientService service : services)
+						{
+							Map<String, Object> dataForThisService = serviceData.get(service.getName());
+							String serviceName = service.getName();
+							if (dataForThisService != null && dataForThisService.size() > 0)
+							{
+								clientDataConversions.pushNode(serviceName);
+								w.key(serviceName);
+								w.object();
+								service.writeProperties(converter, w, dataForThisService, serviceDataTypes.getProperty(serviceName), clientDataConversions);
+								w.endObject();
+								clientDataConversions.popNode();
+							}
+						}
+
+						w.endObject().endObject();
+						clientDataConversions.popNode();
+
+						return true;
+					}
+					return false;
+				}
+			}, FullValueToJSONConverter.INSTANCE);
 		}
 	}
 
@@ -490,13 +517,13 @@ public class BaseWindow implements IWindow
 	}
 
 	@Override
-	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes, Map<String, ? > changes,
-		PropertyDescription changesTypes, boolean blockEventProcessing, ClientService service) throws IOException
+	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes,
+		IToJSONWriter<IBrowserConverterContext> pendingChangesWriter, boolean blockEventProcessing) throws IOException
 	{
 		addServiceCall(serviceName, functionName, arguments, argumentTypes);
 		try
 		{
-			return sendSyncMessage(changes, changesTypes, ChangesToJSONConverter.INSTANCE, blockEventProcessing, service); // will return response from last service call
+			return sendSyncMessage(pendingChangesWriter, ChangesToJSONConverter.INSTANCE, blockEventProcessing); // will return response from last service call
 		}
 		catch (CancellationException e)
 		{
@@ -604,8 +631,7 @@ public class BaseWindow implements IWindow
 				String childName = service.getName();
 				w.key(childName).object();
 				clientDataConversions.pushNode(childName);
-				JSONUtils.writeData(converter, w, changes.content, changes.contentType, clientDataConversions, new BrowserConverterContext(
-					(BaseWebObject)service, PushToServerEnum.allow));
+				service.writeProperties(converter, w, changes.content, changes.contentType, clientDataConversions);
 				clientDataConversions.popNode();
 				w.endObject();
 			}
@@ -613,7 +639,6 @@ public class BaseWindow implements IWindow
 		if (contentHasBeenWritten) w.endObject();
 		return contentHasBeenWritten;
 	}
-
 
 	public Object invokeApi(WebComponent receiver, WebComponentApiDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes)
 	{

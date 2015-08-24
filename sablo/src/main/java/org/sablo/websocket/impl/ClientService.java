@@ -16,10 +16,10 @@
 package org.sablo.websocket.impl;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
 
 import org.json.JSONException;
+import org.json.JSONWriter;
 import org.sablo.BaseWebObject;
 import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
@@ -28,11 +28,14 @@ import org.sablo.specification.WebComponentSpecification;
 import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
 import org.sablo.specification.WebServiceSpecProvider;
 import org.sablo.specification.property.BrowserConverterContext;
-import org.sablo.specification.property.types.AggregatedPropertyType;
+import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.IClientService;
+import org.sablo.websocket.IToJSONWriter;
 import org.sablo.websocket.TypedData;
+import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
+import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,16 +64,33 @@ public class ClientService extends BaseWebObject implements IClientService
 			apiFunction = spec.getApiFunction(functionName);
 		}
 
-		TypedData<Map<String, Object>> serviceChanges = getAndClearChanges();
-		Object retValue = CurrentWindow.get().executeServiceCall(
-			name,
-			functionName,
-			arguments,
-			getParameterTypes(functionName),
-			serviceChanges.content.isEmpty() ? null : Collections.singletonMap("services", Collections.singletonMap(getName(), serviceChanges.content)),
-			AggregatedPropertyType.newAggregatedProperty().putProperty("services",
-				AggregatedPropertyType.newAggregatedProperty().putProperty(getName(), serviceChanges.contentType)),
-			apiFunction != null ? apiFunction.getBlockEventProcessing() : true, this);
+		Object retValue = CurrentWindow.get().executeServiceCall(name, functionName, arguments, getParameterTypes(functionName),
+			new IToJSONWriter<IBrowserConverterContext>()
+			{
+
+				@Override
+				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
+					DataConversion clientDataConversions) throws JSONException
+				{
+					TypedData<Map<String, Object>> serviceChanges = getAndClearChanges();
+					if (serviceChanges.content != null && serviceChanges.content.size() > 0)
+					{
+						JSONUtils.addKeyIfPresent(w, keyInParent);
+
+						w.object().key("services").object().key(getName()).object();
+						clientDataConversions.pushNode("services").pushNode(getName());
+
+						writeProperties(converter, w, serviceChanges.content, serviceChanges.contentType, clientDataConversions);
+
+						clientDataConversions.popNode().popNode();
+						w.endObject().endObject().endObject();
+
+						return true;
+					}
+
+					return false;
+				}
+			}, apiFunction != null ? apiFunction.getBlockEventProcessing() : true);
 
 		if (retValue != null)
 		{

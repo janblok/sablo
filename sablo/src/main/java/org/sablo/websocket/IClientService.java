@@ -19,6 +19,11 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.json.JSONException;
+import org.json.JSONWriter;
+import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.property.IBrowserConverterContext;
+import org.sablo.websocket.utils.DataConversion;
+import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
 /**
  * Represents the client side service object on the server.
@@ -93,4 +98,8 @@ public interface IClientService
 	 * @return String the name
 	 */
 	public String getName();
+
+	void writeProperties(IToJSONConverter<IBrowserConverterContext> converter, JSONWriter w, Map<String, Object> propertyValues,
+		PropertyDescription propertyTypes, DataConversion clientDataConversions) throws IllegalArgumentException, JSONException;
+
 }

@@ -669,7 +669,7 @@ public abstract class BaseWebObject
 			}
 		}
 
-		JSONUtils.writeData(converter, w, data, typedProperties.contentType, clientDataConversions, new BrowserConverterContext(this, PushToServerEnum.allow));
+		writeProperties(converter, w, data, typedProperties.contentType, clientDataConversions);
 		clientDataConversions.popNode();
 		w.endObject();
 
@@ -766,6 +766,46 @@ public abstract class BaseWebObject
 		{
 			Object pUnwrapped = getProperty(pN);
 			if (pUnwrapped instanceof ISmartPropertyValue) ((ISmartPropertyValue)pUnwrapped).detach(); // clear any listeners/held resources
+		}
+	}
+
+	protected boolean writeOwnComponentChanges(JSONWriter w, String keyInParent, String nodeName, IToJSONConverter<IBrowserConverterContext> converter,
+		DataConversion clientDataConversions) throws JSONException
+	{
+		TypedData<Map<String, Object>> changes = getAndClearChanges();
+		if (changes.content.isEmpty())
+		{
+			return false;
+		}
+
+		if (keyInParent != null)
+		{
+			w.key(keyInParent).object();
+		}
+
+		w.key(nodeName).object();
+		clientDataConversions.pushNode(nodeName);
+		writeProperties(converter, w, changes.content, changes.contentType, clientDataConversions);
+		clientDataConversions.popNode();
+		w.endObject();
+
+		return true;
+	}
+
+	public void writeProperties(IToJSONConverter<IBrowserConverterContext> converter, JSONWriter w, Map<String, Object> propertyValues,
+		PropertyDescription propertyTypes, DataConversion clientDataConversions) throws IllegalArgumentException, JSONException
+	{
+		for (Entry<String, ? > entry : propertyValues.entrySet())
+		{
+			clientDataConversions.pushNode(entry.getKey());
+			PropertyDescription pd = propertyTypes != null ? propertyTypes.getProperty(entry.getKey()) : null;
+
+			BrowserConverterContext context;
+			if (pd != null) context = new BrowserConverterContext(this, pd.getPushToServer());
+			else context = new BrowserConverterContext(this, PushToServerEnum.reject); // should this ever happen? should we use allow here instead?
+
+			converter.toJSONValue(w, entry.getKey(), entry.getValue(), pd, clientDataConversions, context);
+			clientDataConversions.popNode();
 		}
 	}
 

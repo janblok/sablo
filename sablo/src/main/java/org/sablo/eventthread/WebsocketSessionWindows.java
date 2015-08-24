@@ -17,7 +17,6 @@
 package org.sablo.eventthread;
 
 import java.io.IOException;
-import java.util.Map;
 
 import org.json.JSONException;
 import org.json.JSONWriter;
@@ -26,10 +25,10 @@ import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.property.IBrowserConverterContext;
+import org.sablo.websocket.IToJSONWriter;
 import org.sablo.websocket.IWebsocketEndpoint;
 import org.sablo.websocket.IWebsocketSession;
 import org.sablo.websocket.IWindow;
-import org.sablo.websocket.impl.ClientService;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
@@ -143,12 +142,12 @@ public class WebsocketSessionWindows implements IWindow
 	}
 
 	@Override
-	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes, Map<String, ? > changes,
-		PropertyDescription changesTypes, boolean blockEventProcessing, ClientService service) throws IOException
+	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes,
+		IToJSONWriter<IBrowserConverterContext> pendingChangesWriter, boolean blockEventProcessing) throws IOException
 	{
 		for (IWindow window : session.getWindows())
 		{
-			window.executeServiceCall(serviceName, functionName, arguments, argumentTypes, changes, changesTypes, blockEventProcessing, service);
+			window.executeServiceCall(serviceName, functionName, arguments, argumentTypes, pendingChangesWriter, blockEventProcessing);
 		}
 		return null;
 	}

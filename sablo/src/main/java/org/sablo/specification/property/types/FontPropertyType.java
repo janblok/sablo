@@ -30,7 +30,7 @@ import org.sablo.websocket.utils.JSONUtils;
  * @author jcompagner
  *
  */
-public class FontPropertyType extends DefaultPropertyType<Font> implements IClassPropertyType<Font>
+public class FontPropertyType extends DefaultPropertyType<Font>implements IClassPropertyType<Font>
 {
 
 	public static final FontPropertyType INSTANCE = new FontPropertyType();
@@ -87,9 +87,17 @@ public class FontPropertyType extends DefaultPropertyType<Font> implements IClas
 		{
 			w.key("fontWeight").value("bold");
 		}
+		else
+		{
+			w.key("fontWeight").value("normal");
+		}
 		if (font.isItalic())
 		{
-			w.key("italic").value("italic"); //$NON-NLS-1$
+			w.key("fontStyle").value("italic"); //$NON-NLS-1$
+		}
+		else
+		{
+			w.key("fontStyle").value("normal"); //$NON-NLS-1$
 		}
 		w.key("fontSize").value(font.getSize() + "px");
 		w.key("fontFamily").value(font.getFamily() + ", Verdana, Arial");

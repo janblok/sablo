@@ -65,7 +65,7 @@ public class FontPropertyType extends DefaultPropertyType<Font>implements IClass
 			{
 				style += Font.BOLD;
 			}
-			if ("italic".equals(((JSONObject)newValue).opt("italic")))
+			if ("italic".equals(((JSONObject)newValue).opt("fontStyle")))
 			{
 				style += Font.ITALIC;
 			}

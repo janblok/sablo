@@ -91,10 +91,13 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		final IWebsocketSession wsSession = WebsocketSessionManager.getOrCreateSession(endpointType, uuid, true);
 
 		CurrentWindow.set(window = wsSession.getOrCreateWindow(windowId, windowName));
+
 		try
 		{
 			window.setEndpoint(this);
 			final IWindow win = window;
+
+			wsSession.init();
 
 			// send initial setup to client in separate thread in order to release current connection
 			wsSession.getEventDispatcher().addEvent(new Runnable()
@@ -233,8 +236,8 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 							ret.add(obj.opt("ret")); // first element is return value - even if it's null; TODO we should handle here javascript undefined as well (instead of treating it as null)
 							if (obj.has("err")) ret.add(obj.opt("err")); // second element is added only if an error happened while calling api in browser
 						}
-						else log.error("Discarded response for obsolete pending message (it probably timed - out waiting for response before it got one): " +
-							suspendID);
+						else log.error(
+							"Discarded response for obsolete pending message (it probably timed - out waiting for response before it got one): " + suspendID);
 
 						window.getSession().getEventDispatcher().resume(suspendID);
 					}

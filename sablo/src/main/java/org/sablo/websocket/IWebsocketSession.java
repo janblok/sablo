@@ -31,6 +31,14 @@ import org.sablo.services.client.SabloService;
  */
 public interface IWebsocketSession
 {
+
+	/**
+	 * call done right after creating the session, so that it can fully initialize it.
+	 *
+	 * @throws Exception
+	 */
+	public abstract void init() throws Exception;
+
 	/**
 	 * Returns the event dispatcher, that should be a separate thread that processes all the events.
 	 *

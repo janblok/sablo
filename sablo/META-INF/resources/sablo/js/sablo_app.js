@@ -235,6 +235,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 	}
 
 	var formResolver = null;
+	var apiCallDeferredQueue = []
 
 	function hasResolvedFormState(name) {
 		return typeof(formStates[name]) !== 'undefined' && formStates[name].resolved;
@@ -297,11 +298,16 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 							var funcThis = formState.api[call.bean];
 							var func = funcThis[call.api];
 						}
+						var returnValue;
 						if (!func) {
 							console.warn("bean " + call.bean + " did not provide the api: " + call.api)
-							return null;
+							returnValue = null;
 						}
-						return func.apply(funcThis, call.args)
+						returnValue = func.apply(funcThis, call.args);
+						if(apiCallDeferredQueue.length > 0) {
+							apiCallDeferredQueue.shift().resolve();	
+						}
+						return returnValue;
 					};
 
 					if (formResolver != null && !hasResolvedFormState(call.form)) {
@@ -310,9 +316,18 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 						if ($log.debugEnabled) $log.debug("sbl * Api call '" + call.api + "' to unresolved form " + call.form + "; will call prepareUnresolvedFormForUse.");
 						formResolver.prepareUnresolvedFormForUse(call.form);
 					}
-					return getFormState(call.form).then(executeAPICall, function(err) {
+					var apiCallPromises = [getFormState(call.form)];
+					if(apiCallDeferredQueue.length > 0) {
+						apiCallPromises.push(apiCallDeferredQueue[apiCallDeferredQueue.length - 1].promise);
+					}
+					apiCallDeferredQueue.push($q.defer())
+					return $q.all(apiCallPromises).then(
+					function() {
+						executeAPICall(formStates[call.form]);
+					},
+					function(err) {
 						$log.error("Error getting form state: " + err);
-					});
+					}); 
 				}
 			});
 

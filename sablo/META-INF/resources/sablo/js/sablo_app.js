@@ -19,7 +19,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 	var currentFormUrl = null;
 	var formStates = {};
 	var formStatesConversionInfo = {};
-	
+
 	var locale = null;
 
 	var deferredFormStates = {};
@@ -73,7 +73,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 			// first build up a list of all the properties both have.
 			var fulllist = $sabloUtils.getCombinedPropertyNames(now, prev);
 			var prop;
-	
+
 			for (prop in fulllist) {
 				var changed;
 				if (prev && now) {
@@ -81,7 +81,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 				} else {
 					changed = true; // true if just one of them is undefined; both cannot be undefined at this point if we are already iterating on combined property names
 				}
-	
+
 				if (changed) {
 					changes[prop] = now[prop];
 				}
@@ -96,7 +96,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 
 	var sendChanges = function(now, prev, formname, beanname, property) {
 		var beanConversionInfo = $sabloUtils.getInDepthProperty(formStatesConversionInfo, formname, beanname);
-		
+
 		var changes = getComponentChanges(now, prev, beanConversionInfo, formStates[formname].properties.designSize, property);
 		if (Object.getOwnPropertyNames(changes).length > 0) {
 			// if this is a simple property change without any special conversions then then push the old value.
@@ -108,7 +108,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 			else {
 				callService('formService', 'dataPush', {formname:formname,beanname:beanname,changes:changes}, true)
 			}
-			
+
 		}
 	};
 
@@ -145,7 +145,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 
 	var updateScopeForState = function(formName, formScope, state) {
 		if (!state) state = formStates[formName];
-		
+
 		if (state && state.model) {
 			for (var componentName in state.model) {
 				if (componentName !== '') {
@@ -191,7 +191,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		currentServiceCallDone = true;
 		return arg;
 	}
-	
+
 	function markServiceCallFailed(arg) {
 		currentServiceCallDone = true;
 		return $q.reject(arg);
@@ -244,7 +244,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 	return {
 		connect : function(context, args, queryArgs) {
 			wsSession = $webSocket.connect(context, args, queryArgs);
-			
+
 			wsSession.onopen(function(evt) {
 				if (evt.isReconnect) {
 					// reload site
@@ -320,14 +320,14 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 					if(apiCallDeferredQueue.length > 0) {
 						apiCallPromises.push(apiCallDeferredQueue[apiCallDeferredQueue.length - 1].promise);
 					}
-					apiCallDeferredQueue.push($q.defer())
+					apiCallDeferredQueue.push($q.defer());
 					return $q.all(apiCallPromises).then(
-					function() {
-						executeAPICall(formStates[call.form]);
-					},
-					function(err) {
-						$log.error("Error getting form state: " + err);
-					}); 
+							function() {
+								executeAPICall(formStates[call.form]);
+							},
+							function(err) {
+								$log.error("Error getting form state: " + err);
+							}); 
 				}
 			});
 
@@ -371,7 +371,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		disconnect : function() {
 			$webSocket.disconnect();
 		},
-		
+
 		contributeFormResolver: function(contributedFormResolver) {
 			formResolver = contributedFormResolver;
 		},
@@ -406,7 +406,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		hasFormStateWithData: function(name) {
 			return typeof(formStates[name]) !== 'undefined' && !formStates[name].initializing && formStates[name].resolved;
 		},
-		
+
 		clearFormState: function(formName) {
 			delete formStates[formName];
 		},
@@ -620,7 +620,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 			var runtimeIndex; // initialized a bit lower
 			var initializing = true;
 			var isEnabled = true;
-			
+
 			function recalculateChildRuntimeIndexesStartingAt(posInDesignArray /*inclusive*/, triggeredByParent) {
 				if (designTabSeq == -2) return;
 
@@ -796,14 +796,14 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 				return false;
 			}
 			$element.on("disableTabseq", disableTabseq);
-			
+
 			function enableTabseq() {
 				isEnabled = true;
 				$element.parent().trigger("recalculatePSTS", [0]);
 				return false;
 			}			
 			$element.on("enableTabseq", enableTabseq);			
-			
+
 			if (designTabSeq != -2 && !(config && config.root)) {
 				if($element.parent().length === 0) {
 					var elementWatch = $scope.$watch(function() { return $element.parent().length }, function(newValue) {

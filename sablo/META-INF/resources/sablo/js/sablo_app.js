@@ -303,7 +303,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 							console.warn("bean " + call.bean + " did not provide the api: " + call.api)
 							returnValue = null;
 						}
-						returnValue = func.apply(funcThis, call.args);
+						else {
+							returnValue = func.apply(funcThis, call.args);
+						}
 						if(apiCallDeferredQueue.length > 0) {
 							apiCallDeferredQueue.shift().resolve();	
 						}

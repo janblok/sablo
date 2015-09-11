@@ -124,4 +124,9 @@ public interface IWebsocketSession
 	SabloService getSabloService();
 
 	Locale getLocale();
+
+	/**
+	 * Get the window timeout for this sessions in ms.
+	 */
+	long getWindowTimeout();
 }

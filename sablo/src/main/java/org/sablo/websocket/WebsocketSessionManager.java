@@ -130,7 +130,7 @@ public class WebsocketSessionManager
 	 * @param endpointType
 	 * @param uuid
 	 */
-	static void closeInactiveSessions()
+	public static void closeInactiveSessions()
 	{
 		List<IWebsocketSession> expiredSessions = new ArrayList<>(3);
 		synchronized (wsSessions)

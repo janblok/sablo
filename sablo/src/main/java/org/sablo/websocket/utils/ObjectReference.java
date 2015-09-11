@@ -18,7 +18,7 @@ package org.sablo.websocket.utils;
 
 /**
  * Keep track of reference count and last access time for an object.
- * 
+ *
  * @author rgansevles
  *
  */
@@ -32,6 +32,17 @@ public class ObjectReference<T>
 	public ObjectReference(T object)
 	{
 		this.object = object;
+	}
+
+	/**
+	 * Get a copy of the reference info without the referred object.
+	 */
+	public ObjectReference<T> getNullReferenceCopy()
+	{
+		ObjectReference<T> ref = new ObjectReference<T>(null);
+		ref.refcount = this.refcount;
+		ref.lastAccessed = this.lastAccessed;
+		return ref;
 	}
 
 	public T getObject()

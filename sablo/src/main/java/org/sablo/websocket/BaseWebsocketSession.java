@@ -82,6 +82,20 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		}
 	}
 
+	protected Collection<ObjectReference< ? extends IWindow>> getWindowsRefs()
+	{
+		synchronized (windows)
+		{
+			List<ObjectReference< ? extends IWindow>> refs = new ArrayList<>(windows.size());
+			for (ObjectReference<IWindow> ref : windows)
+			{
+				refs.add(ref.getNullReferenceCopy());
+			}
+
+			return refs;
+		}
+	}
+
 	@Override
 	public IWindow getOrCreateWindow(String windowId, String windowName)
 	{

@@ -327,7 +327,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 						}
 						return getFormState(call.form).then(
 								function() {
-									executeAPICall(formStates[call.form]);
+									// do it in timeout (after current digest cycle) so any form data change is already applied to the ui
+									$timeout(function() { executeAPICall(formStates[call.form]); });
 								},
 								function(err) {
 									$log.error("Error getting form state: " + err);											

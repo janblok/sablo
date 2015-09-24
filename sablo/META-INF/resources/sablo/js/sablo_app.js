@@ -318,6 +318,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 					}
 					apiCallDeferredQueue.push($q.defer());
 					
+					var result = $q.defer();
 					function resolveFormAndExecuteAPICall() {
 						if (formResolver != null && !hasResolvedFormState(call.form)) {
 							// this means that the form was shown and is now hidden/destroyed; but we still must handle API call to it!
@@ -325,28 +326,34 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 							if ($log.debugEnabled) $log.debug("sbl * Api call '" + call.api + "' to unresolved form " + call.form + "; will call prepareUnresolvedFormForUse.");
 							formResolver.prepareUnresolvedFormForUse(call.form);
 						}
-						return getFormState(call.form).then(
+						
+						getFormState(call.form).then(
 								function() {
 									// do it in timeout (after current digest cycle) so any form data change is already applied to the ui
-									$timeout(function() { executeAPICall(formStates[call.form]); });
+									$timeout(function() {
+										var ret = executeAPICall(formStates[call.form]); 
+										result.resolve(ret); 
+									});
 								},
 								function(err) {
 									$log.error("Error getting form state: " + err);											
 								});
+						
 					}
 					
 					if(previousApiCallPromise) {
-						return previousApiCallPromise.then(
+						previousApiCallPromise.then(
 								function() {
-									return resolveFormAndExecuteAPICall();
+									resolveFormAndExecuteAPICall();
 								},
 								function(err) {
 									$log.error("Error waiting for api call execute " + err);
 								});
 					}
 					else {
-						return resolveFormAndExecuteAPICall();
+						resolveFormAndExecuteAPICall();
 					}	
+					return result.promise;
 				}
 			});
 

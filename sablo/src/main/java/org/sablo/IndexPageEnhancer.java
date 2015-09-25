@@ -24,12 +24,15 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 
 import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.sablo.services.template.ModifiablePropertiesGenerator;
+import org.sablo.specification.WebComponentPackageSpecification;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebComponentSpecification;
 import org.sablo.specification.WebServiceSpecProvider;
@@ -124,19 +127,27 @@ public class IndexPageEnhancer
 		ArrayList<String> allCSSContributions = new ArrayList<String>();
 		ArrayList<String> allJSContributions = new ArrayList<String>();
 
-		WebComponentSpecification[] webComponentDescriptions = WebComponentSpecProvider.getInstance().getAllWebComponentSpecifications();
 		LinkedHashMap<String, JSONObject> allLibraries = new LinkedHashMap<>();
-		for (WebComponentSpecification spec : webComponentDescriptions)
-		{
-			allJSContributions.add(spec.getDefinition());
-			mergeLibs(allLibraries, spec.getLibraries());
-		}
+		Collection<WebComponentPackageSpecification<WebComponentSpecification>> webComponentPackagesDescriptions = new ArrayList<WebComponentPackageSpecification<WebComponentSpecification>>();
+		webComponentPackagesDescriptions.addAll(WebComponentSpecProvider.getInstance().getWebComponentSpecifications().values());
+		webComponentPackagesDescriptions.addAll(WebServiceSpecProvider.getInstance().getWebServiceSpecifications().values());
 
-		WebComponentSpecification[] webServiceDescriptions = WebServiceSpecProvider.getInstance().getAllWebServiceSpecifications();
-		for (WebComponentSpecification spec : webServiceDescriptions)
+		for (WebComponentPackageSpecification<WebComponentSpecification> packageDesc : webComponentPackagesDescriptions)
 		{
-			allJSContributions.add(spec.getDefinition());
-			mergeLibs(allLibraries, spec.getLibraries());
+			if (packageDesc.getCssClientLibrary() != null)
+			{
+				mergeLibs(allLibraries, packageLibsToJSON(packageDesc.getCssClientLibrary(), "text/css"));
+			}
+			if (packageDesc.getJsClientLibrary() != null)
+			{
+				mergeLibs(allLibraries, packageLibsToJSON(packageDesc.getJsClientLibrary(), "text/javascript"));
+			}
+
+			for (WebComponentSpecification spec : packageDesc.getSpecifications().values())
+			{
+				allJSContributions.add(spec.getDefinition());
+				mergeLibs(allLibraries, spec.getLibraries());
+			}
 		}
 
 		for (JSONObject lib : allLibraries.values())
@@ -216,5 +227,43 @@ public class IndexPageEnhancer
 				}
 			}
 		}
+	}
+
+	private static JSONArray packageLibsToJSON(List<String> packageLibs, String mimeType)
+	{
+		JSONArray packageLibsToJSON = new JSONArray();
+
+		try
+		{
+			for (String sLib : packageLibs)
+			{
+				JSONObject jsonLib = new JSONObject();
+				StringTokenizer st = new StringTokenizer(sLib, ";");
+				while (st.hasMoreTokens())
+				{
+					String t = st.nextToken();
+					if (t.startsWith("name="))
+					{
+						jsonLib.put("name", t.substring(5));
+					}
+					else if (t.startsWith("version="))
+					{
+						jsonLib.put("version", t.substring(8));
+					}
+					else
+					{
+						jsonLib.put("url", t);
+					}
+				}
+				jsonLib.put("mimetype", mimeType);
+				packageLibsToJSON.put(jsonLib);
+			}
+		}
+		catch (JSONException ex)
+		{
+			log.error("Error converting package lib to json", ex);
+		}
+
+		return packageLibsToJSON;
 	}
 }

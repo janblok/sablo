@@ -510,9 +510,15 @@ public abstract class BaseWebObject
 				PropertyDescription propertyDesc = specification.getProperty(firstProperty);
 				if (propertyDesc != null)
 				{
-					if (getDefaultFromSpecAsWellIfNeeded) defaultProperty = propertyDesc.getDefaultValue();
-
-					if (defaultProperty == null && propertyDesc.getType() != null)
+					if (getDefaultFromSpecAsWellIfNeeded)
+					{
+						defaultProperty = propertyDesc.getDefaultValue();
+						if (!propertyDesc.hasDefault() && propertyDesc.getType() != null)
+						{
+							defaultProperty = propertyDesc.getType().defaultValue(propertyDesc);
+						}
+					}
+					else if (defaultProperty == null && propertyDesc.getType() != null)
 					{
 						defaultProperty = propertyDesc.getType().defaultValue(propertyDesc);
 					}
@@ -710,8 +716,8 @@ public abstract class BaseWebObject
 		if (newJSONValue == JSONObject.NULL) newJSONValue = null;
 
 		PropertyDescription propertyDesc = specification.getProperty(propertyName);
-		Object value = propertyDesc != null ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDesc, new BrowserConverterContext(this,
-			propertyDesc.getPushToServer())) : null;
+		Object value = propertyDesc != null
+			? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDesc, new BrowserConverterContext(this, propertyDesc.getPushToServer())) : null;
 		return value;
 	}
 

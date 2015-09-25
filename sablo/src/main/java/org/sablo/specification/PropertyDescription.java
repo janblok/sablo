@@ -51,27 +51,29 @@ public class PropertyDescription
 	//case of nested type
 	// TODO: make properties final and remove put* calls so PropertyDescription is immutable
 	private Map<String, PropertyDescription> properties = null;
+	private final boolean hasDefault;
 
 
 	public PropertyDescription(String name, IPropertyType< ? > type)
 	{
-		this(name, type, null, null, null, null, null, false);
+		this(name, type, null, null, false, null, null, null, false);
 	}
 
 	public PropertyDescription(String name, IPropertyType< ? > type, PushToServerEnum pushToServer)
 	{
-		this(name, type, null, null, null, pushToServer, null, false);
+		this(name, type, null, null, false, null, pushToServer, null, false);
 	}
 
 	public PropertyDescription(String name, IPropertyType< ? > type, Object config)
 	{
-		this(name, type, config, null, null, null, null, false);
+		this(name, type, config, null, false, null, null, null, false);
 	}
 
-	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Object defaultValue, List<Object> values, PushToServerEnum pushToServer,
-		JSONObject tags, boolean optional)
+	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Object defaultValue, boolean hasDefault, List<Object> values,
+		PushToServerEnum pushToServer, JSONObject tags, boolean optional)
 	{
 		this.name = name;
+		this.hasDefault = hasDefault;
 		if (type instanceof IYieldingType)
 		{
 			YieldDescriptionArguments params = new YieldDescriptionArguments(config, defaultValue, values, pushToServer, tags, optional);
@@ -175,6 +177,14 @@ public class PropertyDescription
 	public Object getConfig()
 	{
 		return config;
+	}
+
+	/**
+	 * @return the hasDefault
+	 */
+	public boolean hasDefault()
+	{
+		return hasDefault;
 	}
 
 	public Object getDefaultValue()

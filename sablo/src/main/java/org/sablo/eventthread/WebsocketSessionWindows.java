@@ -145,11 +145,14 @@ public class WebsocketSessionWindows implements IWindow
 	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes,
 		IToJSONWriter<IBrowserConverterContext> pendingChangesWriter, boolean blockEventProcessing) throws IOException
 	{
+		// always just return the first none null value.
+		Object retValue = null;
 		for (IWindow window : session.getWindows())
 		{
-			window.executeServiceCall(serviceName, functionName, arguments, argumentTypes, pendingChangesWriter, blockEventProcessing);
+			Object val = window.executeServiceCall(serviceName, functionName, arguments, argumentTypes, pendingChangesWriter, blockEventProcessing);
+			retValue = retValue != null ? retValue : val;
 		}
-		return null;
+		return retValue;
 	}
 
 	@Override

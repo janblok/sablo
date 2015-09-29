@@ -435,6 +435,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 
 		clearFormState: function(formName) {
 			delete formStates[formName];
+			delete formStatesConversionInfo[formName];
 		},
 
 		initFormState: function(formName, beanDatas, formProperties, formScope, resolve) {

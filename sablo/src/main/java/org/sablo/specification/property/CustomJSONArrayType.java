@@ -160,7 +160,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 						if (previousChangeAwareList == null)
 						{
 							log.warn("property " + pd.getName() +
-								" is typed as array; it got browser updates but server-side it is null; ignoring browser update.");
+								" is typed as array; it got browser updates but server-side it is null; ignoring browser update. Update JSON: " + newJSONValue);
 						}
 						else
 						{
@@ -197,7 +197,8 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 							{
 								log.error("Property (" +
 									pd +
-									") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to update array element values serverside. Denying and attempting to send back full value!");
+									") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to update array element values serverside. Denying and attempting to send back full value! Update JSON: " +
+									newJSONValue);
 								if (previousChangeAwareList != null) previousChangeAwareList.markAllChanged();
 								return previousChangeAwareList;
 							}
@@ -210,7 +211,8 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 						{
 							log.error("Property (" +
 								pd +
-								") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full array value serverside. Denying and attempting to send back full value!");
+								") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full array value serverside. Denying and attempting to send back full value! Update JSON: " +
+								newJSONValue);
 							if (previousChangeAwareList != null) previousChangeAwareList.markAllChanged();
 							return previousChangeAwareList;
 						}
@@ -221,9 +223,9 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 				}
 				else
 				{
-					log.warn("property " + pd.getName() + " is typed as array; it got browser updates (" + clientReceivedJSON.getInt(CONTENT_VERSION) +
+					log.info("property " + pd.getName() + " is typed as array; it got browser updates (" + clientReceivedJSON.getInt(CONTENT_VERSION) +
 						") but expected server version (" + (previousChangeAwareList.getListContentVersion() + 1) +
-						")  - so server changed meanwhile; ignoring browser update.");
+						")  - so server changed meanwhile; ignoring browser update. Update JSON: " + newJSONValue);
 
 					// dropped browser update because server object changed meanwhile;
 					// will send a full update to have the correct value browser-side as well again (currently server side is leading / has more prio because not all server side values might support being recreated from client values)
@@ -234,7 +236,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 			}
 			catch (JSONException e)
 			{
-				log.error("Cannot correctly parse custom array property updates/values from browser.", e);
+				log.error("Cannot correctly parse custom array property updates/values from browser. Update JSON: " + newJSONValue, e);
 				return previousChangeAwareList;
 			}
 		}
@@ -244,7 +246,8 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 			{
 				log.error("Property (" +
 					pd +
-					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the array value serverside to null. Denying and attempting to send back full value!");
+					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the array value serverside to null. Denying and attempting to send back full value! Update JSON: " +
+					newJSONValue);
 				previousChangeAwareList.markAllChanged();
 				return previousChangeAwareList;
 			}
@@ -256,7 +259,8 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 			{
 				log.error("Property (" +
 					pd +
-					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full array value serverside (uoc). Denying and attempting to send back full value!");
+					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full array value serverside (uoc). Denying and attempting to send back full value! Update JSON: " +
+					newJSONValue);
 				if (previousChangeAwareList != null) previousChangeAwareList.markAllChanged();
 				return previousChangeAwareList;
 			}

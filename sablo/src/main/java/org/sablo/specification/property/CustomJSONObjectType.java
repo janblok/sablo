@@ -167,7 +167,8 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 						if (previousChangeAwareMap == null)
 						{
 							log.warn("property " + pd.getName() +
-								" is typed as json object; it got browser updates but server-side it is null; ignoring browser update.");
+								" is typed as json object; it got browser updates but server-side it is null; ignoring browser update. Update JSON: " +
+								newJSONValue);
 						}
 						else
 						{
@@ -201,13 +202,13 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 										log.error("Property (" +
 											pd +
 											") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to update custom object element value '" +
-											keyPD + "' serverside. Denying and will attempt to send back full value!");
+											keyPD + "' serverside. Denying and will attempt to send back full value! Update JSON: " + newJSONValue);
 									}
 								}
 								else
 								{
 									if (!angularAutoAddedKeysToIgnore.contains(key)) log.warn("Cannot set property '" + key +
-										"' of custom JSON Object as it's type is undefined.");
+										"' of custom JSON Object as it's type is undefined. Update JSON: " + newJSONValue);
 								}
 							}
 							if (someUpdateAccessDenied) previousChangeAwareMap.markAllChanged();
@@ -220,7 +221,8 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 						{
 							log.error("Property (" +
 								pd +
-								") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full custom object value serverside. Denying and attempting to send back full value!");
+								") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full custom object value serverside. Denying and attempting to send back full value! Update JSON: " +
+								newJSONValue);
 							if (previousChangeAwareMap != null) previousChangeAwareMap.markAllChanged();
 							return previousChangeAwareMap;
 						}
@@ -231,9 +233,9 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 				}
 				else
 				{
-					log.warn("property " + pd.getName() + " is typed as JSON object; it got browser updates (" + clientReceivedJSON.getInt(CONTENT_VERSION) +
+					log.info("property " + pd.getName() + " is typed as JSON object; it got browser updates (" + clientReceivedJSON.getInt(CONTENT_VERSION) +
 						") but expected server version (" + (previousChangeAwareMap.getListContentVersion() + 1) +
-						") - so server changed meanwhile; ignoring browser update.");
+						") - so server changed meanwhile; ignoring browser update. Update JSON: " + newJSONValue);
 
 					// dropped browser update because server object changed meanwhile;
 					// will send a full update to have the correct value browser-side as well again (currently server side is leading / has more prio because not all server side values might support being recreated from client values)
@@ -244,7 +246,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 			}
 			catch (JSONException e)
 			{
-				log.error("Cannot correctly parse custom JSON object property updates/values from browser.", e);
+				log.error("Cannot correctly parse custom JSON object property updates/values from browser. Update JSON: " + newJSONValue, e);
 				return previousChangeAwareMap;
 			}
 		}
@@ -254,7 +256,8 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 			{
 				log.error("Property (" +
 					pd +
-					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full custom object value serverside to null. Denying and attempting to send back full value!");
+					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full custom object value serverside to null. Denying and attempting to send back full value! Update JSON: " +
+					newJSONValue);
 				if (previousChangeAwareMap != null) previousChangeAwareMap.markAllChanged();
 				return previousChangeAwareMap;
 			}
@@ -269,7 +272,8 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 			{
 				log.error("Property (" +
 					pd +
-					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full custom object value serverside (uoc). Denying and attempting to send back full value!");
+					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full custom object value serverside (uoc). Denying and attempting to send back full value! Update JSON: " +
+					newJSONValue);
 				if (previousChangeAwareMap != null) previousChangeAwareMap.markAllChanged();
 				return previousChangeAwareMap;
 			}

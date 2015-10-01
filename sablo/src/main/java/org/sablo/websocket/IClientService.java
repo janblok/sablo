@@ -40,12 +40,32 @@ public interface IClientService
 	 * Execute a service call asynchronously.
 	 * @param serviceName
 	 * @param functionName
+	 * @param window the window on which this service call should happen. If null the current window will be used.
+	 * @param arguments
+	 */
+	public void executeAsyncServiceCall(String functionName, Object[] arguments, IWindow window);
+
+	/**
+	 * Execute a service call synchronously.
+	 * @param serviceName
+	 * @param functionName
+	 * @param window the window on which this service call should happen. If null the current window will be used.
+	 * @param arguments
+	 * @return remote result
+	 * @throws IOException
+	 */
+	public Object executeServiceCall(String functionName, Object[] arguments, IWindow window) throws IOException;
+
+	/**
+	 * Execute a service call asynchronously. It will be called on the current window.
+	 * @param serviceName
+	 * @param functionName
 	 * @param arguments
 	 */
 	public void executeAsyncServiceCall(String functionName, Object[] arguments);
 
 	/**
-	 * Execute a service call synchronously.
+	 * Execute a service call synchronously.. It will be called on the current window.
 	 * @param serviceName
 	 * @param functionName
 	 * @param arguments

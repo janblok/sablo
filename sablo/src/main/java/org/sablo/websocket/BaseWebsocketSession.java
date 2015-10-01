@@ -31,6 +31,7 @@ import org.json.JSONObject;
 import org.sablo.IChangeListener;
 import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
+import org.sablo.eventthread.WebsocketSessionWindows;
 import org.sablo.services.client.SabloService;
 import org.sablo.services.server.FormServiceHandler;
 import org.sablo.specification.WebServiceSpecProvider;
@@ -60,6 +61,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	private final AtomicInteger handlingEvent = new AtomicInteger(0);
 
 	private boolean proccessChanges;
+	private final WebsocketSessionWindows allWindowsProxy = new WebsocketSessionWindows(this);
 
 
 	public BaseWebsocketSession(String uuid)
@@ -394,7 +396,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 			proccessChanges = true;
 			try
 			{
-				CurrentWindow.get().sendChanges();
+				allWindowsProxy.sendChanges();
 			}
 			catch (IOException e)
 			{

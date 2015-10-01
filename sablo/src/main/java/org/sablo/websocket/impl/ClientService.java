@@ -32,6 +32,7 @@ import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.IClientService;
 import org.sablo.websocket.IToJSONWriter;
+import org.sablo.websocket.IWindow;
 import org.sablo.websocket.TypedData;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
@@ -57,6 +58,19 @@ public class ClientService extends BaseWebObject implements IClientService
 	@Override
 	public Object executeServiceCall(String functionName, Object[] arguments) throws IOException
 	{
+		return executeServiceCall(functionName, arguments, null);
+	}
+
+	@Override
+	public void executeAsyncServiceCall(String functionName, Object[] arguments)
+	{
+		executeAsyncServiceCall(functionName, arguments, null);
+	}
+
+	@Override
+	public Object executeServiceCall(String functionName, Object[] arguments, IWindow window) throws IOException
+	{
+		if (window == null) window = CurrentWindow.get();
 		WebComponentSpecification spec = WebServiceSpecProvider.getInstance().getWebServiceSpecification(name);
 		WebComponentApiDefinition apiFunction = null;
 		if (spec != null)
@@ -64,7 +78,7 @@ public class ClientService extends BaseWebObject implements IClientService
 			apiFunction = spec.getApiFunction(functionName);
 		}
 
-		Object retValue = CurrentWindow.get().executeServiceCall(name, functionName, arguments, getParameterTypes(functionName),
+		Object retValue = window.executeServiceCall(name, functionName, arguments, getParameterTypes(functionName),
 			new IToJSONWriter<IBrowserConverterContext>()
 			{
 
@@ -115,9 +129,10 @@ public class ClientService extends BaseWebObject implements IClientService
 	}
 
 	@Override
-	public void executeAsyncServiceCall(String functionName, Object[] arguments)
+	public void executeAsyncServiceCall(String functionName, Object[] arguments, IWindow window)
 	{
-		CurrentWindow.get().executeAsyncServiceCall(name, functionName, arguments, getParameterTypes(functionName));
+		if (window == null) window = CurrentWindow.get();
+		window.executeAsyncServiceCall(name, functionName, arguments, getParameterTypes(functionName));
 	}
 
 	protected PropertyDescription getParameterTypes(String functionName)

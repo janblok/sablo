@@ -593,7 +593,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		},
 		getLocale: function() {
 			if (!locale) {
-				var lang = $window.navigator.languages? $window.navigator.languages[0] : ($window.navigator.language || $window.navigator.userLanguage);
+				var lang = $window.navigator.languages && $window.navigator.languages.length > 0 ? $window.navigator.languages[0] : ($window.navigator.language || $window.navigator.userLanguage);
 				var array = lang.split("-");
 				locale = {language:array[0],country:array[1]};
 			}

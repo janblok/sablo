@@ -812,7 +812,7 @@ webSocketModule.factory('$webSocket',
 						eventObj.y= $event.pageY;
 						arg = eventObj
 					}
-					else if (!arg || (arg instanceof Event || arg instanceof $.Event))
+					else if (arg instanceof Event || arg instanceof $.Event)
 					{
 						var eventObj = {}
 						eventObj.type = 'event'; 

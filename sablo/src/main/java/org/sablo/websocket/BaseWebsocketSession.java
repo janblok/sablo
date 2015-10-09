@@ -47,7 +47,9 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BaseWebsocketSession implements IWebsocketSession, IChangeListener
 {
-	private static final long WINDOW_TIMEOUT = 1 * 60 * 1000;
+	public static final String PROPERTY_WINDOW_TIMEOUT = "sablo.window.timeout.secs";
+	public static final String DEFAULT_WINDOW_TIMEOUT = "60";
+	private static Long windowTimeout;
 
 	private static final Logger log = LoggerFactory.getLogger(BaseWebsocketSession.class.getCanonicalName());
 
@@ -232,7 +234,20 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	@Override
 	public long getWindowTimeout()
 	{
-		return WINDOW_TIMEOUT;
+		if (windowTimeout == null)
+		{
+			try
+			{
+				windowTimeout = Long.valueOf(System.getProperty(PROPERTY_WINDOW_TIMEOUT, DEFAULT_WINDOW_TIMEOUT));
+			}
+			catch (NumberFormatException e)
+			{
+				log.warn("Could not parse window timeout property " + PROPERTY_WINDOW_TIMEOUT + " '" +
+					System.getProperty(PROPERTY_WINDOW_TIMEOUT, DEFAULT_WINDOW_TIMEOUT) + "', reverting to default : " + e.getMessage());
+				windowTimeout = Long.valueOf(DEFAULT_WINDOW_TIMEOUT);
+			}
+		}
+		return windowTimeout.longValue() * 1000; // setting is in seconds
 	}
 
 

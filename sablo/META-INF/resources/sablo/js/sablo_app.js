@@ -591,11 +591,28 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 				}
 			}
 		},
+		getLanguageAndCountryFromBrowser: function() {
+			var langAndCountry;
+			var browserLanguages = $window.navigator.languages;
+			// this returns first one of the languages array if the browser supports this (Chrome and FF) else it falls back to language or userLanguage (IE, and IE seems to return the right one from there)
+			if (browserLanguages && browserLanguages.length > 0) {
+				langAndCountry = browserLanguages[0];
+				if (browserLanguages.length > 1 && langAndCountry.indexOf('-') === -1
+						&& browserLanguages[1].indexOf(langAndCountry + '-') == 0) {
+					// if the first language in the list doesn't specify country, see if the following one is the same language but with a country specified (for example browser could give a list of "en", "en-GB", ...)
+					langAndCountry = browserLanguages[1];
+				}
+			} else {
+				langAndCountry = ($window.navigator.language || $window.navigator.userLanguage);
+			}
+			
+			return langAndCountry;
+		}, 
 		getLocale: function() {
 			if (!locale) {
-				var lang = $window.navigator.languages && $window.navigator.languages.length > 0 ? $window.navigator.languages[0] : ($window.navigator.language || $window.navigator.userLanguage);
-				var array = lang.split("-");
-				locale = {language:array[0],country:array[1]};
+				var langAndCountry = this.getLanguageAndCountryFromBrowser();
+				var array = langAndCountry.split("-");
+				locale = {language : array[0], country : array[1], full : langAndCountry};
 			}
 			return locale;
 		}, 

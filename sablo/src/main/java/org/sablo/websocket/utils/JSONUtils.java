@@ -574,6 +574,37 @@ public class JSONUtils
 		{
 			return dataConversions;
 		}
+
+		@Override
+		public int hashCode()
+		{
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((dataConversions == null) ? 0 : dataConversions.hashCode());
+			result = prime * result + ((jsonString == null) ? 0 : jsonString.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj)
+		{
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			JSONStringWithConversions other = (JSONStringWithConversions)obj;
+			if (dataConversions == null)
+			{
+				if (other.dataConversions != null) return false;
+			}
+			else if (!dataConversions.equals(other.dataConversions)) return false;
+			if (jsonString == null)
+			{
+				if (other.jsonString != null) return false;
+			}
+			else if (!jsonString.equals(other.jsonString)) return false;
+			return true;
+		}
+
 	}
 
 	public static <X> IJSONStringWithConversions writeToJSONString(IToJSONWriter<X> toJSONWriter, IToJSONConverter<X> converter) throws JSONException

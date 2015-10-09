@@ -28,14 +28,14 @@ public interface IEventDispatchAwareServerService extends IServerService
 {
 
 	/**
-	 * Most implementations will simply return here {@link IEventDispatcher#EVENT_LEVEL_DEFAULT}.
-	 * This is the "eventLevel" used to schedule the event for executiong on the event dispatcher thread. For more info see {@link IEventDispatcher#suspend(Object, int)}.
+	 * Most implementations will simply return here the value of "dontCareLevel" arg. ({@link IEventDispatcher#EVENT_LEVEL_DEFAULT})
+	 * This is the "eventLevel" used to schedule the event for execution on the event dispatcher thread. For more info see {@link IEventDispatcher#suspend(Object, int)}.
 	 *
 	 * @param methodName the method that will be scheduled for execution.
 	 * @param arguments the arguments it will receive.
 	 * @param dontCareLevel should be returned if this service doesn't have a special level for this particular method to use.
 	 *
-	 * @return the "eventLevel" used to schedule the event for executiong on the event dispatcher thread.
+	 * @return the "eventLevel" used to schedule the event for execution on the event dispatcher thread.
 	 */
 	public int getMethodEventThreadLevel(String methodName, JSONObject arguments, int dontCareLevel);
 

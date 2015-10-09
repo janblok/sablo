@@ -129,4 +129,10 @@ public interface IWebsocketSession
 	 * Get the window timeout for this sessions in ms.
 	 */
 	long getWindowTimeout();
+
+	/**
+	 * gets the last ping time of all active windows.
+	 * @return
+	 */
+	public long getLastPingTime();
 }

@@ -82,6 +82,17 @@ public class WebsocketSessionWindows implements IWindow
 	}
 
 	@Override
+	public long getLastPingTime()
+	{
+		long lastPingTime = 0;
+		for (IWindow window : session.getWindows())
+		{
+			lastPingTime = Math.max(lastPingTime, window.getLastPingTime());
+		}
+		return lastPingTime;
+	}
+
+	@Override
 	public String getCurrentFormUrl()
 	{
 		return null;

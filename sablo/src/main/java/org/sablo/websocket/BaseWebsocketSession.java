@@ -100,6 +100,22 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		}
 	}
 
+	/**
+	 * returns the last ping time of all the windows that are still connected.
+	 */
+	public long getLastPingTime()
+	{
+		long lastPingTime = 0;
+		for (ObjectReference<IWindow> ref : windows)
+		{
+			if (ref.getRefcount() > 0)
+			{
+				lastPingTime = Math.max(lastPingTime, ref.getObject().getLastPingTime());
+			}
+		}
+		return lastPingTime;
+	}
+
 	@Override
 	public IWindow getOrCreateWindow(String windowId, String windowName)
 	{

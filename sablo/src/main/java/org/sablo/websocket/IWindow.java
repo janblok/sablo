@@ -147,6 +147,11 @@ public interface IWindow
 	 */
 	void cancelSession(String reason);
 
+	/**
+	 * returns the last ping time that was received from the client
+	 */
+	public long getLastPingTime();
+
 
 	/**
 	 *

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.websocket.CloseReason;
 import javax.websocket.Session;
@@ -66,6 +67,8 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 	private IWindow window;
 
 	private final Map<Integer, List<Object>> pendingMessages = new HashMap<>();
+
+	private final AtomicLong lastPingTime = new AtomicLong();
 
 	public WebsocketEndpoint(String endpointType)
 	{
@@ -204,6 +207,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		// handle heartbeats
 		if ("P".equals(message)) // ping
 		{
+			lastPingTime.set(System.currentTimeMillis());
 			try
 			{
 				sendText("p"); // pong, has to be synchronized to prevent pong to interfere with regular messages
@@ -431,6 +435,11 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 	public boolean hasSession()
 	{
 		return session != null;
+	}
+
+	public long getLastPingTime()
+	{
+		return lastPingTime.get();
 	}
 
 }

@@ -140,6 +140,13 @@ public class BaseWindow implements IWindow
 	}
 
 	@Override
+	public long getLastPingTime()
+	{
+		if (endpoint != null) return endpoint.getLastPingTime();
+		return 0;
+	}
+
+	@Override
 	public void onOpen()
 	{
 		// window was connected to new endpoint

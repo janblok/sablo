@@ -302,7 +302,7 @@ webSocketModule.factory('$webSocket',
 						$rootScope.$apply();
 					}
 				}
-			}, 1000, 0, false);
+			}, 4000, 0, false);
 		}
 	}
 	

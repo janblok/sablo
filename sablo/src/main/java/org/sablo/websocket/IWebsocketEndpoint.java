@@ -45,6 +45,11 @@ public interface IWebsocketEndpoint
 	boolean hasSession();
 
 	/**
+	 * returns the last ping time that was received from the client
+	 */
+	public long getLastPingTime();
+
+	/**
 	 * Close the browser session.
 	 */
 	void closeSession();

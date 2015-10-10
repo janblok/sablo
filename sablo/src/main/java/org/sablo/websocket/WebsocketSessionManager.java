@@ -16,7 +16,6 @@
 
 package org.sablo.websocket;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -57,7 +56,7 @@ public class WebsocketSessionManager
 			{
 				CurrentWindow.get().sendChanges();
 			}
-			catch (IOException e)
+			catch (Exception e)
 			{
 				log.error("Error sending changes when session is removed", e);
 			}

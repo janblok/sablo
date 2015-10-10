@@ -101,7 +101,7 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 			synchronized (events)
 			{
 				long remainingMillis = 123456; // dummy value just to compile
-				while (event == null && (endMillis == NO_TIMEOUT || (remainingMillis = endMillis - System.currentTimeMillis()) > 0))
+				while (!exit && event == null && (endMillis == NO_TIMEOUT || (remainingMillis = endMillis - System.currentTimeMillis()) > 0))
 				{
 					i = 0;
 					while (event == null && i < events.size())

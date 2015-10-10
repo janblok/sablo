@@ -221,7 +221,8 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 			while (iterator.hasNext())
 			{
 				ObjectReference<IWindow> ref = iterator.next();
-				if (ref.getRefcount() == 0 && currentTime - ref.getLastAccessed() > getWindowTimeout())
+				if ((ref.getRefcount() == 0 && currentTime - ref.getLastAccessed() > getWindowTimeout()) ||
+					(ref.getObject().getLastPingTime() != 0 && (currentTime - ref.getObject().getLastPingTime() > getWindowTimeout())))
 				{
 					iterator.remove();
 					inactiveWindows.add(ref.getObject());

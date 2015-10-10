@@ -68,7 +68,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 
 	private final Map<Integer, List<Object>> pendingMessages = new HashMap<>();
 
-	private final AtomicLong lastPingTime = new AtomicLong();
+	private final AtomicLong lastPingTime = new AtomicLong(System.currentTimeMillis());
 
 	public WebsocketEndpoint(String endpointType)
 	{

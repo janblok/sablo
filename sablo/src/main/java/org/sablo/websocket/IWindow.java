@@ -149,6 +149,7 @@ public interface IWindow
 
 	/**
 	 * returns the last ping time that was received from the client
+	 * return 0 if not known
 	 */
 	public long getLastPingTime();
 

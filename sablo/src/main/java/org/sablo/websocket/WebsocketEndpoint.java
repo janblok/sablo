@@ -203,11 +203,11 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 			message = incomingPartialMessage.toString();
 			incomingPartialMessage.setLength(0);
 		}
-
+		// always set last ping time for any kind of message.
+		lastPingTime.set(System.currentTimeMillis());
 		// handle heartbeats
 		if ("P".equals(message)) // ping
 		{
-			lastPingTime.set(System.currentTimeMillis());
 			try
 			{
 				sendText("p"); // pong, has to be synchronized to prevent pong to interfere with regular messages

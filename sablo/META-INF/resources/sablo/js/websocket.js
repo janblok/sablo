@@ -295,8 +295,8 @@ webSocketModule.factory('$webSocket',
 			lastHeartbeat = new Date().getTime();
 			heartbeatMonitor = $interval(function() {
 				websocket.send("P"); // ping
-				if (isConnected() && new Date().getTime() - lastHeartbeat > 5000) {
-					// no response within 5 seconds
+				if (isConnected() && new Date().getTime() - lastHeartbeat > 8000) {
+					// no response within 8 seconds
 					if (connected !== 'RECONNECTING') {
 						connected = 'RECONNECTING';
 						$rootScope.$apply();

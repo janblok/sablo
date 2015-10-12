@@ -29,6 +29,8 @@ import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebComponentSpecification;
 import org.sablo.specification.property.types.AggregatedPropertyType;
+import org.sablo.specification.property.types.EnabledPropertyType;
+import org.sablo.specification.property.types.EnabledSabloValue;
 import org.sablo.websocket.CurrentWindow;
 
 /**
@@ -158,7 +160,7 @@ public class WebComponent extends BaseWebObject
 	 * @param arguments
 	 *            the arguments
 	 * @return the value if any
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public Object executeServiceCall(String service, String functionName, Object[] arguments) throws IOException
 	{
@@ -175,7 +177,7 @@ public class WebComponent extends BaseWebObject
 	 *            the functionName name
 	 * @param arguments
 	 *            the arguments
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public void executeAsyncServiceCall(String service, String functionName, Object[] arguments)
 	{
@@ -233,6 +235,35 @@ public class WebComponent extends BaseWebObject
 			};
 		}
 		return parameterTypes;
+	}
+
+	public boolean isEnabled()
+	{
+		for (PropertyDescription prop : specification.getProperties(EnabledPropertyType.INSTANCE))
+		{
+			return ((EnabledSabloValue)getProperty(prop.getName())).getValue() && parent.isEnabled();
+		}
+		return true;
+	}
+
+	public final void setEnabled(boolean enabled)
+	{
+		for (PropertyDescription prop : specification.getProperties(EnabledPropertyType.INSTANCE))
+		{
+//			Object config = prop.getConfig();
+//			if (config instanceof ProtectedConfig && ((ProtectedConfig)config).getForEntries() != null)
+//			{
+//				Collection<String> forEntries = (((ProtectedConfig)config).getForEntries()).getEntries();
+//				if (forEntries != null && forEntries.size() > 0)
+//				{
+//					// specific enable-property, skip
+//					continue;
+//				}
+//			}
+
+			EnabledSabloValue enabledValue = (EnabledSabloValue)getProperty(prop.getName());
+			enabledValue.setEnabled(enabled);
+		}
 	}
 
 }

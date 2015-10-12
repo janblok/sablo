@@ -47,12 +47,11 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 			defered = $q.defer()
 			deferredStates[name] = defered;
 		}
-
 		var formState = formStates[name];
 		if (formState && formState.resolved && !(formState.initializing && needsInitialData)) {
 			defered.resolve(formStates[name]); // then handlers are called even if they are applied after it is resolved
 			delete deferredStates[name];
-		}			   
+		}
 		return defered.promise;
 	}
 
@@ -298,6 +297,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 							var funcThis = formState.api[call.bean];
 							var func = funcThis[call.api];
 						}
+				
 						var returnValue;
 						if (!func) {
 							console.warn("bean " + call.bean + " did not provide the api: " + call.api)
@@ -305,9 +305,6 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 						}
 						else {
 							returnValue = func.apply(funcThis, call.args);
-						}
-						if(apiCallDeferredQueue.length > 0) {
-							apiCallDeferredQueue.shift().resolve();	
 						}
 						return returnValue;
 					};
@@ -318,7 +315,6 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 					}
 					apiCallDeferredQueue.push($q.defer());
 					
-					var result = $q.defer();
 					function resolveFormAndExecuteAPICall() {
 						if (formResolver != null && !hasResolvedFormState(call.form)) {
 							// this means that the form was shown and is now hidden/destroyed; but we still must handle API call to it!
@@ -327,33 +323,41 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 							formResolver.prepareUnresolvedFormForUse(call.form);
 						}
 						
-						getFormState(call.form).then(
+						return getFormState(call.form).then(
 								function() {
 									// do it in timeout (after current digest cycle) so any form data change is already applied to the ui
-									$timeout(function() {
-										var ret = executeAPICall(formStates[call.form]); 
-										result.resolve(ret); 
+									return $timeout(function() {
+										return executeAPICall(formStates[call.form]); 
+									}).then(function(result){
+										return result;
+									},function(err){
+										return $q.reject(err);
 									});
 								},
 								function(err) {
-									$log.error("Error getting form state: " + err);											
+									$log.error("Error getting form state: " + err);		
+									return $q.reject("Error getting form state: " + err);
+								}).finally(function() {
+									if(apiCallDeferredQueue.length > 0) {
+										apiCallDeferredQueue.shift().resolve();	
+									}
 								});
 						
 					}
 					
 					if(previousApiCallPromise) {
-						previousApiCallPromise.then(
+						return previousApiCallPromise.then(
 								function() {
-									resolveFormAndExecuteAPICall();
+									return resolveFormAndExecuteAPICall();
 								},
 								function(err) {
 									$log.error("Error waiting for api call execute " + err);
+									return $q.reject(err);
 								});
 					}
 					else {
-						resolveFormAndExecuteAPICall();
+						return resolveFormAndExecuteAPICall();
 					}	
-					return result.promise;
 				}
 			});
 

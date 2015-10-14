@@ -41,6 +41,9 @@ import org.sablo.specification.property.ISmartPropertyValue;
 import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.WrappingContext;
 import org.sablo.specification.property.types.AggregatedPropertyType;
+import org.sablo.specification.property.types.EnabledPropertyType;
+import org.sablo.specification.property.types.EnabledSabloValue;
+import org.sablo.specification.property.types.IWrapPropertyValue;
 import org.sablo.specification.property.types.ProtectedConfig;
 import org.sablo.specification.property.types.VisiblePropertyType;
 import org.sablo.websocket.TypedData;
@@ -687,14 +690,23 @@ public abstract class BaseWebObject
 	{
 		PropertyDescription propertyDesc = specification.getProperty(propertyName);
 		IPropertyType<Object> type = propertyDesc != null ? (IPropertyType<Object>)propertyDesc.getType() : null;
-		Object object = (type instanceof IWrapperType) ? ((IWrapperType)type).wrap(newValue, oldValue, propertyDesc, new WrappingContext(this)) : newValue;
-		if (type instanceof IClassPropertyType && object != null && !((IClassPropertyType< ? >)type).getTypeClass().isAssignableFrom(object.getClass()))
+		Object object = newValue;
+		if (type instanceof IWrapPropertyValue)
 		{
-			log.info("property: " + propertyName + " of component " + getName() + " set with value: " + newValue + " which is not of type: " +
-				((IClassPropertyType< ? >)type).getTypeClass());
-			return null;
+			object = ((IWrapPropertyValue)type).wrap(newValue, oldValue);
+		}
+		else
+		{
+			object = (type instanceof IWrapperType) ? ((IWrapperType)type).wrap(newValue, oldValue, propertyDesc, new WrappingContext(this)) : newValue;
+			if (type instanceof IClassPropertyType && object != null && !((IClassPropertyType< ? >)type).getTypeClass().isAssignableFrom(object.getClass()))
+			{
+				log.info("property: " + propertyName + " of component " + getName() + " set with value: " + newValue + " which is not of type: " +
+					((IClassPropertyType< ? >)type).getTypeClass());
+				return null;
+			}
 		}
 		return object;
+
 	}
 
 	/**
@@ -812,6 +824,24 @@ public abstract class BaseWebObject
 
 			converter.toJSONValue(w, entry.getKey(), entry.getValue(), pd, clientDataConversions, context);
 			clientDataConversions.popNode();
+		}
+	}
+
+	public boolean isEnabled()
+	{
+		for (PropertyDescription prop : specification.getProperties(EnabledPropertyType.INSTANCE))
+		{
+			return ((EnabledSabloValue)getProperty(prop.getName())).getValue();
+		}
+		return true;
+	}
+
+	public void setEnabled(boolean enabled)
+	{
+		for (PropertyDescription prop : specification.getProperties(EnabledPropertyType.INSTANCE))
+		{
+			EnabledSabloValue enabledValue = (EnabledSabloValue)getProperty(prop.getName());
+			enabledValue.setEnabled(enabled);
 		}
 	}
 

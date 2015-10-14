@@ -29,7 +29,8 @@ import org.sablo.websocket.utils.JSONUtils;
 /**
  * @author emera
  */
-public class EnabledPropertyType extends DefaultPropertyType<EnabledSabloValue>implements IConvertedPropertyType<EnabledSabloValue>
+public class EnabledPropertyType extends DefaultPropertyType<EnabledSabloValue>
+	implements IConvertedPropertyType<EnabledSabloValue>, IWrapPropertyValue<Object, EnabledSabloValue>
 {
 
 	public static final String TYPE_NAME = "enabled";
@@ -94,5 +95,39 @@ public class EnabledPropertyType extends DefaultPropertyType<EnabledSabloValue>i
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
 		return sabloValue.toJSON(writer);
+	}
+
+
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see org.sablo.specification.property.types.IWrapPropertyValue#wrap(java.lang.Object, java.lang.Object)
+	 */
+	@Override
+	public EnabledSabloValue wrap(Object newValue, EnabledSabloValue oldValue)
+	{
+		if (oldValue != null)
+		{
+			if (newValue instanceof Boolean)
+			{
+				oldValue.setEnabled(((Boolean)newValue).booleanValue());
+			}
+			else if (newValue instanceof EnabledSabloValue)
+			{
+				oldValue.setEnabled(((EnabledSabloValue)newValue).getComponentValue());
+			}
+		}
+		else
+		{
+			if (newValue instanceof Boolean)
+			{
+				return new EnabledSabloValue((Boolean)newValue);
+			}
+			else if (newValue instanceof EnabledSabloValue)
+			{
+				return (EnabledSabloValue)newValue;
+			}
+		}
+		return oldValue;
 	}
 }

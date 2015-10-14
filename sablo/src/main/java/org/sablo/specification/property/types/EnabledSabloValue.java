@@ -36,8 +36,8 @@ public class EnabledSabloValue implements ISmartPropertyValue
 	private final Logger log = LoggerFactory.getLogger(EnabledSabloValue.class.getCanonicalName());
 
 	private IChangeListener monitor;
-	protected boolean value;
-	private WebComponent parent;
+	private boolean value;
+	private BaseWebObject parent;
 	private BaseWebObject component;
 
 	public EnabledSabloValue(boolean value)
@@ -88,12 +88,7 @@ public class EnabledSabloValue implements ISmartPropertyValue
 
 	public boolean getValue()
 	{
-		boolean val = true;
-		if (parent != null)
-		{
-			val = parent.isEnabled();
-		}
-		return value && val;
+		return value && (parent == null || parent.isEnabled());
 	}
 
 	public void setEnabled(boolean newValue)

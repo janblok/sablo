@@ -111,7 +111,7 @@ public class TypesTest
 
 		JSONObject object = new JSONObject(json);
 
-		Dimension result = type.fromJSON(object, dim, null, null);
+		Dimension result = type.fromJSON(object, dim, null, null, null);
 
 		assertEquals(dim, result);
 	}
@@ -140,7 +140,7 @@ public class TypesTest
 
 		JSONObject object = new JSONObject(json);
 
-		Point result = type.fromJSON(object, point, null, null);
+		Point result = type.fromJSON(object, point, null, null, null);
 
 		assertEquals(point, result);
 	}
@@ -162,17 +162,17 @@ public class TypesTest
 	@Test
 	public void testNumberTypesToNullConversion()
 	{
-		assertNull(DoublePropertyType.INSTANCE.fromJSON(null, null, null, null));
-		assertNull(DoublePropertyType.INSTANCE.fromJSON("", null, null, null));
+		assertNull(DoublePropertyType.INSTANCE.fromJSON(null, null, null, null, null));
+		assertNull(DoublePropertyType.INSTANCE.fromJSON("", null, null, null, null));
 
-		assertNull(IntPropertyType.INSTANCE.fromJSON(null, null, null, null));
-		assertNull(IntPropertyType.INSTANCE.fromJSON("", null, null, null));
+		assertNull(IntPropertyType.INSTANCE.fromJSON(null, null, null, null, null));
+		assertNull(IntPropertyType.INSTANCE.fromJSON("", null, null, null, null));
 
-		assertNull(LongPropertyType.INSTANCE.fromJSON(null, null, null, null));
-		assertNull(LongPropertyType.INSTANCE.fromJSON("", null, null, null));
+		assertNull(LongPropertyType.INSTANCE.fromJSON(null, null, null, null, null));
+		assertNull(LongPropertyType.INSTANCE.fromJSON("", null, null, null, null));
 
-		assertNull(FloatPropertyType.INSTANCE.fromJSON(null, null, null, null));
-		assertNull(FloatPropertyType.INSTANCE.fromJSON("", null, null, null));
+		assertNull(FloatPropertyType.INSTANCE.fromJSON(null, null, null, null, null));
+		assertNull(FloatPropertyType.INSTANCE.fromJSON("", null, null, null, null));
 
 	}
 
@@ -181,19 +181,19 @@ public class TypesTest
 	{
 		TestBaseWebsocketSession session = (TestBaseWebsocketSession)CurrentWindow.get().getSession();
 
-		assertEquals(1, DoublePropertyType.INSTANCE.fromJSON(Double.valueOf(1), null, null, null).doubleValue(), 0);
-		assertEquals(1.1, DoublePropertyType.INSTANCE.fromJSON(Double.valueOf(1.1), null, null, null).doubleValue(), 0);
-		assertEquals(1, DoublePropertyType.INSTANCE.fromJSON("1", null, null, null).doubleValue(), 0);
+		assertEquals(1, DoublePropertyType.INSTANCE.fromJSON(Double.valueOf(1), null, null, null, null).doubleValue(), 0);
+		assertEquals(1.1, DoublePropertyType.INSTANCE.fromJSON(Double.valueOf(1.1), null, null, null, null).doubleValue(), 0);
+		assertEquals(1, DoublePropertyType.INSTANCE.fromJSON("1", null, null, null, null).doubleValue(), 0);
 
 		// test with english locale
 		session.setLocale(new Locale("en", "US"));
-		assertEquals(1111.11, DoublePropertyType.INSTANCE.fromJSON("1,111.11", null, null, null).doubleValue(), 0);
-		assertEquals(1.1, DoublePropertyType.INSTANCE.fromJSON("1.1", null, null, null).doubleValue(), 0);
+		assertEquals(1111.11, DoublePropertyType.INSTANCE.fromJSON("1,111.11", null, null, null, null).doubleValue(), 0);
+		assertEquals(1.1, DoublePropertyType.INSTANCE.fromJSON("1.1", null, null, null, null).doubleValue(), 0);
 
 		// test with dutch locale
 		session.setLocale(new Locale("nl", "NL"));
-		assertEquals(1111.11, DoublePropertyType.INSTANCE.fromJSON("1.111,11", null, null, null).doubleValue(), 0);
-		assertEquals(1.1, DoublePropertyType.INSTANCE.fromJSON("1,1", null, null, null).doubleValue(), 0);
+		assertEquals(1111.11, DoublePropertyType.INSTANCE.fromJSON("1.111,11", null, null, null, null).doubleValue(), 0);
+		assertEquals(1.1, DoublePropertyType.INSTANCE.fromJSON("1,1", null, null, null, null).doubleValue(), 0);
 
 	}
 
@@ -202,19 +202,19 @@ public class TypesTest
 	{
 		TestBaseWebsocketSession session = (TestBaseWebsocketSession)CurrentWindow.get().getSession();
 
-		assertEquals(1, FloatPropertyType.INSTANCE.fromJSON(Float.valueOf(1), null, null, null).floatValue(), 0);
-		assertEquals(1.1f, FloatPropertyType.INSTANCE.fromJSON(Float.valueOf(1.1f), null, null, null).floatValue(), 0);
-		assertEquals(1, FloatPropertyType.INSTANCE.fromJSON("1", null, null, null).doubleValue(), 0);
+		assertEquals(1, FloatPropertyType.INSTANCE.fromJSON(Float.valueOf(1), null, null, null, null).floatValue(), 0);
+		assertEquals(1.1f, FloatPropertyType.INSTANCE.fromJSON(Float.valueOf(1.1f), null, null, null, null).floatValue(), 0);
+		assertEquals(1, FloatPropertyType.INSTANCE.fromJSON("1", null, null, null, null).doubleValue(), 0);
 
 		// test with english locale
 		session.setLocale(new Locale("en", "US"));
-		assertEquals(1111.11f, FloatPropertyType.INSTANCE.fromJSON("1,111.11", null, null, null).floatValue(), 0);
-		assertEquals(1.1f, FloatPropertyType.INSTANCE.fromJSON("1.1", null, null, null).floatValue(), 0);
+		assertEquals(1111.11f, FloatPropertyType.INSTANCE.fromJSON("1,111.11", null, null, null, null).floatValue(), 0);
+		assertEquals(1.1f, FloatPropertyType.INSTANCE.fromJSON("1.1", null, null, null, null).floatValue(), 0);
 
 		// test with dutch locale
 		session.setLocale(new Locale("nl", "NL"));
-		assertEquals(1111.11f, FloatPropertyType.INSTANCE.fromJSON("1.111,11", null, null, null).floatValue(), 0);
-		assertEquals(1.1f, FloatPropertyType.INSTANCE.fromJSON("1,1", null, null, null).floatValue(), 0);
+		assertEquals(1111.11f, FloatPropertyType.INSTANCE.fromJSON("1.111,11", null, null, null, null).floatValue(), 0);
+		assertEquals(1.1f, FloatPropertyType.INSTANCE.fromJSON("1,1", null, null, null, null).floatValue(), 0);
 
 	}
 
@@ -223,16 +223,16 @@ public class TypesTest
 	{
 		TestBaseWebsocketSession session = (TestBaseWebsocketSession)CurrentWindow.get().getSession();
 
-		assertEquals(1, IntPropertyType.INSTANCE.fromJSON(Integer.valueOf(1), null, null, null).intValue());
-		assertEquals(1, IntPropertyType.INSTANCE.fromJSON("1", null, null, null).intValue());
+		assertEquals(1, IntPropertyType.INSTANCE.fromJSON(Integer.valueOf(1), null, null, null, null).intValue());
+		assertEquals(1, IntPropertyType.INSTANCE.fromJSON("1", null, null, null, null).intValue());
 
 		// test with english locale
 		session.setLocale(new Locale("en", "US"));
-		assertEquals(1111, IntPropertyType.INSTANCE.fromJSON("1,111", null, null, null).intValue());
+		assertEquals(1111, IntPropertyType.INSTANCE.fromJSON("1,111", null, null, null, null).intValue());
 
 		// test with dutch locale
 		session.setLocale(new Locale("nl", "NL"));
-		assertEquals(1111, IntPropertyType.INSTANCE.fromJSON("1.111", null, null, null).intValue());
+		assertEquals(1111, IntPropertyType.INSTANCE.fromJSON("1.111", null, null, null, null).intValue());
 
 	}
 
@@ -240,16 +240,16 @@ public class TypesTest
 	{
 		TestBaseWebsocketSession session = (TestBaseWebsocketSession)CurrentWindow.get().getSession();
 
-		assertEquals(1, LongPropertyType.INSTANCE.fromJSON(Long.valueOf(1), null, null, null).longValue());
-		assertEquals(1, LongPropertyType.INSTANCE.fromJSON("1", null, null, null).longValue());
+		assertEquals(1, LongPropertyType.INSTANCE.fromJSON(Long.valueOf(1), null, null, null, null).longValue());
+		assertEquals(1, LongPropertyType.INSTANCE.fromJSON("1", null, null, null, null).longValue());
 
 		// test with english locale
 		session.setLocale(new Locale("en", "US"));
-		assertEquals(1111, LongPropertyType.INSTANCE.fromJSON("1,111", null, null, null).intValue());
+		assertEquals(1111, LongPropertyType.INSTANCE.fromJSON("1,111", null, null, null, null).intValue());
 
 		// test with dutch locale
 		session.setLocale(new Locale("nl", "NL"));
-		assertEquals(1111, LongPropertyType.INSTANCE.fromJSON("1.111", null, null, null).intValue());
+		assertEquals(1111, LongPropertyType.INSTANCE.fromJSON("1.111", null, null, null, null).intValue());
 
 	}
 }

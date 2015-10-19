@@ -23,6 +23,7 @@ import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
+import org.sablo.util.ValueReference;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 
@@ -47,7 +48,8 @@ public class DimensionPropertyType extends DefaultPropertyType<Dimension> implem
 	}
 
 	@Override
-	public Dimension fromJSON(Object newValue, Dimension previousValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
+	public Dimension fromJSON(Object newValue, Dimension previousValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext,
+		ValueReference<Boolean> returnValueAdjustedIncommingValue)
 	{
 		if (newValue instanceof JSONObject)
 		{

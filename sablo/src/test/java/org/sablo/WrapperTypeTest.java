@@ -37,6 +37,7 @@ import org.sablo.specification.property.IWrappingContext;
 import org.sablo.specification.property.WrappingContext;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.specification.property.types.TypesRegistry;
+import org.sablo.util.ValueReference;
 import org.sablo.websocket.TypedData;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
@@ -90,7 +91,8 @@ public class WrapperTypeTest
 		}
 
 		@Override
-		public MyWrapper fromJSON(Object newValue, MyWrapper previousValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
+		public MyWrapper fromJSON(Object newValue, MyWrapper previousValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext,
+			ValueReference<Boolean> returnValueAdjustedIncommingValue)
 		{
 			if (newValue instanceof JSONObject)
 			{

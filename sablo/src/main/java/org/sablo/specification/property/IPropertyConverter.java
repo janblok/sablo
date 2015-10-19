@@ -19,6 +19,7 @@ package org.sablo.specification.property;
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
+import org.sablo.util.ValueReference;
 import org.sablo.websocket.utils.DataConversion;
 
 /**
@@ -40,9 +41,13 @@ public interface IPropertyConverter<JT, ContextT>
 	 * @param previousValue the previous value of this property as available in the component.
 	 * @param propertyDescription the description of the property that is being converted.
 	 * @param context runtime context
+	 * @param returnValueAdjustedIncommingValue this will be false in most cases. But some simple types might slightly alter the new content. For example a long property type
+	 * that receives a double as new value could truncate it and return the long. In this case it can be useful to know that (as for example the browser should get it's property updated as well
+	 * to be in sync with new server-side value). Can be null if the caller is not interested in knowing this.
 	 * @return the new sablo value for this property to be put in component.
 	 */
-	JT fromJSON(Object newJSONValue, JT previousSabloValue, PropertyDescription propertyDescription, ContextT context);
+	JT fromJSON(Object newJSONValue, JT previousSabloValue, PropertyDescription propertyDescription, ContextT context,
+		ValueReference<Boolean> returnValueAdjustedIncommingValue);
 
 	/**
 	 * It generates (full value) JSON that will be sent to the browser for the given property value. So this sends the entire value

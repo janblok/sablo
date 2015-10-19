@@ -36,6 +36,7 @@ import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.ISupportsGranularUpdates;
 import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.types.TypesRegistry;
+import org.sablo.util.ValueReference;
 import org.sablo.websocket.IToJSONWriter;
 import org.sablo.websocket.TypedData;
 import org.slf4j.Logger;
@@ -315,9 +316,9 @@ public class JSONUtils
 	}
 
 	public static Object fromJSONUnwrapped(Object previousComponentValue, Object newJSONValue, PropertyDescription pd,
-		IBrowserConverterContext dataConversionContext) throws JSONException
+		IBrowserConverterContext dataConversionContext, ValueReference<Boolean> returnValueAdjustedIncommingValue) throws JSONException
 	{
-		Object value = fromJSON(previousComponentValue, newJSONValue, pd, dataConversionContext);
+		Object value = fromJSON(previousComponentValue, newJSONValue, pd, dataConversionContext, returnValueAdjustedIncommingValue);
 		if (pd != null && pd.getType() instanceof IWrapperType< ? , ? >)
 		{
 			// will probably never happen as all this fromJSON thing was only meant for Dates (at least currently)
@@ -331,8 +332,8 @@ public class JSONUtils
 	 * Returns the object to be set directly in a BaseWebObject properties map. For wrapper types this means a wrapped value directly.
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static Object fromJSON(Object oldValue, Object newValue, PropertyDescription pd, IBrowserConverterContext dataConversionContext)
-		throws JSONException
+	public static Object fromJSON(Object oldValue, Object newValue, PropertyDescription pd, IBrowserConverterContext dataConversionContext,
+		ValueReference<Boolean> returnValueAdjustedIncommingValue) throws JSONException
 	{
 		if (newValue == JSONObject.NULL) newValue = null;
 		if (pd != null)
@@ -340,7 +341,7 @@ public class JSONUtils
 			IPropertyType< ? > type = pd.getType();
 			if (type instanceof IPropertyConverterForBrowser< ? >)
 			{
-				return ((IPropertyConverterForBrowser)type).fromJSON(newValue, oldValue, pd, dataConversionContext);
+				return ((IPropertyConverterForBrowser)type).fromJSON(newValue, oldValue, pd, dataConversionContext, returnValueAdjustedIncommingValue);
 			}
 		}
 		return newValue;

@@ -23,6 +23,7 @@ import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
+import org.sablo.util.ValueReference;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 
@@ -30,7 +31,7 @@ import org.sablo.websocket.utils.JSONUtils;
  * @author jcompagner
  *
  */
-public class FontPropertyType extends DefaultPropertyType<Font>implements IClassPropertyType<Font>
+public class FontPropertyType extends DefaultPropertyType<Font> implements IClassPropertyType<Font>
 {
 
 	public static final FontPropertyType INSTANCE = new FontPropertyType();
@@ -47,7 +48,8 @@ public class FontPropertyType extends DefaultPropertyType<Font>implements IClass
 	}
 
 	@Override
-	public Font fromJSON(Object newValue, Font previousValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
+	public Font fromJSON(Object newValue, Font previousValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext,
+		ValueReference<Boolean> returnValueAdjustedIncommingValue)
 	{
 		String fontFamily = previousValue != null ? previousValue.getFamily() : null;
 		int size = previousValue != null ? previousValue.getSize() : 12;

@@ -24,6 +24,7 @@ import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IPropertyConverterForBrowser;
+import org.sablo.util.ValueReference;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
@@ -56,7 +57,8 @@ public class FloatPropertyType extends DefaultPropertyType<Float> implements IPr
 	}
 
 	@Override
-	public Number fromJSON(Object newJSONValue, Number previousSabloValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
+	public Number fromJSON(Object newJSONValue, Number previousSabloValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext,
+		ValueReference<Boolean> returnValueAdjustedIncommingValue)
 	{
 		if (newJSONValue == null || newJSONValue instanceof Float) return (Float)newJSONValue;
 		if (newJSONValue instanceof Number) return Float.valueOf(((Number)newJSONValue).floatValue());

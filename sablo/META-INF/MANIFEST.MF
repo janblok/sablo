@@ -15,7 +15,8 @@ Export-Package: org.sablo,
  org.sablo.startup,
  org.sablo.websocket,
  org.sablo.websocket.impl,
- org.sablo.websocket.utils
+ org.sablo.websocket.utils,
+ org.sablo.util
 Require-Bundle: org.junit,
  slf4j.api;bundle-version="1.6.1",
  org.apache.commons.io;bundle-version="2.4.0"

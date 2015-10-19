@@ -23,6 +23,7 @@ import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
+import org.sablo.util.ValueReference;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 
@@ -47,7 +48,8 @@ public class InsetsPropertyType extends DefaultPropertyType<Insets> implements I
 	}
 
 	@Override
-	public Insets fromJSON(Object newValue, Insets previousValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
+	public Insets fromJSON(Object newValue, Insets previousValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext,
+		ValueReference<Boolean> returnValueAdjustedIncommingValue)
 	{
 		int top = 0;
 		int right = 0;

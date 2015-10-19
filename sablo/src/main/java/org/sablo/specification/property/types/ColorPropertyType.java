@@ -25,6 +25,7 @@ import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
+import org.sablo.util.ValueReference;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 
@@ -75,7 +76,8 @@ public class ColorPropertyType extends DefaultPropertyType<Color> implements ICl
 	}
 
 	@Override
-	public Color fromJSON(Object newValue, Color previousValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
+	public Color fromJSON(Object newValue, Color previousValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext,
+		ValueReference<Boolean> returnValueAdjustedIncommingValue)
 	{
 		Color retval = null;
 
@@ -109,7 +111,7 @@ public class ColorPropertyType extends DefaultPropertyType<Color> implements ICl
 			catch (Exception e)
 			{
 				// ignore
-				if (basicCssColors.containsKey(ss.toLowerCase())) return fromJSON(basicCssColors.get(ss.toLowerCase()), null, pd, dataConverterContext);
+				if (basicCssColors.containsKey(ss.toLowerCase())) return fromJSON(basicCssColors.get(ss.toLowerCase()), null, pd, dataConverterContext, null);
 			}
 		}
 		return retval;

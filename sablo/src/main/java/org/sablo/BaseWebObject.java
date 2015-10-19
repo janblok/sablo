@@ -840,8 +840,7 @@ public abstract class BaseWebObject
 	{
 		for (PropertyDescription prop : specification.getProperties(EnabledPropertyType.INSTANCE))
 		{
-			EnabledSabloValue enabledValue = (EnabledSabloValue)getProperty(prop.getName());
-			enabledValue.setEnabled(enabled);
+			setProperty(prop.getName(), enabled);
 		}
 	}
 

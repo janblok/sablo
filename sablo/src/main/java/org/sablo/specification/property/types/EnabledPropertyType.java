@@ -22,15 +22,15 @@ import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IBrowserConverterContext;
-import org.sablo.specification.property.IConvertedPropertyType;
+import org.sablo.specification.property.IWrapperType;
+import org.sablo.specification.property.IWrappingContext;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 
 /**
  * @author emera
  */
-public class EnabledPropertyType extends DefaultPropertyType<EnabledSabloValue>
-	implements IConvertedPropertyType<EnabledSabloValue>, IWrapPropertyValue<Object, EnabledSabloValue>
+public class EnabledPropertyType extends DefaultPropertyType<Boolean>implements IWrapperType<Boolean, EnabledSabloValue>
 {
 
 	public static final String TYPE_NAME = "enabled";
@@ -49,9 +49,9 @@ public class EnabledPropertyType extends DefaultPropertyType<EnabledSabloValue>
 
 
 	@Override
-	public EnabledSabloValue defaultValue(PropertyDescription pd)
+	public Boolean defaultValue(PropertyDescription pd)
 	{
-		return new EnabledSabloValue(Boolean.TRUE);
+		return Boolean.TRUE;
 	}
 
 	@Override
@@ -101,33 +101,32 @@ public class EnabledPropertyType extends DefaultPropertyType<EnabledSabloValue>
 	/*
 	 * (non-Javadoc)
 	 *
-	 * @see org.sablo.specification.property.types.IWrapPropertyValue#wrap(java.lang.Object, java.lang.Object)
+	 * @see org.sablo.specification.property.IWrapperType#wrap(java.lang.Object, java.lang.Object, org.sablo.specification.PropertyDescription,
+	 * org.sablo.specification.property.IWrappingContext)
 	 */
 	@Override
-	public EnabledSabloValue wrap(Object newValue, EnabledSabloValue oldValue)
+	public EnabledSabloValue wrap(Boolean newValue, EnabledSabloValue oldValue, PropertyDescription propertyDescription, IWrappingContext dataConverterContext)
 	{
 		if (oldValue != null)
 		{
-			if (newValue instanceof Boolean)
-			{
-				oldValue.setEnabled(((Boolean)newValue).booleanValue());
-			}
-			else if (newValue instanceof EnabledSabloValue)
-			{
-				oldValue.setEnabled(((EnabledSabloValue)newValue).getComponentValue());
-			}
+			oldValue.setEnabled(newValue.booleanValue());
 		}
 		else
 		{
-			if (newValue instanceof Boolean)
-			{
-				return new EnabledSabloValue((Boolean)newValue);
-			}
-			else if (newValue instanceof EnabledSabloValue)
-			{
-				return (EnabledSabloValue)newValue;
-			}
+			return new EnabledSabloValue(newValue.booleanValue());
 		}
 		return oldValue;
+	}
+
+
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see org.sablo.specification.property.IWrapperType#unwrap(java.lang.Object)
+	 */
+	@Override
+	public Boolean unwrap(EnabledSabloValue value)
+	{
+		return new Boolean(value.getValue());
 	}
 }

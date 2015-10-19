@@ -59,7 +59,6 @@ public class EnabledSabloValue implements ISmartPropertyValue
 			this.parent = ((WebComponent)component).getParent();
 		}
 		this.monitor = changeMonitor;
-
 	}
 
 
@@ -106,7 +105,7 @@ public class EnabledSabloValue implements ISmartPropertyValue
 					{
 						for (PropertyDescription prop : comp.getSpecification().getProperties(EnabledPropertyType.INSTANCE))
 						{
-							EnabledSabloValue child = (EnabledSabloValue)comp.getProperty(prop.getName());
+							EnabledSabloValue child = (EnabledSabloValue)comp.getRawPropertyValue(prop.getName(), true);
 							child.monitor.valueChanged();
 						}
 					}

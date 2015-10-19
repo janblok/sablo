@@ -30,7 +30,7 @@ import org.sablo.websocket.utils.JSONUtils;
 /**
  * @author emera
  */
-public class EnabledPropertyType extends DefaultPropertyType<Boolean>implements IWrapperType<Boolean, EnabledSabloValue>
+public class EnabledPropertyType extends DefaultPropertyType<Boolean> implements IWrapperType<Boolean, EnabledSabloValue>
 {
 
 	public static final String TYPE_NAME = "enabled";
@@ -113,7 +113,7 @@ public class EnabledPropertyType extends DefaultPropertyType<Boolean>implements 
 		}
 		else
 		{
-			return new EnabledSabloValue(newValue.booleanValue());
+			return new EnabledSabloValue(newValue.booleanValue(), dataConverterContext);
 		}
 		return oldValue;
 	}

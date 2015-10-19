@@ -21,55 +21,28 @@ import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.BaseWebObject;
 import org.sablo.Container;
-import org.sablo.IChangeListener;
 import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.property.ISmartPropertyValue;
+import org.sablo.specification.property.IWrappingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * @author emera
  */
-public class EnabledSabloValue implements ISmartPropertyValue
+public class EnabledSabloValue
 {
 	private final Logger log = LoggerFactory.getLogger(EnabledSabloValue.class.getCanonicalName());
 
-	private IChangeListener monitor;
 	private boolean value;
-	private BaseWebObject parent;
-	private BaseWebObject component;
+	private final BaseWebObject parent;
+	private final BaseWebObject component;
 
-	public EnabledSabloValue(boolean value)
+	public EnabledSabloValue(boolean value, IWrappingContext dataConverterContext)
 	{
 		this.value = value;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see org.sablo.specification.property.ISmartPropertyValue#attachToBaseObject(org.sablo.IChangeListener, org.sablo.BaseWebObject)
-	 */
-	@Override
-	public void attachToBaseObject(IChangeListener changeMonitor, BaseWebObject webObject)
-	{
-		this.component = webObject;
-		if (component instanceof WebComponent)
-		{
-			this.parent = ((WebComponent)component).getParent();
-		}
-		this.monitor = changeMonitor;
-	}
-
-
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see org.sablo.specification.property.ISmartPropertyValue#detach()
-	 */
-	@Override
-	public void detach()
-	{
+		this.component = dataConverterContext.getWebObject();
+		this.parent = component instanceof WebComponent ? ((WebComponent)component).getParent() : null;
 	}
 
 	public JSONWriter toJSON(JSONWriter writer)
@@ -95,19 +68,14 @@ public class EnabledSabloValue implements ISmartPropertyValue
 		if (value != newValue)
 		{
 			this.value = newValue;
-			monitor.valueChanged();
 			if (component instanceof Container)
 			{
 				Container c = (Container)component;
-				if (c.getComponents().size() > 0)
+				for (WebComponent comp : c.getComponents())
 				{
-					for (WebComponent comp : c.getComponents())
+					for (PropertyDescription prop : comp.getSpecification().getProperties(EnabledPropertyType.INSTANCE))
 					{
-						for (PropertyDescription prop : comp.getSpecification().getProperties(EnabledPropertyType.INSTANCE))
-						{
-							EnabledSabloValue child = (EnabledSabloValue)comp.getRawPropertyValue(prop.getName(), true);
-							child.monitor.valueChanged();
-						}
+						comp.flagPropertyAsDirty(prop.getName(), true);
 					}
 				}
 			}

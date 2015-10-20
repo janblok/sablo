@@ -24,6 +24,7 @@ import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IPropertyConverterForBrowser;
+import org.sablo.util.ValueReference;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
@@ -56,10 +57,16 @@ public class LongPropertyType extends DefaultPropertyType<Long> implements IProp
 	}
 
 	@Override
-	public Number fromJSON(Object newJSONValue, Number previousSabloValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
+	public Number fromJSON(Object newJSONValue, Number previousSabloValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext,
+		ValueReference<Boolean> returnValueAdjustedIncommingValue)
 	{
 		if (newJSONValue == null || newJSONValue instanceof Long) return (Long)newJSONValue;
-		if (newJSONValue instanceof Number) return Long.valueOf(((Number)newJSONValue).longValue());
+		if (newJSONValue instanceof Number)
+		{
+			Long val = Long.valueOf(((Number)newJSONValue).longValue());
+			if (returnValueAdjustedIncommingValue != null && val.doubleValue() != ((Number)newJSONValue).doubleValue()) returnValueAdjustedIncommingValue.value = Boolean.TRUE;
+			return val;
+		}
 		if (newJSONValue instanceof String)
 		{
 			if (((String)newJSONValue).trim().length() == 0) return null;
@@ -69,7 +76,16 @@ public class LongPropertyType extends DefaultPropertyType<Long> implements IProp
 			try
 			{
 				parsedValue = NumberFormat.getIntegerInstance(locale).parse((String)newJSONValue);
-				return parsedValue instanceof Long ? (Long)parsedValue : Long.valueOf(parsedValue.longValue());
+				if (parsedValue instanceof Long)
+				{
+					return parsedValue;
+				}
+				else
+				{
+					Long val = Long.valueOf(parsedValue.longValue());
+					if (returnValueAdjustedIncommingValue != null && val.doubleValue() != parsedValue.doubleValue()) returnValueAdjustedIncommingValue.value = Boolean.TRUE;
+					return val;
+				}
 			}
 			catch (ParseException e)
 			{

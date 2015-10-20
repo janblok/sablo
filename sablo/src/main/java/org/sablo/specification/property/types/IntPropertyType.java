@@ -24,6 +24,7 @@ import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IPropertyConverterForBrowser;
+import org.sablo.util.ValueReference;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
@@ -56,10 +57,16 @@ public class IntPropertyType extends DefaultPropertyType<Integer> implements IPr
 	}
 
 	@Override
-	public Number fromJSON(Object newJSONValue, Number previousSabloValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
+	public Number fromJSON(Object newJSONValue, Number previousSabloValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext,
+		ValueReference<Boolean> returnValueAdjustedIncommingValue)
 	{
 		if (newJSONValue == null || newJSONValue instanceof Integer) return (Integer)newJSONValue;
-		if (newJSONValue instanceof Number) return Integer.valueOf(((Number)newJSONValue).intValue());
+		if (newJSONValue instanceof Number)
+		{
+			Integer val = Integer.valueOf(((Number)newJSONValue).intValue());
+			if (returnValueAdjustedIncommingValue != null && val.doubleValue() != ((Number)newJSONValue).doubleValue()) returnValueAdjustedIncommingValue.value = Boolean.TRUE;
+			return val;
+		}
 		if (newJSONValue instanceof String)
 		{
 			if (((String)newJSONValue).trim().length() == 0) return null;
@@ -69,7 +76,16 @@ public class IntPropertyType extends DefaultPropertyType<Integer> implements IPr
 			try
 			{
 				parsedValue = NumberFormat.getIntegerInstance(locale).parse((String)newJSONValue);
-				return parsedValue instanceof Integer ? (Integer)parsedValue : Integer.valueOf(parsedValue.intValue());
+				if (parsedValue instanceof Integer)
+				{
+					return parsedValue;
+				}
+				else
+				{
+					Integer val = Integer.valueOf(parsedValue.intValue());
+					if (returnValueAdjustedIncommingValue != null && val.doubleValue() != parsedValue.doubleValue()) returnValueAdjustedIncommingValue.value = Boolean.TRUE;
+					return val;
+				}
 			}
 			catch (ParseException e)
 			{

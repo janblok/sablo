@@ -46,6 +46,7 @@ import org.sablo.specification.property.types.EnabledSabloValue;
 import org.sablo.specification.property.types.IWrapPropertyValue;
 import org.sablo.specification.property.types.ProtectedConfig;
 import org.sablo.specification.property.types.VisiblePropertyType;
+import org.sablo.util.ValueReference;
 import org.sablo.websocket.TypedData;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
@@ -580,7 +581,8 @@ public abstract class BaseWebObject
 	protected void doPutBrowserProperty(String propertyName, Object propertyValue) throws JSONException
 	{
 		Object oldWrappedValue = getRawPropertyValue(propertyName, true);
-		Object newWrappedValue = convertValueFromJSON(propertyName, oldWrappedValue, propertyValue);
+		ValueReference<Boolean> returnValueAdjustedIncommingValue = new ValueReference<Boolean>(Boolean.FALSE);
+		Object newWrappedValue = convertValueFromJSON(propertyName, oldWrappedValue, propertyValue, returnValueAdjustedIncommingValue);
 		properties.put(propertyName, newWrappedValue);
 
 		// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
@@ -588,6 +590,8 @@ public abstract class BaseWebObject
 		{
 			onPropertyChange(propertyName, unwrapValue(propertyName, oldWrappedValue), unwrapValue(propertyName, newWrappedValue));
 		}
+
+		if (returnValueAdjustedIncommingValue.value.booleanValue()) flagPropertyAsDirty(propertyName, true);
 	}
 
 	/**
@@ -723,13 +727,14 @@ public abstract class BaseWebObject
 	 * @return the converted value
 	 * @throws JSONException
 	 */
-	private Object convertValueFromJSON(String propertyName, Object previousComponentValue, Object newJSONValue) throws JSONException
+	private Object convertValueFromJSON(String propertyName, Object previousComponentValue, Object newJSONValue,
+		ValueReference<Boolean> returnValueAdjustedIncommingValue) throws JSONException
 	{
 		if (newJSONValue == JSONObject.NULL) newJSONValue = null;
 
 		PropertyDescription propertyDesc = specification.getProperty(propertyName);
-		Object value = propertyDesc != null
-			? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDesc, new BrowserConverterContext(this, propertyDesc.getPushToServer())) : null;
+		Object value = propertyDesc != null ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDesc, new BrowserConverterContext(this,
+			propertyDesc.getPushToServer()), returnValueAdjustedIncommingValue) : null;
 		return value;
 	}
 

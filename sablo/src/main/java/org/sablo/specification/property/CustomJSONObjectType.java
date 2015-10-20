@@ -16,9 +16,11 @@
 
 package org.sablo.specification.property;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -29,6 +31,7 @@ import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
+import org.sablo.util.ValueReference;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
@@ -150,7 +153,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 
 	@Override
 	public ChangeAwareMap<ET, WT> fromJSON(Object newJSONValue, ChangeAwareMap<ET, WT> previousChangeAwareMap, PropertyDescription pd,
-		IBrowserConverterContext dataConverterContext)
+		IBrowserConverterContext dataConverterContext, ValueReference<Boolean> returnValueAdjustedIncommingValue)
 	{
 		PushToServerEnum pushToServer = BrowserConverterContext.getPushToServerValue(dataConverterContext);
 
@@ -193,8 +196,11 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 									if ((keyPD.getType() instanceof IPushToServerSpecialType && ((IPushToServerSpecialType)keyPD.getType()).shouldAlwaysAllowIncommingJSON()) ||
 										PushToServerEnum.allow.compareTo(pushToServer) <= 0)
 									{
-										WT newWrappedEl = (WT)JSONUtils.fromJSON(wrappedBaseMap.get(key), val, keyPD, dataConverterContext);
+										ValueReference<Boolean> returnValueAdjustedIncommingValueForKey = new ValueReference<Boolean>(Boolean.FALSE);
+										WT newWrappedEl = (WT)JSONUtils.fromJSON(wrappedBaseMap.get(key), val, keyPD, dataConverterContext,
+											returnValueAdjustedIncommingValueForKey);
 										previousChangeAwareMap.putInWrappedBaseList(key, newWrappedEl, false);
+										if (returnValueAdjustedIncommingValueForKey.value.booleanValue()) previousChangeAwareMap.markElementChanged(key);
 									}
 									else
 									{
@@ -296,6 +302,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 	{
 		Map<String, WT> map = new HashMap<String, WT>();
 		Map<String, WT> previousWrappedBaseMap = (previousChangeAwareMap != null ? previousChangeAwareMap.getWrappedBaseMapForReadOnly() : null);
+		List<String> adjustedNewValueKeys = new ArrayList<>();
 
 		Iterator<String> it = clientReceivedJSON.keys();
 		while (it.hasNext())
@@ -311,8 +318,10 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 				}
 				try
 				{
-					map.put(key,
-						(WT)JSONUtils.fromJSON(oldVal, clientReceivedJSON.opt(key), getCustomJSONTypeDefinition().getProperty(key), dataConverterContext));
+					ValueReference<Boolean> returnValueAdjustedIncommingValueForKey = new ValueReference<Boolean>(Boolean.FALSE);
+					map.put(key, (WT)JSONUtils.fromJSON(oldVal, clientReceivedJSON.opt(key), getCustomJSONTypeDefinition().getProperty(key),
+						dataConverterContext, returnValueAdjustedIncommingValueForKey));
+					if (returnValueAdjustedIncommingValueForKey.value.booleanValue()) adjustedNewValueKeys.add(key);
 				}
 				catch (JSONException e)
 				{
@@ -339,7 +348,13 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		}
 
 		// TODO how to handle previous null value here; do we need to re-send to client or not (for example initially both client and server had values, at the same time server==null client sends full update); how do we kno case server version is unknown then
-		return new ChangeAwareMap<ET, WT>(newBaseMap, previousChangeAwareMap != null ? previousChangeAwareMap.increaseContentVersion() : 1);
+		ChangeAwareMap<ET, WT> retVal = new ChangeAwareMap<ET, WT>(newBaseMap, previousChangeAwareMap != null ? previousChangeAwareMap.increaseContentVersion()
+			: 1);
+
+		for (String key : adjustedNewValueKeys)
+			retVal.markElementChanged(key);
+
+		return retVal;
 	}
 
 	@Override

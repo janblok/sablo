@@ -27,6 +27,7 @@ import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
+import org.sablo.util.ValueReference;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
@@ -142,7 +143,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 
 	@Override
 	public ChangeAwareList<ET, WT> fromJSON(Object newJSONValue, ChangeAwareList<ET, WT> previousChangeAwareList, PropertyDescription pd,
-		IBrowserConverterContext dataConverterContext)
+		IBrowserConverterContext dataConverterContext, ValueReference<Boolean> returnValueAdjustedIncommingValue)
 	{
 		PushToServerEnum pushToServer = BrowserConverterContext.getPushToServerValue(dataConverterContext);
 
@@ -182,9 +183,11 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 
 									if (wrappedBaseListReadOnly.size() > idx)
 									{
+										ValueReference<Boolean> returnValueAdjustedIncommingValueForIndex = new ValueReference<Boolean>(Boolean.FALSE);
 										WT newWrappedEl = (WT)JSONUtils.fromJSON(wrappedBaseListReadOnly.get(idx), val, getCustomJSONTypeDefinition(),
-											dataConverterContext);
+											dataConverterContext, returnValueAdjustedIncommingValueForIndex);
 										previousChangeAwareList.setInWrappedBaseList(idx, newWrappedEl, false);
+										if (returnValueAdjustedIncommingValueForIndex.value.booleanValue()) previousChangeAwareList.markElementChanged(idx);
 									}
 									else
 									{
@@ -283,6 +286,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 	{
 		List<WT> list = new ArrayList<WT>();
 		List<WT> previousWrappedBaseList = (previousChangeAwareList != null ? previousChangeAwareList.getWrappedBaseListForReadOnly() : null);
+		List<Integer> adjustedNewValueIndexes = new ArrayList<>();
 
 		for (int i = 0; i < array.length(); i++)
 		{
@@ -293,7 +297,10 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 			}
 			try
 			{
-				list.add((WT)JSONUtils.fromJSON(oldVal, array.opt(i), getCustomJSONTypeDefinition(), dataConverterContext));
+				ValueReference<Boolean> returnValueAdjustedIncommingValueForIndex = new ValueReference<Boolean>(Boolean.FALSE);
+				list.add((WT)JSONUtils.fromJSON(oldVal, array.opt(i), getCustomJSONTypeDefinition(), dataConverterContext,
+					returnValueAdjustedIncommingValueForIndex));
+				if (returnValueAdjustedIncommingValueForIndex.value.booleanValue()) adjustedNewValueIndexes.add(i);
 			}
 			catch (JSONException e)
 			{
@@ -315,8 +322,14 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 		}
 
 		// TODO how to handle previous null value here; do we need to re-send to client or not (for example initially both client and server had values, at the same time server==null client sends full update); how do we kno case server version is unknown then
-		return new ChangeAwareList<ET, WT>(newBaseList/* , dataConverterContext */, previousChangeAwareList != null
+		ChangeAwareList<ET, WT> retVal = new ChangeAwareList<ET, WT>(newBaseList/* , dataConverterContext */, previousChangeAwareList != null
 			? previousChangeAwareList.increaseContentVersion() : 1);
+
+
+		for (Integer idx : adjustedNewValueIndexes)
+			retVal.markElementChanged(idx.intValue());
+
+		return retVal;
 	}
 
 	@Override

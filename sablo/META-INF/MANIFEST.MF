@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Sablo core library
 Bundle-SymbolicName: sablo;singleton:=true
-Bundle-Version: 8.0.0.3020
+Bundle-Version: 8.0.1.3021
 Export-Package: org.sablo,
  org.sablo.eventthread,
  org.sablo.property.types,
@@ -15,7 +15,8 @@ Export-Package: org.sablo,
  org.sablo.startup,
  org.sablo.websocket,
  org.sablo.websocket.impl,
- org.sablo.websocket.utils
+ org.sablo.websocket.utils,
+ org.sablo.util
 Require-Bundle: org.junit,
  slf4j.api;bundle-version="1.6.1",
  org.apache.commons.io;bundle-version="2.4.0"

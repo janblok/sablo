@@ -102,7 +102,7 @@ public class ClientService extends BaseWebObject implements IClientService
 					try
 					{
 						return JSONUtils.fromJSONUnwrapped(null, retValue, apiFunction.getReturnType(), new BrowserConverterContext(this,
-							PushToServerEnum.allow));
+							PushToServerEnum.allow), null);
 					}
 					catch (JSONException e)
 					{

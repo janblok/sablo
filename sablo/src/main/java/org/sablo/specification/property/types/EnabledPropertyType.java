@@ -24,13 +24,14 @@ import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.IWrappingContext;
+import org.sablo.util.ValueReference;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 
 /**
  * @author emera
  */
-public class EnabledPropertyType extends DefaultPropertyType<Boolean> implements IWrapperType<Boolean, EnabledSabloValue>
+public class EnabledPropertyType extends DefaultPropertyType<Boolean>implements IWrapperType<Boolean, EnabledSabloValue>
 {
 
 	public static final String TYPE_NAME = "enabled";
@@ -72,13 +73,13 @@ public class EnabledPropertyType extends DefaultPropertyType<Boolean> implements
 
 	/*
 	 * (non-Javadoc)
-	 *
+	 * 
 	 * @see org.sablo.specification.property.IPropertyConverter#fromJSON(java.lang.Object, java.lang.Object, org.sablo.specification.PropertyDescription,
-	 * java.lang.Object)
+	 * java.lang.Object, org.sablo.util.ValueReference)
 	 */
 	@Override
 	public EnabledSabloValue fromJSON(Object newJSONValue, EnabledSabloValue previousSabloValue, PropertyDescription propertyDescription,
-		IBrowserConverterContext context)
+		IBrowserConverterContext context, ValueReference<Boolean> returnValueAdjustedIncommingValue)
 	{
 		return previousSabloValue;
 	}

@@ -694,7 +694,7 @@ public class BaseWindow implements IWindow
 			{
 				try
 				{
-					return JSONUtils.fromJSON(null, ret, apiFunction.getReturnType(), new BrowserConverterContext(receiver, PushToServerEnum.allow));
+					return JSONUtils.fromJSON(null, ret, apiFunction.getReturnType(), new BrowserConverterContext(receiver, PushToServerEnum.allow), null);
 				}
 				catch (Exception e)
 				{

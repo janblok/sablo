@@ -36,7 +36,7 @@ public class EnabledSabloValue
 {
 	private final Logger log = LoggerFactory.getLogger(EnabledSabloValue.class.getCanonicalName());
 
-	private boolean value;
+	protected boolean value;
 	protected final IWrappingContext context;
 
 	public EnabledSabloValue(boolean value, IWrappingContext dataConverterContext)
@@ -93,10 +93,5 @@ public class EnabledSabloValue
 				}
 			}
 		}
-	}
-
-	public boolean getComponentValue()
-	{
-		return value;
 	}
 }

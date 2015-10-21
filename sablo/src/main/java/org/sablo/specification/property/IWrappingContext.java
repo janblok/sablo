@@ -27,4 +27,6 @@ public interface IWrappingContext
 
 	BaseWebObject getWebObject();
 
+	String getPropertyName();
+
 }

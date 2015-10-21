@@ -42,7 +42,6 @@ import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.WrappingContext;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.specification.property.types.EnabledPropertyType;
-import org.sablo.specification.property.types.EnabledSabloValue;
 import org.sablo.specification.property.types.IWrapPropertyValue;
 import org.sablo.specification.property.types.ProtectedConfig;
 import org.sablo.specification.property.types.VisiblePropertyType;
@@ -701,7 +700,8 @@ public abstract class BaseWebObject
 		}
 		else
 		{
-			object = (type instanceof IWrapperType) ? ((IWrapperType)type).wrap(newValue, oldValue, propertyDesc, new WrappingContext(this)) : newValue;
+			object = (type instanceof IWrapperType) ? ((IWrapperType)type).wrap(newValue, oldValue, propertyDesc, new WrappingContext(this, propertyName))
+				: newValue;
 			if (type instanceof IClassPropertyType && object != null && !((IClassPropertyType< ? >)type).getTypeClass().isAssignableFrom(object.getClass()))
 			{
 				log.info("property: " + propertyName + " of component " + getName() + " set with value: " + newValue + " which is not of type: " +
@@ -734,7 +734,7 @@ public abstract class BaseWebObject
 
 		PropertyDescription propertyDesc = specification.getProperty(propertyName);
 		Object value = propertyDesc != null ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDesc, new BrowserConverterContext(this,
-			propertyDesc.getPushToServer()), returnValueAdjustedIncommingValue) : null;
+				propertyDesc.getPushToServer()), returnValueAdjustedIncommingValue) : null;
 		return value;
 	}
 
@@ -836,7 +836,7 @@ public abstract class BaseWebObject
 	{
 		for (PropertyDescription prop : specification.getProperties(EnabledPropertyType.INSTANCE))
 		{
-			return ((EnabledSabloValue)getProperty(prop.getName())).getValue();
+			return (boolean)getProperty(prop.getName());
 		}
 		return true;
 	}

@@ -20,9 +20,7 @@ package org.sablo.specification.property.types;
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.BaseWebObject;
-import org.sablo.Container;
 import org.sablo.WebComponent;
-import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IWrappingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,11 +35,13 @@ public class EnabledSabloValue
 	private boolean value;
 	private final BaseWebObject parent;
 	private final BaseWebObject component;
+	private final IWrappingContext context;
 
 	public EnabledSabloValue(boolean value, IWrappingContext dataConverterContext)
 	{
 		this.value = value;
 		this.component = dataConverterContext.getWebObject();
+		this.context = dataConverterContext;
 		this.parent = component instanceof WebComponent ? ((WebComponent)component).getParent() : null;
 	}
 
@@ -68,17 +68,7 @@ public class EnabledSabloValue
 		if (value != newValue)
 		{
 			this.value = newValue;
-			if (component instanceof Container)
-			{
-				Container c = (Container)component;
-				for (WebComponent comp : c.getComponents())
-				{
-					for (PropertyDescription prop : comp.getSpecification().getProperties(EnabledPropertyType.INSTANCE))
-					{
-						comp.flagPropertyAsDirty(prop.getName(), true);
-					}
-				}
-			}
+			component.flagPropertyAsDirty(context.getPropertyName(), true);
 		}
 	}
 

@@ -31,17 +31,12 @@ import org.sablo.websocket.utils.JSONUtils;
 /**
  * @author emera
  */
-public class EnabledPropertyType extends DefaultPropertyType<Boolean>implements IWrapperType<Boolean, EnabledSabloValue>
+public class EnabledPropertyType extends DefaultPropertyType<Boolean> implements IWrapperType<Boolean, EnabledSabloValue>
 {
 
 	public static final String TYPE_NAME = "enabled";
 	public static final EnabledPropertyType INSTANCE = new EnabledPropertyType();
 
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see org.sablo.specification.property.IPropertyType#getName()
-	 */
 	@Override
 	public String getName()
 	{
@@ -71,12 +66,6 @@ public class EnabledPropertyType extends DefaultPropertyType<Boolean>implements 
 		return true;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.sablo.specification.property.IPropertyConverter#fromJSON(java.lang.Object, java.lang.Object, org.sablo.specification.PropertyDescription,
-	 * java.lang.Object, org.sablo.util.ValueReference)
-	 */
 	@Override
 	public EnabledSabloValue fromJSON(Object newJSONValue, EnabledSabloValue previousSabloValue, PropertyDescription propertyDescription,
 		IBrowserConverterContext context, ValueReference<Boolean> returnValueAdjustedIncommingValue)
@@ -84,12 +73,6 @@ public class EnabledPropertyType extends DefaultPropertyType<Boolean>implements 
 		return previousSabloValue;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see org.sablo.specification.property.IPropertyConverter#toJSON(org.json.JSONWriter, java.lang.String, java.lang.Object,
-	 * org.sablo.specification.PropertyDescription, org.sablo.websocket.utils.DataConversion, java.lang.Object)
-	 */
 	@Override
 	public JSONWriter toJSON(JSONWriter writer, String key, EnabledSabloValue sabloValue, PropertyDescription propertyDescription,
 		DataConversion clientConversion, IBrowserConverterContext dataConverterContext) throws JSONException
@@ -98,13 +81,6 @@ public class EnabledPropertyType extends DefaultPropertyType<Boolean>implements 
 		return sabloValue.toJSON(writer);
 	}
 
-
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see org.sablo.specification.property.IWrapperType#wrap(java.lang.Object, java.lang.Object, org.sablo.specification.PropertyDescription,
-	 * org.sablo.specification.property.IWrappingContext)
-	 */
 	@Override
 	public EnabledSabloValue wrap(Boolean newValue, EnabledSabloValue oldValue, PropertyDescription propertyDescription, IWrappingContext dataConverterContext)
 	{
@@ -119,15 +95,9 @@ public class EnabledPropertyType extends DefaultPropertyType<Boolean>implements 
 		return oldValue;
 	}
 
-
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see org.sablo.specification.property.IWrapperType#unwrap(java.lang.Object)
-	 */
 	@Override
 	public Boolean unwrap(EnabledSabloValue value)
 	{
-		return new Boolean(value.getValue());
+		return Boolean.valueOf(value.getValue());
 	}
 }

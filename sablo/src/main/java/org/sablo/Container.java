@@ -25,7 +25,6 @@ import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.WebComponentSpecification;
 import org.sablo.specification.property.IBrowserConverterContext;
-import org.sablo.specification.property.types.EnabledSabloValue;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
@@ -102,8 +101,8 @@ public abstract class Container extends WebComponent
 		boolean contentHasBeenWritten = this.writeOwnComponentChanges(w, keyInParent, "", converter, clientDataConversions);
 		for (WebComponent wc : getComponents())
 		{
-			contentHasBeenWritten = wc.writeOwnComponentChanges(w, contentHasBeenWritten ? null : keyInParent, wc.getName(), converter, clientDataConversions) ||
-					contentHasBeenWritten;
+			contentHasBeenWritten = wc.writeOwnComponentChanges(w, contentHasBeenWritten ? null : keyInParent, wc.getName(), converter,
+				clientDataConversions) || contentHasBeenWritten;
 		}
 		if (contentHasBeenWritten) w.endObject();
 		changed = false;
@@ -124,24 +123,5 @@ public abstract class Container extends WebComponent
 		JSONUtils.writeClientConversions(w, clientDataConversions);
 		changed = false;
 		return contentHasBeenWritten;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see org.sablo.WebComponent#flagPropertyAsDirty(java.lang.String, boolean)
-	 */
-	@Override
-	public boolean flagPropertyAsDirty(String key, boolean dirty)
-	{
-		boolean modified = super.flagPropertyAsDirty(key, dirty);
-		if (getRawPropertyValue(key, true) instanceof EnabledSabloValue)
-		{
-			for (WebComponent component : getComponents())
-			{
-				component.flagPropertyAsDirty(key, dirty);
-			}
-		}
-		return modified;
 	}
 }

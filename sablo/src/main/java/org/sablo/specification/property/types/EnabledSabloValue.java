@@ -17,10 +17,14 @@
 
 package org.sablo.specification.property.types;
 
+import java.util.Collection;
+
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.BaseWebObject;
+import org.sablo.Container;
 import org.sablo.WebComponent;
+import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IWrappingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,16 +37,12 @@ public class EnabledSabloValue
 	private final Logger log = LoggerFactory.getLogger(EnabledSabloValue.class.getCanonicalName());
 
 	private boolean value;
-	private final BaseWebObject parent;
-	private final BaseWebObject component;
-	private final IWrappingContext context;
+	protected final IWrappingContext context;
 
 	public EnabledSabloValue(boolean value, IWrappingContext dataConverterContext)
 	{
 		this.value = value;
-		this.component = dataConverterContext.getWebObject();
 		this.context = dataConverterContext;
-		this.parent = component instanceof WebComponent ? ((WebComponent)component).getParent() : null;
 	}
 
 	public JSONWriter toJSON(JSONWriter writer)
@@ -60,7 +60,10 @@ public class EnabledSabloValue
 
 	public boolean getValue()
 	{
-		return value && (parent == null || parent.isEnabled());
+		if (!value) return false;
+		BaseWebObject component = context.getWebObject();
+		if (component instanceof WebComponent && ((WebComponent)component).getParent() != null) return ((WebComponent)component).getParent().isEnabled();
+		return true;
 	}
 
 	public void setEnabled(boolean newValue)
@@ -68,7 +71,27 @@ public class EnabledSabloValue
 		if (value != newValue)
 		{
 			this.value = newValue;
-			component.flagPropertyAsDirty(context.getPropertyName(), true);
+			flagChanged(context.getWebObject(), context.getPropertyName());
+		}
+	}
+
+	/**
+	 * @param comp
+	 *
+	 */
+	protected void flagChanged(BaseWebObject comp, String propName)
+	{
+		comp.flagPropertyAsDirty(propName, true);
+		if (comp instanceof Container)
+		{
+			for (WebComponent child : ((Container)comp).getComponents())
+			{
+				Collection<PropertyDescription> properties = child.getSpecification().getProperties(EnabledPropertyType.INSTANCE);
+				for (PropertyDescription propertyDescription : properties)
+				{
+					flagChanged(child, propertyDescription.getName());
+				}
+			}
 		}
 	}
 

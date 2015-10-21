@@ -42,7 +42,6 @@ import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.WrappingContext;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.specification.property.types.EnabledPropertyType;
-import org.sablo.specification.property.types.IWrapPropertyValue;
 import org.sablo.specification.property.types.ProtectedConfig;
 import org.sablo.specification.property.types.VisiblePropertyType;
 import org.sablo.util.ValueReference;
@@ -693,21 +692,13 @@ public abstract class BaseWebObject
 	{
 		PropertyDescription propertyDesc = specification.getProperty(propertyName);
 		IPropertyType<Object> type = propertyDesc != null ? (IPropertyType<Object>)propertyDesc.getType() : null;
-		Object object = newValue;
-		if (type instanceof IWrapPropertyValue)
+		Object object = (type instanceof IWrapperType) ? ((IWrapperType)type).wrap(newValue, oldValue, propertyDesc, new WrappingContext(this, propertyName))
+			: newValue;
+		if (type instanceof IClassPropertyType && object != null && !((IClassPropertyType< ? >)type).getTypeClass().isAssignableFrom(object.getClass()))
 		{
-			object = ((IWrapPropertyValue)type).wrap(newValue, oldValue);
-		}
-		else
-		{
-			object = (type instanceof IWrapperType) ? ((IWrapperType)type).wrap(newValue, oldValue, propertyDesc, new WrappingContext(this, propertyName))
-				: newValue;
-			if (type instanceof IClassPropertyType && object != null && !((IClassPropertyType< ? >)type).getTypeClass().isAssignableFrom(object.getClass()))
-			{
-				log.info("property: " + propertyName + " of component " + getName() + " set with value: " + newValue + " which is not of type: " +
-					((IClassPropertyType< ? >)type).getTypeClass());
-				return null;
-			}
+			log.info("property: " + propertyName + " of component " + getName() + " set with value: " + newValue + " which is not of type: " +
+				((IClassPropertyType< ? >)type).getTypeClass());
+			return null;
 		}
 		return object;
 
@@ -733,8 +724,8 @@ public abstract class BaseWebObject
 		if (newJSONValue == JSONObject.NULL) newJSONValue = null;
 
 		PropertyDescription propertyDesc = specification.getProperty(propertyName);
-		Object value = propertyDesc != null ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDesc, new BrowserConverterContext(this,
-				propertyDesc.getPushToServer()), returnValueAdjustedIncommingValue) : null;
+		Object value = propertyDesc != null ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDesc,
+			new BrowserConverterContext(this, propertyDesc.getPushToServer()), returnValueAdjustedIncommingValue) : null;
 		return value;
 	}
 

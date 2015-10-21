@@ -29,7 +29,6 @@ import org.sablo.specification.WebComponentApiDefinition;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebComponentSpecification;
 import org.sablo.specification.property.types.AggregatedPropertyType;
-import org.sablo.specification.property.types.EnabledPropertyType;
 import org.sablo.websocket.CurrentWindow;
 
 /**
@@ -51,14 +50,6 @@ public class WebComponent extends BaseWebObject
 	public WebComponent(String name, WebComponentSpecification spec)
 	{
 		super(name, spec);
-		// by default all the components should have a enabled property, else flagging it will not have any effect
-		Collection<PropertyDescription> props = specification.getProperties(EnabledPropertyType.INSTANCE);
-		for (PropertyDescription propertyDescription : props)
-		{
-			Object defaultValue = propertyDescription.getDefaultValue();
-			if (defaultValue == null) defaultValue = propertyDescription.getType().defaultValue(propertyDescription);
-			setProperty(propertyDescription.getName(), defaultValue);
-		}
 	}
 
 	/**

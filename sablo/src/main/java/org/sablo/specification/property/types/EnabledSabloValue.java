@@ -82,6 +82,12 @@ public class EnabledSabloValue
 	protected void flagChanged(BaseWebObject comp, String propName)
 	{
 		comp.flagPropertyAsDirty(propName, true);
+		if (!comp.getProperties().content.containsKey(propName))
+		{
+			// if it doesn't have this property yet, now push it (take the one from the default map)
+			EnabledSabloValue defaultValue = (EnabledSabloValue)comp.getRawPropertyValue(propName, true);
+			comp.setProperty(propName, Boolean.valueOf(defaultValue.value));
+		}
 		if (comp instanceof Container)
 		{
 			for (WebComponent child : ((Container)comp).getComponents())

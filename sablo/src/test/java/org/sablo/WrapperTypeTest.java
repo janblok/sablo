@@ -96,15 +96,16 @@ public class WrapperTypeTest
 		{
 			if (newValue instanceof JSONObject)
 			{
-				if (dataConverterContext instanceof IWrappingContext) return wrap(((JSONObject)newValue).optString("string"), previousValue, pd,
-					(IWrappingContext)dataConverterContext);
-				else return wrap(((JSONObject)newValue).optString("string"), previousValue, pd, new WrappingContext(dataConverterContext.getWebObject()));
+				if (dataConverterContext instanceof IWrappingContext)
+					return wrap(((JSONObject)newValue).optString("string"), previousValue, pd, (IWrappingContext)dataConverterContext);
+				else return wrap(((JSONObject)newValue).optString("string"), previousValue, pd,
+					new WrappingContext(dataConverterContext.getWebObject(), pd.getName()));
 
 			}
 			else if (newValue instanceof String)
 			{
 				if (dataConverterContext instanceof IWrappingContext) return wrap((String)newValue, previousValue, pd, (IWrappingContext)dataConverterContext);
-				else return wrap((String)newValue, previousValue, pd, new WrappingContext(dataConverterContext.getWebObject()));
+				else return wrap((String)newValue, previousValue, pd, new WrappingContext(dataConverterContext.getWebObject(), pd.getName()));
 			}
 			return null;
 		}

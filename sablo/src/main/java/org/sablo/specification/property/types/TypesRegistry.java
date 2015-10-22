@@ -68,6 +68,7 @@ public class TypesRegistry
 		addType(ComponentDefPropertyType.INSTANCE);
 		addType(BytePropertyType.INSTANCE);
 		addType(ScrollbarsPropertyType.INSTANCE);
+		addType(EnabledPropertyType.INSTANCE);
 
 		addTypeFactory(CustomJSONArrayType.TYPE_NAME, new CustomJSONArrayTypeFactory());
 		addTypeFactory(CustomVariableArgsType.TYPE_NAME, new CustomVariableArgsTypeFactory());
@@ -165,8 +166,8 @@ public class TypesRegistry
 			previous = typesByClass.put(((IClassPropertyType< ? >)type).getTypeClass(), (IClassPropertyType< ? >)type);
 			if (previous != null)
 			{
-				log.trace("there was already a type for type class " + ((IClassPropertyType< ? >)type).getTypeClass() + ": " + previous + " replaced by: " +
-					type);
+				log.trace(
+					"there was already a type for type class " + ((IClassPropertyType< ? >)type).getTypeClass() + ": " + previous + " replaced by: " + type);
 			}
 		}
 	}

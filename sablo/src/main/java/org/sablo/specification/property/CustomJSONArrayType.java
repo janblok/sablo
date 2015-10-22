@@ -39,7 +39,7 @@ import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
  * @author acostescu
  */
 @SuppressWarnings("nls")
-public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> implements IAdjustablePropertyType<Object>,
+public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>implements IAdjustablePropertyType<Object>,
 	IWrapperType<Object, ChangeAwareList<ET, WT>>, ISupportsGranularUpdates<ChangeAwareList<ET, WT>>, IPushToServerSpecialType
 {
 
@@ -165,7 +165,8 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 						}
 						else
 						{
-							if ((getCustomJSONTypeDefinition().getType() instanceof IPushToServerSpecialType && ((IPushToServerSpecialType)getCustomJSONTypeDefinition().getType()).shouldAlwaysAllowIncommingJSON()) ||
+							if ((getCustomJSONTypeDefinition().getType() instanceof IPushToServerSpecialType &&
+								((IPushToServerSpecialType)getCustomJSONTypeDefinition().getType()).shouldAlwaysAllowIncommingJSON()) ||
 								PushToServerEnum.allow.compareTo(pushToServer) <= 0)
 							{
 								JSONObject updates = (JSONObject)newJSONValue;
@@ -198,8 +199,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 							}
 							else
 							{
-								log.error("Property (" +
-									pd +
+								log.error("Property (" + pd +
 									") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to update array element values serverside. Denying and attempting to send back full value! Update JSON: " +
 									newJSONValue);
 								if (previousChangeAwareList != null) previousChangeAwareList.markAllChanged();
@@ -212,8 +212,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 					{
 						if (PushToServerEnum.allow.compareTo(pushToServer) > 0)
 						{
-							log.error("Property (" +
-								pd +
+							log.error("Property (" + pd +
 								") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full array value serverside. Denying and attempting to send back full value! Update JSON: " +
 								newJSONValue);
 							if (previousChangeAwareList != null) previousChangeAwareList.markAllChanged();
@@ -247,8 +246,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 		{
 			if (previousChangeAwareList != null && PushToServerEnum.allow.compareTo(pushToServer) > 0)
 			{
-				log.error("Property (" +
-					pd +
+				log.error("Property (" + pd +
 					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the array value serverside to null. Denying and attempting to send back full value! Update JSON: " +
 					newJSONValue);
 				previousChangeAwareList.markAllChanged();
@@ -260,8 +258,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 		{
 			if (PushToServerEnum.allow.compareTo(pushToServer) > 0)
 			{
-				log.error("Property (" +
-					pd +
+				log.error("Property (" + pd +
 					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full array value serverside (uoc). Denying and attempting to send back full value! Update JSON: " +
 					newJSONValue);
 				if (previousChangeAwareList != null) previousChangeAwareList.markAllChanged();
@@ -270,7 +267,8 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 
 			// this can happen if the property was undefined before (so not even aware of type client side) and it was assigned a complete array value client side;
 			// in this case we must update server value and send a request back to client containing the type and letting it know that it must start watching the new value (for granular updates)
-			ChangeAwareList<ET, WT> newChangeAwareList = fullValueReplaceFromBrowser(previousChangeAwareList, pd, dataConverterContext, (JSONArray)newJSONValue);
+			ChangeAwareList<ET, WT> newChangeAwareList = fullValueReplaceFromBrowser(previousChangeAwareList, pd, dataConverterContext,
+				(JSONArray)newJSONValue);
 			newChangeAwareList.markMustSendTypeToClient();
 			return newChangeAwareList;
 		}
@@ -313,7 +311,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 		if (elementType instanceof IWrapperType< ? , ? >)
 		{
 			IWrappingContext wrappingContext = (dataConverterContext instanceof IWrappingContext ? (IWrappingContext)dataConverterContext
-				: new WrappingContext(dataConverterContext.getWebObject()));
+				: new WrappingContext(dataConverterContext.getWebObject(), pd.getName()));
 			newBaseList = new WrapperList<ET, WT>(list, (IWrapperType<ET, WT>)elementType, pd, wrappingContext);
 		}
 		else
@@ -322,8 +320,8 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 		}
 
 		// TODO how to handle previous null value here; do we need to re-send to client or not (for example initially both client and server had values, at the same time server==null client sends full update); how do we kno case server version is unknown then
-		ChangeAwareList<ET, WT> retVal = new ChangeAwareList<ET, WT>(newBaseList/* , dataConverterContext */, previousChangeAwareList != null
-			? previousChangeAwareList.increaseContentVersion() : 1);
+		ChangeAwareList<ET, WT> retVal = new ChangeAwareList<ET, WT>(newBaseList/* , dataConverterContext */,
+			previousChangeAwareList != null ? previousChangeAwareList.increaseContentVersion() : 1);
 
 
 		for (Integer idx : adjustedNewValueIndexes)
@@ -374,8 +372,8 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 				for (int i = 0; i < wrappedBaseListReadOnly.size(); i++)
 				{
 					arrayConversionMarkers.pushNode(String.valueOf(i));
-					toJSONConverterForFullValue.toJSONValue(writer, null, wrappedBaseListReadOnly.get(i), getCustomJSONTypeDefinition(),
-						arrayConversionMarkers, dataConverterContext);
+					toJSONConverterForFullValue.toJSONValue(writer, null, wrappedBaseListReadOnly.get(i), getCustomJSONTypeDefinition(), arrayConversionMarkers,
+						dataConverterContext);
 					arrayConversionMarkers.popNode();
 				}
 				writer.endArray();

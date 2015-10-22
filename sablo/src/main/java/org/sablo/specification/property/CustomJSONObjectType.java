@@ -44,7 +44,7 @@ import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
  */
 @SuppressWarnings("nls")
 // TODO these ET and WT are improper - as for object type they can represent multiple types (a different set for each child key), but they help to avoid some bugs at compile-time
-public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<String, ET>> implements IAdjustablePropertyType<Map<String, ET>>,
+public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<String, ET>>implements IAdjustablePropertyType<Map<String, ET>>,
 	IWrapperType<Map<String, ET>, ChangeAwareMap<ET, WT>>, ISupportsGranularUpdates<ChangeAwareMap<ET, WT>>, IPushToServerSpecialType
 {
 
@@ -59,6 +59,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 	protected static final String NO_OP = "n";
 
 	protected static Set<String> angularAutoAddedKeysToIgnore = new HashSet<>();
+
 	{
 		angularAutoAddedKeysToIgnore.add("$$hashKey");
 	}
@@ -193,7 +194,8 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 
 								if (keyPD != null)
 								{
-									if ((keyPD.getType() instanceof IPushToServerSpecialType && ((IPushToServerSpecialType)keyPD.getType()).shouldAlwaysAllowIncommingJSON()) ||
+									if ((keyPD.getType() instanceof IPushToServerSpecialType &&
+										((IPushToServerSpecialType)keyPD.getType()).shouldAlwaysAllowIncommingJSON()) ||
 										PushToServerEnum.allow.compareTo(pushToServer) <= 0)
 									{
 										ValueReference<Boolean> returnValueAdjustedIncommingValueForKey = new ValueReference<Boolean>(Boolean.FALSE);
@@ -205,16 +207,15 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 									else
 									{
 										someUpdateAccessDenied = true;
-										log.error("Property (" +
-											pd +
+										log.error("Property (" + pd +
 											") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to update custom object element value '" +
 											keyPD + "' serverside. Denying and will attempt to send back full value! Update JSON: " + newJSONValue);
 									}
 								}
 								else
 								{
-									if (!angularAutoAddedKeysToIgnore.contains(key)) log.warn("Cannot set property '" + key +
-										"' of custom JSON Object as it's type is undefined. Update JSON: " + newJSONValue);
+									if (!angularAutoAddedKeysToIgnore.contains(key)) log.warn(
+										"Cannot set property '" + key + "' of custom JSON Object as it's type is undefined. Update JSON: " + newJSONValue);
 								}
 							}
 							if (someUpdateAccessDenied) previousChangeAwareMap.markAllChanged();
@@ -225,8 +226,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 					{
 						if (PushToServerEnum.allow.compareTo(pushToServer) > 0)
 						{
-							log.error("Property (" +
-								pd +
+							log.error("Property (" + pd +
 								") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full custom object value serverside. Denying and attempting to send back full value! Update JSON: " +
 								newJSONValue);
 							if (previousChangeAwareMap != null) previousChangeAwareMap.markAllChanged();
@@ -260,8 +260,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		{
 			if (PushToServerEnum.allow.compareTo(pushToServer) > 0)
 			{
-				log.error("Property (" +
-					pd +
+				log.error("Property (" + pd +
 					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full custom object value serverside to null. Denying and attempting to send back full value! Update JSON: " +
 					newJSONValue);
 				if (previousChangeAwareMap != null) previousChangeAwareMap.markAllChanged();
@@ -276,8 +275,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 
 			if (PushToServerEnum.allow.compareTo(pushToServer) > 0)
 			{
-				log.error("Property (" +
-					pd +
+				log.error("Property (" + pd +
 					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full custom object value serverside (uoc). Denying and attempting to send back full value! Update JSON: " +
 					newJSONValue);
 				if (previousChangeAwareMap != null) previousChangeAwareMap.markAllChanged();
@@ -339,7 +337,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		if (wrappingChildren != null)
 		{
 			IWrappingContext wrappingContext = (dataConverterContext instanceof IWrappingContext ? (IWrappingContext)dataConverterContext
-				: new WrappingContext(dataConverterContext.getWebObject()));
+				: new WrappingContext(dataConverterContext.getWebObject(), pd.getName()));
 			newBaseMap = new WrapperMap<ET, WT>(map, wrappingChildren, pd, wrappingContext);
 		}
 		else
@@ -348,8 +346,8 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		}
 
 		// TODO how to handle previous null value here; do we need to re-send to client or not (for example initially both client and server had values, at the same time server==null client sends full update); how do we kno case server version is unknown then
-		ChangeAwareMap<ET, WT> retVal = new ChangeAwareMap<ET, WT>(newBaseMap, previousChangeAwareMap != null ? previousChangeAwareMap.increaseContentVersion()
-			: 1);
+		ChangeAwareMap<ET, WT> retVal = new ChangeAwareMap<ET, WT>(newBaseMap,
+			previousChangeAwareMap != null ? previousChangeAwareMap.increaseContentVersion() : 1);
 
 		for (String key : adjustedNewValueKeys)
 			retVal.markElementChanged(key);

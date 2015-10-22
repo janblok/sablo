@@ -26,15 +26,28 @@ public class WrappingContext implements IWrappingContext
 {
 
 	protected final BaseWebObject webObject;
+	private final String propertyName;
 
-	public WrappingContext(BaseWebObject webObject)
+	public WrappingContext(BaseWebObject webObject, String propertyName)
 	{
 		this.webObject = webObject;
+		this.propertyName = propertyName;
 	}
 
 	public BaseWebObject getWebObject()
 	{
 		return webObject;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see org.sablo.specification.property.IWrappingContext#getPropertyName()
+	 */
+	@Override
+	public String getPropertyName()
+	{
+		return propertyName;
 	}
 
 }

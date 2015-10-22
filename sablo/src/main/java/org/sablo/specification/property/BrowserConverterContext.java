@@ -32,7 +32,7 @@ public class BrowserConverterContext extends WrappingContext implements IBrowser
 
 	public BrowserConverterContext(BaseWebObject webObject, PushToServerEnum rootPropertyPushToServerValue)
 	{
-		super(webObject);
+		super(webObject, null); //TODO get the property name somehow
 		this.parentPropertyPushToServerValue = rootPropertyPushToServerValue;
 	}
 

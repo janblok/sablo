@@ -101,8 +101,8 @@ public abstract class Container extends WebComponent
 		boolean contentHasBeenWritten = this.writeOwnComponentChanges(w, keyInParent, "", converter, clientDataConversions);
 		for (WebComponent wc : getComponents())
 		{
-			contentHasBeenWritten = wc.writeOwnComponentChanges(w, contentHasBeenWritten ? null : keyInParent, wc.getName(), converter, clientDataConversions) ||
-				contentHasBeenWritten;
+			contentHasBeenWritten = wc.writeOwnComponentChanges(w, contentHasBeenWritten ? null : keyInParent, wc.getName(), converter,
+				clientDataConversions) || contentHasBeenWritten;
 		}
 		if (contentHasBeenWritten) w.endObject();
 		changed = false;

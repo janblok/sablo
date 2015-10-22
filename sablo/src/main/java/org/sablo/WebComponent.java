@@ -43,7 +43,7 @@ public class WebComponent extends BaseWebObject
 
 	public WebComponent(String componentType, String name)
 	{
-		super(name, WebComponentSpecProvider.getInstance().getWebComponentSpecification(componentType));
+		this(name, WebComponentSpecProvider.getInstance().getWebComponentSpecification(componentType));
 		properties.put("name", name);
 	}
 
@@ -158,7 +158,7 @@ public class WebComponent extends BaseWebObject
 	 * @param arguments
 	 *            the arguments
 	 * @return the value if any
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public Object executeServiceCall(String service, String functionName, Object[] arguments) throws IOException
 	{
@@ -175,7 +175,7 @@ public class WebComponent extends BaseWebObject
 	 *            the functionName name
 	 * @param arguments
 	 *            the arguments
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public void executeAsyncServiceCall(String service, String functionName, Object[] arguments)
 	{
@@ -235,4 +235,15 @@ public class WebComponent extends BaseWebObject
 		return parameterTypes;
 	}
 
+
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see org.sablo.BaseWebObject#isEnabled()
+	 */
+	@Override
+	public final boolean isEnabled()
+	{
+		return super.isEnabled() && (parent == null || parent.isEnabled());
+	}
 }

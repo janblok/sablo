@@ -41,6 +41,7 @@ import org.sablo.specification.property.ISmartPropertyValue;
 import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.WrappingContext;
 import org.sablo.specification.property.types.AggregatedPropertyType;
+import org.sablo.specification.property.types.EnabledPropertyType;
 import org.sablo.specification.property.types.ProtectedConfig;
 import org.sablo.specification.property.types.VisiblePropertyType;
 import org.sablo.util.ValueReference;
@@ -691,7 +692,8 @@ public abstract class BaseWebObject
 	{
 		PropertyDescription propertyDesc = specification.getProperty(propertyName);
 		IPropertyType<Object> type = propertyDesc != null ? (IPropertyType<Object>)propertyDesc.getType() : null;
-		Object object = (type instanceof IWrapperType) ? ((IWrapperType)type).wrap(newValue, oldValue, propertyDesc, new WrappingContext(this)) : newValue;
+		Object object = (type instanceof IWrapperType) ? ((IWrapperType)type).wrap(newValue, oldValue, propertyDesc, new WrappingContext(this, propertyName))
+			: newValue;
 		if (type instanceof IClassPropertyType && object != null && !((IClassPropertyType< ? >)type).getTypeClass().isAssignableFrom(object.getClass()))
 		{
 			log.info("property: " + propertyName + " of component " + getName() + " set with value: " + newValue + " which is not of type: " +
@@ -699,6 +701,7 @@ public abstract class BaseWebObject
 			return null;
 		}
 		return object;
+
 	}
 
 	/**
@@ -721,8 +724,8 @@ public abstract class BaseWebObject
 		if (newJSONValue == JSONObject.NULL) newJSONValue = null;
 
 		PropertyDescription propertyDesc = specification.getProperty(propertyName);
-		Object value = propertyDesc != null ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDesc, new BrowserConverterContext(this,
-			propertyDesc.getPushToServer()), returnValueAdjustedIncommingValue) : null;
+		Object value = propertyDesc != null ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDesc,
+			new BrowserConverterContext(this, propertyDesc.getPushToServer()), returnValueAdjustedIncommingValue) : null;
 		return value;
 	}
 
@@ -817,6 +820,23 @@ public abstract class BaseWebObject
 
 			converter.toJSONValue(w, entry.getKey(), entry.getValue(), pd, clientDataConversions, context);
 			clientDataConversions.popNode();
+		}
+	}
+
+	public boolean isEnabled()
+	{
+		for (PropertyDescription prop : specification.getProperties(EnabledPropertyType.INSTANCE))
+		{
+			return (boolean)getProperty(prop.getName());
+		}
+		return true;
+	}
+
+	public void setEnabled(boolean enabled)
+	{
+		for (PropertyDescription prop : specification.getProperties(EnabledPropertyType.INSTANCE))
+		{
+			setProperty(prop.getName(), enabled);
 		}
 	}
 

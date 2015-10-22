@@ -28,6 +28,12 @@ public class BrowserConverterContext extends WrappingContext implements IBrowser
 {
 
 	protected static final Logger log = LoggerFactory.getLogger(BrowserConverterContext.class.getCanonicalName());
+
+	/**
+	 * Just to save CPU - for cases that don't have a web-object available but need a BrowserConverterContext. (return values of server side java service handlers, special messages, ...)
+	 */
+	public static final BrowserConverterContext NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER = new BrowserConverterContext(null, PushToServerEnum.reject);
+
 	private final PushToServerEnum parentPropertyPushToServerValue;
 
 	public BrowserConverterContext(BaseWebObject webObject, PushToServerEnum rootPropertyPushToServerValue)

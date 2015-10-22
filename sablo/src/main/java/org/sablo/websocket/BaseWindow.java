@@ -316,7 +316,7 @@ public class BaseWindow implements IWindow
 				if (data != null && data.size() > 0)
 				{
 					JSONUtils.addKeyIfPresent(w, keyInParent);
-					converterParam.toJSONValue(w, null, data, dataTypes, clientDataConversions, new BrowserConverterContext(null, PushToServerEnum.allow));
+					converterParam.toJSONValue(w, null, data, dataTypes, clientDataConversions, BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER);
 					return true;
 				}
 				return false;

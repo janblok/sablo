@@ -34,6 +34,7 @@ import org.json.JSONObject;
 import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
 import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
@@ -240,8 +241,8 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 							ret.add(obj.opt("ret")); // first element is return value - even if it's null; TODO we should handle here javascript undefined as well (instead of treating it as null)
 							if (obj.has("err")) ret.add(obj.opt("err")); // second element is added only if an error happened while calling api in browser
 						}
-						else log.error(
-							"Discarded response for obsolete pending message (it probably timed - out waiting for response before it got one): " + suspendID);
+						else log.error("Discarded response for obsolete pending message (it probably timed - out waiting for response before it got one): " +
+							suspendID);
 
 						window.getSession().getEventDispatcher().resume(suspendID);
 					}
@@ -385,7 +386,8 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 
 		try
 		{
-			sendText(JSONUtils.writeDataWithConversions(FullValueToJSONConverter.INSTANCE, data, dataTypes, null));
+			sendText(JSONUtils.writeDataWithConversions(FullValueToJSONConverter.INSTANCE, data, dataTypes,
+				BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER));
 		}
 		catch (JSONException e)
 		{

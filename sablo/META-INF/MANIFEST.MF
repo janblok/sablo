@@ -18,8 +18,8 @@ Export-Package: org.sablo,
  org.sablo.websocket.utils,
  org.sablo.util
 Require-Bundle: org.junit,
- slf4j.api;bundle-version="1.6.1",
- org.apache.commons.io;bundle-version="2.4.0"
+ org.apache.commons.io,
+ org.slf4j.api
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ClassPath: .
 Bundle-Vendor: Servoy

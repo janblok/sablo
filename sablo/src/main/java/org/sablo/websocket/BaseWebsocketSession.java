@@ -73,6 +73,11 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	}
 
 	@Override
+	public void init() throws Exception
+	{
+	}
+
+	@Override
 	public Collection< ? extends IWindow> getWindows()
 	{
 		synchronized (windows)

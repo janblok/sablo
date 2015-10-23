@@ -61,11 +61,6 @@ public class TypesTest
 		}
 
 		@Override
-		public void init() throws Exception
-		{
-		}
-
-		@Override
 		public Locale getLocale()
 		{
 			return locale;

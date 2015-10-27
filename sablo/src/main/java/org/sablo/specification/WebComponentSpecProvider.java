@@ -202,4 +202,13 @@ public class WebComponentSpecProvider
 		WebComponentPackageSpecification<WebLayoutSpecification> pkg = reader.getLayoutSpecifications().get(packageName);
 		return pkg == null ? Collections.<String> emptyList() : pkg.getSpecifications().keySet();
 	}
+
+	/**
+	 * @param packageName
+	 * @return
+	 */
+	public String getPackageDisplayName(String packageName)
+	{
+		return reader.getPackagesToDisplayNames().get(packageName);
+	}
 }

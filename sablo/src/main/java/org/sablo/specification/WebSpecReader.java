@@ -173,8 +173,7 @@ class WebSpecReader
 
 		if (packageComponents.size() > 0)
 		{
-			cachedDescriptions.put(
-				webComponentPackageSpecification.getPackageName(),
+			cachedDescriptions.put(webComponentPackageSpecification.getPackageName(),
 				new WebComponentPackageSpecification<>(webComponentPackageSpecification.getPackageName(),
 					webComponentPackageSpecification.getPackageDisplayname(), packageComponents, webComponentPackageSpecification.getManifest()));
 		}
@@ -213,6 +212,20 @@ class WebSpecReader
 		for (IPackageReader reader : packageReaders)
 		{
 			result.put(reader.getPackageName(), reader.getPackageURL());
+		}
+		return result;
+	}
+
+	/**
+	 * Get the map of packages and package display names.
+	 * @return
+	 */
+	public Map<String, String> getPackagesToDisplayNames()
+	{
+		Map<String, String> result = new HashMap<String, String>();
+		for (IPackageReader reader : packageReaders)
+		{
+			result.put(reader.getPackageName(), reader.getPackageDisplayname());
 		}
 		return result;
 	}

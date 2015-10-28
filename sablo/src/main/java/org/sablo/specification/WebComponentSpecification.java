@@ -513,7 +513,7 @@ public class WebComponentSpecification extends PropertyDescription
 				}
 				else if (value instanceof JSONObject && "handlers".equals(propKey))
 				{
-					pds.put(key, new PropertyDescription(key, FunctionPropertyType.INSTANCE, value));
+					pds.put(key, new PropertyDescription(key, TypesRegistry.getType(FunctionPropertyType.TYPE_NAME), value));
 				}
 				if (pp != null && pp.type != null)
 				{

@@ -17,7 +17,6 @@ package org.sablo;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -72,7 +71,8 @@ public class WebComponentSecurityPropertiesTest
 			"\n}" + //
 			"\n}"; //
 
-		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+		WebComponentSpecProvider.init(
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 		assertTrue(testcomponent.isVisible());
@@ -134,7 +134,8 @@ public class WebComponentSecurityPropertiesTest
 
 	private void doTestComponentVisibileWithDefaults(String testcomponentspec) throws Exception
 	{
-		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+		WebComponentSpecProvider.init(
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 
@@ -267,7 +268,8 @@ public class WebComponentSecurityPropertiesTest
 			"\n}" + //
 			"\n}"; //
 
-		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+		WebComponentSpecProvider.init(
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 
@@ -418,7 +420,8 @@ public class WebComponentSecurityPropertiesTest
 
 	private void doTestComponentProtectedPropertyDefaults(String testcomponentspec) throws Exception
 	{
-		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+		WebComponentSpecProvider.init(
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 
@@ -497,7 +500,8 @@ public class WebComponentSecurityPropertiesTest
 			"\n}" + //
 			"\n}"; //
 
-		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+		WebComponentSpecProvider.init(
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 
@@ -623,7 +627,8 @@ public class WebComponentSecurityPropertiesTest
 			"\n}" + //
 			"\n}"; //
 
-		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+		WebComponentSpecProvider.init(
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 
@@ -727,7 +732,8 @@ public class WebComponentSecurityPropertiesTest
 
 	private void doTestProtectedFunction(String testcomponentspec, boolean blockingOn) throws Exception
 	{
-		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+		WebComponentSpecProvider.init(
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 
@@ -814,7 +820,8 @@ public class WebComponentSecurityPropertiesTest
 			"\n}" + //
 			"\n}"; //
 
-		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+		WebComponentSpecProvider.init(
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 
 		WebComponentSpecification formSpec = new WebComponentSpecification("form_spec", "", "", null, null, null, "", null);
 		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
@@ -860,7 +867,7 @@ public class WebComponentSecurityPropertiesTest
 		catch (IllegalComponentAccessException e)
 		{
 			// expected
-			assertNull(e.getProperty());
+			assertEquals("callme", e.getProperty());
 		}
 		assertEquals(1, called.intValue());
 
@@ -873,7 +880,7 @@ public class WebComponentSecurityPropertiesTest
 		catch (IllegalComponentAccessException e)
 		{
 			// expected
-			assertNull(e.getProperty());
+			assertEquals("aint", e.getProperty());
 		}
 		assertEquals(new Integer(1), testcomponent.getProperty("aint"));
 
@@ -908,7 +915,8 @@ public class WebComponentSecurityPropertiesTest
 			"\n}" + //
 			"\n}"; //
 
-		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+		WebComponentSpecProvider.init(
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 
 		WebComponentSpecification formSpec = new WebComponentSpecification("form_spec", "", "", null, null, null, "", null);
 		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
@@ -954,7 +962,7 @@ public class WebComponentSecurityPropertiesTest
 		catch (IllegalComponentAccessException e)
 		{
 			// expected
-			assertNull(e.getProperty());
+			assertEquals("callme", e.getProperty());
 		}
 		assertEquals(1, called.intValue());
 
@@ -967,7 +975,7 @@ public class WebComponentSecurityPropertiesTest
 		catch (IllegalComponentAccessException e)
 		{
 			// expected
-			assertNull(e.getProperty());
+			assertEquals("aint", e.getProperty());
 		}
 		assertEquals(new Integer(1), testcomponent.getProperty("aint"));
 

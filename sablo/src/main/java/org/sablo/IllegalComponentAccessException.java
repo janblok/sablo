@@ -18,7 +18,7 @@ package org.sablo;
 
 /**
  * Exception or illegalaccess to a component.
- * 
+ *
  * @author rgansevles
  *
  */
@@ -28,12 +28,21 @@ public class IllegalComponentAccessException extends RuntimeException
 	private final String accessType;
 	private final String componentName;
 	private final String property;
+	private IllegalComponentAccessException e;
 
 	public IllegalComponentAccessException(String accessType, String componentName, String property)
 	{
 		this.accessType = accessType;
 		this.componentName = componentName;
 		this.property = property;
+		this.e = null;
+	}
+
+
+	public IllegalComponentAccessException(String accessType2, String name, String eventType, IllegalComponentAccessException e)
+	{
+		this(accessType2, name, eventType);
+		this.e = e;
 	}
 
 	/**
@@ -63,7 +72,12 @@ public class IllegalComponentAccessException extends RuntimeException
 	@Override
 	public String getMessage()
 	{
-		return new StringBuilder("Access to component ").append(getComponentName()).append(" property ").append(getProperty()).append(" denied (").append(
-			getAccessType()).append(")").toString();
+		String result = new StringBuilder("Access to component ").append(getComponentName()).append(" property ").append(getProperty()).append(
+			" denied (").append(getAccessType()).append(")").toString();
+		if (e != null)
+		{
+			result += ". Warning was caused by: " + e.getMessage();
+		}
+		return result;
 	}
 }

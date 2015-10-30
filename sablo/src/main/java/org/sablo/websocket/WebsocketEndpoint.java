@@ -31,6 +31,7 @@ import javax.websocket.Session;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.sablo.IllegalComponentAccessException;
 import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
 import org.sablo.specification.PropertyDescription;
@@ -274,6 +275,10 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 							try
 							{
 								result = service.executeMethod(methodName, arguments);
+							}
+							catch (IllegalComponentAccessException ilcae)
+							{
+								log.warn("Warning: " + ilcae.getMessage());
 							}
 							catch (Exception e)
 							{

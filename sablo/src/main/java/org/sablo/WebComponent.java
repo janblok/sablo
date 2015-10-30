@@ -100,7 +100,15 @@ public class WebComponent extends BaseWebObject
 		// Check if container is not protected or invisible
 		if (parent != null)
 		{
-			parent.checkProtection(null);
+			try
+			{
+				parent.checkProtection(null);
+			}
+			catch (IllegalComponentAccessException e)
+			{
+				throw new IllegalComponentAccessException(e.getAccessType(), this.getName(), eventType, e);
+			}
+
 		}
 	}
 

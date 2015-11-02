@@ -704,7 +704,7 @@ public class BaseWindow implements IWindow
 		}
 		catch (IOException e)
 		{
-			log.error("IOException occurred", e);
+			log.warn("IOException occurred", e);
 		}
 		catch (CancellationException e)
 		{

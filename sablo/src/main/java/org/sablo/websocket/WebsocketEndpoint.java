@@ -17,6 +17,7 @@
 package org.sablo.websocket;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -276,6 +277,10 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 							{
 								result = service.executeMethod(methodName, arguments);
 							}
+							catch (ParseException pe)
+							{
+								log.warn("Warning: " + pe.getMessage(), pe);
+							}
 							catch (IllegalComponentAccessException ilcae)
 							{
 								log.warn("Warning: " + ilcae.getMessage());
@@ -309,7 +314,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 								}
 								catch (IOException e)
 								{
-									log.error(e.getMessage(), e);
+									log.warn(e.getMessage(), e);
 								}
 							}
 						}

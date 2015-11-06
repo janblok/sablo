@@ -28,6 +28,8 @@ import org.sablo.util.ValueReference;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -36,7 +38,7 @@ import org.sablo.websocket.utils.JSONUtils;
  */
 public class FloatPropertyType extends DefaultPropertyType<Float> implements IPropertyConverterForBrowser<Number>
 {
-
+	protected static final Logger log = LoggerFactory.getLogger(FloatPropertyType.class.getCanonicalName());
 	public static final FloatPropertyType INSTANCE = new FloatPropertyType();
 	public static final String TYPE_NAME = "float";
 
@@ -75,7 +77,9 @@ public class FloatPropertyType extends DefaultPropertyType<Float> implements IPr
 			}
 			catch (ParseException e)
 			{
-				throw new RuntimeException(e);
+				log.warn("Parse exception while processing " + newJSONValue + " as a float", e);
+				if (returnValueAdjustedIncommingValue != null) returnValueAdjustedIncommingValue.value = Boolean.TRUE;
+				return null;
 			}
 		}
 		return null;

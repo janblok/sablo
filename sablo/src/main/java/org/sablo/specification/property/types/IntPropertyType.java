@@ -28,6 +28,8 @@ import org.sablo.util.ValueReference;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -36,7 +38,7 @@ import org.sablo.websocket.utils.JSONUtils;
  */
 public class IntPropertyType extends DefaultPropertyType<Integer> implements IPropertyConverterForBrowser<Number>
 {
-
+	protected static final Logger log = LoggerFactory.getLogger(IntPropertyType.class.getCanonicalName());
 	public static final IntPropertyType INSTANCE = new IntPropertyType();
 	public static final String TYPE_NAME = "int";
 
@@ -64,7 +66,8 @@ public class IntPropertyType extends DefaultPropertyType<Integer> implements IPr
 		if (newJSONValue instanceof Number)
 		{
 			Integer val = Integer.valueOf(((Number)newJSONValue).intValue());
-			if (returnValueAdjustedIncommingValue != null && val.doubleValue() != ((Number)newJSONValue).doubleValue()) returnValueAdjustedIncommingValue.value = Boolean.TRUE;
+			if (returnValueAdjustedIncommingValue != null && val.doubleValue() != ((Number)newJSONValue).doubleValue())
+				returnValueAdjustedIncommingValue.value = Boolean.TRUE;
 			return val;
 		}
 		if (newJSONValue instanceof String)
@@ -83,13 +86,16 @@ public class IntPropertyType extends DefaultPropertyType<Integer> implements IPr
 				else
 				{
 					Integer val = Integer.valueOf(parsedValue.intValue());
-					if (returnValueAdjustedIncommingValue != null && val.doubleValue() != parsedValue.doubleValue()) returnValueAdjustedIncommingValue.value = Boolean.TRUE;
+					if (returnValueAdjustedIncommingValue != null && val.doubleValue() != parsedValue.doubleValue())
+						returnValueAdjustedIncommingValue.value = Boolean.TRUE;
 					return val;
 				}
 			}
 			catch (ParseException e)
 			{
-				throw new RuntimeException(e);
+				log.warn("Parse exception while processing " + newJSONValue + " as an int", e);
+				if (returnValueAdjustedIncommingValue != null) returnValueAdjustedIncommingValue.value = Boolean.TRUE;
+				return null;
 			}
 		}
 		return null;

@@ -28,6 +28,8 @@ import org.sablo.util.ValueReference;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -36,6 +38,7 @@ import org.sablo.websocket.utils.JSONUtils;
  */
 public class DoublePropertyType extends DefaultPropertyType<Double> implements IPropertyConverterForBrowser<Number>
 {
+	protected static final Logger log = LoggerFactory.getLogger(DoublePropertyType.class.getCanonicalName());
 	public static final DoublePropertyType INSTANCE = new DoublePropertyType();
 	public static final String TYPE_NAME = "double";
 
@@ -74,7 +77,9 @@ public class DoublePropertyType extends DefaultPropertyType<Double> implements I
 			}
 			catch (ParseException e)
 			{
-				throw new RuntimeException(e);
+				log.warn("Parse exception while processing " + newJSONValue + " as a double", e);
+				if (returnValueAdjustedIncommingValue != null) returnValueAdjustedIncommingValue.value = Boolean.TRUE;
+				return null;
 			}
 		}
 		return null;

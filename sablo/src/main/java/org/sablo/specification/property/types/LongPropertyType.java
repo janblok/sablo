@@ -28,6 +28,8 @@ import org.sablo.util.ValueReference;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -36,7 +38,7 @@ import org.sablo.websocket.utils.JSONUtils;
  */
 public class LongPropertyType extends DefaultPropertyType<Long> implements IPropertyConverterForBrowser<Number>
 {
-
+	protected static final Logger log = LoggerFactory.getLogger(LongPropertyType.class.getCanonicalName());
 	public static final LongPropertyType INSTANCE = new LongPropertyType();
 	public static final String TYPE_NAME = "long";
 
@@ -64,7 +66,8 @@ public class LongPropertyType extends DefaultPropertyType<Long> implements IProp
 		if (newJSONValue instanceof Number)
 		{
 			Long val = Long.valueOf(((Number)newJSONValue).longValue());
-			if (returnValueAdjustedIncommingValue != null && val.doubleValue() != ((Number)newJSONValue).doubleValue()) returnValueAdjustedIncommingValue.value = Boolean.TRUE;
+			if (returnValueAdjustedIncommingValue != null && val.doubleValue() != ((Number)newJSONValue).doubleValue())
+				returnValueAdjustedIncommingValue.value = Boolean.TRUE;
 			return val;
 		}
 		if (newJSONValue instanceof String)
@@ -83,13 +86,16 @@ public class LongPropertyType extends DefaultPropertyType<Long> implements IProp
 				else
 				{
 					Long val = Long.valueOf(parsedValue.longValue());
-					if (returnValueAdjustedIncommingValue != null && val.doubleValue() != parsedValue.doubleValue()) returnValueAdjustedIncommingValue.value = Boolean.TRUE;
+					if (returnValueAdjustedIncommingValue != null && val.doubleValue() != parsedValue.doubleValue())
+						returnValueAdjustedIncommingValue.value = Boolean.TRUE;
 					return val;
 				}
 			}
 			catch (ParseException e)
 			{
-				throw new RuntimeException(e);
+				log.warn("Parse exception while processing " + newJSONValue + " as a long", e);
+				if (returnValueAdjustedIncommingValue != null) returnValueAdjustedIncommingValue.value = Boolean.TRUE;
+				return null;
 			}
 		}
 		return null;

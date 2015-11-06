@@ -792,7 +792,7 @@ webSocketModule.factory('$webSocket',
 			getEventArgs: function(args,eventName)
 			{
 				var newargs = []
-				for (var i in args) {
+				for (var i = 0; i < args.length; i++) {
 					var arg = args[i]
 					if (arg && arg.originalEvent) arg = arg.originalEvent;
 					if(arg  instanceof MouseEvent ||arg  instanceof KeyboardEvent){

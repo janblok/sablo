@@ -194,6 +194,10 @@ public class WebComponentPackage
 						reader.reportError(specpath, e);
 					}
 				}
+				else
+				{
+					log.warn("could not read specification files content of " + specpath + ", url is not resolved, casing problem?");
+				}
 			}
 		}
 

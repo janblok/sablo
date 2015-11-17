@@ -184,4 +184,12 @@ public class WebServiceSpecProvider
 		return reader.getPackagesToURLs();
 	}
 
+	/**
+	 * @param packageName
+	 * @return
+	 */
+	public String getPackageDisplayName(String packageName)
+	{
+		return reader.getPackagesToDisplayNames().get(packageName);
+	}
 }

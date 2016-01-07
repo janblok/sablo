@@ -386,8 +386,7 @@ public class BaseWindow implements IWindow
 	 * @param converter converter for values to json.
 	 * @throws IOException when such an exception occurs.
 	 */
-	protected void sendAsyncMessage(IToJSONWriter<IBrowserConverterContext> dataWriter, IToJSONConverter<IBrowserConverterContext> converter)
-		throws IOException
+	protected void sendAsyncMessage(IToJSONWriter<IBrowserConverterContext> dataWriter, IToJSONConverter<IBrowserConverterContext> converter) throws IOException
 	{
 		sendMessageInternal(dataWriter, converter, null);
 	}
@@ -435,8 +434,10 @@ public class BaseWindow implements IWindow
 			}
 			if (delayedApiCalls.size() > 0)
 			{
+				clientDataConversions.pushNode("calls");
 				Iterator<Map<String, Object>> it = delayedApiCalls.iterator();
 				boolean callObjectStarted = false;
+				int callIdx = 0;
 				while (it.hasNext())
 				{
 					Map<String, Object> delayedCall = it.next();
@@ -453,13 +454,17 @@ public class BaseWindow implements IWindow
 						}
 						PropertyDescription callTypes = (PropertyDescription)delayedCall.remove("callTypes");
 						w.object().key("call").object();
-						clientDataConversions.pushNode("calls");
-						JSONUtils.writeData(converter, w, delayedCall, callTypes, clientDataConversions, new BrowserConverterContext(component,
-							PushToServerEnum.allow));
+						clientDataConversions.pushNode(String.valueOf(callIdx));
+						clientDataConversions.pushNode("call");
+						JSONUtils.writeData(converter, w, delayedCall, callTypes, clientDataConversions,
+							new BrowserConverterContext(component, PushToServerEnum.allow));
 						clientDataConversions.popNode();
+						clientDataConversions.popNode();
+						callIdx++;
 						w.endObject().endObject();
 					}
 				}
+				clientDataConversions.popNode();
 				if (callObjectStarted)
 				{
 					w.endArray();
@@ -708,13 +713,15 @@ public class BaseWindow implements IWindow
 		}
 		catch (CancellationException e)
 		{
-			throw new RuntimeException("Cancelled while invoking API: " + apiFunction + ". Arguments: " +
-				(arguments == null ? null : Arrays.asList(arguments)) + ". On: " + receiver, e);
+			throw new RuntimeException(
+				"Cancelled while invoking API: " + apiFunction + ". Arguments: " + (arguments == null ? null : Arrays.asList(arguments)) + ". On: " + receiver,
+				e);
 		}
 		catch (TimeoutException e)
 		{
-			throw new RuntimeException("Timed out while invoking API: " + apiFunction + ". Arguments: " +
-				(arguments == null ? null : Arrays.asList(arguments)) + ". On: " + receiver, e);
+			throw new RuntimeException(
+				"Timed out while invoking API: " + apiFunction + ". Arguments: " + (arguments == null ? null : Arrays.asList(arguments)) + ". On: " + receiver,
+				e);
 		}
 
 		return null;

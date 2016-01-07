@@ -170,7 +170,7 @@ webSocketModule.factory('$webSocket',
 				for(var index = 0;index < obj.calls.length;index++) 
 				{
 					for (var handler in onMessageObjectHandlers) {
-						onMessageObjectHandlers[handler](obj.calls[index]);
+						onMessageObjectHandlers[handler](obj.calls[index], (obj.conversions && obj.conversions.calls) ? obj.conversions.calls[index] : undefined);
 					}
 				}
 			}	

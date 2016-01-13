@@ -29,6 +29,8 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.websocket.CloseReason;
+
 import org.json.JSONException;
 import org.json.JSONStringer;
 import org.json.JSONWriter;
@@ -236,6 +238,15 @@ public class BaseWindow implements IWindow
 
 	@Override
 	public void dispose()
+	{
+		onDispose();
+		if (endpoint != null)
+		{
+			endpoint.closeSession(new CloseReason(CloseReason.CloseCodes.SERVICE_RESTART, "Window disposed because of ping timeout"));
+		}
+	}
+
+	protected void onDispose()
 	{
 	}
 

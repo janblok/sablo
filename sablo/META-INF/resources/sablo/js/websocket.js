@@ -419,12 +419,12 @@ webSocketModule.factory('$webSocket',
 			}
 			websocket.onconnecting = function(evt) {
 				// this event indicates we are trying to reconnect, the event has the close code and reason from the disconnect.
-				if (evt.code && evt.code != wsCloseCodes.CLOSED_ABNORMALLY) {
+				if (evt.code && evt.code != wsCloseCodes.CLOSED_ABNORMALLY && evt.code != wsCloseCodes.SERVICE_RESTART) {
 					// server disconnected, do not try to reconnect
-					websocket.close()
+					websocket.close();
 					$rootScope.$apply(function() {
 						connected = 'CLOSED';
-				})
+					});
 				}
 			}
 			websocket.onmessage = function(message) {

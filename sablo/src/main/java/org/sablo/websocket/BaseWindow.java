@@ -237,7 +237,7 @@ public class BaseWindow implements IWindow
 	}
 
 	@Override
-	public void dispose()
+	public final void dispose()
 	{
 		onDispose();
 		if (endpoint != null)

@@ -33,7 +33,7 @@ import org.sablo.websocket.utils.JSONUtils;
  * @author jcompagner
  *
  */
-public class ColorPropertyType extends DefaultPropertyType<Color> implements IClassPropertyType<Color>
+public class ColorPropertyType extends DefaultPropertyType<Color>implements IClassPropertyType<Color>
 {
 
 	private static final Map<String, String> basicCssColors = new HashMap<String, String>();
@@ -124,28 +124,34 @@ public class ColorPropertyType extends DefaultPropertyType<Color> implements ICl
 		if (c != null)
 		{
 			JSONUtils.addKeyIfPresent(writer, key);
-
-			int alpha = c.getAlpha();
-			if (alpha == 255)
-			{
-				String r = Integer.toHexString(c.getRed());
-				if (r.length() == 1) r = "0" + r; //$NON-NLS-1$
-				String g = Integer.toHexString(c.getGreen());
-				if (g.length() == 1) g = "0" + g; //$NON-NLS-1$
-				String b = Integer.toHexString(c.getBlue());
-				if (b.length() == 1) b = "0" + b; //$NON-NLS-1$
-				writer.value("#" + r + g + b); //$NON-NLS-1$
-			}
-			else if (alpha == 0)
-			{
-				writer.value(TRANSPARENT);
-			}
-			else
-			{
-				writer.value(COLOR_RGBA_DEF + '(' + c.getRed() + ',' + c.getGreen() + ',' + c.getBlue() + ',' + Math.round((alpha / 255f) * 10) / 10f + ')');
-			}
+			writer.value(getStringValue(c));
 		}
 		return writer;
+	}
+
+	protected String getStringValue(Color c)
+	{
+		String val = null;
+		int alpha = c.getAlpha();
+		if (alpha == 255)
+		{
+			String r = Integer.toHexString(c.getRed());
+			if (r.length() == 1) r = "0" + r; //$NON-NLS-1$
+			String g = Integer.toHexString(c.getGreen());
+			if (g.length() == 1) g = "0" + g; //$NON-NLS-1$
+			String b = Integer.toHexString(c.getBlue());
+			if (b.length() == 1) b = "0" + b; //$NON-NLS-1$
+			val = "#" + r + g + b; //$NON-NLS-1$
+		}
+		else if (alpha == 0)
+		{
+			val = TRANSPARENT;
+		}
+		else
+		{
+			val = COLOR_RGBA_DEF + '(' + c.getRed() + ',' + c.getGreen() + ',' + c.getBlue() + ',' + Math.round((alpha / 255f) * 10) / 10f + ')';
+		}
+		return val;
 	}
 
 	@Override
@@ -153,5 +159,4 @@ public class ColorPropertyType extends DefaultPropertyType<Color> implements ICl
 	{
 		return Color.class;
 	}
-
 }

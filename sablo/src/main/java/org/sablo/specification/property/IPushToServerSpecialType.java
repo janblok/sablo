@@ -17,7 +17,7 @@
 
 package org.sablo.specification.property;
 
-import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
+import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 
 
 /**

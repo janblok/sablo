@@ -16,7 +16,7 @@
 package org.sablo.specification.property;
 
 import org.sablo.BaseWebObject;
-import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
+import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 
 /**
  * Context for data converters to/from browser.

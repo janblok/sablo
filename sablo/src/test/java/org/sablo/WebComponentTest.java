@@ -38,10 +38,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.sablo.services.server.FormServiceHandler;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.WebComponentPackage.IPackageReader;
+import org.sablo.specification.NGPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
-import org.sablo.specification.WebComponentSpecification;
-import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
+import org.sablo.specification.WebObjectSpecification;
+import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.ChangeAwareList;
 import org.sablo.specification.property.types.AggregatedPropertyType;
@@ -355,7 +355,7 @@ public class WebComponentTest
 	@Test
 	public void setColorPropertyWithOldValue()
 	{
-		WebComponentSpecification formSpec = new WebComponentSpecification("form_spec", "", "", null, null, null, "", null);
+		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", "", null, null, null, "", null);
 		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
 		formSpec.putProperty("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
 
@@ -424,7 +424,7 @@ public class WebComponentTest
 	@Test
 	public void setIntPropertyWithOldValue()
 	{
-		WebComponentSpecification formSpec = new WebComponentSpecification("form_spec", "", "", null, null, null, "", null);
+		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", "", null, null, null, "", null);
 		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
 		formSpec.putProperty("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
 

@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import org.sablo.specification.WebComponentPackage.IPackageReader;
+import org.sablo.specification.NGPackage.IPackageReader;
 
 /**
  * @author lvostinar

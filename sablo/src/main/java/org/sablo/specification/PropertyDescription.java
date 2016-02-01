@@ -26,7 +26,7 @@ import java.util.Map.Entry;
 
 import org.json.JSONObject;
 import org.sablo.specification.IYieldingType.YieldDescriptionArguments;
-import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
+import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.sablo.specification.property.CustomJSONPropertyType;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;

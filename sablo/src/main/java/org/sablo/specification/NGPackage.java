@@ -52,9 +52,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author acostescu
  */
-public class WebComponentPackage
+public class NGPackage
 {
-	private static final Logger log = LoggerFactory.getLogger(WebComponentPackage.class.getCanonicalName());
+	private static final Logger log = LoggerFactory.getLogger(NGPackage.class.getCanonicalName());
 	private static final String GLOBAL_TYPES_MANIFEST_ATTR = "Global-Types";
 	private static final String BUNDLE_SYMBOLIC_NAME = "Bundle-SymbolicName"; // for package name
 	private static final String BUNDLE_NAME = "Bundle-Name"; // for package display name
@@ -97,12 +97,12 @@ public class WebComponentPackage
 	}
 	public interface ISpecificationFilter
 	{
-		boolean filter(WebComponentSpecification spec);
+		boolean filter(WebObjectSpecification spec);
 	}
 
 	private IPackageReader reader;
 
-	public WebComponentPackage(IPackageReader reader)
+	public NGPackage(IPackageReader reader)
 	{
 		if (reader == null) throw new NullPointerException();
 		this.reader = reader;
@@ -146,7 +146,7 @@ public class WebComponentPackage
 						if (specfileContent != null)
 						{
 							JSONObject json = new JSONObject(specfileContent);
-							Object types = json.get(WebComponentSpecification.TYPES_KEY);
+							Object types = json.get(WebObjectSpecification.TYPES_KEY);
 							if (types instanceof JSONObject)
 							{
 								Iterator<String> typesIt = ((JSONObject)types).keys();
@@ -169,11 +169,11 @@ public class WebComponentPackage
 		return globalTypesFound;
 	}
 
-	public WebComponentPackageSpecification<WebComponentSpecification> getWebObjectDescriptions(String attributeName) throws IOException
+	public NGPackageSpecification<WebObjectSpecification> getWebObjectDescriptions(String attributeName) throws IOException
 	{
 		String packageName = null;
 		String packageDisplayname = null;
-		Map<String, WebComponentSpecification> descriptions = new HashMap<>();
+		Map<String, WebObjectSpecification> descriptions = new HashMap<>();
 		Manifest mf = reader.getManifest();
 		if (mf != null)
 		{
@@ -187,7 +187,7 @@ public class WebComponentPackage
 				{
 					try
 					{
-						WebComponentSpecification parsed = WebComponentSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
+						WebObjectSpecification parsed = WebObjectSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
 						if (reader instanceof ISpecificationFilter && ((ISpecificationFilter)reader).filter(parsed)) continue;
 						parsed.setSpecURL(reader.getUrlForPath(specpath));
 						if (parsed.getDefinition() != null)
@@ -222,10 +222,10 @@ public class WebComponentPackage
 			}
 		}
 
-		return new WebComponentPackageSpecification<>(packageName, packageDisplayname, descriptions, mf);
+		return new NGPackageSpecification<>(packageName, packageDisplayname, descriptions, mf);
 	}
 
-	public WebComponentPackageSpecification<WebLayoutSpecification> getLayoutDescriptions() throws IOException
+	public NGPackageSpecification<WebLayoutSpecification> getLayoutDescriptions() throws IOException
 	{
 		String packageName = null;
 		String packageDisplayname = null;
@@ -274,7 +274,7 @@ public class WebComponentPackage
 				}
 			}
 		}
-		return new WebComponentPackageSpecification<>(packageName, packageDisplayname, descriptions, mf);
+		return new NGPackageSpecification<>(packageName, packageDisplayname, descriptions, mf);
 	}
 
 	private static List<String> getWebEntrySpecNames(Manifest mf, String attributeName)
@@ -320,7 +320,7 @@ public class WebComponentPackage
 		{
 			try
 			{
-				String packageName = WebComponentPackage.getPackageName(getManifest());
+				String packageName = NGPackage.getPackageName(getManifest());
 				if (packageName != null) return packageName;
 			}
 			catch (Exception e)
@@ -335,7 +335,7 @@ public class WebComponentPackage
 		{
 			try
 			{
-				String packageDisplayname = WebComponentPackage.getPackageDisplayname(getManifest());
+				String packageDisplayname = NGPackage.getPackageDisplayname(getManifest());
 				if (packageDisplayname != null) return packageDisplayname;
 			}
 			catch (IOException e)
@@ -409,7 +409,7 @@ public class WebComponentPackage
 		@Override
 		public String getPackageType() throws IOException
 		{
-			return WebComponentPackage.getPackageType(getManifest());
+			return NGPackage.getPackageType(getManifest());
 		}
 
 	}
@@ -435,7 +435,7 @@ public class WebComponentPackage
 		{
 			try
 			{
-				String packageName = WebComponentPackage.getPackageName(getManifest());
+				String packageName = NGPackage.getPackageName(getManifest());
 				if (packageName != null) return packageName;
 			}
 			catch (Exception e)
@@ -450,7 +450,7 @@ public class WebComponentPackage
 		{
 			try
 			{
-				String packageDisplayname = WebComponentPackage.getPackageDisplayname(getManifest());
+				String packageDisplayname = NGPackage.getPackageDisplayname(getManifest());
 				if (packageDisplayname != null) return packageDisplayname;
 			}
 			catch (IOException e)
@@ -535,7 +535,7 @@ public class WebComponentPackage
 		@Override
 		public String getPackageType() throws IOException
 		{
-			return WebComponentPackage.getPackageType(getManifest());
+			return NGPackage.getPackageType(getManifest());
 		}
 
 	}
@@ -562,7 +562,7 @@ public class WebComponentPackage
 		{
 			try
 			{
-				String packageName = WebComponentPackage.getPackageName(getManifest());
+				String packageName = NGPackage.getPackageName(getManifest());
 				if (packageName != null) return packageName;
 			}
 			catch (IOException e)
@@ -577,7 +577,7 @@ public class WebComponentPackage
 		{
 			try
 			{
-				String packageDisplayname = WebComponentPackage.getPackageDisplayname(getManifest());
+				String packageDisplayname = NGPackage.getPackageDisplayname(getManifest());
 				if (packageDisplayname != null) return packageDisplayname;
 			}
 			catch (IOException e)
@@ -654,12 +654,12 @@ public class WebComponentPackage
 		@Override
 		public String getPackageType() throws IOException
 		{
-			return WebComponentPackage.getPackageType(getManifest());
+			return NGPackage.getPackageType(getManifest());
 		}
 
 	}
 
-	public static class WarURLPackageReader implements WebComponentPackage.IPackageReader, WebComponentPackage.ISpecificationFilter
+	public static class WarURLPackageReader implements NGPackage.IPackageReader, NGPackage.ISpecificationFilter
 	{
 		private final URL urlOfManifest;
 		private final String packageName;
@@ -708,7 +708,7 @@ public class WebComponentPackage
 		{
 			try
 			{
-				String packageDisplayname = WebComponentPackage.getPackageDisplayname(getManifest());
+				String packageDisplayname = NGPackage.getPackageDisplayname(getManifest());
 				if (packageDisplayname != null) return packageDisplayname;
 			}
 			catch (IOException e)
@@ -771,7 +771,7 @@ public class WebComponentPackage
 		 * @return true if the component is not in the list of the used web objects
 		 */
 		@Override
-		public boolean filter(WebComponentSpecification spec)
+		public boolean filter(WebObjectSpecification spec)
 		{
 			return usedWebObjects != null && !usedWebObjects.contains(spec.getName());
 		}
@@ -779,7 +779,7 @@ public class WebComponentPackage
 		@Override
 		public String getPackageType() throws IOException
 		{
-			return WebComponentPackage.getPackageType(getManifest());
+			return NGPackage.getPackageType(getManifest());
 		}
 
 	}

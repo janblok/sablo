@@ -24,7 +24,7 @@ import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.sablo.specification.WebComponentPackage.IPackageReader;
+import org.sablo.specification.NGPackage.IPackageReader;
 
 
 /**
@@ -32,7 +32,7 @@ import org.sablo.specification.WebComponentPackage.IPackageReader;
  *
  */
 @SuppressWarnings({ "nls" })
-public class WebLayoutSpecification extends WebComponentSpecification
+public class WebLayoutSpecification extends WebObjectSpecification
 {
 	public static WebLayoutSpecification parseLayoutSpec(String specfileContent, String packageName, IPackageReader reader) throws JSONException, IOException
 	{

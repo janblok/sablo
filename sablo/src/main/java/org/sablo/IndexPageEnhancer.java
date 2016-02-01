@@ -32,9 +32,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.sablo.services.template.ModifiablePropertiesGenerator;
-import org.sablo.specification.WebComponentPackageSpecification;
+import org.sablo.specification.NGPackageSpecification;
 import org.sablo.specification.WebComponentSpecProvider;
-import org.sablo.specification.WebComponentSpecification;
+import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.WebServiceSpecProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,11 +128,11 @@ public class IndexPageEnhancer
 		ArrayList<String> allJSContributions = new ArrayList<String>();
 
 		LinkedHashMap<String, JSONObject> allLibraries = new LinkedHashMap<>();
-		Collection<WebComponentPackageSpecification<WebComponentSpecification>> webComponentPackagesDescriptions = new ArrayList<WebComponentPackageSpecification<WebComponentSpecification>>();
+		Collection<NGPackageSpecification<WebObjectSpecification>> webComponentPackagesDescriptions = new ArrayList<NGPackageSpecification<WebObjectSpecification>>();
 		webComponentPackagesDescriptions.addAll(WebComponentSpecProvider.getInstance().getWebComponentSpecifications().values());
 		webComponentPackagesDescriptions.addAll(WebServiceSpecProvider.getInstance().getWebServiceSpecifications().values());
 
-		for (WebComponentPackageSpecification<WebComponentSpecification> packageDesc : webComponentPackagesDescriptions)
+		for (NGPackageSpecification<WebObjectSpecification> packageDesc : webComponentPackagesDescriptions)
 		{
 			if (packageDesc.getCssClientLibrary() != null)
 			{
@@ -143,7 +143,7 @@ public class IndexPageEnhancer
 				mergeLibs(allLibraries, packageLibsToJSON(packageDesc.getJsClientLibrary(), "text/javascript"));
 			}
 
-			for (WebComponentSpecification spec : packageDesc.getSpecifications().values())
+			for (WebObjectSpecification spec : packageDesc.getSpecifications().values())
 			{
 				allJSContributions.add(spec.getDefinition());
 				mergeLibs(allLibraries, spec.getLibraries());

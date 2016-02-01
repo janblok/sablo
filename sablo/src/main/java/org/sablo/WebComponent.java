@@ -25,9 +25,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.WebComponentApiDefinition;
+import org.sablo.specification.WebObjectApiDefinition;
 import org.sablo.specification.WebComponentSpecProvider;
-import org.sablo.specification.WebComponentSpecification;
+import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.CurrentWindow;
 
@@ -47,7 +47,7 @@ public class WebComponent extends BaseWebObject
 		properties.put("name", name);
 	}
 
-	public WebComponent(String name, WebComponentSpecification spec)
+	public WebComponent(String name, WebObjectSpecification spec)
 	{
 		super(name, spec);
 	}
@@ -133,7 +133,7 @@ public class WebComponent extends BaseWebObject
 	 */
 	public Object invokeApi(String apiFunctionName, Object[] args)
 	{
-		WebComponentApiDefinition apiFunction = specification.getApiFunction(apiFunctionName);
+		WebObjectApiDefinition apiFunction = specification.getApiFunction(apiFunctionName);
 		if (apiFunction != null)
 		{
 			return invokeApi(apiFunction, args);
@@ -150,7 +150,7 @@ public class WebComponent extends BaseWebObject
 	 *            the args
 	 * @return the value if any
 	 */
-	public Object invokeApi(WebComponentApiDefinition apiFunction, Object[] args)
+	public Object invokeApi(WebObjectApiDefinition apiFunction, Object[] args)
 	{
 		return CurrentWindow.get().invokeApi(this, apiFunction, args, getParameterTypes(apiFunction));
 	}
@@ -190,7 +190,7 @@ public class WebComponent extends BaseWebObject
 		CurrentWindow.get().getSession().getClientService(service).executeAsyncServiceCall(functionName, arguments);
 	}
 
-	public static PropertyDescription getParameterTypes(WebComponentApiDefinition apiFunc)
+	public static PropertyDescription getParameterTypes(WebObjectApiDefinition apiFunc)
 	{
 		PropertyDescription parameterTypes = null;
 		final List<PropertyDescription> types = apiFunc.getParameters();

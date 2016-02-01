@@ -22,8 +22,8 @@ import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.jar.Manifest;
 
-import org.sablo.specification.WebComponentPackage;
-import org.sablo.specification.WebComponentPackage.IPackageReader;
+import org.sablo.specification.NGPackage;
+import org.sablo.specification.NGPackage.IPackageReader;
 
 /**
  * @author jcompagner
@@ -58,7 +58,7 @@ public class InMemPackageReader implements IPackageReader
 	{
 		try
 		{
-			String packageDisplayname = WebComponentPackage.getPackageDisplayname(getManifest());
+			String packageDisplayname = NGPackage.getPackageDisplayname(getManifest());
 			if (packageDisplayname != null) return packageDisplayname;
 		}
 		catch (IOException e)
@@ -102,7 +102,7 @@ public class InMemPackageReader implements IPackageReader
 	@Override
 	public String getPackageType() throws IOException
 	{
-		return WebComponentPackage.getPackageType(getManifest());
+		return NGPackage.getPackageType(getManifest());
 	}
 
 }

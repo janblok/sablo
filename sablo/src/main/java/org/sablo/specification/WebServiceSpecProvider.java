@@ -23,8 +23,8 @@ import java.util.jar.Manifest;
 
 import javax.servlet.ServletContext;
 
-import org.sablo.specification.WebComponentPackage.IPackageReader;
-import org.sablo.specification.WebComponentPackage.JarServletContextReader;
+import org.sablo.specification.NGPackage.IPackageReader;
+import org.sablo.specification.NGPackage.JarServletContextReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +68,7 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 						List<IPackageReader> readers = new ArrayList<IPackageReader>();
 						for (String location : webComponentBundleNames)
 						{
-							readers.add(new WebComponentPackage.WarURLPackageReader(servletContext, location));
+							readers.add(new NGPackage.WarURLPackageReader(servletContext, location));
 						}
 
 						// scan all jars for services
@@ -113,7 +113,7 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 	 *
 	 * @return a map of all the specifications
 	 */
-	public Map<String, WebComponentPackageSpecification<WebComponentSpecification>> getWebServiceSpecifications()
+	public Map<String, NGPackageSpecification<WebObjectSpecification>> getWebServiceSpecifications()
 	{
 		return reader.getWebComponentSpecifications();
 	}
@@ -123,7 +123,7 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 	 *
 	 * @return an array of all the specifications
 	 */
-	public WebComponentSpecification[] getAllWebServiceSpecifications()
+	public WebObjectSpecification[] getAllWebServiceSpecifications()
 	{
 		return reader.getAllWebComponentSpecifications();
 	}
@@ -134,7 +134,7 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 	 *
 	 * @param serviceName
 	 */
-	public WebComponentSpecification getWebServiceSpecification(String serviceName)
+	public WebObjectSpecification getWebServiceSpecification(String serviceName)
 	{
 		return reader.getWebComponentSpecification(serviceName);
 	}
@@ -142,7 +142,7 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 	/**
 	 * Get a list of all services contained by provided package name
 	 */
-	public WebComponentPackageSpecification<WebComponentSpecification> getServicesInPackage(String packageName)
+	public NGPackageSpecification<WebObjectSpecification> getServicesInPackage(String packageName)
 	{
 		return reader.getWebComponentSpecifications().get(packageName);
 	}

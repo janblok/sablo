@@ -22,7 +22,7 @@ import org.json.JSONWriter;
 import org.sablo.Container;
 import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.WebComponentApiDefinition;
+import org.sablo.specification.WebObjectApiDefinition;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
@@ -122,7 +122,7 @@ public interface IWindow
 	 * @param apiFunction the function to invoke
 	 * @param arguments
 	 */
-	public Object invokeApi(WebComponent receiver, WebComponentApiDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes);
+	public Object invokeApi(WebComponent receiver, WebObjectApiDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes);
 
 	/**
 	 * It there an active session to the browser?

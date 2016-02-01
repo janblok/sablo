@@ -25,8 +25,8 @@ import java.util.jar.Manifest;
 
 import javax.servlet.ServletContext;
 
-import org.sablo.specification.WebComponentPackage.IPackageReader;
-import org.sablo.specification.WebComponentPackage.JarServletContextReader;
+import org.sablo.specification.NGPackage.IPackageReader;
+import org.sablo.specification.NGPackage.JarServletContextReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +68,7 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 						List<IPackageReader> readers = new ArrayList<IPackageReader>();
 						for (String location : webComponentBundleNames)
 						{
-							readers.add(new WebComponentPackage.WarURLPackageReader(servletContext, location));
+							readers.add(new NGPackage.WarURLPackageReader(servletContext, location));
 						}
 
 						// scan all jars for components
@@ -121,7 +121,7 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 	 * @param componentType
 	 * @return the components specification, null if not found.
 	 */
-	public WebComponentSpecification getWebComponentSpecification(String componentType)
+	public WebObjectSpecification getWebComponentSpecification(String componentType)
 	{
 		return reader.getWebComponentSpecification(componentType);
 	}
@@ -131,7 +131,7 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 	 *
 	 * @return a map of all the specifications
 	 */
-	public Map<String, WebComponentPackageSpecification<WebComponentSpecification>> getWebComponentSpecifications()
+	public Map<String, NGPackageSpecification<WebObjectSpecification>> getWebComponentSpecifications()
 	{
 		return reader.getWebComponentSpecifications();
 	}
@@ -141,7 +141,7 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 	 *
 	 * @return an array of all the specifications
 	 */
-	public WebComponentSpecification[] getAllWebComponentSpecifications()
+	public WebObjectSpecification[] getAllWebComponentSpecifications()
 	{
 		return reader.getAllWebComponentSpecifications();
 	}
@@ -151,7 +151,7 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 	 *
 	 * @return a map of all the specifications
 	 */
-	public Map<String, WebComponentPackageSpecification<WebLayoutSpecification>> getLayoutSpecifications()
+	public Map<String, NGPackageSpecification<WebLayoutSpecification>> getLayoutSpecifications()
 	{
 		return reader.getLayoutSpecifications();
 	}
@@ -162,7 +162,7 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 	 */
 	public Collection<String> getComponentsInPackage(String packageName)
 	{
-		WebComponentPackageSpecification<WebComponentSpecification> pkg = reader.getWebComponentSpecifications().get(packageName);
+		NGPackageSpecification<WebObjectSpecification> pkg = reader.getWebComponentSpecifications().get(packageName);
 		return pkg == null ? Collections.<String> emptyList() : pkg.getSpecifications().keySet();
 
 	}
@@ -172,7 +172,7 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 	 */
 	public Collection<String> getLayoutsInPackage(String packageName)
 	{
-		WebComponentPackageSpecification<WebLayoutSpecification> pkg = reader.getLayoutSpecifications().get(packageName);
+		NGPackageSpecification<WebLayoutSpecification> pkg = reader.getLayoutSpecifications().get(packageName);
 		return pkg == null ? Collections.<String> emptyList() : pkg.getSpecifications().keySet();
 	}
 

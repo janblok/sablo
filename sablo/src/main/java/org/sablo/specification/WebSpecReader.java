@@ -18,14 +18,21 @@ package org.sablo.specification;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.sablo.specification.BaseSpecProvider.ISpecReloadListener;
 import org.sablo.specification.WebComponentPackage.DuplicatePackageException;
 import org.sablo.specification.WebComponentPackage.IPackageReader;
 import org.sablo.specification.property.types.TypesRegistry;
@@ -42,18 +49,21 @@ class WebSpecReader
 
 	private final Map<String, WebComponentPackageSpecification<WebComponentSpecification>> cachedDescriptions = new HashMap<>();
 	private final Map<String, WebComponentPackageSpecification<WebLayoutSpecification>> cachedLayoutDescriptions = new TreeMap<>();
-	private final Map<String, WebComponentSpecification> allComponentSpecifications = new HashMap<>();
-	private final Map<String, WebComponentPackage> allPackages = new HashMap<String, WebComponentPackage>();
+	private final Map<String, WebComponentSpecification> allWebObjectSpecifications = new HashMap<>();
+	private final Map<String, IPackageReader> allPackages = new HashMap<>();
+	private final Set<String> packagesWithGloballyDefinedTypes = new HashSet<>(); // packageNames of packages that have globally defined types
 
-	private final IPackageReader[] packageReaders;
+	private final List<IPackageReader> packageReaders;
 
 	private final String attributeName;
 
 	private long lastLoadTimestamp;
 
+	private final Map<String, List<ISpecReloadListener>> specReloadListeners = new HashMap<>();
+
 	WebSpecReader(IPackageReader[] packageReaders, String attributeName)
 	{
-		this.packageReaders = packageReaders;
+		this.packageReaders = new ArrayList<>(Arrays.asList(packageReaders));
 		this.attributeName = attributeName;
 		load();
 	}
@@ -69,8 +79,9 @@ class WebSpecReader
 
 		cachedDescriptions.clear();
 		cachedLayoutDescriptions.clear();
-		allComponentSpecifications.clear();
+		allWebObjectSpecifications.clear();
 		allPackages.clear();
+		packagesWithGloballyDefinedTypes.clear();
 		List<WebComponentPackage> packages = new ArrayList<>();
 		for (IPackageReader packageReader : packageReaders)
 		{
@@ -79,7 +90,7 @@ class WebSpecReader
 		try
 		{
 			readGloballyDefinedTypes(packages);
-			cacheComponentSpecs(packages);
+			cacheWebObjectSpecs(packages);
 		}
 		finally
 		{
@@ -88,10 +99,114 @@ class WebSpecReader
 				p.dispose();
 			}
 		}
+
+		Iterator<Entry<String, List<ISpecReloadListener>>> it = specReloadListeners.entrySet().iterator();
+		while (it.hasNext())
+		{
+			Entry<String, List<ISpecReloadListener>> listenerEntry = it.next();
+			for (ISpecReloadListener l : listenerEntry.getValue())
+				l.webObjectSpecificationReloaded();
+			if (!allWebObjectSpecifications.containsKey(listenerEntry.getKey())) it.remove();
+		}
 	}
 
-	protected synchronized void readGloballyDefinedTypes(List<WebComponentPackage> packages)
+	/**
+	 * Updates available packages. "toRemove" provided contents will be removed, "toAdd" will be made available.
+	 */
+	public synchronized void updatePackages(Collection<IPackageReader> packagesToRemove, Collection<IPackageReader> packagesToAdd)
 	{
+		if (packagesToRemove.size() == 0 && packagesToAdd.size() == 0) return;
+		lastLoadTimestamp = System.currentTimeMillis();
+		List<String> removedOrReloadedSpecs = new ArrayList<>();
+
+		boolean shouldReloadAllDueToGlobalTypeChanges = false;
+		for (IPackageReader packageToRemove : packagesToRemove)
+		{
+			// find the package name from cache - cause the IPackageReader might already be invalid (contents deleted and such - so we can't rely on it's .getPackageName())
+			String packageNameToRemove = null;
+			for (Entry<String, IPackageReader> e : allPackages.entrySet())
+			{
+				if (e.getValue() == packageToRemove)
+				{
+					packageNameToRemove = e.getKey();
+					break;
+				}
+			}
+
+			if (packageNameToRemove != null)
+			{
+				if (packagesWithGloballyDefinedTypes.contains(packageNameToRemove))
+				{
+					shouldReloadAllDueToGlobalTypeChanges = true;
+					break; // we will reload all in this case anyway
+				}
+
+				// unload package
+				cachedLayoutDescriptions.remove(packageNameToRemove);
+				packagesWithGloballyDefinedTypes.remove(packageNameToRemove);
+				WebComponentPackageSpecification<WebComponentSpecification> removedPackageSpecs = cachedDescriptions.remove(packageNameToRemove);
+				if (removedPackageSpecs != null) for (String specName : removedPackageSpecs.getSpecifications().keySet())
+				{
+					allWebObjectSpecifications.remove(specName);
+					removedOrReloadedSpecs.add(specName);
+				}
+				IPackageReader oldPackageReader = allPackages.remove(packageNameToRemove);
+				if (oldPackageReader != null) packageReaders.remove(oldPackageReader);
+			}
+			else
+			{
+				log.warn("Cannot unload an ng package:");
+				try
+				{
+					log.warn("Package name: :" + packageToRemove.getName());
+				}
+				catch (Exception e)
+				{
+					// nothing
+				}
+			}
+		}
+
+		if (shouldReloadAllDueToGlobalTypeChanges) load(); // reload all because removed packages had global types
+		else
+		{
+			// load new packages
+			packageReaders.addAll(packagesToAdd);
+
+			List<WebComponentPackage> packages = new ArrayList<>();
+			for (IPackageReader packageReader : packagesToAdd)
+			{
+				packages.add(new WebComponentPackage(packageReader));
+			}
+			try
+			{
+				if (readGloballyDefinedTypes(packages)) load(); // reload all because added packages have global types
+				else
+				{
+					cacheWebObjectSpecs(packages);
+				}
+			}
+			finally
+			{
+				for (WebComponentPackage p : packages)
+				{
+					p.dispose();
+				}
+			}
+		}
+
+		for (String removedOrReloadedSpec : removedOrReloadedSpecs)
+		{
+			List<ISpecReloadListener> ls = specReloadListeners.get(removedOrReloadedSpec);
+			if (ls != null) for (ISpecReloadListener l : ls)
+				l.webObjectSpecificationReloaded();
+			if (!allWebObjectSpecifications.containsKey(removedOrReloadedSpec)) specReloadListeners.remove(removedOrReloadedSpec);
+		}
+	}
+
+	protected synchronized boolean readGloballyDefinedTypes(List<WebComponentPackage> packages)
+	{
+		boolean globalTypesFound = false;
 		try
 		{
 			JSONObject typeContainer = new JSONObject();
@@ -102,7 +217,11 @@ class WebSpecReader
 			{
 				try
 				{
-					p.appendGlobalTypesJSON(allGlobalTypesFromAllPackages);
+					if (p.appendGlobalTypesJSON(allGlobalTypesFromAllPackages))
+					{
+						globalTypesFound = true;
+						packagesWithGloballyDefinedTypes.add(p.getPackageName());
+					}
 				}
 				catch (IOException e)
 				{
@@ -124,9 +243,10 @@ class WebSpecReader
 			// should never happen
 			log.error("Error Creating a simple JSON object hierarchy while reading globally defined types...");
 		}
+		return globalTypesFound;
 	}
 
-	protected synchronized void cacheComponentSpecs(List<WebComponentPackage> packages)
+	protected synchronized void cacheWebObjectSpecs(List<WebComponentPackage> packages)
 	{
 		for (WebComponentPackage p : packages)
 		{
@@ -152,19 +272,19 @@ class WebSpecReader
 
 	private void cache(WebComponentPackage p) throws IOException
 	{
-		WebComponentPackage oldPackage = allPackages.put(p.getPackageName(), p);
+		IPackageReader oldPackage = allPackages.put(p.getPackageName(), p.getReader());
 		if (oldPackage != null)
 		{
-			log.error("Conflict found! Duplicate web component package name: " + oldPackage.getPackageName());
-			oldPackage.getReader().reportError("", new DuplicatePackageException("Duplicate package " + oldPackage.getPackageName()));
+			log.error("Conflict found! Duplicate web component / web service package name: " + oldPackage.getPackageName());
+			p.getReader().reportError("", new DuplicatePackageException("Duplicate package " + oldPackage.getPackageName()));
 		}
-		WebComponentPackageSpecification<WebComponentSpecification> webComponentPackageSpecification = p.getWebComponentDescriptions(attributeName);
+		WebComponentPackageSpecification<WebComponentSpecification> webComponentPackageSpecification = p.getWebObjectDescriptions(attributeName);
 		Map<String, WebComponentSpecification> webComponentDescriptions = webComponentPackageSpecification.getSpecifications();
 		Map<String, WebComponentSpecification> packageComponents = new HashMap<>(webComponentDescriptions.size());
 		for (WebComponentSpecification desc : webComponentDescriptions.values())
 		{
-			WebComponentSpecification old = allComponentSpecifications.put(desc.getName(), desc);
-			if (old != null) log.error("Conflict found! Duplicate web component definition name: " + old.getName());
+			WebComponentSpecification old = allWebObjectSpecifications.put(desc.getName(), desc);
+			if (old != null) log.error("Conflict found! Duplicate web component / web service definition name: " + old.getName());
 			else
 			{
 				packageComponents.put(desc.getName(), desc);
@@ -174,14 +294,14 @@ class WebSpecReader
 		if (packageComponents.size() > 0)
 		{
 			cachedDescriptions.put(webComponentPackageSpecification.getPackageName(),
-				new WebComponentPackageSpecification<>(webComponentPackageSpecification.getPackageName(),
-					webComponentPackageSpecification.getPackageDisplayname(), packageComponents, webComponentPackageSpecification.getManifest()));
+				new WebComponentPackageSpecification<>(webComponentPackageSpecification.getPackageName(), webComponentPackageSpecification.getPackageDisplayname(),
+					packageComponents, webComponentPackageSpecification.getManifest()));
 		}
 	}
 
 	public synchronized WebComponentSpecification getWebComponentSpecification(String componentTypeName)
 	{
-		return allComponentSpecifications.get(componentTypeName);
+		return allWebObjectSpecifications.get(componentTypeName);
 	}
 
 	public synchronized Map<String, WebComponentPackageSpecification<WebComponentSpecification>> getWebComponentSpecifications()
@@ -191,12 +311,9 @@ class WebSpecReader
 
 	public synchronized WebComponentSpecification[] getAllWebComponentSpecifications()
 	{
-		return allComponentSpecifications.values().toArray(new WebComponentSpecification[allComponentSpecifications.size()]);
+		return allWebObjectSpecifications.values().toArray(new WebComponentSpecification[allWebObjectSpecifications.size()]);
 	}
 
-	/**
-	 * @return
-	 */
 	public Map<String, WebComponentPackageSpecification<WebLayoutSpecification>> getLayoutSpecifications()
 	{
 		return Collections.unmodifiableMap(cachedLayoutDescriptions);
@@ -204,7 +321,6 @@ class WebSpecReader
 
 	/**
 	 * Get the map of packages and package URLs.
-	 * @return
 	 */
 	public Map<String, URL> getPackagesToURLs()
 	{
@@ -218,7 +334,6 @@ class WebSpecReader
 
 	/**
 	 * Get the map of packages and package display names.
-	 * @return
 	 */
 	public Map<String, String> getPackagesToDisplayNames()
 	{
@@ -229,4 +344,36 @@ class WebSpecReader
 		}
 		return result;
 	}
+
+	/**
+	 * Adds a listener that gets notified when a specific component or service specification gets reloaded or removed.
+	 * If it gets removed, the listener will be cleared as well after begin triggered.
+	 *
+	 * @param specName the name of the component/service to listen to for reloads.
+	 */
+	public void addSpecReloadListener(String specName, ISpecReloadListener specReloadListener)
+	{
+		List<ISpecReloadListener> listeners = specReloadListeners.get(specName);
+		if (listeners == null)
+		{
+			listeners = new ArrayList<>();
+			specReloadListeners.put(specName, listeners);
+		}
+		listeners.add(specReloadListener);
+	}
+
+	/**
+	 * Removes the given listener.
+	 * @see #addSpecReloadListener(String, ISpecReloadListener)
+	 */
+	public void removeSpecReloadListener(String specName, ISpecReloadListener specReloadListener)
+	{
+		List<ISpecReloadListener> listeners = specReloadListeners.get(specName);
+		if (listeners != null)
+		{
+			listeners.remove(specReloadListener);
+			if (listeners.size() == 0) specReloadListeners.remove(specName);
+		}
+	}
+
 }

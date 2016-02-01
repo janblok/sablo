@@ -54,9 +54,9 @@ public class WebLayoutSpecification extends WebComponentSpecification
 		{
 			jsonConfig = reader.readTextFile(json.getString("definition"), Charset.forName("UTF8"));
 		}
-		WebLayoutSpecification spec = new WebLayoutSpecification(json.getString("name"), packageName, json.optString("displayName", null), json.optString(
-			"categoryName", null), json.optString("icon", null), json.optString("preview", null), json.getString("definition"), jsonConfig, topContainer,
-			children, json.optString("designStyleClass"));
+		WebLayoutSpecification spec = new WebLayoutSpecification(json.getString("name"), packageName, json.optString("displayName", null),
+			json.optString("categoryName", null), json.optString("icon", null), json.optString("preview", null), json.getString("definition"), jsonConfig,
+			topContainer, children, json.optString("designStyleClass"));
 
 		// properties
 		spec.putAll(spec.parseProperties("model", json));
@@ -69,17 +69,6 @@ public class WebLayoutSpecification extends WebComponentSpecification
 	private final List<String> allowedChildren;
 	private final String designStyleClass;
 
-	/**
-	 * @param name
-	 * @param packageName
-	 * @param displayName
-	 * @param categoryName
-	 * @param icon
-	 * @param definition
-	 * @param configObject
-	 * @param parents
-	 * @param children
-	 */
 	public WebLayoutSpecification(String name, String packageName, String displayName, String categoryName, String icon, String preview, String definition,
 		Object configObject, boolean topContainer, List<String> allowedChildren, String designStyleClass)
 	{

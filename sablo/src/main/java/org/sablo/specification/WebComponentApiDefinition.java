@@ -23,7 +23,7 @@ import java.util.List;
 import org.json.JSONObject;
 
 /**
- * Parsed web component api function definition.
+ * Parsed web component / web service api function definition.
  * @author rgansevles
  */
 public class WebComponentApiDefinition

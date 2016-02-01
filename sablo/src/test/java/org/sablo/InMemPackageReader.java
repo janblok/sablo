@@ -93,15 +93,16 @@ public class InMemPackageReader implements IPackageReader
 	{
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.sablo.specification.WebComponentPackage.IPackageReader#getPackageURL()
-	 */
 	@Override
 	public URL getPackageURL()
 	{
 		return null;
+	}
+
+	@Override
+	public String getPackageType() throws IOException
+	{
+		return WebComponentPackage.getPackageType(getManifest());
 	}
 
 }

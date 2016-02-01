@@ -50,19 +50,11 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 		instance = null;
 	}
 
-	/**
-	 * @param array
-	 */
 	public static synchronized void init(IPackageReader[] locations)
 	{
 		instance = new WebComponentSpecProvider(new WebSpecReader(locations, "Web-Component"));
 	}
 
-	/**
-	 * @param servletContext
-	 * @param webComponentBundleNames
-	 * @return the provider
-	 */
 	public static WebComponentSpecProvider init(ServletContext servletContext, String[] webComponentBundleNames)
 	{
 		if (instance == null)

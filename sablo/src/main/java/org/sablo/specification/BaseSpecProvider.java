@@ -17,8 +17,11 @@
 package org.sablo.specification;
 
 import java.net.URL;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+
+import org.sablo.specification.WebComponentPackage.IPackageReader;
 
 /**
  * @author lvostinar
@@ -35,7 +38,6 @@ public abstract class BaseSpecProvider
 
 	/**
 	 * Get the set of all package names.
-	 * @return
 	 */
 	public Set<String> getPackageNames()
 	{
@@ -44,17 +46,12 @@ public abstract class BaseSpecProvider
 
 	/**
 	 * Get the map of names to package URLs.
-	 * @return
 	 */
 	public Map<String, URL> getPackagesToURLs()
 	{
 		return reader.getPackagesToURLs();
 	}
 
-	/**
-	 * @param packageName
-	 * @return
-	 */
 	public String getPackageDisplayName(String packageName)
 	{
 		return reader.getPackagesToDisplayNames().get(packageName);
@@ -75,4 +72,41 @@ public abstract class BaseSpecProvider
 		}
 		return displayName;
 	}
+
+	/**
+	 * Updates available packages. "toRemove" provided contents will be removed, "toAdd" will be made available.
+	 */
+	public void updatePackages(Collection<IPackageReader> toRemove, Collection<IPackageReader> toAdd)
+	{
+		reader.updatePackages(toRemove, toAdd);
+	}
+
+	/**
+	 * Forwards addition of listener to underlying reader.
+	 * @see WebSpecReader#addSpecReloadListener(String, ISpecReloadListener)
+	 */
+	public void addSpecReloadListener(String specName, ISpecReloadListener specReloadListener)
+	{
+		reader.addSpecReloadListener(specName, specReloadListener);
+	}
+
+	/**
+	 * Forwards addition of listener to underlying reader.
+	 * @see WebSpecReader#addSpecReloadListener(String, ISpecReloadListener)
+	 */
+	public void removeSpecReloadListener(String specName, ISpecReloadListener specReloadListener)
+	{
+		reader.removeSpecReloadListener(specName, specReloadListener);
+	}
+
+	public static interface ISpecReloadListener
+	{
+
+		/**
+		 * If the component's or service's specification was reloaded or removed.
+		 */
+		void webObjectSpecificationReloaded();
+
+	}
+
 }

@@ -44,12 +44,9 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 		return instance;
 	}
 
-	/**
-	 * @param array
-	 */
 	public static synchronized void init(IPackageReader[] locations)
 	{
-		instance = new WebServiceSpecProvider(new WebSpecReader(locations, "Web-Service"));
+		instance = new WebServiceSpecProvider(new WebSpecReader(locations, IPackageReader.WEB_SERVICE));
 	}
 
 	public static void disposeInstance()
@@ -58,11 +55,6 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 	}
 
 
-	/**
-	 * @param servletContext
-	 * @param webComponentBundleNames
-	 * @return the provider
-	 */
 	public static WebServiceSpecProvider init(ServletContext servletContext, String[] webComponentBundleNames)
 	{
 		if (instance == null)
@@ -86,11 +78,12 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 							{
 								IPackageReader reader = new JarServletContextReader(servletContext, resourcePath);
 								Manifest mf = reader.getManifest();
-								if (mf != null && mf.getEntries() != null && mf.getEntries().values().contains("Web-Service")) readers.add(reader);
+								if (mf != null && mf.getEntries() != null && mf.getEntries().values().contains(IPackageReader.WEB_SERVICE)) readers.add(reader);
 							}
 						}
 
-						instance = new WebServiceSpecProvider(new WebSpecReader(readers.toArray(new IPackageReader[readers.size()]), "Web-Service"));
+						instance = new WebServiceSpecProvider(
+							new WebSpecReader(readers.toArray(new IPackageReader[readers.size()]), IPackageReader.WEB_SERVICE));
 					}
 					catch (Exception e)
 					{
@@ -107,14 +100,6 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 		synchronized (WebServiceSpecProvider.class)
 		{
 			return instance.reader.getLastLoadTimestamp();
-		}
-	}
-
-	public static void reload()
-	{
-		synchronized (WebServiceSpecProvider.class)
-		{
-			instance.reader.load();
 		}
 	}
 
@@ -161,4 +146,5 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 	{
 		return reader.getWebComponentSpecifications().get(packageName);
 	}
+
 }

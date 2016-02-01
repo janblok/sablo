@@ -48,7 +48,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An abstraction of package that contains Servoy web-components.
+ * An abstraction of package that contains Servoy NG web-components / web-services.
+ *
  * @author acostescu
  */
 public class WebComponentPackage
@@ -60,6 +61,15 @@ public class WebComponentPackage
 
 	public interface IPackageReader
 	{
+		/**
+		 * Identifier used in the manifest of service packages to list web services. Can also be returned by {@link #getPackageType()}.
+		 */
+		public static final String WEB_SERVICE = "Web-Service"; //$NON-NLS-1$
+		/**
+		 * Identifier used in the manifest of component packages to list web components. Can also be returned by {@link #getPackageType()}.
+		 */
+		public static final String WEB_COMPONENT = "Web-Component"; //$NON-NLS-1$
+
 		String getName();
 
 		String getPackageName();
@@ -74,11 +84,15 @@ public class WebComponentPackage
 
 		URL getPackageURL();
 
-		/**
-		 * @param specpath
-		 * @param e
-		 */
 		void reportError(String specpath, Exception e);
+
+		/**
+		 * A package can contain either components or services. This method looks in the manifest for the first (not necessarily in definition order) type of web object it can find declared
+		 * and returns that type.
+		 * @return one of {@link #WEB_SERVICE} or {@link #WEB_COMPONENT}; null if no such entry is found in the manifest.
+		 * @throws IOException if the manifest file cannot be read.
+		 */
+		String getPackageType() throws IOException;
 
 	}
 	public interface ISpecificationFilter
@@ -109,8 +123,13 @@ public class WebComponentPackage
 		return reader;
 	}
 
-	public void appendGlobalTypesJSON(JSONObject allGlobalTypesFromAllPackages) throws IOException
+
+	/**
+	 * Returns true if any globally defined types were appended.
+	 */
+	public boolean appendGlobalTypesJSON(JSONObject allGlobalTypesFromAllPackages) throws IOException
 	{
+		boolean globalTypesFound = false;
 		Manifest mf = reader.getManifest();
 
 		if (mf != null)
@@ -135,6 +154,7 @@ public class WebComponentPackage
 								{
 									String key = typesIt.next();
 									allGlobalTypesFromAllPackages.put(key, ((JSONObject)types).get(key));
+									globalTypesFound = true;
 								}
 							}
 						}
@@ -146,9 +166,10 @@ public class WebComponentPackage
 				}
 			}
 		}
+		return globalTypesFound;
 	}
 
-	public WebComponentPackageSpecification<WebComponentSpecification> getWebComponentDescriptions(String attributeName) throws IOException
+	public WebComponentPackageSpecification<WebComponentSpecification> getWebObjectDescriptions(String attributeName) throws IOException
 	{
 		String packageName = null;
 		String packageDisplayname = null;
@@ -223,8 +244,8 @@ public class WebComponentPackage
 					{
 						WebLayoutSpecification parsed = WebLayoutSpecification.parseLayoutSpec(specfileContent, packageName, reader);
 						parsed.setSpecURL(reader.getUrlForPath(specpath));
-						if (parsed.getDefinition() != null) parsed.setDefinitionFileURL(reader.getUrlForPath(parsed.getDefinition().substring(
-							parsed.getDefinition().indexOf("/") + 1)));
+						if (parsed.getDefinition() != null)
+							parsed.setDefinitionFileURL(reader.getUrlForPath(parsed.getDefinition().substring(parsed.getDefinition().indexOf("/") + 1)));
 						descriptions.put(parsed.getName(), parsed);
 					}
 					catch (Exception e)
@@ -242,8 +263,8 @@ public class WebComponentPackage
 					{
 						WebLayoutSpecification parsed = WebLayoutSpecification.parseLayoutSpec(specfileContent, packageName, reader);
 						parsed.setSpecURL(reader.getUrlForPath(specpath));
-						if (parsed.getDefinition() != null) parsed.setDefinitionFileURL(reader.getUrlForPath(parsed.getDefinition().substring(
-							parsed.getDefinition().indexOf("/") + 1)));
+						if (parsed.getDefinition() != null)
+							parsed.setDefinitionFileURL(reader.getUrlForPath(parsed.getDefinition().substring(parsed.getDefinition().indexOf("/") + 1)));
 						descriptions.put(parsed.getName(), parsed);
 					}
 					catch (Exception e)
@@ -384,6 +405,13 @@ public class WebComponentPackage
 			}
 			return null;
 		}
+
+		@Override
+		public String getPackageType() throws IOException
+		{
+			return WebComponentPackage.getPackageType(getManifest());
+		}
+
 	}
 
 	public static class JarPackageReader implements IPackageReader
@@ -504,6 +532,12 @@ public class WebComponentPackage
 			return null;
 		}
 
+		@Override
+		public String getPackageType() throws IOException
+		{
+			return WebComponentPackage.getPackageType(getManifest());
+		}
+
 	}
 
 	public static class DirPackageReader implements IPackageReader
@@ -616,6 +650,13 @@ public class WebComponentPackage
 			}
 			return null;
 		}
+
+		@Override
+		public String getPackageType() throws IOException
+		{
+			return WebComponentPackage.getPackageType(getManifest());
+		}
+
 	}
 
 	public static class WarURLPackageReader implements WebComponentPackage.IPackageReader, WebComponentPackage.ISpecificationFilter
@@ -623,7 +664,7 @@ public class WebComponentPackage
 		private final URL urlOfManifest;
 		private final String packageName;
 		private final ServletContext servletContext;
-		private HashSet<String> exportedComponents;
+		private HashSet<String> usedWebObjects;
 
 		public WarURLPackageReader(ServletContext servletContext, String packageName) throws MalformedURLException
 		{
@@ -636,17 +677,17 @@ public class WebComponentPackage
 			}
 			try
 			{
-				if (servletContext.getResource("/WEB-INF/exported_components.properties") != null)
+				if (servletContext.getResource("/WEB-INF/exported_web_objects.properties") != null)
 				{
-					InputStream is = servletContext.getResourceAsStream("/WEB-INF/exported_components.properties");
+					InputStream is = servletContext.getResourceAsStream("/WEB-INF/exported_web_objects.properties");
 					Properties properties = new Properties();
 					properties.load(is);
-					exportedComponents = new HashSet<String>(Arrays.asList(properties.getProperty("components").split(",")));
+					usedWebObjects = new HashSet<String>(Arrays.asList(properties.getProperty("usedWebObjects").split(",")));
 				}
 			}
 			catch (Exception e)
 			{
-				throw new IllegalArgumentException("Exception during init exported_components.properties reading", e);
+				throw new IllegalArgumentException("Exception while reading exported_web_objects.properties...", e);
 			}
 		}
 
@@ -727,14 +768,20 @@ public class WebComponentPackage
 		}
 
 		/**
-		 * @param spec
-		 * @return true if the component is not in the list of the exported components
+		 * @return true if the component is not in the list of the used web objects
 		 */
 		@Override
 		public boolean filter(WebComponentSpecification spec)
 		{
-			return exportedComponents != null && !exportedComponents.contains(spec.getName());
+			return usedWebObjects != null && !usedWebObjects.contains(spec.getName());
 		}
+
+		@Override
+		public String getPackageType() throws IOException
+		{
+			return WebComponentPackage.getPackageType(getManifest());
+		}
+
 	}
 
 	@Override
@@ -743,10 +790,6 @@ public class WebComponentPackage
 		return "WebComponent-package: " + getPackageName();
 	}
 
-	/**
-	 * @param manifest
-	 * @return
-	 */
 	public static String getPackageName(Manifest manifest)
 	{
 		String bundleName = manifest.getMainAttributes().getValue(BUNDLE_SYMBOLIC_NAME);
@@ -757,6 +800,22 @@ public class WebComponentPackage
 		}
 
 		return bundleName;
+	}
+
+	public static String getPackageType(Manifest manifest)
+	{
+		for (Entry<String, Attributes> entry : manifest.getEntries().entrySet())
+		{
+			if ("true".equalsIgnoreCase((String)entry.getValue().get(new Attributes.Name(IPackageReader.WEB_SERVICE))))
+			{
+				return IPackageReader.WEB_SERVICE;
+			}
+			else if ("true".equalsIgnoreCase((String)entry.getValue().get(new Attributes.Name(IPackageReader.WEB_COMPONENT))))
+			{
+				return IPackageReader.WEB_COMPONENT;
+			}
+		}
+		return null;
 	}
 
 	public static String getPackageDisplayname(Manifest manifest)

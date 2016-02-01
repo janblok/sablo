@@ -42,7 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Parse .spec files for components.
+ * Parse .spec files for components/services (web objects).
  * @author rgansevles
  */
 public class WebComponentSpecification extends PropertyDescription
@@ -315,13 +315,6 @@ public class WebComponentSpecification extends PropertyDescription
 		return spec;
 	}
 
-	/**
-	 * @param spec
-	 * @param api
-	 * @param func
-	 * @return
-	 * @throws JSONException
-	 */
 	private static WebComponentApiDefinition parseFunctionDefinition(WebComponentSpecification spec, JSONObject api, String func) throws JSONException
 	{
 		WebComponentApiDefinition def = new WebComponentApiDefinition(func);

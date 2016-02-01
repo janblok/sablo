@@ -30,8 +30,8 @@ import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentSpecProvider;
-import org.sablo.specification.WebComponentSpecification;
-import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
+import org.sablo.specification.WebObjectSpecification;
+import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
@@ -65,7 +65,7 @@ public abstract class BaseWebObject
 	private static final Logger log = LoggerFactory.getLogger(BaseWebObject.class.getCanonicalName());
 
 
-	protected final WebComponentSpecification specification;
+	protected final WebObjectSpecification specification;
 
 	/**
 	 * model properties to interact with webcomponent values, maps name to value
@@ -89,7 +89,7 @@ public abstract class BaseWebObject
 
 	protected final String name;
 
-	public BaseWebObject(String name, WebComponentSpecification specification)
+	public BaseWebObject(String name, WebObjectSpecification specification)
 	{
 		this.name = name;
 		this.specification = specification;
@@ -109,7 +109,7 @@ public abstract class BaseWebObject
 	/**
 	 * @return the specification
 	 */
-	public WebComponentSpecification getSpecification()
+	public WebObjectSpecification getSpecification()
 	{
 		return specification;
 	}

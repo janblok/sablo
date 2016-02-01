@@ -26,8 +26,8 @@ import java.util.TreeMap;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.sablo.specification.WebComponentPackage.DuplicatePackageException;
-import org.sablo.specification.WebComponentPackage.IPackageReader;
+import org.sablo.specification.NGPackage.DuplicatePackageException;
+import org.sablo.specification.NGPackage.IPackageReader;
 import org.sablo.specification.property.types.TypesRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,10 +40,10 @@ class WebSpecReader
 {
 	private static final Logger log = LoggerFactory.getLogger(WebSpecReader.class.getCanonicalName());
 
-	private final Map<String, WebComponentPackageSpecification<WebComponentSpecification>> cachedDescriptions = new HashMap<>();
-	private final Map<String, WebComponentPackageSpecification<WebLayoutSpecification>> cachedLayoutDescriptions = new TreeMap<>();
-	private final Map<String, WebComponentSpecification> allComponentSpecifications = new HashMap<>();
-	private final Map<String, WebComponentPackage> allPackages = new HashMap<String, WebComponentPackage>();
+	private final Map<String, NGPackageSpecification<WebObjectSpecification>> cachedDescriptions = new HashMap<>();
+	private final Map<String, NGPackageSpecification<WebLayoutSpecification>> cachedLayoutDescriptions = new TreeMap<>();
+	private final Map<String, WebObjectSpecification> allComponentSpecifications = new HashMap<>();
+	private final Map<String, NGPackage> allPackages = new HashMap<String, NGPackage>();
 
 	private final IPackageReader[] packageReaders;
 
@@ -71,10 +71,10 @@ class WebSpecReader
 		cachedLayoutDescriptions.clear();
 		allComponentSpecifications.clear();
 		allPackages.clear();
-		List<WebComponentPackage> packages = new ArrayList<>();
+		List<NGPackage> packages = new ArrayList<>();
 		for (IPackageReader packageReader : packageReaders)
 		{
-			packages.add(new WebComponentPackage(packageReader));
+			packages.add(new NGPackage(packageReader));
 		}
 		try
 		{
@@ -83,22 +83,22 @@ class WebSpecReader
 		}
 		finally
 		{
-			for (WebComponentPackage p : packages)
+			for (NGPackage p : packages)
 			{
 				p.dispose();
 			}
 		}
 	}
 
-	protected synchronized void readGloballyDefinedTypes(List<WebComponentPackage> packages)
+	protected synchronized void readGloballyDefinedTypes(List<NGPackage> packages)
 	{
 		try
 		{
 			JSONObject typeContainer = new JSONObject();
 			JSONObject allGlobalTypesFromAllPackages = new JSONObject();
-			typeContainer.put(WebComponentSpecification.TYPES_KEY, allGlobalTypesFromAllPackages);
+			typeContainer.put(WebObjectSpecification.TYPES_KEY, allGlobalTypesFromAllPackages);
 
-			for (WebComponentPackage p : packages)
+			for (NGPackage p : packages)
 			{
 				try
 				{
@@ -112,7 +112,7 @@ class WebSpecReader
 
 			try
 			{
-				TypesRegistry.addTypes(WebComponentSpecification.getTypes(typeContainer).values());
+				TypesRegistry.addTypes(WebObjectSpecification.getTypes(typeContainer).values());
 			}
 			catch (Exception e)
 			{
@@ -126,9 +126,9 @@ class WebSpecReader
 		}
 	}
 
-	protected synchronized void cacheComponentSpecs(List<WebComponentPackage> packages)
+	protected synchronized void cacheComponentSpecs(List<NGPackage> packages)
 	{
-		for (WebComponentPackage p : packages)
+		for (NGPackage p : packages)
 		{
 			try
 			{
@@ -140,7 +140,7 @@ class WebSpecReader
 			}
 			try
 			{
-				WebComponentPackageSpecification<WebLayoutSpecification> layoutDescriptions = p.getLayoutDescriptions();
+				NGPackageSpecification<WebLayoutSpecification> layoutDescriptions = p.getLayoutDescriptions();
 				if (layoutDescriptions.getSpecifications().size() > 0) cachedLayoutDescriptions.put(p.getPackageName(), layoutDescriptions);
 			}
 			catch (Exception e)
@@ -150,20 +150,20 @@ class WebSpecReader
 		}
 	}
 
-	private void cache(WebComponentPackage p) throws IOException
+	private void cache(NGPackage p) throws IOException
 	{
-		WebComponentPackage oldPackage = allPackages.put(p.getPackageName(), p);
+		NGPackage oldPackage = allPackages.put(p.getPackageName(), p);
 		if (oldPackage != null)
 		{
 			log.error("Conflict found! Duplicate web component package name: " + oldPackage.getPackageName());
 			oldPackage.getReader().reportError("", new DuplicatePackageException("Duplicate package " + oldPackage.getPackageName()));
 		}
-		WebComponentPackageSpecification<WebComponentSpecification> webComponentPackageSpecification = p.getWebComponentDescriptions(attributeName);
-		Map<String, WebComponentSpecification> webComponentDescriptions = webComponentPackageSpecification.getSpecifications();
-		Map<String, WebComponentSpecification> packageComponents = new HashMap<>(webComponentDescriptions.size());
-		for (WebComponentSpecification desc : webComponentDescriptions.values())
+		NGPackageSpecification<WebObjectSpecification> webComponentPackageSpecification = p.getWebComponentDescriptions(attributeName);
+		Map<String, WebObjectSpecification> webComponentDescriptions = webComponentPackageSpecification.getSpecifications();
+		Map<String, WebObjectSpecification> packageComponents = new HashMap<>(webComponentDescriptions.size());
+		for (WebObjectSpecification desc : webComponentDescriptions.values())
 		{
-			WebComponentSpecification old = allComponentSpecifications.put(desc.getName(), desc);
+			WebObjectSpecification old = allComponentSpecifications.put(desc.getName(), desc);
 			if (old != null) log.error("Conflict found! Duplicate web component definition name: " + old.getName());
 			else
 			{
@@ -174,30 +174,30 @@ class WebSpecReader
 		if (packageComponents.size() > 0)
 		{
 			cachedDescriptions.put(webComponentPackageSpecification.getPackageName(),
-				new WebComponentPackageSpecification<>(webComponentPackageSpecification.getPackageName(),
+				new NGPackageSpecification<>(webComponentPackageSpecification.getPackageName(),
 					webComponentPackageSpecification.getPackageDisplayname(), packageComponents, webComponentPackageSpecification.getManifest()));
 		}
 	}
 
-	public synchronized WebComponentSpecification getWebComponentSpecification(String componentTypeName)
+	public synchronized WebObjectSpecification getWebComponentSpecification(String componentTypeName)
 	{
 		return allComponentSpecifications.get(componentTypeName);
 	}
 
-	public synchronized Map<String, WebComponentPackageSpecification<WebComponentSpecification>> getWebComponentSpecifications()
+	public synchronized Map<String, NGPackageSpecification<WebObjectSpecification>> getWebComponentSpecifications()
 	{
 		return Collections.unmodifiableMap(cachedDescriptions);
 	}
 
-	public synchronized WebComponentSpecification[] getAllWebComponentSpecifications()
+	public synchronized WebObjectSpecification[] getAllWebComponentSpecifications()
 	{
-		return allComponentSpecifications.values().toArray(new WebComponentSpecification[allComponentSpecifications.size()]);
+		return allComponentSpecifications.values().toArray(new WebObjectSpecification[allComponentSpecifications.size()]);
 	}
 
 	/**
 	 * @return
 	 */
-	public Map<String, WebComponentPackageSpecification<WebLayoutSpecification>> getLayoutSpecifications()
+	public Map<String, NGPackageSpecification<WebLayoutSpecification>> getLayoutSpecifications()
 	{
 		return Collections.unmodifiableMap(cachedLayoutDescriptions);
 	}

@@ -27,7 +27,7 @@ import java.util.jar.Manifest;
 /**
  * @author rgansevles
  */
-public class WebComponentPackageSpecification<T extends WebComponentSpecification>
+public class NGPackageSpecification<T extends WebObjectSpecification>
 {
 
 	private static final String CSS_DESIGN_LIBS = "CSS-DesignLibs";
@@ -44,7 +44,7 @@ public class WebComponentPackageSpecification<T extends WebComponentSpecificatio
 	private final Map<String, T> specifications;
 	private final Manifest mf;
 
-	public WebComponentPackageSpecification(String packageName, String packageDisplayname, Map<String, T> specifications, Manifest mf)
+	public NGPackageSpecification(String packageName, String packageDisplayname, Map<String, T> specifications, Manifest mf)
 	{
 		this.packageName = packageName;
 		this.packageDisplayname = packageDisplayname;

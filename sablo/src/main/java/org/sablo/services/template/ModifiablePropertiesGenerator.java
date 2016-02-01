@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.WebComponentSpecification;
-import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
+import org.sablo.specification.WebObjectSpecification;
+import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 
 /**
  * In order to improve performance, not all properties on all components/services are watched for client/browser changes in angular.
@@ -53,13 +53,13 @@ public class ModifiablePropertiesGenerator
 	 * @param webComponentSpecifications specifications to look in for watched properties
 	 * @param categoryName for example "components", "services"
 	 */
-	public static void appendAll(PrintWriter w, WebComponentSpecification[] webComponentSpecifications, String categoryName)
+	public static void appendAll(PrintWriter w, WebObjectSpecification[] webComponentSpecifications, String categoryName)
 	{
 		w.print("  $propertyWatchesRegistry.setAutoWatchPropertiesList('");
 		w.print(categoryName);
 		w.println("', {");
 		boolean first1 = true;
-		for (WebComponentSpecification webComponentSpec : webComponentSpecifications)
+		for (WebObjectSpecification webComponentSpec : webComponentSpecifications)
 		{
 			Collection<PropertyDescription> pushToServerWatchProps = new ArrayList<>();
 			for (PropertyDescription desc : webComponentSpec.getProperties().values())

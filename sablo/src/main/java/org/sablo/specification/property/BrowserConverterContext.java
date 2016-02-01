@@ -16,7 +16,7 @@
 package org.sablo.specification.property;
 
 import org.sablo.BaseWebObject;
-import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
+import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

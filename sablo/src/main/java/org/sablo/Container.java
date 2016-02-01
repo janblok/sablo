@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.json.JSONException;
 import org.json.JSONWriter;
-import org.sablo.specification.WebComponentSpecification;
+import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.utils.DataConversion;
@@ -39,7 +39,7 @@ public abstract class Container extends WebComponent
 	protected final Map<String, WebComponent> components = new HashMap<>();
 	protected boolean changed;
 
-	public Container(String name, WebComponentSpecification spec)
+	public Container(String name, WebObjectSpecification spec)
 	{
 		super(name, spec);
 	}

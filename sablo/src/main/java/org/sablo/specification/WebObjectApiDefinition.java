@@ -26,7 +26,7 @@ import org.json.JSONObject;
  * Parsed web component api function definition.
  * @author rgansevles
  */
-public class WebComponentApiDefinition
+public class WebObjectApiDefinition
 {
 
 	private final String name;
@@ -38,7 +38,7 @@ public class WebComponentApiDefinition
 	private boolean delayUntilFormLoad = false;
 	private boolean globalExclusive = false;
 
-	public WebComponentApiDefinition(String name)
+	public WebObjectApiDefinition(String name)
 	{
 		this.name = name;
 	}
@@ -81,7 +81,7 @@ public class WebComponentApiDefinition
 	@Override
 	public String toString()
 	{
-		return "WebComponentApiDefinition[name:" + name + ",returnType:" + returnType + ", parameters:" + parameters + "]";
+		return "WebObjectApiDefinition[name:" + name + ",returnType:" + returnType + ", parameters:" + parameters + "]";
 	}
 
 	public void setDocumentation(String documentation)

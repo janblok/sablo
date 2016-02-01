@@ -30,7 +30,7 @@ import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.sablo.specification.WebComponentPackage.IPackageReader;
+import org.sablo.specification.NGPackage.IPackageReader;
 import org.sablo.specification.property.CustomJSONArrayType;
 import org.sablo.specification.property.CustomPropertyTypeResolver;
 import org.sablo.specification.property.CustomVariableArgsType;
@@ -45,14 +45,14 @@ import org.slf4j.LoggerFactory;
  * Parse .spec files for components.
  * @author rgansevles
  */
-public class WebComponentSpecification extends PropertyDescription
+public class WebObjectSpecification extends PropertyDescription
 {
 	/**
 	 * Property descriptions that are array element property descriptions will have this name.
 	 */
 	public static final String ARRAY_ELEMENT_PD_NAME = ""; //$NON-NLS-1$
 
-	private static final Logger log = LoggerFactory.getLogger(WebComponentSpecification.class.getCanonicalName());
+	private static final Logger log = LoggerFactory.getLogger(WebObjectSpecification.class.getCanonicalName());
 
 	public static final String TYPES_KEY = "types";
 
@@ -90,7 +90,7 @@ public class WebComponentSpecification extends PropertyDescription
 	}
 
 	private final Map<String, PropertyDescription> handlers = new HashMap<>(); // second String is always a "function" for now, but in the future it will probably contain more (to specify sent args/types...)
-	private final Map<String, WebComponentApiDefinition> apis = new HashMap<>();
+	private final Map<String, WebObjectApiDefinition> apis = new HashMap<>();
 	private final String definition;
 	private final JSONArray libraries;
 	private final String displayName;
@@ -108,7 +108,7 @@ public class WebComponentSpecification extends PropertyDescription
 
 	private final String preview;
 
-	public WebComponentSpecification(String name, String packageName, String displayName, String categoryName, String icon, String preview, String definition,
+	public WebObjectSpecification(String name, String packageName, String displayName, String categoryName, String icon, String preview, String definition,
 		JSONArray libs)
 	{
 		super(name, null);
@@ -122,7 +122,7 @@ public class WebComponentSpecification extends PropertyDescription
 		this.foundTypes = new HashMap<>();
 	}
 
-	public WebComponentSpecification(String name, String packageName, String displayName, String categoryName, String icon, String preview, String definition,
+	public WebObjectSpecification(String name, String packageName, String displayName, String categoryName, String icon, String preview, String definition,
 		JSONArray libs, Object configObject)
 	{
 		super(name, null, configObject);
@@ -154,7 +154,7 @@ public class WebComponentSpecification extends PropertyDescription
 	}
 
 
-	protected final void addApiFunction(WebComponentApiDefinition apiFunction)
+	protected final void addApiFunction(WebObjectApiDefinition apiFunction)
 	{
 		apis.put(apiFunction.getName(), apiFunction);
 	}
@@ -185,12 +185,12 @@ public class WebComponentSpecification extends PropertyDescription
 		return handlers.get(handlerName);
 	}
 
-	public WebComponentApiDefinition getApiFunction(String apiFunctionName)
+	public WebObjectApiDefinition getApiFunction(String apiFunctionName)
 	{
 		return apis.get(apiFunctionName);
 	}
 
-	public Map<String, WebComponentApiDefinition> getApiFunctions()
+	public Map<String, WebObjectApiDefinition> getApiFunctions()
 	{
 		return Collections.unmodifiableMap(apis);
 	}
@@ -269,17 +269,17 @@ public class WebComponentSpecification extends PropertyDescription
 
 	public static Map<String, IPropertyType< ? >> getTypes(JSONObject typesContainer) throws JSONException
 	{
-		WebComponentSpecification spec = new WebComponentSpecification("", "", "", null, null, null, "", null);
+		WebObjectSpecification spec = new WebObjectSpecification("", "", "", null, null, null, "", null);
 		spec.parseTypes(typesContainer);
 		return spec.foundTypes;
 	}
 
 	@SuppressWarnings("unchecked")
-	public static WebComponentSpecification parseSpec(String specfileContent, String packageName, IPackageReader reader) throws JSONException
+	public static WebObjectSpecification parseSpec(String specfileContent, String packageName, IPackageReader reader) throws JSONException
 	{
 		JSONObject json = new JSONObject(specfileContent);
 
-		WebComponentSpecification spec = new WebComponentSpecification(json.getString("name"), packageName, json.optString("displayName", null),
+		WebObjectSpecification spec = new WebObjectSpecification(json.getString("name"), packageName, json.optString("displayName", null),
 			json.optString("categoryName", null), json.optString("icon", null), json.optString("preview", null), json.getString("definition"),
 			json.optJSONArray("libraries"));
 
@@ -308,7 +308,7 @@ public class WebComponentSpecification extends PropertyDescription
 			Iterator<String> itk = api.keys();
 			while (itk.hasNext())
 			{
-				WebComponentApiDefinition def = parseFunctionDefinition(spec, api, itk.next());
+				WebObjectApiDefinition def = parseFunctionDefinition(spec, api, itk.next());
 				spec.addApiFunction(def);
 			}
 		}
@@ -322,9 +322,9 @@ public class WebComponentSpecification extends PropertyDescription
 	 * @return
 	 * @throws JSONException
 	 */
-	private static WebComponentApiDefinition parseFunctionDefinition(WebComponentSpecification spec, JSONObject api, String func) throws JSONException
+	private static WebObjectApiDefinition parseFunctionDefinition(WebObjectSpecification spec, JSONObject api, String func) throws JSONException
 	{
-		WebComponentApiDefinition def = new WebComponentApiDefinition(func);
+		WebObjectApiDefinition def = new WebObjectApiDefinition(func);
 		if (api.get(func) instanceof JSONObject)
 		{
 			JSONObject jsonDef = api.getJSONObject(func);
@@ -460,9 +460,9 @@ public class WebComponentSpecification extends PropertyDescription
 				}
 				// TODO this is currently never true? See 5 lines above this, types are always just PropertyDescription?
 				// is this really supported? or should we add it just to the properties? But how are these handlers then added and used
-				if (type instanceof WebComponentSpecification)
+				if (type instanceof WebObjectSpecification)
 				{
-					((WebComponentSpecification)type).putAllHandlers(parseProperties("handlers", jsonObject.getJSONObject(typeName)));
+					((WebObjectSpecification)type).putAllHandlers(parseProperties("handlers", jsonObject.getJSONObject(typeName)));
 				}
 			}
 		}

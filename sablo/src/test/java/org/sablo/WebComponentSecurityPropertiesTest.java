@@ -26,9 +26,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.After;
 import org.junit.Test;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.WebComponentPackage.IPackageReader;
+import org.sablo.specification.NGPackage.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
-import org.sablo.specification.WebComponentSpecification;
+import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.property.types.DimensionPropertyType;
 import org.sablo.specification.property.types.ProtectedConfig;
 import org.sablo.specification.property.types.ProtectedPropertyType;
@@ -823,7 +823,7 @@ public class WebComponentSecurityPropertiesTest
 		WebComponentSpecProvider.init(
 			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 
-		WebComponentSpecification formSpec = new WebComponentSpecification("form_spec", "", "", null, null, null, "", null);
+		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", "", null, null, null, "", null);
 		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
 		formSpec.putProperty("prot", new PropertyDescription("prot", ProtectedPropertyType.INSTANCE, ProtectedConfig.DEFAULTBLOCKING_TRUE));
 
@@ -918,7 +918,7 @@ public class WebComponentSecurityPropertiesTest
 		WebComponentSpecProvider.init(
 			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 
-		WebComponentSpecification formSpec = new WebComponentSpecification("form_spec", "", "", null, null, null, "", null);
+		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", "", null, null, null, "", null);
 		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
 		formSpec.putProperty("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
 

@@ -23,9 +23,9 @@ import org.json.JSONWriter;
 import org.sablo.BaseWebObject;
 import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.WebComponentApiDefinition;
-import org.sablo.specification.WebComponentSpecification;
-import org.sablo.specification.WebComponentSpecification.PushToServerEnum;
+import org.sablo.specification.WebObjectApiDefinition;
+import org.sablo.specification.WebObjectSpecification;
+import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.sablo.specification.WebServiceSpecProvider;
 import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.IBrowserConverterContext;
@@ -49,7 +49,7 @@ public class ClientService extends BaseWebObject implements IClientService
 
 	private static final Logger log = LoggerFactory.getLogger(ClientService.class.getCanonicalName());
 
-	public ClientService(String serviceName, WebComponentSpecification spec)
+	public ClientService(String serviceName, WebObjectSpecification spec)
 	{
 		super(serviceName, spec);
 	}
@@ -58,8 +58,8 @@ public class ClientService extends BaseWebObject implements IClientService
 	@Override
 	public Object executeServiceCall(String functionName, Object[] arguments) throws IOException
 	{
-		WebComponentSpecification spec = WebServiceSpecProvider.getInstance().getWebServiceSpecification(name);
-		WebComponentApiDefinition apiFunction = null;
+		WebObjectSpecification spec = WebServiceSpecProvider.getInstance().getWebServiceSpecification(name);
+		WebObjectApiDefinition apiFunction = null;
 		if (spec != null)
 		{
 			apiFunction = spec.getApiFunction(functionName);
@@ -125,7 +125,7 @@ public class ClientService extends BaseWebObject implements IClientService
 		// we have a list of properties available; create a suitable wrapper PropertyDescription that has the
 		// param indexes as child PropertyDescriptions
 		PropertyDescription parameterTypes = null;
-		WebComponentApiDefinition apiFunc = specification.getApiFunction(functionName);
+		WebObjectApiDefinition apiFunc = specification.getApiFunction(functionName);
 		if (apiFunc != null)
 		{
 			parameterTypes = WebComponent.getParameterTypes(apiFunc);

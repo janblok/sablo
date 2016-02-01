@@ -81,7 +81,7 @@ public class WebObjectApiDefinition
 	@Override
 	public String toString()
 	{
-		return "WebComponentApiDefinition[name:" + name + ",returnType:" + returnType + ", parameters:" + parameters + "]";
+		return "WebObjectApiDefinition[name:" + name + ",returnType:" + returnType + ", parameters:" + parameters + "]";
 	}
 
 	public void setDocumentation(String documentation)

@@ -567,17 +567,11 @@ public class WebObjectSpecification extends PropertyDescription
 		return specURL;
 	}
 
-	/**
-	 * @param url
-	 */
 	public void setSpecURL(URL url)
 	{
 		specURL = url;
 	}
 
-	/**
-	 * @param url
-	 */
 	public void setDefinitionFileURL(URL url)
 	{
 		definitionURL = url;

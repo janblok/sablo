@@ -41,7 +41,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author jcompagner
- *
  */
 class WebSpecReader
 {

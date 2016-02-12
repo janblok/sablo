@@ -112,12 +112,7 @@ public interface IWebsocketSession
 
 	Collection< ? extends IWindow> getWindows();
 
-	/**
-	 * @param window
-	 */
-	void invalidateWindow(IWindow window);
-
-	void activateWindow(IWindow window);
+	void updateLastAccessed(IWindow window);
 
 	boolean checkForWindowActivity();
 

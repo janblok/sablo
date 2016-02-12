@@ -43,9 +43,6 @@ public interface IWindow
 	 */
 	IWebsocketSession getSession();
 
-
-	void setSession(IWebsocketSession session);
-
 	/**
 	 * @param endpoint
 	 */
@@ -74,11 +71,6 @@ public interface IWindow
 	void registerContainer(Container container);
 
 	String getUuid();
-
-	/**
-	 * @param string
-	 */
-	void setUuid(String uuid);
 
 	/**
 	 * @return

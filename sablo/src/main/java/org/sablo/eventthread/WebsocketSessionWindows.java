@@ -68,13 +68,6 @@ public class WebsocketSessionWindows implements IWindow
 	}
 
 	@Override
-	public void setSession(IWebsocketSession session)
-	{
-		// should not be called for WebsocketSessionWindows, this window just maps calls to all windows for the session
-		throw new IllegalStateException("setSession on WebsocketSessionWindows");
-	}
-
-	@Override
 	public void setEndpoint(IWebsocketEndpoint endpoint)
 	{
 		// should not be called for WebsocketSessionWindows, this window just maps calls to all windows for the session
@@ -108,12 +101,6 @@ public class WebsocketSessionWindows implements IWindow
 	public String getUuid()
 	{
 		return null;
-	}
-
-	@Override
-	public void setUuid(String uuid)
-	{
-		// ignore
 	}
 
 	@Override

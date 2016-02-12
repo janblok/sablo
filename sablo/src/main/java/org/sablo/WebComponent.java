@@ -17,18 +17,10 @@
 package org.sablo;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
-import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.WebObjectApiDefinition;
 import org.sablo.specification.WebComponentSpecProvider;
+import org.sablo.specification.WebObjectApiDefinition;
 import org.sablo.specification.WebObjectSpecification;
-import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.CurrentWindow;
 
 /**
@@ -190,65 +182,6 @@ public class WebComponent extends BaseWebObject
 		CurrentWindow.get().getSession().getClientService(service).executeAsyncServiceCall(functionName, arguments);
 	}
 
-	public static PropertyDescription getParameterTypes(WebObjectApiDefinition apiFunc)
-	{
-		PropertyDescription parameterTypes = null;
-		final List<PropertyDescription> types = apiFunc.getParameters();
-		if (types.size() > 0)
-		{
-			parameterTypes = new PropertyDescription("", AggregatedPropertyType.INSTANCE)
-			{
-				@Override
-				public Map<String, PropertyDescription> getProperties()
-				{
-					Map<String, PropertyDescription> map = new HashMap<String, PropertyDescription>();
-					for (int i = 0; i < types.size(); i++)
-					{
-						map.put(String.valueOf(i), types.get(i));
-					}
-					return map;
-				}
-
-				@Override
-				public PropertyDescription getProperty(String name)
-				{
-					try
-					{
-						int index = Integer.parseInt(name);
-						if (index < types.size())
-						{
-							return types.get(index);
-						}
-						return null;
-					}
-					catch (NumberFormatException e)
-					{
-						return super.getProperty(name);
-					}
-				}
-
-				@Override
-				public Collection<String> getAllPropertiesNames()
-				{
-					Set<String> s = new HashSet<String>();
-					for (int i = 0; i < types.size(); i++)
-					{
-						s.add(String.valueOf(i));
-					}
-					s.addAll(super.getAllPropertiesNames());
-					return s;
-				}
-			};
-		}
-		return parameterTypes;
-	}
-
-
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see org.sablo.BaseWebObject#isEnabled()
-	 */
 	@Override
 	public final boolean isEnabled()
 	{

@@ -34,6 +34,7 @@ import javax.websocket.CloseReason;
 import org.json.JSONException;
 import org.json.JSONStringer;
 import org.json.JSONWriter;
+import org.sablo.BaseWebObject;
 import org.sablo.Container;
 import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
@@ -540,9 +541,10 @@ public class BaseWindow implements IWindow
 	}
 
 	@Override
-	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes,
+	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, WebObjectApiDefinition apiFunction,
 		IToJSONWriter<IBrowserConverterContext> pendingChangesWriter, boolean blockEventProcessing) throws IOException
 	{
+		PropertyDescription argumentTypes = (apiFunction != null ? BaseWebObject.getParameterTypes(apiFunction) : null);
 		addServiceCall(serviceName, functionName, arguments, argumentTypes);
 		try
 		{

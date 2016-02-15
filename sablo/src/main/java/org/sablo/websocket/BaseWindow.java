@@ -34,6 +34,7 @@ import javax.websocket.CloseReason;
 import org.json.JSONException;
 import org.json.JSONStringer;
 import org.json.JSONWriter;
+import org.sablo.BaseWebObject;
 import org.sablo.Container;
 import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
@@ -62,10 +63,11 @@ public class BaseWindow implements IWindow
 {
 	private static final Logger log = LoggerFactory.getLogger(BaseWindow.class.getCanonicalName());
 
-	private IWebsocketEndpoint endpoint;
-	private boolean endpointWasOverwriten = false;
-	private IWebsocketSession session;
-	private String uuid;
+	private volatile IWebsocketEndpoint endpoint;
+	private volatile int endpointRefcount = 0;
+
+	private final IWebsocketSession session;
+	private final String uuid;
 	private final String name;
 
 	private final AtomicInteger nextMessageId = new AtomicInteger(0);
@@ -78,15 +80,11 @@ public class BaseWindow implements IWindow
 
 	private String currentFormUrl;
 
-	public BaseWindow(String name)
+	public BaseWindow(IWebsocketSession session, String uuid, String name)
 	{
-		this.name = name;
-	}
-
-	@Override
-	public void setUuid(String uuid)
-	{
+		this.session = session;
 		this.uuid = uuid;
+		this.name = name;
 	}
 
 	@Override
@@ -108,36 +106,35 @@ public class BaseWindow implements IWindow
 	}
 
 	/**
-	 * @param session the session to set
+	 * When we have an endpoint set which is being replaced, it may happen that the new endpoint is set before the old one is being cleared.
+	 * For example:
+	 *   1. setEndpoint(A) -> this.endpoint = A, endpointRefcount = 1
+	 *   2. setEndpoint(B) -> this.endpoint = B, endpointRefcount = 2
+	 *   3. setEndpoint(null) [A was closed] -> this.endpoint = B, endpointRefcount = 1
 	 */
-	@Override
-	public void setSession(IWebsocketSession session)
-	{
-		this.session = session;
-	}
-
 	@Override
 	public void setEndpoint(IWebsocketEndpoint endpoint)
 	{
-		if (endpoint == null)
+		synchronized (this)
 		{
-			// endpoint was closed
-			if (endpointWasOverwriten)
+			if (endpoint == null)
 			{
-				// endpoint was replaced before previous one was closed
-				endpointWasOverwriten = false;
+				// endpoint was closed, only clear if this was the last one
+				if (--endpointRefcount == 0)
+				{
+					this.endpoint = null;
+				}
 			}
 			else
 			{
-				this.endpoint = null;
+				endpointRefcount++;
+				this.endpoint = endpoint;
 			}
-			session.invalidateWindow(this); // decrements refcount
 		}
-		else
+
+		if (endpoint == null)
 		{
-			endpointWasOverwriten = this.endpoint != null;
-			this.endpoint = endpoint;
-			session.activateWindow(this); // increments refcount
+			session.updateLastAccessed(this);
 		}
 	}
 
@@ -540,9 +537,10 @@ public class BaseWindow implements IWindow
 	}
 
 	@Override
-	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes,
+	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, WebObjectApiDefinition apiFunction,
 		IToJSONWriter<IBrowserConverterContext> pendingChangesWriter, boolean blockEventProcessing) throws IOException
 	{
+		PropertyDescription argumentTypes = (apiFunction != null ? BaseWebObject.getParameterTypes(apiFunction) : null);
 		addServiceCall(serviceName, functionName, arguments, argumentTypes);
 		try
 		{
@@ -597,7 +595,7 @@ public class BaseWindow implements IWindow
 	}
 
 	@Override
-	public boolean hasEndpoint()
+	public synchronized boolean hasEndpoint()
 	{
 		return endpoint != null;
 	}
@@ -605,7 +603,7 @@ public class BaseWindow implements IWindow
 	/**
 	 * @return the endpoint
 	 */
-	public IWebsocketEndpoint getEndpoint()
+	public synchronized IWebsocketEndpoint getEndpoint()
 	{
 		return endpoint;
 	}

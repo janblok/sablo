@@ -43,9 +43,6 @@ public interface IWindow
 	 */
 	IWebsocketSession getSession();
 
-
-	void setSession(IWebsocketSession session);
-
 	/**
 	 * @param endpoint
 	 */
@@ -76,11 +73,6 @@ public interface IWindow
 	String getUuid();
 
 	/**
-	 * @param string
-	 */
-	void setUuid(String uuid);
-
-	/**
 	 * @return
 	 */
 	String getName();
@@ -108,12 +100,13 @@ public interface IWindow
 	 * @param serviceName the name of the service to call client side.
 	 * @param functionName the name of the service's function to call.
 	 * @param arguments the arguments to be passed to the service's function call.
+	 * @param apiFunction
 	 * @param argumentTypes the types of arguments passed; can be null (the types are used for correct 'to JSON' conversion for web-socket traffic).
 	 * @param pendingChangesWriter a writer that writes any pending changes of the service that must be sent with this request/api call to be in sync on client.
 	 * @return remote result.
 	 * @throws IOException if such an exception happens.
 	 */
-	Object executeServiceCall(String serviceName, String functionName, Object[] arguments, PropertyDescription argumentTypes,
+	Object executeServiceCall(String serviceName, String functionName, Object[] arguments, WebObjectApiDefinition apiFunction,
 		IToJSONWriter<IBrowserConverterContext> pendingChangesWriter, boolean blockEventProcessing) throws IOException;
 
 	/**

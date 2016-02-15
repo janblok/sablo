@@ -21,7 +21,6 @@ import java.util.Map;
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.BaseWebObject;
-import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebObjectApiDefinition;
 import org.sablo.specification.WebObjectSpecification;
@@ -65,33 +64,32 @@ public class ClientService extends BaseWebObject implements IClientService
 			apiFunction = spec.getApiFunction(functionName);
 		}
 
-		Object retValue = CurrentWindow.get().executeServiceCall(name, functionName, arguments, getParameterTypes(functionName),
-			new IToJSONWriter<IBrowserConverterContext>()
+		Object retValue = CurrentWindow.get().executeServiceCall(name, functionName, arguments, apiFunction, new IToJSONWriter<IBrowserConverterContext>()
+		{
+
+			@Override
+			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
+				DataConversion clientDataConversions) throws JSONException
 			{
-
-				@Override
-				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
-					DataConversion clientDataConversions) throws JSONException
+				TypedData<Map<String, Object>> serviceChanges = getAndClearChanges();
+				if (serviceChanges.content != null && serviceChanges.content.size() > 0)
 				{
-					TypedData<Map<String, Object>> serviceChanges = getAndClearChanges();
-					if (serviceChanges.content != null && serviceChanges.content.size() > 0)
-					{
-						JSONUtils.addKeyIfPresent(w, keyInParent);
+					JSONUtils.addKeyIfPresent(w, keyInParent);
 
-						w.object().key("services").object().key(getName()).object();
-						clientDataConversions.pushNode("services").pushNode(getName());
+					w.object().key("services").object().key(getName()).object();
+					clientDataConversions.pushNode("services").pushNode(getName());
 
-						writeProperties(converter, w, serviceChanges.content, serviceChanges.contentType, clientDataConversions);
+					writeProperties(converter, w, serviceChanges.content, serviceChanges.contentType, clientDataConversions);
 
-						clientDataConversions.popNode().popNode();
-						w.endObject().endObject().endObject();
+					clientDataConversions.popNode().popNode();
+					w.endObject().endObject().endObject();
 
-						return true;
-					}
-
-					return false;
+					return true;
 				}
-			}, apiFunction != null ? apiFunction.getBlockEventProcessing() : true);
+
+				return false;
+			}
+		}, apiFunction != null ? apiFunction.getBlockEventProcessing() : true);
 
 		if (retValue != null)
 		{
@@ -101,8 +99,8 @@ public class ClientService extends BaseWebObject implements IClientService
 				{
 					try
 					{
-						return JSONUtils.fromJSONUnwrapped(null, retValue, apiFunction.getReturnType(), new BrowserConverterContext(this,
-							PushToServerEnum.allow), null);
+						return JSONUtils.fromJSONUnwrapped(null, retValue, apiFunction.getReturnType(),
+							new BrowserConverterContext(this, PushToServerEnum.allow), null);
 					}
 					catch (JSONException e)
 					{
@@ -128,7 +126,7 @@ public class ClientService extends BaseWebObject implements IClientService
 		WebObjectApiDefinition apiFunc = specification.getApiFunction(functionName);
 		if (apiFunc != null)
 		{
-			parameterTypes = WebComponent.getParameterTypes(apiFunc);
+			parameterTypes = BaseWebObject.getParameterTypes(apiFunc);
 		}
 		return parameterTypes;
 	}

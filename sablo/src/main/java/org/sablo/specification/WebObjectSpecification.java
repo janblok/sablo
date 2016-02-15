@@ -384,6 +384,10 @@ public class WebObjectSpecification extends PropertyDescription
 				{
 					def.setGlobalExclusive(jsonDef.getBoolean("globalExclusive"));
 				}
+//				else if ("waitsForUserAction".equals(key))
+//				{
+//					def.setWaitsForUserAction(jsonDef.getBoolean("waitsForUserAction"));
+//				}
 				else if ("description".equals(key))
 				{
 					def.setDocumentation(jsonDef.getString("description"));

@@ -37,8 +37,8 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.sablo.services.server.FormServiceHandler;
-import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.NGPackage.IPackageReader;
+import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
@@ -367,7 +367,7 @@ public class WebComponentTest
 		testcomponent.setProperty("background", Color.BLACK);
 		form.add(testcomponent);
 
-		CurrentWindow.runForWindow(new BaseWindow("test")
+		CurrentWindow.runForWindow(new BaseWindow(null, "test", "test")
 		{
 			@Override
 			public Container getForm(String formName)
@@ -436,7 +436,7 @@ public class WebComponentTest
 		testcomponent.setProperty("changeintallow", Integer.valueOf(1));
 		form.add(testcomponent);
 
-		CurrentWindow.runForWindow(new BaseWindow("test")
+		CurrentWindow.runForWindow(new BaseWindow(null, "test", "test")
 		{
 			@Override
 			public Container getForm(String formName)

@@ -81,7 +81,7 @@ angular.module('pushToServer', []).factory('$propertyWatchesRegistry', function 
  * Setup the $webSocket service.
  */
 webSocketModule.factory('$webSocket',
-		function($rootScope, $injector, $window, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers, $interval, wsCloseCodes,$sabloLoadingIndicator) {
+		function($rootScope, $injector, $window, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers, $interval, wsCloseCodes,$sabloLoadingIndicator, $timeout) {
 
 	var websocket = null;
 
@@ -92,6 +92,13 @@ webSocketModule.factory('$webSocket',
 	};
 
 	var deferredEvents = {};
+	
+	// add a special testability method to the window object so that protractor can ask if there are waiting server calls.
+	var callbackForTesting;
+	$window.testForDeferredSabloEvents= function(callback) {
+		if (Object.keys(deferredEvents).length == 0) callback(false); // false means there was no waiting deferred at all.
+		else callbackForTesting = callback;
+	}
 
 	var getURLParameter = function getURLParameter(name) {
 		return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec($window.location.search)||[,""])[1].replace(/\+/g, '%20'))||null
@@ -132,6 +139,10 @@ webSocketModule.factory('$webSocket',
 					}
 				} else $log.warn("Response to an unknown handler call dismissed; can happen (normal) if a handler call gets interrupted by a full browser refresh.");
 				delete deferredEvents[obj.cmsgid];
+				if (callbackForTesting && Object.keys(deferredEvents).length == 0) {
+					callbackForTesting(true); // true: let protractor know that an event did happen.
+					callbackForTesting = null;
+				}
 				$sabloLoadingIndicator.hideLoading();
 			}
 

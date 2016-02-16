@@ -35,11 +35,9 @@ public class WebObjectApiDefinition
 	private JSONObject customConfigOptions;
 	private String documentation;
 
-	// TODO turn these into a bitmask?
 	private boolean blockEventProcessing = true;
 	private boolean delayUntilFormLoad = false;
 	private boolean globalExclusive = false;
-//	private final boolean waitsForUserAction = false;
 
 	public WebObjectApiDefinition(String name)
 	{
@@ -103,11 +101,18 @@ public class WebObjectApiDefinition
 	}
 
 	/**
-	 * When true, an API call to client will block normal operation until it gets a response on timeout. True by default.
-	 * You want to set it to false for if you want client to continue operating normally (the user should still be able to interact with forms) while API call
+	 * When true (default), an API call to client will block normal operation until it gets a response or it times out.
+	 *
+	 * You should set it to false if you want client to continue operating normally (the user should still be able to interact with forms) while API call
 	 * is in progress and if the API call should not time-out. For example if an API call shows a modal dialog containing a form and needs to be blocking from a scripting
 	 * point of view - it should have this set to false - so that it doesn't time out and it allows used to interact with the form-in-modal.
+	 *
+	 * For now, having this set to false is interpreted as an API call that waits for user input. This information can be used for ignoring the time spent
+	 * calling this api when profiling/looking for performance bottlenecks.
 	 */
+	// We can separate "blockEventProcessing" from a 'waitsForUserAction' in the future
+	// if anyone needs to blockEventProcessing while call is in progress but still wait for an user action; in that case we also have to check for waitsForUserAction
+	// in WebSocketEndpoint.suspend (where the timeout is given)... maybe some long running task in client that computes something for a long time intentionally
 	public boolean getBlockEventProcessing()
 	{
 		return blockEventProcessing;
@@ -136,26 +141,5 @@ public class WebObjectApiDefinition
 	{
 		this.globalExclusive = globalExclusive;
 	}
-
-//	/**
-//	 * False by default. When true it announces that this sync API call will wait for the user to perform an action
-//	 * before returning. This information is useful for ignoring the time spent calling this api when profiling/looking
-//	 * for performance bottlenecks.
-//	 */
-//	public boolean waitsForUserAction()
-//	{
-//		return waitsForUserAction;
-//	}
-//
-	// For now we rely on blockEventProcessing; when that is false we interpret it as a user action; we can separate the two in the future
-	// if anyone needs to blockEventProcessing while call is in progress but still wait for an user action; in that case we also have
-	// to check for waitsForUserAction in WebSocketEndpoint.suspend where the timeout is given...
-	//
-	// For now I didn't see a need for something like this - maybe some long running task in client but what could the client compute
-	// for a long time intentionally?
-//	public void setWaitsForUserAction(boolean waitsFonUserAction)
-//	{
-//		this.waitsForUserAction = waitsFonUserAction;
-//	}
 
 }

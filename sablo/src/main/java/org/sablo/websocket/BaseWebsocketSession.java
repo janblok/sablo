@@ -145,7 +145,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 			}
 
 			// not found, create a new one
-			IWindow window = createWindow(this, UUID.randomUUID().toString(), windowName);
+			IWindow window = createWindow(UUID.randomUUID().toString(), windowName);
 			windows.add(new ObjectReference<IWindow>(window));
 			return window;
 		}
@@ -171,9 +171,9 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		return null;
 	}
 
-	protected IWindow createWindow(IWebsocketSession session, String windowUuid, String windowName)
+	protected IWindow createWindow(String windowUuid, String windowName)
 	{
-		return new BaseWindow(session, windowUuid, windowName);
+		return new BaseWindow(this, windowUuid, windowName);
 	}
 
 	public void updateLastAccessed(IWindow window)

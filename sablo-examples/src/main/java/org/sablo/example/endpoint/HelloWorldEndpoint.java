@@ -17,6 +17,7 @@
 package org.sablo.example.endpoint;
 
 
+import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
@@ -62,9 +63,9 @@ public class HelloWorldEndpoint extends WebsocketEndpoint
 
 	@Override
 	@OnClose
-	public void onClose()
+	public void onClose(CloseReason closeReason)
 	{
-		super.onClose();
+		super.onClose(closeReason);
 	}
 
 	@OnError

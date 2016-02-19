@@ -24,6 +24,7 @@ import org.sablo.example.endpoint.HelloWorldWebsocketSession;
 import org.sablo.example.forms.AnotherForm;
 import org.sablo.example.forms.MainForm;
 import org.sablo.websocket.BaseWindow;
+import org.sablo.websocket.IWebsocketSession;
 
 /**
  * Window in the HelloWorld sample application.
@@ -31,36 +32,35 @@ import org.sablo.websocket.BaseWindow;
  * @author rgansevles
  *
  */
-public class HelloWorldWindow extends BaseWindow{
+public class HelloWorldWindow extends BaseWindow {
 
 	protected final ConcurrentMap<String, Container> createdForms = new ConcurrentHashMap<>();
-	private final HelloWorldWebsocketSession websocketSession;
+
+	public HelloWorldWindow(HelloWorldWebsocketSession session, String uuid, String name) {
+		super(session, uuid, name);
+	}
 	
-	public HelloWorldWindow(HelloWorldWebsocketSession websocketSession, String name) {
-		super(name);
-		this.websocketSession = websocketSession;
+	@Override
+	public HelloWorldWebsocketSession getSession() {
+		return (HelloWorldWebsocketSession) super.getSession();
 	}
 
 	@Override
-	public Container getForm(String formName)
-	{
+	public Container getForm(String formName) {
 		Container form = createdForms.get(formName);
-		if (form == null)
-		{
+		if (form == null) {
 			createdForms.put(formName, form = createForm(formName));
 		}
 		return form;
 	}
 
-	public Container createForm(String formName)
-	{
-		switch (formName)
-		{
-			case "mainForm" :
-				return new MainForm(websocketSession, formName);
-				 
-			case "anotherForm" :
-				return new AnotherForm(formName);
+	public Container createForm(String formName) {
+		switch (formName) {
+		case "mainForm":
+			return new MainForm(getSession(), formName);
+
+		case "anotherForm":
+			return new AnotherForm(formName);
 		}
 		throw new IllegalArgumentException("unkown form: " + formName);
 	}

@@ -22,7 +22,7 @@ import org.sablo.Container;
 import org.sablo.IEventHandler;
 import org.sablo.WebComponent;
 import org.sablo.example.endpoint.HelloWorldWebsocketSession;
-import org.sablo.specification.WebComponentSpecification;
+import org.sablo.specification.WebObjectSpecification;
 import org.sablo.websocket.CurrentWindow;
 
 /**
@@ -34,7 +34,7 @@ import org.sablo.websocket.CurrentWindow;
 public class MainForm extends Container
 {
 
-	private static final WebComponentSpecification FORM_SPEC = new WebComponentSpecification("form_spec", "", "", null, null, null, "", null);
+	private static final WebObjectSpecification FORM_SPEC = new WebObjectSpecification("form_spec", "", "", null, null, null, "", null);
 
 	private final WebComponent theLabel;
 	private final WebComponent theTextField;

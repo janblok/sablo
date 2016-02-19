@@ -81,7 +81,7 @@ angular.module('pushToServer', []).factory('$propertyWatchesRegistry', function 
  * Setup the $webSocket service.
  */
 webSocketModule.factory('$webSocket',
-		function($rootScope, $injector, $window, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers, $interval, wsCloseCodes,$sabloLoadingIndicator, $timeout) {
+		function($rootScope, $injector, $window, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers, $interval, wsCloseCodes,$sabloLoadingIndicator, $timeout, $sabloTestability) {
 
 	var websocket = null;
 
@@ -92,13 +92,12 @@ webSocketModule.factory('$webSocket',
 	};
 
 	var deferredEvents = {};
-	
-	// add a special testability method to the window object so that protractor can ask if there are waiting server calls.
-	var callbackForTesting;
-	$window.testForDeferredSabloEvents= function(callback) {
-		if (Object.keys(deferredEvents).length == 0) callback(false); // false means there was no waiting deferred at all.
-		else callbackForTesting = callback;
+	$sabloTestability.setEventList(deferredEvents);
+	function isPromiseLike(obj) {
+		  return obj && angular.isFunction(obj.then);
 	}
+	
+
 
 	var getURLParameter = function getURLParameter(name) {
 		return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec($window.location.search)||[,""])[1].replace(/\+/g, '%20'))||null
@@ -139,10 +138,7 @@ webSocketModule.factory('$webSocket',
 					}
 				} else $log.warn("Response to an unknown handler call dismissed; can happen (normal) if a handler call gets interrupted by a full browser refresh.");
 				delete deferredEvents[obj.cmsgid];
-				if (callbackForTesting && Object.keys(deferredEvents).length == 0) {
-					callbackForTesting(true); // true: let protractor know that an event did happen.
-					callbackForTesting = null;
-				}
+				$sabloTestability.testEvents();
 				$sabloLoadingIndicator.hideLoading();
 			}
 
@@ -186,8 +182,14 @@ webSocketModule.factory('$webSocket',
 				}
 			}	
 			if (obj && obj.smsgid) {
+				if (isPromiseLike(responseValue)) {
+					// the server wants a response, this could be a promise so a dialog could be shown
+					// then just let protractor go through.
+					$sabloTestability.increaseEventLoop();
+				}
 				// server wants a response; responseValue may be a promise
 				$q.when(responseValue).then(function(ret) {
+					if (isPromiseLike(responseValue)) $sabloTestability.decreaseEventLoop();
 					// success
 					var response = {
 							smsgid : obj.smsgid
@@ -200,6 +202,7 @@ webSocketModule.factory('$webSocket',
 					}
 					sendMessageObject(response);
 				}, function(reason) {
+					if (isPromiseLike(responseValue)) $sabloTestability.decreaseEventLoop();
 					// error
 					$log.error("Error (follows below) in parsing/processing this message (async): " + message.data);
 					$log.error(reason);
@@ -995,5 +998,48 @@ webSocketModule.factory('$webSocket',
 			return showCounter > 0;
 		}
 	};
-});
+})
+
+angular.module("webSocketModule").factory("$sabloTestability", ["$window",function($window) {
+	var blockEventLoop = 0;
+	var deferredEvents;
+	var deferredLength = 0;
+	// add a special testability method to the window object so that protractor can ask if there are waiting server calls.
+	var callbackForTesting;
+	$window.testForDeferredSabloEvents= function(callback) {
+		if (!blockEventLoop && Object.keys(deferredEvents).length == deferredLength) callback(false); // false means there was no waiting deferred at all.
+		else {
+			callbackForTesting = callback;
+		}
+	}
+	return {
+		setEventList: function(eventList) {
+			deferredEvents = eventList;
+		},
+		testEvents: function() {
+			if (!blockEventLoop && callbackForTesting && Object.keys(deferredEvents).length == deferredLength) {
+				callbackForTesting(true); // true: let protractor know that an event did happen.
+				callbackForTesting = null;
+			}
+		},
+		increaseEventLoop: function() {
+			deferredLength++
+			if (!blockEventLoop && callbackForTesting){
+				callbackForTesting(true);
+				callbackForTesting = null;
+			}
+		},
+		decreaseEventLoop: function() {
+			deferredLength--;
+		},
+		block: function(block) {
+			if (block) blockEventLoop++;
+			else blockEventLoop--;
+			if (!block && callbackForTesting) {
+				callbackForTesting(true);
+				callbackForTesting = null;
+			}
+		}
+	}
+}]);
 

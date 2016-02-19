@@ -19,7 +19,7 @@ package org.sablo.example.forms;
 import org.sablo.Container;
 import org.sablo.IEventHandler;
 import org.sablo.WebComponent;
-import org.sablo.specification.WebComponentSpecification;
+import org.sablo.specification.WebObjectSpecification;
 import org.sablo.websocket.CurrentWindow;
 
 /**
@@ -31,7 +31,7 @@ import org.sablo.websocket.CurrentWindow;
 public class AnotherForm extends Container
 {
 
-	private static final WebComponentSpecification FORM_SPEC = new WebComponentSpecification("form_spec", "", "", null, null, null, "", null);
+	private static final WebObjectSpecification FORM_SPEC = new WebObjectSpecification("form_spec", "", "", null, null, null, "", null);
 
 	private final WebComponent theLabel;
 	private final WebComponent theTextField;

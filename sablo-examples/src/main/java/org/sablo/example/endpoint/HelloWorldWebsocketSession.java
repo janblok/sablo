@@ -19,10 +19,12 @@ package org.sablo.example.endpoint;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 
 import org.sablo.example.HelloWorldWindow;
 import org.sablo.websocket.BaseWebsocketSession;
 import org.sablo.websocket.CurrentWindow;
+import org.sablo.websocket.IWebsocketSession;
 import org.sablo.websocket.IWindow;
 
 /**
@@ -33,29 +35,27 @@ import org.sablo.websocket.IWindow;
  * @author rgansevles
  *
  */
-public class HelloWorldWebsocketSession extends BaseWebsocketSession
-{
-	
+public class HelloWorldWebsocketSession extends BaseWebsocketSession {
+
 	private String clientState = "!";
 
-	public HelloWorldWebsocketSession(String uuid)
-	{
+	public HelloWorldWebsocketSession(String uuid) {
 		super(uuid);
 	}
-	
+
 	public String getClientState() {
 		return clientState;
 	}
-	
+
 	public void setClientState(String clientState) {
 		this.clientState = clientState;
 	}
-	
+
 	@Override
-	public IWindow createWindow(String windowName) {
-		
-		HelloWorldWindow window = new HelloWorldWindow(this, windowName);
-		window.setCurrentFormUrl("forms/" + (windowName == null ? "mainForm":windowName) + ".html");
+	protected IWindow createWindow(String windowUuid, String windowName) {
+
+		HelloWorldWindow window = new HelloWorldWindow(this, UUID.randomUUID().toString(), windowName);
+		window.setCurrentFormUrl("forms/" + (windowName == null ? "mainForm" : windowName) + ".html");
 		return window;
 	}
 	
@@ -65,10 +65,9 @@ public class HelloWorldWebsocketSession extends BaseWebsocketSession
 			CurrentWindow.get().setCurrentFormUrl("forms/mainForm.html");
 		}
 	}
-	
+
 	@Override
-	public Locale getLocale()
-	{
+	public Locale getLocale() {
 		return Locale.getDefault();
 	}
 }

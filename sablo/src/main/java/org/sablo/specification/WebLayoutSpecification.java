@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -61,8 +63,24 @@ public class WebLayoutSpecification extends WebObjectSpecification
 		// properties
 		spec.putAll(spec.parseProperties("model", json));
 
+		if (json.has("attributes"))
+		{
+			String attributes = reader.readTextFile(json.getString("attributes"), Charset.forName("UTF8"));
+			spec.putAllAttributes(spec.parseProperties("attributes", new JSONObject(attributes)));
+		}
 
 		return spec;
+	}
+
+	private Map<String, PropertyDescription> attributes = null;
+	private void putAllAttributes(Map<String, PropertyDescription> parseProperties)
+	{
+		attributes = new TreeMap<String, PropertyDescription>(parseProperties);
+	}
+
+	public Map<String, PropertyDescription> getAttributes()
+	{
+		return attributes;
 	}
 
 	private final boolean topContainer;

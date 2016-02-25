@@ -98,6 +98,11 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 				break;
 			}
 
+			case "flushcall" :
+			{
+				return null;
+			}
+
 			default :
 				log.warn("Method not implemented: '" + methodName + "'");
 		}
@@ -193,11 +198,12 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 					Object oldValue = oldvalues.opt(key);
 					Object currentValue = webComponent.getProperty(key);
 					PropertyDescription propertyDesc = webComponent.getSpecification().getProperty(key);
-					oldValue = propertyDesc != null ? JSONUtils.fromJSON(null, oldValue, propertyDesc, new BrowserConverterContext(webComponent,
-						PushToServerEnum.allow), null) : null; // Is allow here ok?
+					oldValue = propertyDesc != null
+						? JSONUtils.fromJSON(null, oldValue, propertyDesc, new BrowserConverterContext(webComponent, PushToServerEnum.allow), null) : null; // Is allow here ok?
 					if (oldValue != null && currentValue != null && !oldValue.equals(currentValue))
 					{
-						if (!(oldValue instanceof Number && currentValue instanceof Number && ((Number)oldValue).doubleValue() == ((Number)currentValue).doubleValue()))
+						if (!(oldValue instanceof Number && currentValue instanceof Number &&
+							((Number)oldValue).doubleValue() == ((Number)currentValue).doubleValue()))
 						{
 							log.trace("skipping setting key " + key + " to the the value " + changes.get(key) +
 								" because the the current value in the component " + currentValue + " is not equals to old value the browser has " + oldValue);

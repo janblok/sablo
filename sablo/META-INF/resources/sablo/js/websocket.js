@@ -92,13 +92,10 @@ webSocketModule.factory('$webSocket',
 	};
 
 	var deferredEvents = {};
-	$sabloTestability.setEventList(deferredEvents);
 	function isPromiseLike(obj) {
 		  return obj && angular.isFunction(obj.then);
 	}
 	
-
-
 	var getURLParameter = function getURLParameter(name) {
 		return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec($window.location.search)||[,""])[1].replace(/\+/g, '%20'))||null
 	};
@@ -240,6 +237,7 @@ webSocketModule.factory('$webSocket',
 		}
 		var msg = JSON.stringify(obj)
 		if (isConnected()) {
+			$sabloTestability.setServerIsCalled();
 			websocket.send(msg)
 		}
 		else
@@ -270,6 +268,7 @@ webSocketModule.factory('$webSocket',
 			return deferred.promise;
 		}
 	}
+	$sabloTestability.setEventList(deferredEvents,callService);
 
 	var onOpenHandlers = [];
 	var onErrorHandlers = [];
@@ -1006,15 +1005,26 @@ angular.module("webSocketModule").factory("$sabloTestability", ["$window",functi
 	var deferredLength = 0;
 	// add a special testability method to the window object so that protractor can ask if there are waiting server calls.
 	var callbackForTesting;
+	var callServiceFunction;
+	var serverIsCalled = false;
 	$window.testForDeferredSabloEvents= function(callback) {
+		// if the server was called and there is no current outgoing call
+		// call the flush call so that we do make a deferred call where we will wait on
+		// this way data pushes will be waited on.
+		if (serverIsCalled && Object.keys(deferredEvents).length == deferredLength) {
+			callServiceFunction("formService","flushcall", null, false)
+		}
+		// always just reset the server called from here, we are only interessted in the first one
+		serverIsCalled = false;
 		if (!blockEventLoop && Object.keys(deferredEvents).length == deferredLength) callback(false); // false means there was no waiting deferred at all.
 		else {
 			callbackForTesting = callback;
 		}
 	}
 	return {
-		setEventList: function(eventList) {
+		setEventList: function(eventList,callService) {
 			deferredEvents = eventList;
+			callServiceFunction  = callService;
 		},
 		testEvents: function() {
 			if (!blockEventLoop && callbackForTesting && Object.keys(deferredEvents).length == deferredLength) {
@@ -1022,6 +1032,10 @@ angular.module("webSocketModule").factory("$sabloTestability", ["$window",functi
 				callbackForTesting = null;
 			}
 		},
+		setServerIsCalled: function() {
+			serverIsCalled = true;
+		}
+		,
 		increaseEventLoop: function() {
 			deferredLength++
 			if (!blockEventLoop && callbackForTesting){
@@ -1035,7 +1049,7 @@ angular.module("webSocketModule").factory("$sabloTestability", ["$window",functi
 		block: function(block) {
 			if (block) blockEventLoop++;
 			else blockEventLoop--;
-			if (!block && callbackForTesting) {
+			if (!blockEventLoop && callbackForTesting) {
 				callbackForTesting(true);
 				callbackForTesting = null;
 			}

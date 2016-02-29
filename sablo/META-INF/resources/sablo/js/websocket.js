@@ -1011,7 +1011,7 @@ angular.module("webSocketModule").factory("$sabloTestability", ["$window",functi
 		// if the server was called and there is no current outgoing call
 		// call the flush call so that we do make a deferred call where we will wait on
 		// this way data pushes will be waited on.
-		if (serverIsCalled && Object.keys(deferredEvents).length == deferredLength) {
+		if (false && serverIsCalled && Object.keys(deferredEvents).length == deferredLength) {
 			callServiceFunction("formService","flushcall", null, false)
 		}
 		// always just reset the server called from here, we are only interessted in the first one

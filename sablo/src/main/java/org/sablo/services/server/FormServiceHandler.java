@@ -98,11 +98,6 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 				break;
 			}
 
-			case "flushcall" :
-			{
-				return null;
-			}
-
 			default :
 				log.warn("Method not implemented: '" + methodName + "'");
 		}

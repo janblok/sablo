@@ -749,13 +749,16 @@ public class NGPackage
 	 */
 	public static String getPackageName(Manifest manifest)
 	{
-		String bundleName = manifest.getMainAttributes().getValue(BUNDLE_SYMBOLIC_NAME);
-
-		if (bundleName != null && bundleName.indexOf(';') > 0)
+		String bundleName = null;
+		if (manifest != null)
 		{
-			return bundleName.substring(0, bundleName.indexOf(';')).trim();
-		}
+			bundleName = manifest.getMainAttributes().getValue(BUNDLE_SYMBOLIC_NAME);
 
+			if (bundleName != null && bundleName.indexOf(';') > 0)
+			{
+				return bundleName.substring(0, bundleName.indexOf(';')).trim();
+			}
+		}
 		return bundleName;
 	}
 

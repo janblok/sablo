@@ -208,16 +208,23 @@ public class IndexPageEnhancer
 			lib = libs.optJSONObject(i);
 			if (lib != null)
 			{
-				String name = lib.optString("name");
-				String version = lib.optString("version");
-				if (name != null && version != null && lib.has("url") && lib.has("mimetype"))
+				String name = lib.optString("name", null);
+				String version = lib.optString("version", null);
+				if (name != null && lib.has("url") && lib.has("mimetype"))
 				{
 					String key = name + "," + lib.optString("mimetype");
 					JSONObject allLib = allLibs.get(key);
-					if (allLib != null && version.compareTo(allLib.optString("version")) < 0)
+					if (allLib != null)
 					{
-						log.warn("same lib with lower version found: " + lib);
-						continue;
+						if (version != null && version.compareTo(allLib.optString("version")) < 0)
+						{
+							log.warn("same lib with lower version found: " + lib);
+							continue;
+						}
+						else
+						{
+							log.warn("duplicate library found : " + lib);
+						}
 					}
 					allLibs.put(key, lib);
 				}
@@ -256,6 +263,10 @@ public class IndexPageEnhancer
 					}
 				}
 				jsonLib.put("mimetype", mimeType);
+				if (!jsonLib.has("name") && jsonLib.has("url"))
+				{
+					jsonLib.put("name", jsonLib.get("url"));
+				}
 				packageLibsToJSON.put(jsonLib);
 			}
 		}

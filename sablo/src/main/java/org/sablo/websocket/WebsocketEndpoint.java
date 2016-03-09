@@ -28,8 +28,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.websocket.CloseReason;
-import javax.websocket.Session;
 import javax.websocket.CloseReason.CloseCodes;
+import javax.websocket.Session;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -85,6 +85,14 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 	public String getEndpointType()
 	{
 		return endpointType;
+	}
+
+	/**
+	 * @return the window
+	 */
+	public IWindow getWindow()
+	{
+		return window;
 	}
 
 	public void start(Session newSession, String sessionid, String winname, final String winid) throws Exception

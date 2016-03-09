@@ -357,7 +357,7 @@ webSocketModule.factory('$webSocket',
 	 */
 	return {
 
-		connect : function(context, args, queryArgs) {
+		connect : function(context, args, queryArgs, websocketUri) {
 
 			var loc = window.location, new_uri;
 			if (loc.protocol === "https:") {
@@ -378,7 +378,7 @@ webSocketModule.factory('$webSocket',
 					pathname = pathname.substring(0, lastIndex) + pathname.substring(lastIndex + context.length)
 				}
 			}
-			new_uri += pathname + '/websocket';
+			new_uri += pathname + (websocketUri?websocketUri:'/websocket');
 			for (var a in args) {
 				if (args.hasOwnProperty(a)) {
 					new_uri += '/' + args[a]

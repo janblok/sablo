@@ -241,8 +241,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 	}
 
 	return {
-		connect : function(context, args, queryArgs) {
-			wsSession = $webSocket.connect(context, args, queryArgs);
+		connect : function(context, args, queryArgs, websocketUri) {
+			wsSession = $webSocket.connect(context, args, queryArgs,websocketUri);
 
 			wsSession.onopen(function(evt) {
 				if (evt.isReconnect) {

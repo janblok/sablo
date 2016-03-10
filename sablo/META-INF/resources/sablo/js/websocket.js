@@ -717,7 +717,7 @@ webSocketModule.factory('$webSocket',
 		}
 
 	};
-}).factory("$sabloUtils", function($log, $sabloConverters) {
+}).factory("$sabloUtils", function($log, $sabloConverters,$swingModifiers) {
 	var getCombinedPropertyNames = function(now,prev) {
 		var fulllist = {}
 		if (prev) {
@@ -811,10 +811,10 @@ webSocketModule.factory('$webSocket',
 						var $event = arg;
 						var eventObj = {}
 						var modifiers = 0;
-						if($event.shiftKey) modifiers = modifiers||$swingModifiers.SHIFT_DOWN_MASK;
-						if($event.metaKey) modifiers = modifiers||$swingModifiers.META_DOWN_MASK;
-						if($event.altKey) modifiers = modifiers|| $swingModifiers.ALT_DOWN_MASK;
-						if($event.ctrlKey) modifiers = modifiers || $swingModifiers.CTRL_DOWN_MASK;
+						if($event.shiftKey) modifiers = modifiers||$swingModifiers.SHIFT_MASK;
+						if($event.metaKey) modifiers = modifiers||$swingModifiers.META_MASK;
+						if($event.altKey) modifiers = modifiers|| $swingModifiers.ALT_MASK;
+						if($event.ctrlKey) modifiers = modifiers || $swingModifiers.CTRL_MASK;
 
 						eventObj.type = 'event'; 
 						eventObj.eventName = eventName; 

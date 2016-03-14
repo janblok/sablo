@@ -26,7 +26,7 @@ import java.util.TreeMap;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.sablo.specification.NGPackage.IPackageReader;
+import org.sablo.specification.Package.IPackageReader;
 
 
 /**

@@ -28,7 +28,7 @@ import org.json.JSONStringer;
 import org.json.JSONWriter;
 import org.junit.After;
 import org.junit.Test;
-import org.sablo.specification.NGPackage.IPackageReader;
+import org.sablo.specification.Package.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;

@@ -30,7 +30,7 @@ import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.sablo.specification.NGPackage.IPackageReader;
+import org.sablo.specification.Package.IPackageReader;
 import org.sablo.specification.property.CustomJSONArrayType;
 import org.sablo.specification.property.CustomPropertyTypeResolver;
 import org.sablo.specification.property.CustomVariableArgsType;

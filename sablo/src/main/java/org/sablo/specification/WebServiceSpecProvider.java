@@ -23,8 +23,8 @@ import java.util.jar.Manifest;
 
 import javax.servlet.ServletContext;
 
-import org.sablo.specification.NGPackage.IPackageReader;
-import org.sablo.specification.NGPackage.JarServletContextReader;
+import org.sablo.specification.Package.IPackageReader;
+import org.sablo.specification.Package.JarServletContextReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +68,7 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 						List<IPackageReader> readers = new ArrayList<IPackageReader>();
 						for (String location : webComponentBundleNames)
 						{
-							readers.add(new NGPackage.WarURLPackageReader(servletContext, location));
+							readers.add(new Package.WarURLPackageReader(servletContext, location));
 						}
 
 						// scan all jars for services
@@ -113,7 +113,7 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 	 *
 	 * @return a map of all the specifications
 	 */
-	public Map<String, NGPackageSpecification<WebObjectSpecification>> getWebServiceSpecifications()
+	public Map<String, PackageSpecification<WebObjectSpecification>> getWebServiceSpecifications()
 	{
 		return reader.getWebComponentSpecifications();
 	}
@@ -142,7 +142,7 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 	/**
 	 * Get a list of all services contained by provided package name
 	 */
-	public NGPackageSpecification<WebObjectSpecification> getServicesInPackage(String packageName)
+	public PackageSpecification<WebObjectSpecification> getServicesInPackage(String packageName)
 	{
 		return reader.getWebComponentSpecifications().get(packageName);
 	}

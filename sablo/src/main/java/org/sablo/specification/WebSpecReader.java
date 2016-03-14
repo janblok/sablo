@@ -33,8 +33,8 @@ import java.util.TreeMap;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.sablo.specification.BaseSpecProvider.ISpecReloadListener;
-import org.sablo.specification.NGPackage.DuplicatePackageException;
-import org.sablo.specification.NGPackage.IPackageReader;
+import org.sablo.specification.Package.DuplicatePackageException;
+import org.sablo.specification.Package.IPackageReader;
 import org.sablo.specification.property.types.TypesRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,8 +46,8 @@ class WebSpecReader
 {
 	private static final Logger log = LoggerFactory.getLogger(WebSpecReader.class.getCanonicalName());
 
-	private final Map<String, NGPackageSpecification<WebObjectSpecification>> cachedDescriptions = new HashMap<>();
-	private final Map<String, NGPackageSpecification<WebLayoutSpecification>> cachedLayoutDescriptions = new TreeMap<>();
+	private final Map<String, PackageSpecification<WebObjectSpecification>> cachedDescriptions = new HashMap<>();
+	private final Map<String, PackageSpecification<WebLayoutSpecification>> cachedLayoutDescriptions = new TreeMap<>();
 	private final Map<String, WebObjectSpecification> allWebObjectSpecifications = new HashMap<>();
 	private final Map<String, IPackageReader> allPackages = new HashMap<>();
 	private final Set<String> packagesWithGloballyDefinedTypes = new HashSet<>(); // packageNames of packages that have globally defined types
@@ -81,10 +81,10 @@ class WebSpecReader
 		allWebObjectSpecifications.clear();
 		allPackages.clear();
 		packagesWithGloballyDefinedTypes.clear();
-		List<NGPackage> packages = new ArrayList<>();
+		List<Package> packages = new ArrayList<>();
 		for (IPackageReader packageReader : packageReaders)
 		{
-			packages.add(new NGPackage(packageReader));
+			packages.add(new Package(packageReader));
 		}
 		try
 		{
@@ -93,7 +93,7 @@ class WebSpecReader
 		}
 		finally
 		{
-			for (NGPackage p : packages)
+			for (Package p : packages)
 			{
 				p.dispose();
 			}
@@ -143,7 +143,7 @@ class WebSpecReader
 				// unload package
 				cachedLayoutDescriptions.remove(packageNameToRemove);
 				packagesWithGloballyDefinedTypes.remove(packageNameToRemove);
-				NGPackageSpecification<WebObjectSpecification> removedPackageSpecs = cachedDescriptions.remove(packageNameToRemove);
+				PackageSpecification<WebObjectSpecification> removedPackageSpecs = cachedDescriptions.remove(packageNameToRemove);
 				if (removedPackageSpecs != null) for (String specName : removedPackageSpecs.getSpecifications().keySet())
 				{
 					allWebObjectSpecifications.remove(specName);
@@ -172,10 +172,10 @@ class WebSpecReader
 			// load new packages
 			packageReaders.addAll(packagesToAdd);
 
-			List<NGPackage> packages = new ArrayList<>();
+			List<Package> packages = new ArrayList<>();
 			for (IPackageReader packageReader : packagesToAdd)
 			{
-				packages.add(new NGPackage(packageReader));
+				packages.add(new Package(packageReader));
 			}
 			try
 			{
@@ -187,7 +187,7 @@ class WebSpecReader
 			}
 			finally
 			{
-				for (NGPackage p : packages)
+				for (Package p : packages)
 				{
 					p.dispose();
 				}
@@ -203,7 +203,7 @@ class WebSpecReader
 		}
 	}
 
-	protected synchronized boolean readGloballyDefinedTypes(List<NGPackage> packages)
+	protected synchronized boolean readGloballyDefinedTypes(List<Package> packages)
 	{
 		boolean globalTypesFound = false;
 		try
@@ -212,7 +212,7 @@ class WebSpecReader
 			JSONObject allGlobalTypesFromAllPackages = new JSONObject();
 			typeContainer.put(WebObjectSpecification.TYPES_KEY, allGlobalTypesFromAllPackages);
 
-			for (NGPackage p : packages)
+			for (Package p : packages)
 			{
 				try
 				{
@@ -245,9 +245,9 @@ class WebSpecReader
 		return globalTypesFound;
 	}
 
-	protected synchronized void cacheWebObjectSpecs(List<NGPackage> packages)
+	protected synchronized void cacheWebObjectSpecs(List<Package> packages)
 	{
-		for (NGPackage p : packages)
+		for (Package p : packages)
 		{
 			try
 			{
@@ -259,7 +259,7 @@ class WebSpecReader
 			}
 			try
 			{
-				NGPackageSpecification<WebLayoutSpecification> layoutDescriptions = p.getLayoutDescriptions();
+				PackageSpecification<WebLayoutSpecification> layoutDescriptions = p.getLayoutDescriptions();
 				if (layoutDescriptions.getSpecifications().size() > 0) cachedLayoutDescriptions.put(p.getPackageName(), layoutDescriptions);
 			}
 			catch (Exception e)
@@ -269,7 +269,7 @@ class WebSpecReader
 		}
 	}
 
-	private void cache(NGPackage p) throws IOException
+	private void cache(Package p) throws IOException
 	{
 		IPackageReader oldPackage = allPackages.put(p.getPackageName(), p.getReader());
 		if (oldPackage != null)
@@ -277,7 +277,7 @@ class WebSpecReader
 			log.error("Conflict found! Duplicate web component / web service package name: " + oldPackage.getPackageName());
 			p.getReader().reportError("", new DuplicatePackageException("Duplicate package " + oldPackage.getPackageName()));
 		}
-		NGPackageSpecification<WebObjectSpecification> webComponentPackageSpecification = p.getWebObjectDescriptions(attributeName);
+		PackageSpecification<WebObjectSpecification> webComponentPackageSpecification = p.getWebObjectDescriptions(attributeName);
 		Map<String, WebObjectSpecification> webComponentDescriptions = webComponentPackageSpecification.getSpecifications();
 		Map<String, WebObjectSpecification> packageComponents = new HashMap<>(webComponentDescriptions.size());
 		for (WebObjectSpecification desc : webComponentDescriptions.values())
@@ -293,7 +293,7 @@ class WebSpecReader
 		if (packageComponents.size() > 0)
 		{
 			cachedDescriptions.put(webComponentPackageSpecification.getPackageName(),
-				new NGPackageSpecification<>(webComponentPackageSpecification.getPackageName(), webComponentPackageSpecification.getPackageDisplayname(),
+				new PackageSpecification<>(webComponentPackageSpecification.getPackageName(), webComponentPackageSpecification.getPackageDisplayname(),
 					packageComponents, webComponentPackageSpecification.getManifest()));
 		}
 	}
@@ -303,7 +303,7 @@ class WebSpecReader
 		return allWebObjectSpecifications.get(componentTypeName);
 	}
 
-	public synchronized Map<String, NGPackageSpecification<WebObjectSpecification>> getWebComponentSpecifications()
+	public synchronized Map<String, PackageSpecification<WebObjectSpecification>> getWebComponentSpecifications()
 	{
 		return Collections.unmodifiableMap(cachedDescriptions);
 	}
@@ -313,7 +313,7 @@ class WebSpecReader
 		return allWebObjectSpecifications.values().toArray(new WebObjectSpecification[allWebObjectSpecifications.size()]);
 	}
 
-	public Map<String, NGPackageSpecification<WebLayoutSpecification>> getLayoutSpecifications()
+	public Map<String, PackageSpecification<WebLayoutSpecification>> getLayoutSpecifications()
 	{
 		return Collections.unmodifiableMap(cachedLayoutDescriptions);
 	}

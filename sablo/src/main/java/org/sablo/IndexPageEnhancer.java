@@ -32,7 +32,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.sablo.services.template.ModifiablePropertiesGenerator;
-import org.sablo.specification.NGPackageSpecification;
+import org.sablo.specification.PackageSpecification;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.WebServiceSpecProvider;
@@ -128,11 +128,11 @@ public class IndexPageEnhancer
 		ArrayList<String> allJSContributions = new ArrayList<String>();
 
 		LinkedHashMap<String, JSONObject> allLibraries = new LinkedHashMap<>();
-		Collection<NGPackageSpecification<WebObjectSpecification>> webComponentPackagesDescriptions = new ArrayList<NGPackageSpecification<WebObjectSpecification>>();
+		Collection<PackageSpecification<WebObjectSpecification>> webComponentPackagesDescriptions = new ArrayList<PackageSpecification<WebObjectSpecification>>();
 		webComponentPackagesDescriptions.addAll(WebComponentSpecProvider.getInstance().getWebComponentSpecifications().values());
 		webComponentPackagesDescriptions.addAll(WebServiceSpecProvider.getInstance().getWebServiceSpecifications().values());
 
-		for (NGPackageSpecification<WebObjectSpecification> packageDesc : webComponentPackagesDescriptions)
+		for (PackageSpecification<WebObjectSpecification> packageDesc : webComponentPackagesDescriptions)
 		{
 			if (packageDesc.getCssClientLibrary() != null)
 			{

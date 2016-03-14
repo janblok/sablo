@@ -52,9 +52,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author acostescu
  */
-public class NGPackage
+public class Package
 {
-	private static final Logger log = LoggerFactory.getLogger(NGPackage.class.getCanonicalName());
+	private static final Logger log = LoggerFactory.getLogger(Package.class.getCanonicalName());
 	private static final String GLOBAL_TYPES_MANIFEST_ATTR = "Global-Types";
 	private static final String BUNDLE_SYMBOLIC_NAME = "Bundle-SymbolicName"; // for package name
 	private static final String BUNDLE_NAME = "Bundle-Name"; // for package display name
@@ -102,7 +102,7 @@ public class NGPackage
 
 	private IPackageReader reader;
 
-	public NGPackage(IPackageReader reader)
+	public Package(IPackageReader reader)
 	{
 		if (reader == null) throw new NullPointerException();
 		this.reader = reader;
@@ -169,7 +169,7 @@ public class NGPackage
 		return globalTypesFound;
 	}
 
-	public NGPackageSpecification<WebObjectSpecification> getWebObjectDescriptions(String attributeName) throws IOException
+	public PackageSpecification<WebObjectSpecification> getWebObjectDescriptions(String attributeName) throws IOException
 	{
 		String packageName = null;
 		String packageDisplayname = null;
@@ -222,10 +222,10 @@ public class NGPackage
 			}
 		}
 
-		return new NGPackageSpecification<>(packageName, packageDisplayname, descriptions, mf);
+		return new PackageSpecification<>(packageName, packageDisplayname, descriptions, mf);
 	}
 
-	public NGPackageSpecification<WebLayoutSpecification> getLayoutDescriptions() throws IOException
+	public PackageSpecification<WebLayoutSpecification> getLayoutDescriptions() throws IOException
 	{
 		String packageName = null;
 		String packageDisplayname = null;
@@ -274,7 +274,7 @@ public class NGPackage
 				}
 			}
 		}
-		return new NGPackageSpecification<>(packageName, packageDisplayname, descriptions, mf);
+		return new PackageSpecification<>(packageName, packageDisplayname, descriptions, mf);
 	}
 
 	private static List<String> getWebEntrySpecNames(Manifest mf, String attributeName)
@@ -320,7 +320,7 @@ public class NGPackage
 		{
 			try
 			{
-				String packageName = NGPackage.getPackageName(getManifest());
+				String packageName = Package.getPackageName(getManifest());
 				if (packageName != null) return packageName;
 			}
 			catch (Exception e)
@@ -335,7 +335,7 @@ public class NGPackage
 		{
 			try
 			{
-				String packageDisplayname = NGPackage.getPackageDisplayname(getManifest());
+				String packageDisplayname = Package.getPackageDisplayname(getManifest());
 				if (packageDisplayname != null) return packageDisplayname;
 			}
 			catch (IOException e)
@@ -409,7 +409,7 @@ public class NGPackage
 		@Override
 		public String getPackageType() throws IOException
 		{
-			return NGPackage.getPackageType(getManifest());
+			return Package.getPackageType(getManifest());
 		}
 
 	}
@@ -435,7 +435,7 @@ public class NGPackage
 		{
 			try
 			{
-				String packageName = NGPackage.getPackageName(getManifest());
+				String packageName = Package.getPackageName(getManifest());
 				if (packageName != null) return packageName;
 			}
 			catch (Exception e)
@@ -450,7 +450,7 @@ public class NGPackage
 		{
 			try
 			{
-				String packageDisplayname = NGPackage.getPackageDisplayname(getManifest());
+				String packageDisplayname = Package.getPackageDisplayname(getManifest());
 				if (packageDisplayname != null) return packageDisplayname;
 			}
 			catch (IOException e)
@@ -535,7 +535,7 @@ public class NGPackage
 		@Override
 		public String getPackageType() throws IOException
 		{
-			return NGPackage.getPackageType(getManifest());
+			return Package.getPackageType(getManifest());
 		}
 
 	}
@@ -562,7 +562,7 @@ public class NGPackage
 		{
 			try
 			{
-				String packageName = NGPackage.getPackageName(getManifest());
+				String packageName = Package.getPackageName(getManifest());
 				if (packageName != null) return packageName;
 			}
 			catch (IOException e)
@@ -577,7 +577,7 @@ public class NGPackage
 		{
 			try
 			{
-				String packageDisplayname = NGPackage.getPackageDisplayname(getManifest());
+				String packageDisplayname = Package.getPackageDisplayname(getManifest());
 				if (packageDisplayname != null) return packageDisplayname;
 			}
 			catch (IOException e)
@@ -654,12 +654,12 @@ public class NGPackage
 		@Override
 		public String getPackageType() throws IOException
 		{
-			return NGPackage.getPackageType(getManifest());
+			return Package.getPackageType(getManifest());
 		}
 
 	}
 
-	public static class WarURLPackageReader implements NGPackage.IPackageReader, NGPackage.ISpecificationFilter
+	public static class WarURLPackageReader implements Package.IPackageReader, Package.ISpecificationFilter
 	{
 		private final URL urlOfManifest;
 		private final String packageName;
@@ -708,7 +708,7 @@ public class NGPackage
 		{
 			try
 			{
-				String packageDisplayname = NGPackage.getPackageDisplayname(getManifest());
+				String packageDisplayname = Package.getPackageDisplayname(getManifest());
 				if (packageDisplayname != null) return packageDisplayname;
 			}
 			catch (IOException e)
@@ -779,7 +779,7 @@ public class NGPackage
 		@Override
 		public String getPackageType() throws IOException
 		{
-			return NGPackage.getPackageType(getManifest());
+			return Package.getPackageType(getManifest());
 		}
 
 	}

@@ -216,14 +216,28 @@ public class IndexPageEnhancer
 					JSONObject allLib = allLibs.get(key);
 					if (allLib != null)
 					{
-						if (version != null && version.compareTo(allLib.optString("version")) < 0)
+						String storedVersion = allLib.optString("version");
+						if (storedVersion != null && version != null)
 						{
-							log.warn("same lib with lower version found: " + lib);
+							int versionCheck = version.compareTo(storedVersion);
+							if (versionCheck < 0)
+							{
+								log.warn("same lib with lower version found: " + lib + " using lib: " + allLib);
+								continue;
+							}
+							else if (versionCheck > 0)
+							{
+								log.warn("same lib with lower version found: " + allLib + " using lib: " + lib);
+							}
+						}
+						else if (storedVersion != null)
+						{
+							log.warn("same lib with no version found: " + lib + ", using the lib (" + allLib + ") with version: " + storedVersion);
 							continue;
 						}
 						else
 						{
-							log.warn("duplicate library found : " + lib);
+							log.warn("same lib with no version found: " + allLib + ", using the lib (" + lib + ") with version: " + version);
 						}
 					}
 					allLibs.put(key, lib);

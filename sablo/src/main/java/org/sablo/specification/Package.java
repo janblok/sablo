@@ -19,6 +19,7 @@ package org.sablo.specification;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -55,9 +56,10 @@ import org.slf4j.LoggerFactory;
 public class Package
 {
 	private static final Logger log = LoggerFactory.getLogger(Package.class.getCanonicalName());
-	private static final String GLOBAL_TYPES_MANIFEST_ATTR = "Global-Types";
-	private static final String BUNDLE_SYMBOLIC_NAME = "Bundle-SymbolicName"; // for package name
-	private static final String BUNDLE_NAME = "Bundle-Name"; // for package display name
+	private static final String GLOBAL_TYPES_MANIFEST_ATTR = "Global-Types"; //$NON-NLS-1$
+	public static final String BUNDLE_SYMBOLIC_NAME = "Bundle-SymbolicName"; // for package name //$NON-NLS-1$
+	public static final String BUNDLE_NAME = "Bundle-Name"; // for package display name //$NON-NLS-1$
+	public static final String PACKAGE_TYPE = "Package-Type"; //$NON-NLS-1$
 
 	public interface IPackageReader
 	{
@@ -654,7 +656,22 @@ public class Package
 		@Override
 		public String getPackageType() throws IOException
 		{
-			return Package.getPackageType(getManifest());
+			Manifest manifest = getManifest();
+			if (manifest.getMainAttributes().containsKey("Package-Type")) return Package.getPackageType(getManifest());
+			else
+			{
+				String result = Package.getPackageType(getManifest());
+				if (result != null)
+				{
+					//this package does not have the 'Package-Type' attribute, but it does contain at least one item
+					//so if we know the kind of package, we should add the type to the manifest of this DirPackage
+
+					manifest.getMainAttributes().put(new Attributes.Name(Package.PACKAGE_TYPE), result);
+					manifest.write(new FileOutputStream(new File(dir, "META-INF/MANIFEST.MF")));
+				}
+
+				return result;
+			}
 		}
 
 	}
@@ -807,6 +824,10 @@ public class Package
 
 	public static String getPackageType(Manifest manifest)
 	{
+		//first try to find the attribute
+		String packageType = manifest.getMainAttributes().getValue("Package-Type");
+		if (packageType != null) return packageType;
+		//else we have to search for the first element to see what kind of elements this package contains
 		for (Entry<String, Attributes> entry : manifest.getEntries().entrySet())
 		{
 			if ("true".equalsIgnoreCase((String)entry.getValue().get(new Attributes.Name(IPackageReader.WEB_SERVICE))))

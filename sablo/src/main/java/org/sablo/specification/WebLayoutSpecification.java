@@ -27,6 +27,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.sablo.specification.Package.IPackageReader;
+import org.sablo.specification.property.types.StringPropertyType;
 
 
 /**
@@ -69,10 +70,28 @@ public class WebLayoutSpecification extends WebObjectSpecification
 			spec.putAllAttributes(spec.parseProperties("attributes", new JSONObject(attributes)));
 		}
 
+		if (json.has("tagType"))
+		{
+			if (spec.getProperty("tagType") != null)
+			{
+				PropertyDescription pd = spec.getProperty("tagType");
+				spec.putProperty("tagType", new PropertyDescription("tagType", pd.getType(), pd.getConfig(), json.get("tagType"), true, pd.getValues(),
+					pd.getPushToServer(), null, pd.isOptional()));
+			}
+			else
+			{
+				JSONObject tags = new JSONObject();
+				tags.put("scope", "private");
+				spec.putProperty("tagType",
+					new PropertyDescription("tagType", StringPropertyType.INSTANCE, null, json.get("tagType"), true, null, null, tags, false));
+			}
+		}
+
 		return spec;
 	}
 
 	private Map<String, PropertyDescription> attributes = null;
+
 	private void putAllAttributes(Map<String, PropertyDescription> parseProperties)
 	{
 		attributes = new TreeMap<String, PropertyDescription>(parseProperties);

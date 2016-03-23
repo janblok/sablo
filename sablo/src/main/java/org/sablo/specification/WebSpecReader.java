@@ -290,12 +290,11 @@ class WebSpecReader
 			}
 		}
 
-		if (packageComponents.size() > 0)
-		{
-			cachedDescriptions.put(webComponentPackageSpecification.getPackageName(),
-				new PackageSpecification<>(webComponentPackageSpecification.getPackageName(), webComponentPackageSpecification.getPackageDisplayname(),
-					packageComponents, webComponentPackageSpecification.getManifest()));
-		}
+//		if (packageComponents.size() > 0)
+//		{
+		cachedDescriptions.put(webComponentPackageSpecification.getPackageName(), new PackageSpecification<>(webComponentPackageSpecification.getPackageName(),
+			webComponentPackageSpecification.getPackageDisplayname(), packageComponents, webComponentPackageSpecification.getManifest()));
+//		}
 	}
 
 	public synchronized WebObjectSpecification getWebComponentSpecification(String componentTypeName)

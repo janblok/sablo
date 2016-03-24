@@ -323,8 +323,9 @@ class WebSpecReader
 	public Map<String, URL> getPackagesToURLs()
 	{
 		Map<String, URL> result = new HashMap<String, URL>();
-		for (IPackageReader reader : packageReaders)
+		for (int i = 0; i < packageReaders.size(); i++)
 		{
+			IPackageReader reader = packageReaders.get(i);
 			result.put(reader.getPackageName(), reader.getPackageURL());
 		}
 		return result;
@@ -336,8 +337,9 @@ class WebSpecReader
 	public Map<String, String> getPackagesToDisplayNames()
 	{
 		Map<String, String> result = new HashMap<String, String>();
-		for (IPackageReader reader : packageReaders)
+		for (int i = 0; i < packageReaders.size(); i++)
 		{
+			IPackageReader reader = packageReaders.get(i);
 			result.put(reader.getPackageName(), reader.getPackageDisplayname());
 		}
 		return result;

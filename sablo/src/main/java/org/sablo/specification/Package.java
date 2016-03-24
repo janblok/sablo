@@ -657,7 +657,7 @@ public class Package
 		public String getPackageType() throws IOException
 		{
 			Manifest manifest = getManifest();
-			if (manifest.getMainAttributes().containsKey("Package-Type")) return Package.getPackageType(getManifest());
+			if (manifest.getMainAttributes().getValue("Package-Type") != null) return Package.getPackageType(getManifest());
 			else
 			{
 				String result = Package.getPackageType(getManifest());

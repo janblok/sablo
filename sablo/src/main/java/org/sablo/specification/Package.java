@@ -546,6 +546,8 @@ public class Package
 	{
 
 		private final File dir;
+		private String packageName = null;
+		private String packageDisplayname = null;
 
 		public DirPackageReader(File dir)
 		{
@@ -562,9 +564,10 @@ public class Package
 		@Override
 		public String getPackageName()
 		{
+			if (packageName != null) return packageName;
 			try
 			{
-				String packageName = Package.getPackageName(getManifest());
+				packageName = Package.getPackageName(getManifest());
 				if (packageName != null) return packageName;
 			}
 			catch (IOException e)
@@ -577,9 +580,10 @@ public class Package
 		@Override
 		public String getPackageDisplayname()
 		{
+			if (packageDisplayname != null) return packageDisplayname;
 			try
 			{
-				String packageDisplayname = Package.getPackageDisplayname(getManifest());
+				packageDisplayname = Package.getPackageDisplayname(getManifest());
 				if (packageDisplayname != null) return packageDisplayname;
 			}
 			catch (IOException e)

@@ -420,6 +420,7 @@ public class Package
 	{
 
 		private final File jarFile;
+		private Manifest manifest;
 
 		public JarPackageReader(File jarFile)
 		{
@@ -467,10 +468,16 @@ public class Package
 		@Override
 		public Manifest getManifest() throws IOException
 		{
-			try (JarFile jar = new JarFile(jarFile))
+			if (manifest == null)
 			{
-				return jar.getManifest();
+				try (JarFile jar = new JarFile(jarFile))
+				{
+					manifest = jar.getManifest();
+				}
 			}
+			return manifest;
+
+
 		}
 
 		@Override
@@ -546,8 +553,7 @@ public class Package
 	{
 
 		private final File dir;
-		private String packageName = null;
-		private String packageDisplayname = null;
+		protected Manifest manifest;
 
 		public DirPackageReader(File dir)
 		{
@@ -564,10 +570,9 @@ public class Package
 		@Override
 		public String getPackageName()
 		{
-			if (packageName != null) return packageName;
 			try
 			{
-				packageName = Package.getPackageName(getManifest());
+				String packageName = Package.getPackageName(getManifest());
 				if (packageName != null) return packageName;
 			}
 			catch (IOException e)
@@ -580,10 +585,9 @@ public class Package
 		@Override
 		public String getPackageDisplayname()
 		{
-			if (packageDisplayname != null) return packageDisplayname;
 			try
 			{
-				packageDisplayname = Package.getPackageDisplayname(getManifest());
+				String packageDisplayname = Package.getPackageDisplayname(getManifest());
 				if (packageDisplayname != null) return packageDisplayname;
 			}
 			catch (IOException e)
@@ -598,10 +602,15 @@ public class Package
 		@Override
 		public Manifest getManifest() throws IOException
 		{
-			try (InputStream is = new BufferedInputStream(new FileInputStream(new File(dir, "META-INF/MANIFEST.MF"))))
+			if (manifest == null)
 			{
-				return new Manifest(is);
+				try (InputStream is = new BufferedInputStream(new FileInputStream(new File(dir, "META-INF/MANIFEST.MF"))))
+				{
+					manifest = new Manifest(is);
+				}
 			}
+			return manifest;
+
 		}
 
 		@Override
@@ -661,10 +670,10 @@ public class Package
 		public String getPackageType() throws IOException
 		{
 			Manifest manifest = getManifest();
-			if (manifest.getMainAttributes().getValue("Package-Type") != null) return Package.getPackageType(getManifest());
+			if (manifest.getMainAttributes().getValue("Package-Type") != null) return Package.getPackageType(manifest);
 			else
 			{
-				String result = Package.getPackageType(getManifest());
+				String result = Package.getPackageType(manifest);
 				if (result != null)
 				{
 					//this package does not have the 'Package-Type' attribute, but it does contain at least one item
@@ -686,6 +695,7 @@ public class Package
 		private final String packageName;
 		private final ServletContext servletContext;
 		private HashSet<String> usedWebObjects;
+		private Manifest manifest;
 
 		public WarURLPackageReader(ServletContext servletContext, String packageName) throws MalformedURLException
 		{
@@ -744,10 +754,15 @@ public class Package
 		@Override
 		public Manifest getManifest() throws IOException
 		{
-			try (InputStream is = urlOfManifest.openStream())
+			if (manifest == null)
 			{
-				return new Manifest(is);
+				try (InputStream is = urlOfManifest.openStream())
+				{
+					manifest = new Manifest(is);
+				}
 			}
+			return manifest;
+
 		}
 
 		@Override

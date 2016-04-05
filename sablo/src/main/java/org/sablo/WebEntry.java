@@ -118,7 +118,7 @@ public abstract class WebEntry implements Filter, IContributionFilter
 		if (indexPageResource != null)
 		{
 			((HttpServletResponse)servletResponse).setContentType("text/html");
-
+			((HttpServletResponse)servletResponse).setCharacterEncoding("UTF-8");
 			PrintWriter w = servletResponse.getWriter();
 			IndexPageEnhancer.enhance(indexPageResource, request.getContextPath(), cssContributions, jsContributions, variableSubstitution, w, this);
 			w.flush();

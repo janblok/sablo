@@ -37,6 +37,7 @@ import org.sablo.specification.property.CustomVariableArgsType;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.types.FunctionPropertyType;
+import org.sablo.specification.property.types.ObjectPropertyType;
 import org.sablo.specification.property.types.TypesRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,8 +90,8 @@ public class WebObjectSpecification extends PropertyDescription
 
 	}
 
-	private final Map<String, PropertyDescription> handlers = new HashMap<>(); // second String is always a "function" for now, but in the future it will probably contain more (to specify sent args/types...)
-	private final Map<String, WebObjectApiDefinition> apis = new HashMap<>();
+	private final Map<String, WebObjectFunctionDefinition> handlers = new HashMap<>(); // second String is always a "function" for now, but in the future it will probably contain more (to specify sent args/types...)
+	private final Map<String, WebObjectFunctionDefinition> apis = new HashMap<>();
 	private final String definition;
 	private final JSONArray libraries;
 	private final String displayName;
@@ -154,12 +155,12 @@ public class WebObjectSpecification extends PropertyDescription
 	}
 
 
-	protected final void addApiFunction(WebObjectApiDefinition apiFunction)
+	protected final void addApiFunction(WebObjectFunctionDefinition apiFunction)
 	{
 		apis.put(apiFunction.getName(), apiFunction);
 	}
 
-	protected final void addHandler(PropertyDescription propertyDescription)
+	protected final void addHandler(WebObjectFunctionDefinition propertyDescription)
 	{
 		handlers.put(propertyDescription.getName(), propertyDescription);
 	}
@@ -167,7 +168,7 @@ public class WebObjectSpecification extends PropertyDescription
 	/**
 	 * @param hndlrs
 	 */
-	protected final void putAllHandlers(Map<String, PropertyDescription> hndlrs)
+	protected final void putAllHandlers(Map<String, WebObjectFunctionDefinition> hndlrs)
 	{
 		handlers.putAll(hndlrs);
 	}
@@ -175,22 +176,22 @@ public class WebObjectSpecification extends PropertyDescription
 	/**
 	 * You are not allowed to modify this map!
 	 */
-	public Map<String, PropertyDescription> getHandlers()
+	public Map<String, WebObjectFunctionDefinition> getHandlers()
 	{
 		return Collections.unmodifiableMap(handlers);
 	}
 
-	public PropertyDescription getHandler(String handlerName)
+	public WebObjectFunctionDefinition getHandler(String handlerName)
 	{
 		return handlers.get(handlerName);
 	}
 
-	public WebObjectApiDefinition getApiFunction(String apiFunctionName)
+	public WebObjectFunctionDefinition getApiFunction(String apiFunctionName)
 	{
 		return apis.get(apiFunctionName);
 	}
 
-	public Map<String, WebObjectApiDefinition> getApiFunctions()
+	public Map<String, WebObjectFunctionDefinition> getApiFunctions()
 	{
 		return Collections.unmodifiableMap(apis);
 	}
@@ -255,7 +256,14 @@ public class WebObjectSpecification extends PropertyDescription
 		}
 		// first check the local ones.
 		IPropertyType< ? > t = foundTypes.get(property);
-		if (t == null) t = TypesRegistry.getType(property);
+		try
+		{
+			if (t == null) t = TypesRegistry.getType(property);
+		}
+		catch (RuntimeException e)
+		{
+			t = ObjectPropertyType.INSTANCE;
+		}
 		return new ParsedProperty(t, isArray, isVarArgs);
 	}
 
@@ -299,7 +307,18 @@ public class WebObjectSpecification extends PropertyDescription
 
 		// properties
 		spec.putAll(spec.parseProperties("model", json));
-		spec.putAllHandlers(spec.parseProperties("handlers", json));
+
+		//handlers
+		if (json.has("handlers"))
+		{
+			JSONObject api = json.getJSONObject("handlers");
+			Iterator<String> itk = api.keys();
+			while (itk.hasNext())
+			{
+				WebObjectFunctionDefinition def = parseFunctionDefinition(spec, api, itk.next());
+				spec.addHandler(def);
+			}
+		}
 
 		// api
 		if (json.has("api"))
@@ -308,19 +327,21 @@ public class WebObjectSpecification extends PropertyDescription
 			Iterator<String> itk = api.keys();
 			while (itk.hasNext())
 			{
-				WebObjectApiDefinition def = parseFunctionDefinition(spec, api, itk.next());
+				WebObjectFunctionDefinition def = parseFunctionDefinition(spec, api, itk.next());
 				spec.addApiFunction(def);
 			}
 		}
 		return spec;
 	}
 
-	private static WebObjectApiDefinition parseFunctionDefinition(WebObjectSpecification spec, JSONObject api, String func) throws JSONException
+	private static WebObjectFunctionDefinition parseFunctionDefinition(WebObjectSpecification spec, JSONObject api, String func) throws JSONException
 	{
-		WebObjectApiDefinition def = new WebObjectApiDefinition(func);
+		WebObjectFunctionDefinition def = new WebObjectFunctionDefinition(func);
 		if (api.get(func) instanceof JSONObject)
 		{
 			JSONObject jsonDef = api.getJSONObject(func);
+			def.setPropertyDescription(new PropertyDescription(func, TypesRegistry.getType(FunctionPropertyType.TYPE_NAME), jsonDef));
+
 			Iterator<String> it = jsonDef.keys();
 			JSONObject customConfiguration = null;
 			while (it.hasNext())
@@ -457,10 +478,23 @@ public class WebObjectSpecification extends PropertyDescription
 				}
 				// TODO this is currently never true? See 5 lines above this, types are always just PropertyDescription?
 				// is this really supported? or should we add it just to the properties? But how are these handlers then added and used
-				if (type instanceof WebObjectSpecification)
-				{
-					((WebObjectSpecification)type).putAllHandlers(parseProperties("handlers", jsonObject.getJSONObject(typeName)));
-				}
+//				if (type instanceof WebObjectSpecification)
+//				{
+//					((WebObjectSpecification)type).putAllHandlers(parseProperties("handlers", jsonObject.getJSONObject(typeName)));
+//				}
+//				if (type instanceof WebObjectSpecification)
+//				{
+//					if (jsonObject.getJSONObject(typeName).has("handlers"))
+//					{
+//						JSONObject handlersJson = jsonObject.getJSONObject(typeName).getJSONObject("handlers");
+//						Iterator<String> itk = handlersJson.keys();
+//						while (itk.hasNext())
+//						{
+//							WebObjectFunctionDefinition def = parseFunctionDefinition(((WebObjectSpecification)type), handlersJson, itk.next());
+//							((WebObjectSpecification)type).addHandler(def);
+//						}
+//					}
+//				}
 			}
 		}
 	}

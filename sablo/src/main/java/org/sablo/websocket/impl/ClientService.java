@@ -22,7 +22,7 @@ import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.BaseWebObject;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.WebObjectApiDefinition;
+import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.sablo.specification.WebServiceSpecProvider;
@@ -58,7 +58,7 @@ public class ClientService extends BaseWebObject implements IClientService
 	public Object executeServiceCall(String functionName, Object[] arguments) throws IOException
 	{
 		WebObjectSpecification spec = WebServiceSpecProvider.getInstance().getWebServiceSpecification(name);
-		WebObjectApiDefinition apiFunction = null;
+		WebObjectFunctionDefinition apiFunction = null;
 		if (spec != null)
 		{
 			apiFunction = spec.getApiFunction(functionName);
@@ -123,7 +123,7 @@ public class ClientService extends BaseWebObject implements IClientService
 		// we have a list of properties available; create a suitable wrapper PropertyDescription that has the
 		// param indexes as child PropertyDescriptions
 		PropertyDescription parameterTypes = null;
-		WebObjectApiDefinition apiFunc = specification.getApiFunction(functionName);
+		WebObjectFunctionDefinition apiFunc = specification.getApiFunction(functionName);
 		if (apiFunc != null)
 		{
 			parameterTypes = BaseWebObject.getParameterTypes(apiFunc);

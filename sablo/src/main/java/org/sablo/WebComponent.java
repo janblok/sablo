@@ -19,7 +19,7 @@ package org.sablo;
 import java.io.IOException;
 
 import org.sablo.specification.WebComponentSpecProvider;
-import org.sablo.specification.WebObjectApiDefinition;
+import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.WebObjectSpecification;
 import org.sablo.websocket.CurrentWindow;
 
@@ -125,7 +125,7 @@ public class WebComponent extends BaseWebObject
 	 */
 	public Object invokeApi(String apiFunctionName, Object[] args)
 	{
-		WebObjectApiDefinition apiFunction = specification.getApiFunction(apiFunctionName);
+		WebObjectFunctionDefinition apiFunction = specification.getApiFunction(apiFunctionName);
 		if (apiFunction != null)
 		{
 			return invokeApi(apiFunction, args);
@@ -142,7 +142,7 @@ public class WebComponent extends BaseWebObject
 	 *            the args
 	 * @return the value if any
 	 */
-	public Object invokeApi(WebObjectApiDefinition apiFunction, Object[] args)
+	public Object invokeApi(WebObjectFunctionDefinition apiFunction, Object[] args)
 	{
 		return CurrentWindow.get().invokeApi(this, apiFunction, args, getParameterTypes(apiFunction));
 	}

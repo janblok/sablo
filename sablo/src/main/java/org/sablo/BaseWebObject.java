@@ -31,7 +31,7 @@ import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentSpecProvider;
-import org.sablo.specification.WebObjectApiDefinition;
+import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.sablo.specification.property.BrowserConverterContext;
@@ -842,7 +842,7 @@ public abstract class BaseWebObject
 		}
 	}
 
-	public static PropertyDescription getParameterTypes(WebObjectApiDefinition apiFunc)
+	public static PropertyDescription getParameterTypes(WebObjectFunctionDefinition apiFunc)
 	{
 		PropertyDescription parameterTypes = null;
 		final List<PropertyDescription> types = apiFunc.getParameters();

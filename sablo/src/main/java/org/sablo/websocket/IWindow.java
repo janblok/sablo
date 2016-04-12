@@ -22,7 +22,7 @@ import org.json.JSONWriter;
 import org.sablo.Container;
 import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.WebObjectApiDefinition;
+import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
@@ -106,7 +106,7 @@ public interface IWindow
 	 * @return remote result.
 	 * @throws IOException if such an exception happens.
 	 */
-	Object executeServiceCall(String serviceName, String functionName, Object[] arguments, WebObjectApiDefinition apiFunction,
+	Object executeServiceCall(String serviceName, String functionName, Object[] arguments, WebObjectFunctionDefinition apiFunction,
 		IToJSONWriter<IBrowserConverterContext> pendingChangesWriter, boolean blockEventProcessing) throws IOException;
 
 	/**
@@ -115,7 +115,7 @@ public interface IWindow
 	 * @param apiFunction the function to invoke
 	 * @param arguments
 	 */
-	public Object invokeApi(WebComponent receiver, WebObjectApiDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes);
+	public Object invokeApi(WebComponent receiver, WebObjectFunctionDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes);
 
 	/**
 	 * It there an active session to the browser?

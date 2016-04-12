@@ -38,7 +38,7 @@ import org.sablo.BaseWebObject;
 import org.sablo.Container;
 import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.WebObjectApiDefinition;
+import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.CustomVariableArgsType;
@@ -537,7 +537,7 @@ public class BaseWindow implements IWindow
 	}
 
 	@Override
-	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, WebObjectApiDefinition apiFunction,
+	public Object executeServiceCall(String serviceName, String functionName, Object[] arguments, WebObjectFunctionDefinition apiFunction,
 		IToJSONWriter<IBrowserConverterContext> pendingChangesWriter, boolean blockEventProcessing) throws IOException
 	{
 		PropertyDescription argumentTypes = (apiFunction != null ? BaseWebObject.getParameterTypes(apiFunction) : null);
@@ -661,12 +661,12 @@ public class BaseWindow implements IWindow
 		return contentHasBeenWritten;
 	}
 
-	public Object invokeApi(WebComponent receiver, WebObjectApiDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes)
+	public Object invokeApi(WebComponent receiver, WebObjectFunctionDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes)
 	{
 		return invokeApi(receiver, apiFunction, arguments, argumentTypes, null);
 	}
 
-	protected Object invokeApi(final WebComponent receiver, final WebObjectApiDefinition apiFunction, final Object[] arguments,
+	protected Object invokeApi(final WebComponent receiver, final WebObjectFunctionDefinition apiFunction, final Object[] arguments,
 		final PropertyDescription argumentTypes, final Map<String, Object> callContributions)
 	{
 		// {"call":{"form":"product","bean":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}}
@@ -736,7 +736,7 @@ public class BaseWindow implements IWindow
 		return null;
 	}
 
-	private Map<String, Object> getApiCallObject(final WebComponent receiver, final WebObjectApiDefinition apiFunction, final Object[] arguments,
+	private Map<String, Object> getApiCallObject(final WebComponent receiver, final WebObjectFunctionDefinition apiFunction, final Object[] arguments,
 		final PropertyDescription argumentTypes, final Map<String, Object> callContributions)
 	{
 		Map<String, Object> call = new HashMap<>();
@@ -759,7 +759,7 @@ public class BaseWindow implements IWindow
 		return call;
 	}
 
-	protected void addDelayedCall(final WebObjectApiDefinition apiFunction, Map<String, Object> call)
+	protected void addDelayedCall(final WebObjectFunctionDefinition apiFunction, Map<String, Object> call)
 	{
 		if (apiFunction.isGlobalExclusive())
 		{
@@ -781,7 +781,7 @@ public class BaseWindow implements IWindow
 		return true;
 	}
 
-	protected boolean isDelayedApiCall(WebComponent receiver, WebObjectApiDefinition apiFunction)
+	protected boolean isDelayedApiCall(WebComponent receiver, WebObjectFunctionDefinition apiFunction)
 	{
 		return apiFunction.getReturnType() == null && apiFunction.isDelayUntilFormLoad();
 	}

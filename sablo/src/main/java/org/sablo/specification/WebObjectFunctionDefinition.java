@@ -26,7 +26,7 @@ import org.json.JSONObject;
  * Parsed web component / web service api function definition.
  * @author rgansevles
  */
-public class WebObjectApiDefinition
+public class WebObjectFunctionDefinition
 {
 
 	private final String name;
@@ -38,8 +38,9 @@ public class WebObjectApiDefinition
 	private boolean blockEventProcessing = true;
 	private boolean delayUntilFormLoad = false;
 	private boolean globalExclusive = false;
+	private PropertyDescription asPropertyDescription;
 
-	public WebObjectApiDefinition(String name)
+	public WebObjectFunctionDefinition(String name)
 	{
 		this.name = name;
 	}
@@ -140,6 +141,23 @@ public class WebObjectApiDefinition
 	public void setGlobalExclusive(boolean globalExclusive)
 	{
 		this.globalExclusive = globalExclusive;
+	}
+
+	/**
+	 * @return
+	 */
+	public PropertyDescription getAsPropertyDescription()
+	{
+		return asPropertyDescription;
+	}
+
+	/**
+	 * @param propertyDescription
+	 */
+	public void setPropertyDescription(PropertyDescription propertyDescription)
+	{
+		this.asPropertyDescription = propertyDescription;
+
 	}
 
 }

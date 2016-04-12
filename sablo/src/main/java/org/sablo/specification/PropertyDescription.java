@@ -276,10 +276,23 @@ public class PropertyDescription
 			int indexOfDot = propname.indexOf('.');
 			if (indexOfDot >= 0)
 			{
-				// this must be a custom type then
-				propertyDescription = properties.get(propname.substring(0, indexOfDot));
-				PropertyDescription typeSpec = ((ICustomType< ? >)propertyDescription.getType()).getCustomJSONTypeDefinition();
-				return typeSpec.getProperty(propname.substring(indexOfDot + 1));
+				// this must be a custom type then; also handle arrays
+				String customType = propname.substring(0, indexOfDot);
+				if (customType.indexOf('[') > 0)
+				{
+					customType = customType.substring(0, customType.indexOf('['));
+				}
+				String propertyName = propname.substring(indexOfDot + 1);
+				if (propertyName.indexOf('[') > 0)
+				{
+					propertyName = propertyName.substring(0, propertyName.indexOf('['));
+				}
+				propertyDescription = properties.get(customType);
+				if (propertyDescription != null)
+				{
+					PropertyDescription typeSpec = ((ICustomType< ? >)propertyDescription.getType()).getCustomJSONTypeDefinition();
+					return typeSpec.getProperty(propertyName);
+				}
 			}
 		}
 		else if (type instanceof CustomJSONPropertyType)

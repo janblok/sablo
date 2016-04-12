@@ -504,7 +504,20 @@ public abstract class BaseWebObject
 	{
 		String[] parts = propertyName.split("\\.");
 		String firstProperty = parts[0];
+		int arrayIndex = -1;
+		if (firstProperty.indexOf('[') > 0)
+		{
+			if (firstProperty.endsWith("]"))
+			{
+				arrayIndex = Integer.parseInt((firstProperty.substring(firstProperty.lastIndexOf('[') + 1, firstProperty.length() - 1)));
+			}
+			firstProperty = firstProperty.substring(0, firstProperty.indexOf('['));
+		}
 		Object oldValue = properties.get(firstProperty);
+		if (oldValue instanceof List && arrayIndex >= 0)
+		{
+			oldValue = ((List)oldValue).get(arrayIndex);
+		}
 		if (oldValue == null && !properties.containsKey(firstProperty))
 		{
 			Object defaultProperty = defaultPropertiesUnwrapped.get(firstProperty);
@@ -539,9 +552,23 @@ public abstract class BaseWebObject
 		{
 			for (int i = 1; i < parts.length; i++)
 			{
+				String pathProperty = parts[i];
+				arrayIndex = -1;
+				if (pathProperty.indexOf('[') > 0)
+				{
+					if (pathProperty.endsWith("]"))
+					{
+						arrayIndex = Integer.parseInt((pathProperty.substring(pathProperty.lastIndexOf('[') + 1, pathProperty.length() - 1)));
+					}
+					pathProperty = pathProperty.substring(0, pathProperty.indexOf('['));
+				}
 				if (oldValue instanceof Map)
 				{
-					oldValue = ((Map)oldValue).get(parts[i]);
+					oldValue = ((Map)oldValue).get(pathProperty);
+					if (oldValue instanceof List && arrayIndex >= 0)
+					{
+						oldValue = ((List)oldValue).get(arrayIndex);
+					}
 				}
 			}
 			// this value comes from internal maps, should be wrapped again (current value should always return a wrapped value)
@@ -583,7 +610,11 @@ public abstract class BaseWebObject
 		Object oldWrappedValue = getRawPropertyValue(propertyName, true);
 		ValueReference<Boolean> returnValueAdjustedIncommingValue = new ValueReference<Boolean>(Boolean.FALSE);
 		Object newWrappedValue = convertValueFromJSON(propertyName, oldWrappedValue, propertyValue, returnValueAdjustedIncommingValue);
-		properties.put(propertyName, newWrappedValue);
+		if (propertyName.indexOf('.') < 0)
+		{
+			// if nested above function should already update the value
+			properties.put(propertyName, newWrappedValue);
+		}
 
 		// TODO I think this could be wrapped values in onPropertyChange (would need less unwrapping)
 		if (oldWrappedValue != newWrappedValue)

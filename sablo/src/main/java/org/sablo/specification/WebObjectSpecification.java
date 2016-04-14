@@ -337,11 +337,10 @@ public class WebObjectSpecification extends PropertyDescription
 	private static WebObjectFunctionDefinition parseFunctionDefinition(WebObjectSpecification spec, JSONObject api, String func) throws JSONException
 	{
 		WebObjectFunctionDefinition def = new WebObjectFunctionDefinition(func);
+		def.setPropertyDescription(new PropertyDescription(func, TypesRegistry.getType(FunctionPropertyType.TYPE_NAME), api.get(func)));
 		if (api.get(func) instanceof JSONObject)
 		{
 			JSONObject jsonDef = api.getJSONObject(func);
-			def.setPropertyDescription(new PropertyDescription(func, TypesRegistry.getType(FunctionPropertyType.TYPE_NAME), jsonDef));
-
 			Iterator<String> it = jsonDef.keys();
 			JSONObject customConfiguration = null;
 			while (it.hasNext())

@@ -143,17 +143,11 @@ public class WebObjectFunctionDefinition
 		this.globalExclusive = globalExclusive;
 	}
 
-	/**
-	 * @return
-	 */
 	public PropertyDescription getAsPropertyDescription()
 	{
 		return asPropertyDescription;
 	}
 
-	/**
-	 * @param propertyDescription
-	 */
 	public void setPropertyDescription(PropertyDescription propertyDescription)
 	{
 		this.asPropertyDescription = propertyDescription;

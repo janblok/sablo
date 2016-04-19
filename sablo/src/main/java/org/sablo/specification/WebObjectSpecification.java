@@ -263,6 +263,7 @@ public class WebObjectSpecification extends PropertyDescription
 		catch (RuntimeException e)
 		{
 			t = ObjectPropertyType.INSTANCE;
+			log.error("Type name " + property + " is not defined", e);
 		}
 		return new ParsedProperty(t, isArray, isVarArgs);
 	}

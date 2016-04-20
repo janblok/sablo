@@ -847,15 +847,18 @@ public class Package
 		String packageType = manifest.getMainAttributes().getValue("Package-Type");
 		if (packageType != null) return packageType;
 		//else we have to search for the first element to see what kind of elements this package contains
-		for (Entry<String, Attributes> entry : manifest.getEntries().entrySet())
+		if (manifest.getEntries() != null)
 		{
-			if ("true".equalsIgnoreCase((String)entry.getValue().get(new Attributes.Name(IPackageReader.WEB_SERVICE))))
+			for (Entry<String, Attributes> entry : manifest.getEntries().entrySet())
 			{
-				return IPackageReader.WEB_SERVICE;
-			}
-			else if ("true".equalsIgnoreCase((String)entry.getValue().get(new Attributes.Name(IPackageReader.WEB_COMPONENT))))
-			{
-				return IPackageReader.WEB_COMPONENT;
+				if ("true".equalsIgnoreCase((String)entry.getValue().get(new Attributes.Name(IPackageReader.WEB_SERVICE))))
+				{
+					return IPackageReader.WEB_SERVICE;
+				}
+				else if ("true".equalsIgnoreCase((String)entry.getValue().get(new Attributes.Name(IPackageReader.WEB_COMPONENT))))
+				{
+					return IPackageReader.WEB_COMPONENT;
+				}
 			}
 		}
 		return null;

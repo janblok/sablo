@@ -78,8 +78,7 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 							{
 								IPackageReader reader = new JarServletContextReader(servletContext, resourcePath);
 								Manifest mf = reader.getManifest();
-								if (mf != null && mf.getEntries() != null && (mf.getEntries().values().contains(Package.IPackageReader.WEB_COMPONENT) ||
-									mf.getEntries().values().contains(Package.IPackageReader.WEB_SERVICE))) readers.add(reader);
+								if (mf != null && Package.getPackageType(mf).equals(Package.IPackageReader.WEB_COMPONENT)) readers.add(reader);
 							}
 						}
 

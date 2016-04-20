@@ -78,7 +78,7 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 							{
 								IPackageReader reader = new JarServletContextReader(servletContext, resourcePath);
 								Manifest mf = reader.getManifest();
-								if (mf != null && Package.getPackageType(mf).equals(IPackageReader.WEB_SERVICE)) readers.add(reader);
+								if (mf != null && IPackageReader.WEB_SERVICE.equals(Package.getPackageType(mf))) readers.add(reader);
 							}
 						}
 

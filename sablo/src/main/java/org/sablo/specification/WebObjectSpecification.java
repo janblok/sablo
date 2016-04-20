@@ -263,7 +263,7 @@ public class WebObjectSpecification extends PropertyDescription
 		catch (RuntimeException e)
 		{
 			t = ObjectPropertyType.INSTANCE;
-			log.error("Type name " + property + " is not defined", e);
+			log.warn("Unknown type name '" + property + "' encountered while parsing spec " + this.getName());
 		}
 		return new ParsedProperty(t, isArray, isVarArgs);
 	}

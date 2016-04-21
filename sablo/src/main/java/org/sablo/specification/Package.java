@@ -39,6 +39,8 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import javax.servlet.ServletContext;
 
@@ -173,13 +175,12 @@ public class Package
 
 	public PackageSpecification<WebObjectSpecification> getWebObjectDescriptions(String attributeName) throws IOException
 	{
-		String packageName = null;
+		String packageName = reader.getPackageName();
 		String packageDisplayname = null;
 		Map<String, WebObjectSpecification> descriptions = new HashMap<>();
 		Manifest mf = reader.getManifest();
 		if (mf != null)
 		{
-			packageName = reader.getPackageName();
 			packageDisplayname = reader.getPackageDisplayname();
 
 			for (String specpath : getWebEntrySpecNames(mf, attributeName))
@@ -416,6 +417,124 @@ public class Package
 
 	}
 
+
+	public static class ZipPackageReader implements Package.IPackageReader
+	{
+		private final ZipFile file;
+		private final String name;
+		private Manifest manifest;
+
+		public ZipPackageReader(ZipFile file, String name)
+		{
+			this.name = name;
+			this.file = file;
+		}
+
+		@Override
+		public String getName()
+		{
+			return name;
+		}
+
+		@Override
+		public String getPackageName()
+		{
+			try
+			{
+				String packageDisplayname = Package.getPackageName(getManifest());
+				if (packageDisplayname != null) return packageDisplayname;
+			}
+			catch (Exception e)
+			{
+				log.error("Error in getPackageName", e);
+			}
+
+			// fall back to symbolic name
+			return getName();
+		}
+
+		@Override
+		public String getPackageDisplayname()
+		{
+			try
+			{
+				String packageDisplayname = Package.getPackageDisplayname(getManifest());
+				if (packageDisplayname != null) return packageDisplayname;
+			}
+			catch (Exception e)
+			{
+				log.error("Error in getPackageDisplayname", e); //$NON-NLS-1$
+			}
+			// fall back to symbolic name
+			return getPackageName();
+		}
+
+		@Override
+		public Manifest getManifest() throws IOException
+		{
+			if (manifest == null)
+			{
+				ZipEntry m = file.getEntry("META-INF/MANIFEST.MF"); //$NON-NLS-1$
+				try (InputStream is = file.getInputStream(m))
+				{
+					manifest = new Manifest(is);
+				}
+			}
+			return manifest;
+		}
+
+		@Override
+		public String readTextFile(String path, Charset charset) throws IOException
+		{
+			ZipEntry m = file.getEntry(path);
+			try (InputStream is = file.getInputStream(m))
+			{
+				return IOUtils.toString(is, charset);
+			}
+		}
+
+		@Override
+		public URL getUrlForPath(String path) throws MalformedURLException
+		{
+			String pathWithSlashPrefix = path.startsWith("/") ? path : "/" + path; //$NON-NLS-1$ //$NON-NLS-2$
+			String pathWithoutSlashPrefix = path.startsWith("/") ? path.substring(1) : path;
+			ZipEntry zipFileEntry = file.getEntry(pathWithoutSlashPrefix);
+			if (zipFileEntry != null)
+			{
+				return new URL("jar:file:" + file.getName() + "!" + pathWithSlashPrefix); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+			log.warn("Could not find " + path + " in " + file.getName());
+			return null;
+		}
+
+		@Override
+		public URL getPackageURL()
+		{
+			try
+			{
+				return new URL("file:" + file.getName());
+			}
+			catch (MalformedURLException e)
+			{
+				log.error("Error in getPackageURL ", e);
+			}
+			return null;
+		}
+
+		@Override
+		public void reportError(String specpath, Exception e)
+		{
+			log.error("Error at specpath " + specpath, e); //$NON-NLS-1$
+		}
+
+		@Override
+		public String getPackageType() throws IOException
+		{
+			return Package.getPackageType(getManifest());
+		}
+
+	}
+
 	public static class JarPackageReader implements IPackageReader
 	{
 
@@ -476,8 +595,6 @@ public class Package
 				}
 			}
 			return manifest;
-
-
 		}
 
 		@Override

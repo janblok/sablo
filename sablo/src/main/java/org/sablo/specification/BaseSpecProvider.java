@@ -16,6 +16,7 @@
 
 package org.sablo.specification;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Map;
@@ -50,6 +51,15 @@ public abstract class BaseSpecProvider
 	public Map<String, URL> getPackagesToURLs()
 	{
 		return reader.getPackagesToURLs();
+	}
+
+	/**
+	 * Get the map of names to package versions.
+	 * @throws IOException
+	 */
+	public Map<String, String> getPackagesToVersions() throws IOException
+	{
+		return reader.getPackagesToVersions();
 	}
 
 	public String getPackageDisplayName(String packageName)

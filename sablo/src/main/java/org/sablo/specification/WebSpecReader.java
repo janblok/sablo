@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.jar.Attributes;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -222,7 +223,7 @@ class WebSpecReader
 						packagesWithGloballyDefinedTypes.add(p.getPackageName());
 					}
 				}
-				catch (IOException e)
+				catch (Exception e)
 				{
 					log.error("Cannot read globally defined types from package: " + p.getName(), e); //$NON-NLS-1$
 				}
@@ -341,6 +342,22 @@ class WebSpecReader
 		{
 			IPackageReader reader = packageReaders.get(i);
 			result.put(reader.getPackageName(), reader.getPackageDisplayname());
+		}
+		return result;
+	}
+
+	/**
+	 * Get the map of packages and package versions.
+	 * @throws IOException
+	 */
+	public Map<String, String> getPackagesToVersions() throws IOException
+	{
+		Map<String, String> result = new HashMap<String, String>();
+		for (int i = 0; i < packageReaders.size(); i++)
+		{
+			IPackageReader reader = packageReaders.get(i);
+			if (reader.getManifest().getMainAttributes().containsKey(Attributes.Name.IMPLEMENTATION_VERSION))
+				result.put(reader.getPackageName(), reader.getManifest().getMainAttributes().getValue(Attributes.Name.IMPLEMENTATION_VERSION));
 		}
 		return result;
 	}

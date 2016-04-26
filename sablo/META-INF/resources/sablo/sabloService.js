@@ -18,15 +18,15 @@ angular.module('$sabloService', ['sabloApp'])
 		},
 		createDeferedEvent: function() {
 			var deferred = $q.defer();
-			var cmsgid = messageID++;
-			deferredEvents[cmsgid] = deferred;
-			return {promise:deferred.promise,cmsgid:cmsgid};
+			var defid = messageID++;
+			deferredEvents[defid] = deferred;
+			return {promise:deferred.promise,defid:defid};
 		},
 		
-		resolveDeferedEvent: function(msgid, argument, success) {
-			var defered = deferredEvents[msgid];
+		resolveDeferedEvent: function(defid, argument, success) {
+			var defered = deferredEvents[defid];
 			if (defered) {
-				delete deferredEvents[msgid];
+				delete deferredEvents[defid];
 				if (success) defered.resolve(argument);
 				else defered.reject(argument)
 			}

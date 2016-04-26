@@ -55,16 +55,16 @@ public class SabloService
 		clientService.executeServiceCall("windowOpen", new Object[] { url, winname, specs, replace });
 	}
 
-	public void resolveDeferedEvent(String msgid, boolean success, Object argument, PropertyDescription argumentPD)
+	public void resolveDeferedEvent(String defid, boolean success, Object argument, PropertyDescription argumentPD)
 	{
 		PropertyDescription pd = null;
 		if (argumentPD != null)
 		{
 			pd = AggregatedPropertyType.newAggregatedProperty();
-			pd.putProperty("0", new PropertyDescription("msgid", StringPropertyType.INSTANCE));
+			pd.putProperty("0", new PropertyDescription("defid", StringPropertyType.INSTANCE));
 			pd.putProperty("1", argumentPD);
 			pd.putProperty("2", new PropertyDescription("success", BooleanPropertyType.INSTANCE));
 		}
-		CurrentWindow.get().executeAsyncServiceCall(SABLO_SERVICE, "resolveDeferedEvent", new Object[] { msgid, argument, Boolean.valueOf(success) }, pd);
+		CurrentWindow.get().executeAsyncServiceCall(SABLO_SERVICE, "resolveDeferedEvent", new Object[] { defid, argument, Boolean.valueOf(success) }, pd);
 	}
 }

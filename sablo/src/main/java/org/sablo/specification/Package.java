@@ -512,7 +512,7 @@ public class Package
 		{
 			try
 			{
-				return new URL("file:" + file.getName());
+				return new File(file.getName()).toURI().toURL();
 			}
 			catch (MalformedURLException e)
 			{

@@ -127,6 +127,16 @@ public class BaseWindow implements IWindow
 			}
 			else
 			{
+				if (this.endpoint != null)
+				{
+					try
+					{
+						this.endpoint.sendText("p");
+					}
+					catch (IOException e)
+					{
+					}
+				}
 				endpointRefcount++;
 				this.endpoint = endpoint;
 			}

@@ -397,6 +397,10 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 
 			return wsSession
 		},
+		
+		updateConnectArguments: function(context, args, queryArgs, websocketUri) {
+			$webSocket.updateConnectArguments(context, args, queryArgs, websocketUri);
+		},
 
 		disconnect : function() {
 			$webSocket.disconnect();

@@ -352,6 +352,53 @@ webSocketModule.factory('$webSocket',
 	function isReconnecting() {
 		return connected == 'RECONNECTING';
 	}
+	
+	function generateURL(context, args, queryArgs, websocketUri) {
+		var loc = window.location, new_uri;
+		if (loc.protocol === "https:") {
+			new_uri = "wss:";
+		} else {
+			new_uri = "ws:";
+		}
+		new_uri += "//" + loc.host;
+		var pathname = loc.pathname;
+		var lastIndex = pathname.lastIndexOf("/");
+		if (lastIndex > 0) {
+			pathname = pathname.substring(0, lastIndex);
+		}
+		if (context && context.length > 0)
+		{
+			var lastIndex = pathname.lastIndexOf(context);
+			if (lastIndex >= 0) {
+				pathname = pathname.substring(0, lastIndex) + pathname.substring(lastIndex + context.length)
+			}
+		}
+		new_uri += pathname + (websocketUri?websocketUri:'/websocket');
+		for (var a in args) {
+			if (args.hasOwnProperty(a)) {
+				new_uri += '/' + args[a]
+			}
+		}
+
+		new_uri += "?";
+
+		for (var a in queryArgs)
+		{
+			if (queryArgs.hasOwnProperty(a)) {
+				new_uri += a+"="+queryArgs[a]+"&";
+			}
+		}
+
+		if (loc.search)
+		{
+			new_uri +=  loc.search.substring(1,loc.search.length); 
+		}
+		else
+		{
+			new_uri = new_uri.substring(0,new_uri.length-1);
+		}
+		return new_uri;
+	}
 	/**
 	 * The $webSocket service API.
 	 */
@@ -359,49 +406,7 @@ webSocketModule.factory('$webSocket',
 
 		connect : function(context, args, queryArgs, websocketUri) {
 
-			var loc = window.location, new_uri;
-			if (loc.protocol === "https:") {
-				new_uri = "wss:";
-			} else {
-				new_uri = "ws:";
-			}
-			new_uri += "//" + loc.host;
-			var pathname = loc.pathname;
-			var lastIndex = pathname.lastIndexOf("/");
-			if (lastIndex > 0) {
-				pathname = pathname.substring(0, lastIndex);
-			}
-			if (context && context.length > 0)
-			{
-				var lastIndex = pathname.lastIndexOf(context);
-				if (lastIndex >= 0) {
-					pathname = pathname.substring(0, lastIndex) + pathname.substring(lastIndex + context.length)
-				}
-			}
-			new_uri += pathname + (websocketUri?websocketUri:'/websocket');
-			for (var a in args) {
-				if (args.hasOwnProperty(a)) {
-					new_uri += '/' + args[a]
-				}
-			}
-
-			new_uri += "?";
-
-			for (var a in queryArgs)
-			{
-				if (queryArgs.hasOwnProperty(a)) {
-					new_uri += a+"="+queryArgs[a]+"&";
-				}
-			}
-
-			if (loc.search)
-			{
-				new_uri +=  loc.search.substring(1,loc.search.length); 
-			}
-			else
-			{
-				new_uri = new_uri.substring(0,new_uri.length-1);
-			}
+			var new_uri = generateURL(context, args, queryArgs, websocketUri);
 
 			websocket = typeof(ReconnectingWebSocket) == 'undefined' ? new WebSocket(new_uri) : new ReconnectingWebSocket(new_uri);
 
@@ -450,6 +455,10 @@ webSocketModule.factory('$webSocket',
 			return wsSession
 		},
 
+		updateConnectArguments: function(context, args, queryArgs, websocketUri) {
+			websocket.url = generateURL(context, args, queryArgs, websocketUri);
+		},
+		
 		getSession: function() {
 			return wsSession;
 		},

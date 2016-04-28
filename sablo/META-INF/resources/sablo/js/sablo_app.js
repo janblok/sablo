@@ -249,6 +249,11 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 					// reload site
 					$window.location.reload();
 				}
+				else {
+					// set the websocket in reconnection mode..
+					queryArgs.sablo_reconnect = true;
+					$webSocket.updateConnectArguments(context, args, queryArgs, websocketUri);
+				}
 			});
 
 			wsSession.onMessageObject(function (msg, conversionInfo) {
@@ -399,6 +404,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		},
 		
 		updateConnectArguments: function(context, args, queryArgs, websocketUri) {
+			queryArgs.sablo_reconnect = true;
 			$webSocket.updateConnectArguments(context, args, queryArgs, websocketUri);
 		},
 

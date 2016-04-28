@@ -246,8 +246,8 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 			if (suspendedEventsValue != null && !exit)
 			{
 				suspendedEvents.remove(suspendID);
-				if (suspendedEventsValue != SUSPENDED_NOT_CANCELED) throw new CancellationException("Suspended event cancelled. Reason: " +
-					suspendedEventsValue);
+				if (suspendedEventsValue != SUSPENDED_NOT_CANCELED)
+					throw new CancellationException("Suspended event cancelled. Reason: " + suspendedEventsValue);
 				else throw new TimeoutException("Suspended event timed out (" + suspendID + "). It was not resumed in " + timeout + " milliseconds.");
 			}
 		}
@@ -255,12 +255,22 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 
 	public void resume(Object eventKey)
 	{
+		if (!isEventDispatchThread())
+		{
+			log.error("resume called in another thread than the script thread: " + Thread.currentThread(), new RuntimeException());
+			return;
+		}
 		suspendedEvents.remove(eventKey);
 	}
 
 	@Override
 	public void cancelSuspend(Integer suspendID, String cancelReason)
 	{
+		if (!isEventDispatchThread())
+		{
+			log.error("cancelSuspend called in another thread than the script thread: " + Thread.currentThread(), new RuntimeException());
+			return;
+		}
 		if (suspendedEvents.containsKey(suspendID))
 		{
 			if (cancelReason == null) cancelReason = "unspecified."; // our map can't handle null values

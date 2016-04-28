@@ -170,16 +170,26 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		window = null;
 	}
 
-	public void onClose(CloseReason closeReason)
+	public void onClose(final CloseReason closeReason)
 	{
 		if (window != null)
 		{
 			if (window.getSession() != null)
 			{
-				for (Integer pendingMessageId : pendingMessages.keySet())
+				for (final Integer pendingMessageId : pendingMessages.keySet())
 				{
-					window.getSession().getEventDispatcher().cancelSuspend(pendingMessageId,
-						"Websocket endpoint is closing... (can happen for example due to a full browser refresh)");
+					final IEventDispatcher eventDispatcher = window.getSession().getEventDispatcher();
+					eventDispatcher.addEvent(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							eventDispatcher.cancelSuspend(pendingMessageId,
+								"Websocket endpoint is closing... (can happen for example due to a full browser refresh). Close reason code: " +
+									closeReason.getCloseCode());
+						}
+
+					}, IEventDispatcher.EVENT_LEVEL_SYNC_API_CALL);
 				}
 				pendingMessages.clear();
 			}

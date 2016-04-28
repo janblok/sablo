@@ -109,13 +109,15 @@ public interface IEventDispatcher extends Runnable
 
 	/**
 	 * See {@link #suspend(Object)}.
-	 *
+	 * Should be called directly only from the Event Dispatch thread.
 	 * @param suspendID The Object that was used as a suspend operation identifier in a previous call to one of the "suspend" methods.
 	 */
 	void resume(Object suspendID);
 
 	/**
 	 * Resumes a previous suspend by throwing a CancellationException to the suspend calling code.
+	 * Should be called directly only from the Event Dispatch thread.
+	 *
 	 * @param suspendID the if of the suspend operation.
 	 * @param cancelReason a user-readable message for why the suspend was cancelled.
 	 */

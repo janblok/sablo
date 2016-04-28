@@ -419,7 +419,7 @@ public class BaseWindow implements IWindow
 
 		if (endpoint == null)
 		{
-			throw new IOException("Endpoint was closed");
+			throw new IOException("Endpoint was closed"); //$NON-NLS-1$
 		}
 
 		try

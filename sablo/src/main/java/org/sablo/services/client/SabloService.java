@@ -21,7 +21,7 @@ import java.io.IOException;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.specification.property.types.BooleanPropertyType;
-import org.sablo.specification.property.types.StringPropertyType;
+import org.sablo.specification.property.types.IntPropertyType;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.IClientService;
 
@@ -55,16 +55,17 @@ public class SabloService
 		clientService.executeServiceCall("windowOpen", new Object[] { url, winname, specs, replace });
 	}
 
-	public void resolveDeferedEvent(String defid, boolean success, Object argument, PropertyDescription argumentPD)
+	public void resolveDeferedEvent(int defid, boolean success, Object argument, PropertyDescription argumentPD)
 	{
 		PropertyDescription pd = null;
 		if (argumentPD != null)
 		{
 			pd = AggregatedPropertyType.newAggregatedProperty();
-			pd.putProperty("0", new PropertyDescription("defid", StringPropertyType.INSTANCE));
+			pd.putProperty("0", new PropertyDescription("defid", IntPropertyType.INSTANCE));
 			pd.putProperty("1", argumentPD);
 			pd.putProperty("2", new PropertyDescription("success", BooleanPropertyType.INSTANCE));
 		}
-		CurrentWindow.get().executeAsyncServiceCall(SABLO_SERVICE, "resolveDeferedEvent", new Object[] { defid, argument, Boolean.valueOf(success) }, pd);
+		CurrentWindow.get().executeAsyncServiceCall(SABLO_SERVICE, "resolveDeferedEvent",
+			new Object[] { Integer.valueOf(defid), argument, Boolean.valueOf(success) }, pd);
 	}
 }

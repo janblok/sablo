@@ -420,11 +420,11 @@ public class Package
 
 	public static class ZipPackageReader implements Package.IPackageReader
 	{
-		private final ZipFile file;
+		private final File file;
 		private final String name;
 		private Manifest manifest;
 
-		public ZipPackageReader(ZipFile file, String name)
+		public ZipPackageReader(File file, String name)
 		{
 			this.name = name;
 			this.file = file;
@@ -474,10 +474,10 @@ public class Package
 		{
 			if (manifest == null)
 			{
-				ZipEntry m = file.getEntry("META-INF/MANIFEST.MF"); //$NON-NLS-1$
-				try (InputStream is = file.getInputStream(m))
+				try (ZipFile zip = new ZipFile(file))
 				{
-					manifest = new Manifest(is);
+					ZipEntry m = zip.getEntry("META-INF/MANIFEST.MF"); //$NON-NLS-1$
+					manifest = new Manifest(zip.getInputStream(m));
 				}
 			}
 			return manifest;
@@ -486,11 +486,15 @@ public class Package
 		@Override
 		public String readTextFile(String path, Charset charset) throws IOException
 		{
-			ZipEntry m = file.getEntry(path);
-			try (InputStream is = file.getInputStream(m))
+			try (ZipFile zip = new ZipFile(file))
 			{
-				return IOUtils.toString(is, charset);
+				ZipEntry entry = zip.getEntry(path);
+				if (entry != null)
+				{
+					return IOUtils.toString(zip.getInputStream(entry), charset);
+				}
 			}
+			return null;
 		}
 
 		@Override
@@ -498,10 +502,17 @@ public class Package
 		{
 			String pathWithSlashPrefix = path.startsWith("/") ? path : "/" + path; //$NON-NLS-1$ //$NON-NLS-2$
 			String pathWithoutSlashPrefix = path.startsWith("/") ? path.substring(1) : path;
-			ZipEntry zipFileEntry = file.getEntry(pathWithoutSlashPrefix);
-			if (zipFileEntry != null)
+			try (ZipFile zip = new ZipFile(file))
 			{
-				return new URL("jar:file:" + file.getName() + "!" + pathWithSlashPrefix); //$NON-NLS-1$ //$NON-NLS-2$
+				ZipEntry entry = zip.getEntry(pathWithoutSlashPrefix);
+				if (entry != null)
+				{
+					return new URL("jar:file:" + file.getName() + "!" + pathWithSlashPrefix); //$NON-NLS-1$ //$NON-NLS-2$
+				}
+			}
+			catch (IOException e)
+			{
+				log.error("Exception in getUrlForPath", e);
 			}
 			log.warn("Could not find " + path + " in " + file.getName());
 			return null;
@@ -512,7 +523,7 @@ public class Package
 		{
 			try
 			{
-				return new File(file.getName()).toURI().toURL();
+				return file.toURI().toURL();
 			}
 			catch (MalformedURLException e)
 			{

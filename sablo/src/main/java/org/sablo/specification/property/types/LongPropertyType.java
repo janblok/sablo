@@ -15,12 +15,17 @@
  */
 package org.sablo.specification.property.types;
 
+import java.text.NumberFormat;
+import java.text.ParseException;
+import java.util.Locale;
+
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IPropertyConverterForBrowser;
 import org.sablo.util.ValueReference;
+import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 import org.slf4j.Logger;
@@ -69,12 +74,29 @@ public class LongPropertyType extends DefaultPropertyType<Long> implements IProp
 		{
 			if (((String)newJSONValue).trim().length() == 0) return null;
 
-			//same as utils.getaslong
-			Number parsedValue = new Double(((String)newJSONValue).replace(',', '.'));
-			Long val = Long.valueOf(parsedValue.longValue());
-			if (returnValueAdjustedIncommingValue != null && val.doubleValue() != parsedValue.doubleValue())
-				returnValueAdjustedIncommingValue.value = Boolean.TRUE;
-			return val;
+			Locale locale = CurrentWindow.get().getSession().getLocale();
+			Number parsedValue;
+			try
+			{
+				parsedValue = NumberFormat.getIntegerInstance(locale).parse((String)newJSONValue);
+				if (parsedValue instanceof Long)
+				{
+					return parsedValue;
+				}
+				else
+				{
+					Long val = Long.valueOf(parsedValue.longValue());
+					if (returnValueAdjustedIncommingValue != null && val.doubleValue() != parsedValue.doubleValue())
+						returnValueAdjustedIncommingValue.value = Boolean.TRUE;
+					return val;
+				}
+			}
+			catch (ParseException e)
+			{
+				log.warn("Parse exception while processing " + newJSONValue + " as a long", e);
+				if (returnValueAdjustedIncommingValue != null) returnValueAdjustedIncommingValue.value = Boolean.TRUE;
+				return null;
+			}
 		}
 		return null;
 	}

@@ -15,17 +15,12 @@
  */
 package org.sablo.specification.property.types;
 
-import java.text.NumberFormat;
-import java.text.ParseException;
-import java.util.Locale;
-
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IPropertyConverterForBrowser;
 import org.sablo.util.ValueReference;
-import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 import org.slf4j.Logger;
@@ -68,19 +63,7 @@ public class FloatPropertyType extends DefaultPropertyType<Float> implements IPr
 		{
 			if (((String)newJSONValue).trim().length() == 0) return null;
 
-			Locale locale = CurrentWindow.get().getSession().getLocale();
-			Number parsedValue;
-			try
-			{
-				parsedValue = NumberFormat.getNumberInstance(locale).parse((String)newJSONValue);
-				return parsedValue instanceof Float ? (Float)parsedValue : Float.valueOf(parsedValue.floatValue());
-			}
-			catch (ParseException e)
-			{
-				log.warn("Parse exception while processing " + newJSONValue + " as a float", e);
-				if (returnValueAdjustedIncommingValue != null) returnValueAdjustedIncommingValue.value = Boolean.TRUE;
-				return null;
-			}
+			return new Double(((String)newJSONValue).replace(',', '.')).floatValue();
 		}
 		return null;
 	}

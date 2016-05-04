@@ -16,10 +16,13 @@
 
 package org.sablo.websocket.utils;
 
+
 import org.sablo.specification.property.CustomJSONArrayType;
 import org.sablo.specification.property.CustomJSONObjectType;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -31,7 +34,7 @@ import org.sablo.specification.property.IPropertyType;
 public class PropertyUtils
 {
 
-//	private static final Logger log = LoggerFactory.getLogger(PropertyUtils.class.getCanonicalName());
+	private static final Logger log = LoggerFactory.getLogger(PropertyUtils.class.getCanonicalName());
 
 	/**
 	 * Returns true if propertyType instanceof ICustomType.
@@ -87,4 +90,43 @@ public class PropertyUtils
 		return firstIndexOfDot >= 0 ? typeName.substring(firstIndexOfDot + 1) : typeName;
 	}
 
+	public static Double getAsDouble(String numberString)
+	{
+		if (numberString == null) return null;
+
+		try
+		{
+			int comma = numberString.indexOf(",");
+			int point = numberString.indexOf(".");
+			if (comma == -1)
+			{
+				// it only has a point or no point at all, we can just parse this
+				return Double.valueOf(numberString);
+			}
+			else if (point != -1)
+			{
+				// it has a command and a point
+				if (point > comma)
+				{
+					// the point is the last, just ignore the comma
+					return Double.valueOf(numberString.replaceAll(",", ""));
+				}
+				else
+				{
+					// the point is before the comma, so the comma is decimal
+					return Double.valueOf(numberString.replaceAll("\\.", "").replace(',', '.'));
+				}
+			}
+			else
+			{
+				// it just has a comma repace this with a .
+				return Double.valueOf(numberString.replace(',', '.'));
+			}
+		}
+		catch (NumberFormatException ex)
+		{
+			log.warn("Parse exception while processing " + numberString + " as a double", ex);
+			return 0d;
+		}
+	}
 }

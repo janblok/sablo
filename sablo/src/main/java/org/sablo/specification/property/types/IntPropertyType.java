@@ -15,19 +15,15 @@
  */
 package org.sablo.specification.property.types;
 
-import java.text.NumberFormat;
-import java.text.ParseException;
-import java.util.Locale;
-
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IPropertyConverterForBrowser;
 import org.sablo.util.ValueReference;
-import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
+import org.sablo.websocket.utils.PropertyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,29 +71,11 @@ public class IntPropertyType extends DefaultPropertyType<Integer> implements IPr
 		{
 			if (((String)newJSONValue).trim().length() == 0) return null;
 
-			Locale locale = CurrentWindow.get().getSession().getLocale();
-			Number parsedValue;
-			try
-			{
-				parsedValue = NumberFormat.getIntegerInstance(locale).parse((String)newJSONValue);
-				if (parsedValue instanceof Integer)
-				{
-					return parsedValue;
-				}
-				else
-				{
-					Integer val = Integer.valueOf(parsedValue.intValue());
-					if (returnValueAdjustedIncommingValue != null && val.doubleValue() != parsedValue.doubleValue())
-						returnValueAdjustedIncommingValue.value = Boolean.TRUE;
-					return val;
-				}
-			}
-			catch (ParseException e)
-			{
-				log.warn("Parse exception while processing " + newJSONValue + " as an int", e);
-				if (returnValueAdjustedIncommingValue != null) returnValueAdjustedIncommingValue.value = Boolean.TRUE;
-				return null;
-			}
+			Double parsedValue = PropertyUtils.getAsDouble((String)newJSONValue);
+			Integer val = Integer.valueOf(parsedValue.intValue());
+			if (returnValueAdjustedIncommingValue != null && val.doubleValue() != parsedValue.doubleValue())
+				returnValueAdjustedIncommingValue.value = Boolean.TRUE;
+			return val;
 		}
 		return null;
 	}

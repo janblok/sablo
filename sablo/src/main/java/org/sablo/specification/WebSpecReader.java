@@ -117,7 +117,7 @@ class WebSpecReader
 	{
 		if (packagesToRemove.size() == 0 && packagesToAdd.size() == 0) return;
 		lastLoadTimestamp = System.currentTimeMillis();
-		List<String> removedOrReloadedSpecs = new ArrayList<>();
+		List<String> removedOrReloadedSpecs = new ArrayList<>(); // so not newly added
 
 		boolean shouldReloadAllDueToGlobalTypeChanges = false;
 		for (IPackageReader packageToRemove : packagesToRemove)
@@ -167,7 +167,13 @@ class WebSpecReader
 			}
 		}
 
-		if (shouldReloadAllDueToGlobalTypeChanges) load(); // reload all because removed packages had global types
+		boolean shouldStillFireReloadListeners = true;
+
+		if (shouldReloadAllDueToGlobalTypeChanges)
+		{
+			load(); // reload all because removed packages had global types
+			shouldStillFireReloadListeners = false;
+		}
 		else
 		{
 			// load new packages
@@ -180,7 +186,11 @@ class WebSpecReader
 			}
 			try
 			{
-				if (readGloballyDefinedTypes(packages)) load(); // reload all because added packages have global types
+				if (readGloballyDefinedTypes(packages))
+				{
+					load(); // reload all because added packages have global types
+					shouldStillFireReloadListeners = false;
+				}
 				else
 				{
 					cacheWebObjectSpecs(packages);
@@ -195,12 +205,16 @@ class WebSpecReader
 			}
 		}
 
-		for (String removedOrReloadedSpec : removedOrReloadedSpecs)
+
+		if (shouldStillFireReloadListeners)
 		{
-			List<ISpecReloadListener> ls = specReloadListeners.get(removedOrReloadedSpec);
-			if (ls != null) for (ISpecReloadListener l : ls)
-				l.webObjectSpecificationReloaded();
-			if (!allWebObjectSpecifications.containsKey(removedOrReloadedSpec)) specReloadListeners.remove(removedOrReloadedSpec);
+			for (String removedOrReloadedSpec : removedOrReloadedSpecs)
+			{
+				List<ISpecReloadListener> ls = specReloadListeners.get(removedOrReloadedSpec);
+				if (ls != null) for (ISpecReloadListener l : ls)
+					l.webObjectSpecificationReloaded();
+				if (!allWebObjectSpecifications.containsKey(removedOrReloadedSpec)) specReloadListeners.remove(removedOrReloadedSpec);
+			}
 		}
 	}
 

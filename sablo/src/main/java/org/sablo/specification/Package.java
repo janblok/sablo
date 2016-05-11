@@ -475,7 +475,15 @@ public class Package
 				try (ZipFile zip = new ZipFile(file))
 				{
 					ZipEntry m = zip.getEntry("META-INF/MANIFEST.MF"); //$NON-NLS-1$
-					manifest = new Manifest(zip.getInputStream(m));
+					if (m == null)
+					{
+						reportError(zip.getName(), new IllegalStateException(zip.getName() + " doesn't have a manifest"));
+						manifest = new Manifest();
+					}
+					else
+					{
+						manifest = new Manifest(zip.getInputStream(m));
+					}
 				}
 			}
 			return manifest;

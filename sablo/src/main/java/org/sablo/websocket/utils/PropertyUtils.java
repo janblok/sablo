@@ -119,7 +119,7 @@ public class PropertyUtils
 			}
 			else
 			{
-				// it just has a comma repace this with a .
+				// it just has a comma replace this with a .
 				return Double.valueOf(numberString.replace(',', '.'));
 			}
 		}
@@ -127,6 +127,66 @@ public class PropertyUtils
 		{
 			log.warn("Parse exception while processing " + numberString + " as a double", ex);
 			return 0d;
+		}
+	}
+
+	public static Long getAsLong(String numberString)
+	{
+		if (numberString == null) return null;
+		try
+		{
+			int comma = numberString.lastIndexOf(",");
+			int point = numberString.lastIndexOf(".");
+			if (comma == -1)
+			{
+				if (point == -1)
+				{
+					// it doesn't have any , or . we can just parse this
+					return Long.valueOf(numberString);
+				}
+				else if ((numberString.length() - point) == 3)
+				{
+					// if the point could be a grouping position, lets interpreted like that
+					return Long.valueOf(numberString.replaceAll("\\.", ""));
+				}
+				else
+				{
+					// strip until the decimal separator
+					return Long.valueOf(numberString.substring(0, point));
+				}
+			}
+			else if (point != -1)
+			{
+				// it has a command and a point
+				if (point > comma)
+				{
+					// the point is the last, just ignore the comma
+					return Long.valueOf(numberString.substring(0, point).replaceAll(",", ""));
+				}
+				else
+				{
+					// the point is before the comma, so the comma is decimal
+					return Long.valueOf(numberString.substring(0, comma).replaceAll("\\.", ""));
+				}
+			}
+			else
+			{
+				if ((numberString.length() - comma) == 3)
+				{
+					// if the comma could be a grouping position, lets interpreted like that
+					return Long.valueOf(numberString.replace(",", ""));
+				}
+				else
+				{
+					// strip until the decimal separator
+					return Long.valueOf(numberString.substring(0, comma));
+				}
+			}
+		}
+		catch (NumberFormatException ex)
+		{
+			log.warn("Parse exception while processing " + numberString + " as a long", ex);
+			return 0l;
 		}
 	}
 }

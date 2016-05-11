@@ -214,7 +214,7 @@ public class TypesTest
 	@Test
 	public void testIntegerTypeConversion()
 	{
-		TestBaseWebsocketSession session = (TestBaseWebsocketSession)CurrentWindow.get().getSession();
+		//TestBaseWebsocketSession session = (TestBaseWebsocketSession)CurrentWindow.get().getSession();
 
 		assertEquals(1, IntPropertyType.INSTANCE.fromJSON(Integer.valueOf(1), null, null, null, null).intValue());
 		assertEquals(1, IntPropertyType.INSTANCE.fromJSON("1", null, null, null, null).intValue());
@@ -227,12 +227,16 @@ public class TypesTest
 		//session.setLocale(new Locale("nl", "NL"));
 		assertEquals(1, IntPropertyType.INSTANCE.fromJSON("1.111", null, null, null, null).intValue());
 
+		assertEquals(1111, IntPropertyType.INSTANCE.fromJSON("1.111,11", null, null, null, null).intValue());
+		assertEquals(1111, IntPropertyType.INSTANCE.fromJSON("1,111.11", null, null, null, null).intValue());
+
+
 	}
 
 	@Test
 	public void testLongTypeConversion()
 	{
-		TestBaseWebsocketSession session = (TestBaseWebsocketSession)CurrentWindow.get().getSession();
+		//TestBaseWebsocketSession session = (TestBaseWebsocketSession)CurrentWindow.get().getSession();
 
 		assertEquals(1, LongPropertyType.INSTANCE.fromJSON(Long.valueOf(1), null, null, null, null).longValue());
 		assertEquals(1, LongPropertyType.INSTANCE.fromJSON("1", null, null, null, null).longValue());
@@ -244,6 +248,9 @@ public class TypesTest
 		// test with dutch locale
 		//session.setLocale(new Locale("nl", "NL"));
 		assertEquals(1, LongPropertyType.INSTANCE.fromJSON("1.111", null, null, null, null).intValue());
+
+		assertEquals(1111, LongPropertyType.INSTANCE.fromJSON("1.111,11", null, null, null, null).intValue());
+		assertEquals(1111, LongPropertyType.INSTANCE.fromJSON("1,111.11", null, null, null, null).intValue());
 
 	}
 }

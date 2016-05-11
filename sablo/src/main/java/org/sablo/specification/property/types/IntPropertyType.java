@@ -71,7 +71,7 @@ public class IntPropertyType extends DefaultPropertyType<Integer> implements IPr
 		{
 			if (((String)newJSONValue).trim().length() == 0) return null;
 
-			Double parsedValue = PropertyUtils.getAsDouble((String)newJSONValue);
+			Long parsedValue = PropertyUtils.getAsLong((String)newJSONValue);
 			Integer val = Integer.valueOf(parsedValue.intValue());
 			if (returnValueAdjustedIncommingValue != null && val.doubleValue() != parsedValue.doubleValue())
 				returnValueAdjustedIncommingValue.value = Boolean.TRUE;

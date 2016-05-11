@@ -106,7 +106,7 @@ class WebSpecReader
 			Entry<String, List<ISpecReloadListener>> listenerEntry = it.next();
 			for (ISpecReloadListener l : listenerEntry.getValue())
 				l.webObjectSpecificationReloaded();
-			if (!allWebObjectSpecifications.containsKey(listenerEntry.getKey())) it.remove();
+			if (listenerEntry.getKey() != null && !allWebObjectSpecifications.containsKey(listenerEntry.getKey())) it.remove();
 		}
 	}
 
@@ -215,6 +215,10 @@ class WebSpecReader
 					l.webObjectSpecificationReloaded();
 				if (!allWebObjectSpecifications.containsKey(removedOrReloadedSpec)) specReloadListeners.remove(removedOrReloadedSpec);
 			}
+			// fire the global listeners under the null key
+			List<ISpecReloadListener> list = specReloadListeners.get(null);
+			if (list != null) for (ISpecReloadListener l : list)
+				l.webObjectSpecificationReloaded();
 		}
 	}
 

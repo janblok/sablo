@@ -133,7 +133,7 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 	 */
 	public Map<String, PackageSpecification<WebObjectSpecification>> getWebComponentSpecifications()
 	{
-		return reader.getWebComponentSpecifications();
+		return reader.getWebObjectSpecifications();
 	}
 
 	/**
@@ -162,7 +162,7 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 	 */
 	public Collection<String> getComponentsInPackage(String packageName)
 	{
-		PackageSpecification<WebObjectSpecification> pkg = reader.getWebComponentSpecifications().get(packageName);
+		PackageSpecification<WebObjectSpecification> pkg = reader.getWebObjectSpecifications().get(packageName);
 		return pkg == null ? Collections.<String> emptyList() : pkg.getSpecifications().keySet();
 
 	}

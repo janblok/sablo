@@ -115,7 +115,7 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 	 */
 	public Map<String, PackageSpecification<WebObjectSpecification>> getWebServiceSpecifications()
 	{
-		return reader.getWebComponentSpecifications();
+		return reader.getWebObjectSpecifications();
 	}
 
 	/**
@@ -144,7 +144,7 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 	 */
 	public PackageSpecification<WebObjectSpecification> getServicesInPackage(String packageName)
 	{
-		return reader.getWebComponentSpecifications().get(packageName);
+		return reader.getWebObjectSpecifications().get(packageName);
 	}
 
 }

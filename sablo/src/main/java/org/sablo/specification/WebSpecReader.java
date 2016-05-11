@@ -113,20 +113,20 @@ class WebSpecReader
 	/**
 	 * Updates available packages. "toRemove" provided contents will be removed, "toAdd" will be made available.
 	 */
-	public synchronized void updatePackages(Collection<IPackageReader> packagesToRemove, Collection<IPackageReader> packagesToAdd)
+	public synchronized void updatePackages(Collection<String> packagesToRemove, Collection<IPackageReader> packagesToAdd)
 	{
 		if (packagesToRemove.size() == 0 && packagesToAdd.size() == 0) return;
 		lastLoadTimestamp = System.currentTimeMillis();
 		List<String> removedOrReloadedSpecs = new ArrayList<>(); // so not newly added
 
 		boolean shouldReloadAllDueToGlobalTypeChanges = false;
-		for (IPackageReader packageToRemove : packagesToRemove)
+		for (String packageToRemove : packagesToRemove)
 		{
 			// find the package name from cache - cause the IPackageReader might already be invalid (contents deleted and such - so we can't rely on it's .getPackageName())
 			String packageNameToRemove = null;
 			for (Entry<String, IPackageReader> e : allPackages.entrySet())
 			{
-				if (e.getValue() == packageToRemove)
+				if (e.getKey().equals(packageToRemove))
 				{
 					packageNameToRemove = e.getKey();
 					break;
@@ -158,7 +158,7 @@ class WebSpecReader
 				log.warn("Cannot unload an ng package:");
 				try
 				{
-					log.warn("Package name: :" + packageToRemove.getName());
+					log.warn("Package name: :" + packageToRemove);
 				}
 				catch (Exception e)
 				{
@@ -321,7 +321,7 @@ class WebSpecReader
 		return allWebObjectSpecifications.get(componentTypeName);
 	}
 
-	public synchronized Map<String, PackageSpecification<WebObjectSpecification>> getWebComponentSpecifications()
+	public synchronized Map<String, PackageSpecification<WebObjectSpecification>> getWebObjectSpecifications()
 	{
 		return Collections.unmodifiableMap(cachedDescriptions);
 	}

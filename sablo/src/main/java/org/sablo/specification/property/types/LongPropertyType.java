@@ -70,7 +70,16 @@ public class LongPropertyType extends DefaultPropertyType<Long> implements IProp
 		{
 			if (((String)newJSONValue).trim().length() == 0) return null;
 
-			return PropertyUtils.getAsLong((String)newJSONValue);
+			Long val = PropertyUtils.getAsLong((String)newJSONValue);
+			if (returnValueAdjustedIncommingValue != null)
+			{
+				Double parsedDouble = PropertyUtils.getAsDouble((String)newJSONValue);
+				if (val.doubleValue() != parsedDouble.doubleValue())
+				{
+					returnValueAdjustedIncommingValue.value = Boolean.TRUE;
+				}
+			}
+			return val;
 		}
 		return null;
 	}

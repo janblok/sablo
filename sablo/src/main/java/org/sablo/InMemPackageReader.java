@@ -16,6 +16,7 @@
 package org.sablo;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -103,6 +104,12 @@ public class InMemPackageReader implements IPackageReader
 	public String getPackageType() throws IOException
 	{
 		return Package.getPackageType(getManifest());
+	}
+
+	@Override
+	public File getResource()
+	{
+		return null;
 	}
 
 }

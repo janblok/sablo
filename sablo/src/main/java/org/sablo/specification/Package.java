@@ -96,6 +96,11 @@ public class Package
 		 */
 		String getPackageType() throws IOException;
 
+		/**
+		 * returns the File reference for this resource if it has one.
+		 */
+		File getResource();
+
 	}
 	public interface ISpecificationFilter
 	{
@@ -413,6 +418,11 @@ public class Package
 			return Package.getPackageType(getManifest());
 		}
 
+		@Override
+		public File getResource()
+		{
+			return null;
+		}
 	}
 
 
@@ -548,6 +558,12 @@ public class Package
 		public String getPackageType() throws IOException
 		{
 			return Package.getPackageType(getManifest());
+		}
+
+		@Override
+		public File getResource()
+		{
+			return file;
 		}
 
 	}
@@ -690,6 +706,11 @@ public class Package
 			}
 		}
 
+		@Override
+		public File getResource()
+		{
+			return dir;
+		}
 	}
 
 	public static class WarURLPackageReader implements Package.IPackageReader, Package.ISpecificationFilter
@@ -819,6 +840,12 @@ public class Package
 		public String getPackageType() throws IOException
 		{
 			return Package.getPackageType(getManifest());
+		}
+
+		@Override
+		public File getResource()
+		{
+			return null;
 		}
 
 	}

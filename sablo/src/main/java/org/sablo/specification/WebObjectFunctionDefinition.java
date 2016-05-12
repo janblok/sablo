@@ -37,6 +37,7 @@ public class WebObjectFunctionDefinition
 
 	private boolean blockEventProcessing = true;
 	private boolean delayUntilFormLoad = false;
+	private boolean async = false;
 	private boolean globalExclusive = false;
 	private PropertyDescription asPropertyDescription;
 
@@ -127,6 +128,22 @@ public class WebObjectFunctionDefinition
 	public void setDelayUntilFormLoad(boolean delayUntilFormLoad)
 	{
 		this.delayUntilFormLoad = delayUntilFormLoad;
+	}
+
+	/**
+	 * @param async the async to set
+	 */
+	public void setAsync(boolean async)
+	{
+		this.async = async;
+	}
+
+	/**
+	 * @return the async
+	 */
+	public boolean isAsync()
+	{
+		return async;
 	}
 
 	/**

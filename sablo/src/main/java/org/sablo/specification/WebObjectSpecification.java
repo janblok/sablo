@@ -401,6 +401,10 @@ public class WebObjectSpecification extends PropertyDescription
 				{
 					def.setDelayUntilFormLoad(jsonDef.getBoolean("delayUntilFormLoad"));
 				}
+				else if ("async".equals(key))
+				{
+					def.setAsync(jsonDef.getBoolean("async"));
+				}
 				else if ("globalExclusive".equals(key))
 				{
 					def.setGlobalExclusive(jsonDef.getBoolean("globalExclusive"));

@@ -460,10 +460,11 @@ public class BaseWindow implements IWindow
 				{
 					Map<String, Object> delayedCall = it.next();
 					WebComponent component = (WebComponent)delayedCall.get("component");
-					if (formLoaded(component))
+					if (!Boolean.getBoolean(delayedCall.get("waitForFormLoad").toString()) || formLoaded(component))
 					{
 						hasContentToSend = true;
 						delayedCall.remove("component");
+						delayedCall.remove("waitForFormLoad");
 						it.remove();
 						if (!callObjectStarted)
 						{
@@ -680,10 +681,11 @@ public class BaseWindow implements IWindow
 		final PropertyDescription argumentTypes, final Map<String, Object> callContributions)
 	{
 		// {"call":{"form":"product","bean":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}}
-		if (isDelayedApiCall(receiver, apiFunction))
+		if (isDelayedApiCall(receiver, apiFunction) || isAsyncApiCall(receiver, apiFunction))
 		{
 			Map<String, Object> call = getApiCallObject(receiver, apiFunction, arguments, argumentTypes, callContributions);
 			call.put("component", receiver);
+			call.put("waitForFormLoad", isDelayedApiCall(receiver, apiFunction));
 			addDelayedCall(apiFunction, call);
 			return null;
 		}
@@ -794,5 +796,10 @@ public class BaseWindow implements IWindow
 	protected boolean isDelayedApiCall(WebComponent receiver, WebObjectFunctionDefinition apiFunction)
 	{
 		return apiFunction.getReturnType() == null && apiFunction.isDelayUntilFormLoad();
+	}
+
+	protected boolean isAsyncApiCall(WebComponent receiver, WebObjectFunctionDefinition apiFunction)
+	{
+		return apiFunction.getReturnType() == null && apiFunction.isAsync();
 	}
 }

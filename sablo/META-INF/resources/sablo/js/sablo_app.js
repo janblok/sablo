@@ -467,7 +467,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 				}
 			}
 
-			if (resolve || resolve === undefined) this.resolveFormState(formName, true);
+			if (resolve || resolve === undefined) this.resolveFormState(formName, true); // this is used by pure sablo samples; Servoy will always NOT resolve here
 
 			return state;
 		},
@@ -478,8 +478,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		resolveFormState: function(formName, skipTestResolving) {
 			var formState = formStates[formName];
 			if (!skipTestResolving && !formState.resolving) {
-				if ($log.debugEnabled) $log.debug('sbl * form: ' + formName + ' was not in resolving state anymore ');
-				if (deferredFormStates[formName]) console.log("form " + formName + " has a deferredFormState");
+				if ($log.debugEnabled) $log.debug('sbl * form: ' + formName + ' was not in resolving state anymore when resolve was attempted...');
+				if (deferredFormStates[formName]) $log.warn("Form " + formName + " has a deferredFormState; resolving denied/postponed though as the form is no longer in resolving state... It might resolve and execute deferred later.");
 //				if (deferredFormStates[formName]) deferredFormStates[formName].reject();
 //				delete deferredFormStates[formName];
 				return null;
@@ -562,7 +562,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 					}
 
 					if (deferredFormStates[formName]) {
-						// this should never happen cause at this point that deferr should be executed and removed
+						// this should never happen cause at this point that defer should already have been executed and removed (when the form got resolved)
+						$log.warn('sbl * form: ' + formName + ' had deferred form states when receiving initial data. Resolving those as well...');
 						if (typeof(formStates[formName]) !== 'undefined') deferredFormStates[formName].resolve(formStates[formName]);
 						delete deferredFormStates[formName];
 					}

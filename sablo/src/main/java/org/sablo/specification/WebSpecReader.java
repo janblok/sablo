@@ -293,8 +293,11 @@ class WebSpecReader
 		IPackageReader oldPackage = allPackages.put(p.getPackageName(), p.getReader());
 		if (oldPackage != null)
 		{
-			log.error("Conflict found! Duplicate web component / web service package name: " + oldPackage.getPackageName());
-			p.getReader().reportError("", new DuplicatePackageException("Duplicate package " + oldPackage.getPackageName()));
+			log.error("Conflict found! Duplicate web component / web service / web layout package name: " + oldPackage.getPackageName());
+			log.error("Location 1 : " + oldPackage.getPackageURL());
+			log.error("Location 2 : " + p.getReader().getPackageURL());
+			log.error("Will discard location 1 and load location 2... But this should be adressed by the solution.");
+			p.getReader().reportError("", new DuplicatePackageException("Duplicate package found: " + oldPackage.getPackageName()));
 		}
 		PackageSpecification<WebObjectSpecification> webComponentPackageSpecification = p.getWebObjectDescriptions(attributeName);
 		Map<String, WebObjectSpecification> webComponentDescriptions = webComponentPackageSpecification.getSpecifications();

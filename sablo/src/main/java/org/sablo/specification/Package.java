@@ -94,7 +94,7 @@ public class Package
 		 * @return one of {@link #WEB_SERVICE} or {@link #WEB_COMPONENT}; null if no such entry is found in the manifest.
 		 * @throws IOException if the manifest file cannot be read.
 		 */
-		String getPackageType() throws IOException;
+		String getPackageType();
 
 		/**
 		 * returns the File reference for this resource if it has one.
@@ -413,9 +413,17 @@ public class Package
 		}
 
 		@Override
-		public String getPackageType() throws IOException
+		public String getPackageType()
 		{
-			return Package.getPackageType(getManifest());
+			try
+			{
+				return Package.getPackageType(getManifest());
+			}
+			catch (IOException e)
+			{
+				log.error("Error getting package type." + getName(), e);
+			}
+			return null;
 		}
 
 		@Override
@@ -555,9 +563,17 @@ public class Package
 		}
 
 		@Override
-		public String getPackageType() throws IOException
+		public String getPackageType()
 		{
-			return Package.getPackageType(getManifest());
+			try
+			{
+				return Package.getPackageType(getManifest());
+			}
+			catch (IOException e)
+			{
+				log.error("Error getting package type." + getName(), e);
+			}
+			return null;
 		}
 
 		@Override
@@ -686,24 +702,32 @@ public class Package
 		}
 
 		@Override
-		public String getPackageType() throws IOException
+		public String getPackageType()
 		{
-			Manifest manifest = getManifest();
-			if (manifest.getMainAttributes().getValue("Package-Type") != null) return Package.getPackageType(manifest);
-			else
+			try
 			{
-				String result = Package.getPackageType(manifest);
-				if (result != null)
+				Manifest man = getManifest();
+				if (man.getMainAttributes().getValue("Package-Type") != null) return Package.getPackageType(man);
+				else
 				{
-					//this package does not have the 'Package-Type' attribute, but it does contain at least one item
-					//so if we know the kind of package, we should add the type to the manifest of this DirPackage
+					String result = Package.getPackageType(man);
+					if (result != null)
+					{
+						//this package does not have the 'Package-Type' attribute, but it does contain at least one item
+						//so if we know the kind of package, we should add the type to the manifest of this DirPackage
 
-					manifest.getMainAttributes().put(new Attributes.Name(Package.PACKAGE_TYPE), result);
-					manifest.write(new FileOutputStream(new File(dir, "META-INF/MANIFEST.MF")));
+						man.getMainAttributes().put(new Attributes.Name(Package.PACKAGE_TYPE), result);
+						man.write(new FileOutputStream(new File(dir, "META-INF/MANIFEST.MF")));
+					}
+
+					return result;
 				}
-
-				return result;
 			}
+			catch (Exception e)
+			{
+				log.error("Error getting package type." + getName(), e);
+			}
+			return null;
 		}
 
 		@Override
@@ -837,9 +861,17 @@ public class Package
 		}
 
 		@Override
-		public String getPackageType() throws IOException
+		public String getPackageType()
 		{
-			return Package.getPackageType(getManifest());
+			try
+			{
+				return Package.getPackageType(getManifest());
+			}
+			catch (IOException e)
+			{
+				log.error("Error getting package type." + getName(), e);
+			}
+			return null;
 		}
 
 		@Override

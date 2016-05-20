@@ -62,6 +62,11 @@ public abstract class BaseSpecProvider
 		return reader.getPackagesToVersions();
 	}
 
+	public String getPackageType(String packageName)
+	{
+		return reader.getPackageReader(packageName).getPackageType();
+	}
+
 	public String getPackageDisplayName(String packageName)
 	{
 		return reader.getPackagesToDisplayNames().get(packageName);

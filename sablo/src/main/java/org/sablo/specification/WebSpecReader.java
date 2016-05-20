@@ -367,6 +367,16 @@ class WebSpecReader
 		return result;
 	}
 
+	public IPackageReader getPackageReader(String packageName)
+	{
+		for (int i = 0; i < packageReaders.size(); i++)
+		{
+			IPackageReader reader = packageReaders.get(i);
+			if (reader.getPackageName().equals(packageName)) return reader;
+		}
+		return null;
+	}
+
 	/**
 	 * Get the map of packages and package versions.
 	 * @throws IOException

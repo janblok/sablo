@@ -64,7 +64,8 @@ public abstract class BaseSpecProvider
 
 	public String getPackageType(String packageName)
 	{
-		return reader.getPackageReader(packageName).getPackageType();
+		IPackageReader packageReader = reader.getPackageReader(packageName);
+		return packageReader != null ? packageReader.getPackageType() : null;
 	}
 
 	public String getPackageDisplayName(String packageName)

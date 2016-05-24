@@ -72,6 +72,11 @@ public class Package
 		 */
 		public static final String WEB_COMPONENT = "Web-Component"; //$NON-NLS-1$
 
+		/**
+		 * Identifier used in the manifest of layout packages to list web services. Can also be returned by {@link #getPackageType()}.
+		 */
+		public static final String WEB_LAYOUT = "Web-Layout"; //$NON-NLS-1$
+
 		String getName();
 
 		String getPackageName();
@@ -241,7 +246,7 @@ public class Package
 		{
 			packageName = reader.getPackageName();
 			packageDisplayname = reader.getPackageDisplayname();
-			for (String specpath : getWebEntrySpecNames(mf, "Web-Layout"))
+			for (String specpath : getWebEntrySpecNames(mf, IPackageReader.WEB_LAYOUT))
 			{
 				String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
 				if (specfileContent != null)

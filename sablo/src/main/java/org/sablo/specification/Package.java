@@ -250,8 +250,15 @@ public class Package
 					{
 						WebLayoutSpecification parsed = WebLayoutSpecification.parseLayoutSpec(specfileContent, packageName, reader);
 						parsed.setSpecURL(reader.getUrlForPath(specpath));
-						if (parsed.getDefinition() != null)
-							parsed.setDefinitionFileURL(reader.getUrlForPath(parsed.getDefinition().substring(parsed.getDefinition().indexOf("/") + 1)));
+						String definition = parsed.getDefinition();
+						if (definition != null)
+						{
+							if (definition.startsWith(packageName))
+							{
+								definition = definition.substring(packageName.length() + 1);
+							}
+							parsed.setDefinitionFileURL(reader.getUrlForPath(definition));
+						}
 						descriptions.put(parsed.getName(), parsed);
 					}
 					catch (Exception e)
@@ -260,6 +267,7 @@ public class Package
 					}
 				}
 			}
+			// TODO deprecate and only use Web-Layout
 			for (String specpath : getWebEntrySpecNames(mf, "Web-Composite"))
 			{
 				String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
@@ -269,8 +277,15 @@ public class Package
 					{
 						WebLayoutSpecification parsed = WebLayoutSpecification.parseLayoutSpec(specfileContent, packageName, reader);
 						parsed.setSpecURL(reader.getUrlForPath(specpath));
-						if (parsed.getDefinition() != null)
-							parsed.setDefinitionFileURL(reader.getUrlForPath(parsed.getDefinition().substring(parsed.getDefinition().indexOf("/") + 1)));
+						String definition = parsed.getDefinition();
+						if (definition != null)
+						{
+							if (definition.startsWith(packageName))
+							{
+								definition = definition.substring(packageName.length() + 1);
+							}
+							parsed.setDefinitionFileURL(reader.getUrlForPath(definition));
+						}
 						descriptions.put(parsed.getName(), parsed);
 					}
 					catch (Exception e)

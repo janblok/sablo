@@ -53,6 +53,23 @@ public abstract class BaseSpecProvider
 		return reader.getPackagesToURLs();
 	}
 
+	public IPackageReader getPackageReader(String packageName)
+	{
+		return reader.getPackageReader(packageName);
+	}
+
+	public IPackageReader[] getAllPackageReaders()
+	{
+		Set<String> packageNames = getPackageNames();
+		IPackageReader[] readers = new IPackageReader[packageNames.size()];
+		int i = 0;
+		for (String name : packageNames)
+		{
+			readers[i++] = reader.getPackageReader(name);
+		}
+		return readers;
+	}
+
 	/**
 	 * Get the map of names to package versions.
 	 * @throws IOException
@@ -71,22 +88,6 @@ public abstract class BaseSpecProvider
 	public String getPackageDisplayName(String packageName)
 	{
 		return reader.getPackagesToDisplayNames().get(packageName);
-	}
-
-	public String getPackageName(String displayName)
-	{
-		if (displayName != null)
-		{
-			Map<String, String> names = reader.getPackagesToDisplayNames();
-			for (String name : names.keySet())
-			{
-				if (displayName.equals(names.get(name)))
-				{
-					return name;
-				}
-			}
-		}
-		return displayName;
 	}
 
 	/**

@@ -260,7 +260,7 @@ public class Package
 						String definition = parsed.getDefinition();
 						if (definition != null)
 						{
-							if (definition.startsWith(packageName))
+							if (definition.startsWith(packageName + '/'))
 							{
 								definition = definition.substring(packageName.length() + 1);
 							}
@@ -287,7 +287,7 @@ public class Package
 						String definition = parsed.getDefinition();
 						if (definition != null)
 						{
-							if (definition.startsWith(packageName))
+							if (definition.startsWith(packageName + '/'))
 							{
 								definition = definition.substring(packageName.length() + 1);
 							}

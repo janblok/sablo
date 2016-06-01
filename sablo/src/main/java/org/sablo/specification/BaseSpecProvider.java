@@ -16,6 +16,7 @@
 
 package org.sablo.specification;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collection;
@@ -51,6 +52,14 @@ public abstract class BaseSpecProvider
 	public Map<String, URL> getPackagesToURLs()
 	{
 		return reader.getPackagesToURLs();
+	}
+
+	/**
+	 * Get the map of available packages names to package resources.
+	 */
+	public Map<String, File> getPackagesToResources()
+	{
+		return reader.getPackagesToResources();
 	}
 
 	public IPackageReader getPackageReader(String packageName)

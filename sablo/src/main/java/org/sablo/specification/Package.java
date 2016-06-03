@@ -1001,6 +1001,10 @@ public class Package
 				{
 					return IPackageReader.WEB_COMPONENT;
 				}
+				else if ("true".equalsIgnoreCase((String)entry.getValue().get(new Attributes.Name(IPackageReader.WEB_LAYOUT))))
+				{
+					return IPackageReader.WEB_LAYOUT;
+				}
 			}
 		}
 		return null;

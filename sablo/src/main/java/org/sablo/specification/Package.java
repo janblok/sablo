@@ -363,7 +363,7 @@ public class Package
 		{
 			try
 			{
-				return getManifest().getMainAttributes().getValue(Attributes.Name.IMPLEMENTATION_VERSION);
+				return getManifest().getMainAttributes().getValue("Bundle-Version");
 			}
 			catch (IOException e)
 			{
@@ -525,7 +525,7 @@ public class Package
 		{
 			try
 			{
-				return getManifest().getMainAttributes().getValue(Attributes.Name.IMPLEMENTATION_VERSION);
+				return getManifest().getMainAttributes().getValue("Bundle-Version");
 			}
 			catch (IOException e)
 			{
@@ -693,7 +693,7 @@ public class Package
 		{
 			try
 			{
-				return getManifest().getMainAttributes().getValue(Attributes.Name.IMPLEMENTATION_VERSION);
+				return getManifest().getMainAttributes().getValue("Bundle-Version");
 			}
 			catch (IOException e)
 			{
@@ -871,7 +871,7 @@ public class Package
 		{
 			try
 			{
-				return getManifest().getMainAttributes().getValue(Attributes.Name.IMPLEMENTATION_VERSION);
+				return getManifest().getMainAttributes().getValue("Bundle-Version");
 			}
 			catch (IOException e)
 			{

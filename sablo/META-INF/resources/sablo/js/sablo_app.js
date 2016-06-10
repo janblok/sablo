@@ -13,6 +13,13 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 }).value("$sabloConstants",  {
 	modelChangeNotifier: "$modelChangeNotifier"
 }).factory('$sabloApplication', function ($rootScope, $window, $timeout, $q, $log, $webSocket, $sabloConverters, $sabloUtils, $sabloConstants, webStorage) {
+
+	// close the connection to the server when application is unloaded
+	$window.addEventListener('unload', function(event) {
+		$webSocket.disconnect();
+	});
+
+	
 	// formName:[beanname:{property1:1,property2:"test"}] needs to be synced to and from server
 	// this holds the form model with all the data, per form is this the "synced" view of the the IFormUI on the server 
 	// (3 way binding)
@@ -212,7 +219,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		var promise = getSession().callService(serviceName, methodName, argsObject, async)
 		return async ? promise :  waitForServiceCallbacks(promise, [100, 200, 500, 1000, 3000, 5000])
 	}
-
+	
 	var getSessionId = function() {
 		var sessionId = webStorage.session.get('sessionid')
 		if (sessionId) {
@@ -234,27 +241,22 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 	}
 
 	var formResolver = null;
-	var apiCallDeferredQueue = []
+	var apiCallDeferredQueue = [];
+	
+	var wsSessionArgs = {};
 
 	function hasResolvedFormState(name) {
 		return typeof(formStates[name]) !== 'undefined' && formStates[name].resolved;
 	}
 
 	return {
-		connect : function(context, args, queryArgs, websocketUri) {
-			wsSession = $webSocket.connect(context, args, queryArgs,websocketUri);
-
-			wsSession.onopen(function(evt) {
-				if (evt.isReconnect) {
-					// reload site
-					$window.location.reload();
-				}
-				else {
-					// set the websocket in reconnection mode..
-					queryArgs.sablo_reconnect = true;
-					$webSocket.updateConnectArguments(context, args, queryArgs, websocketUri);
-				}
-			});
+		connect : function(context, queryArgs, websocketUri) {
+			wsSessionArgs = {
+				context: context,
+				queryArgs: queryArgs,
+				websocketUri: websocketUri
+			};
+			wsSession = $webSocket.connect(wsSessionArgs.context, [getSessionId(), getWindowName(), getWindowId()], wsSessionArgs.queryArgs, wsSessionArgs.websocketUri);
 
 			wsSession.onMessageObject(function (msg, conversionInfo) {
 				// data got back from the server
@@ -271,6 +273,18 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 				}
 
 				if (conversionInfo && conversionInfo.call) msg.call = $sabloConverters.convertFromServerToClient(msg.call, conversionInfo.call, undefined, undefined, undefined);
+				
+				if (msg.sessionid) {
+					webStorage.session.add("sessionid", msg.sessionid);
+				}
+				if (msg.windowid) {
+					webStorage.session.add("windowid", msg.windowid);
+				}
+				if (msg.sessionid || msg.windowid) {
+					// update the arguments on the reconnection websocket.
+					$webSocket.setConnectionPathArguments([getSessionId(), getWindowName(), getWindowId()]);
+				}
+				
 				if (msg.call) {
 					// {"call":{"form":"product","element":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}, // optionally "viewIndex":1 
 					// "{ conversions: {product: {datatextfield1: {0: "Date"}}} }
@@ -403,15 +417,6 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 			return wsSession
 		},
 		
-		updateConnectArguments: function(context, args, queryArgs, websocketUri) {
-			queryArgs.sablo_reconnect = true;
-			$webSocket.updateConnectArguments(context, args, queryArgs, websocketUri);
-		},
-
-		disconnect : function() {
-			$webSocket.disconnect();
-		},
-
 		contributeFormResolver: function(contributedFormResolver) {
 			formResolver = contributedFormResolver;
 		},

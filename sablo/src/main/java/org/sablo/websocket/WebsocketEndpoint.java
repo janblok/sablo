@@ -99,12 +99,6 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 	{
 		this.session = newSession;
 
-		if (session.getRequestParameterMap().containsKey("sablo_reconnect"))
-		{
-			// this is in reconnecting mode. there will be a full reload coming in, just directly kill this socket.
-			session.close();
-			return;
-		}
 		String uuid = "null".equalsIgnoreCase(sessionid) ? null : sessionid;
 		String windowId = "null".equalsIgnoreCase(winid) ? null : winid;
 		String windowName = "null".equalsIgnoreCase(winname) ? null : winname;
@@ -128,8 +122,11 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 				{
 					if (CurrentWindow.safeGet() == win && session != null) // window or session my already be closed
 					{
-						win.onOpen();
-						wsSession.onOpen(session.getRequestParameterMap());
+						win.onOpen(session.getRequestParameterMap());
+						if (session.isOpen())
+						{
+							wsSession.onOpen(session.getRequestParameterMap());
+						}
 					}
 				}
 			});
@@ -421,13 +418,18 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 
 		try
 		{
-			sendText(JSONUtils.writeDataWithConversions(FullValueToJSONConverter.INSTANCE, data, dataTypes,
+			sendText(window.getNextMessageNumber(), JSONUtils.writeDataWithConversions(FullValueToJSONConverter.INSTANCE, data, dataTypes,
 				BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER));
 		}
 		catch (JSONException e)
 		{
 			throw new IOException(e);
 		}
+	}
+
+	public void sendText(int messageNumber, String text) throws IOException
+	{
+		sendText(messageNumber + "#" + text);
 	}
 
 	public synchronized void sendText(String txt) throws IOException

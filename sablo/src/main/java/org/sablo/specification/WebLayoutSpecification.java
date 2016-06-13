@@ -28,6 +28,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.sablo.specification.Package.IPackageReader;
 import org.sablo.specification.property.types.StringPropertyType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -37,6 +39,8 @@ import org.sablo.specification.property.types.StringPropertyType;
 @SuppressWarnings({ "nls" })
 public class WebLayoutSpecification extends WebObjectSpecification
 {
+	private static final Logger log = LoggerFactory.getLogger(WebLayoutSpecification.class.getCanonicalName());
+
 	public static WebLayoutSpecification parseLayoutSpec(String specfileContent, String packageName, IPackageReader reader) throws JSONException, IOException
 	{
 		JSONObject json = new JSONObject(specfileContent);
@@ -44,14 +48,33 @@ public class WebLayoutSpecification extends WebObjectSpecification
 
 		boolean topContainer = json.optBoolean("topContainer", false);
 
+		List<String> excludes = new ArrayList<>();
+		JSONArray excludesChildren = json.optJSONArray("excludes");
+		if (excludesChildren != null)
+		{
+			for (int i = 0; i < excludesChildren.length(); i++)
+			{
+				excludes.add(excludesChildren.optString(i));
+			}
+		}
+
 		JSONArray canContainChildren = json.optJSONArray("contains");
 		if (canContainChildren != null)
 		{
-			for (int i = 0; i < canContainChildren.length(); i++)
+			if (!json.has("excludes"))
 			{
-				children.add(canContainChildren.optString(i));
+				for (int i = 0; i < canContainChildren.length(); i++)
+				{
+					children.add(canContainChildren.optString(i));
+				}
+			}
+			else
+			{
+				log.warn("The 'contains' attribute is ignored for the " + json.optString("name") +
+					"layout, because the 'excludes' attribute is present to specify excluded children.");
 			}
 		}
+
 		String jsonConfig = null;
 		if (json.getString("definition") != null)
 		{
@@ -59,7 +82,7 @@ public class WebLayoutSpecification extends WebObjectSpecification
 		}
 		WebLayoutSpecification spec = new WebLayoutSpecification(json.getString("name"), packageName, json.optString("displayName", null),
 			json.optString("categoryName", null), json.optString("icon", null), json.optString("preview", null), json.getString("definition"), jsonConfig,
-			topContainer, children, json.optString("designStyleClass"));
+			topContainer, children, excludes, json.optString("designStyleClass"));
 
 		// properties
 		spec.putAll(spec.parseProperties("model", json));
@@ -105,13 +128,15 @@ public class WebLayoutSpecification extends WebObjectSpecification
 	private final boolean topContainer;
 	private final List<String> allowedChildren;
 	private final String designStyleClass;
+	private final List<String> excludedChildren;
 
 	public WebLayoutSpecification(String name, String packageName, String displayName, String categoryName, String icon, String preview, String definition,
-		Object configObject, boolean topContainer, List<String> allowedChildren, String designStyleClass)
+		Object configObject, boolean topContainer, List<String> allowedChildren, List<String> excludedChildren, String designStyleClass)
 	{
 		super(name, packageName, displayName, categoryName, icon, preview, definition, null, configObject);
 		this.topContainer = topContainer;
 		this.allowedChildren = allowedChildren;
+		this.excludedChildren = excludedChildren;
 		this.designStyleClass = designStyleClass;
 	}
 
@@ -124,11 +149,19 @@ public class WebLayoutSpecification extends WebObjectSpecification
 	}
 
 	/**
-	 * @return the children
+	 * @return the list of components/layouts which can be contained by this layout component
 	 */
 	public List<String> getAllowedChildren()
 	{
 		return allowedChildren;
+	}
+
+	/**
+	 * @return the list of components/layouts which cannot be added in this layout component
+	 */
+	public List<String> getExcludedChildren()
+	{
+		return excludedChildren;
 	}
 
 	/**

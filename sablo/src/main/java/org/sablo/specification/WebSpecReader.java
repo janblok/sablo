@@ -33,7 +33,7 @@ import java.util.TreeMap;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.sablo.specification.BaseSpecProvider.ISpecReloadListener;
-import org.sablo.specification.Package.DuplicatePackageException;
+import org.sablo.specification.Package.DuplicateEntityException;
 import org.sablo.specification.Package.IPackageReader;
 import org.sablo.specification.property.types.TypesRegistry;
 import org.slf4j.Logger;
@@ -296,7 +296,7 @@ class WebSpecReader
 			log.error("Location 1 : " + oldPackage.getPackageURL());
 			log.error("Location 2 : " + p.getReader().getPackageURL());
 			log.error("Will discard location 1 and load location 2... But this should be adressed by the solution.");
-			p.getReader().reportError("", new DuplicatePackageException("Duplicate package found: " + oldPackage.getPackageName()));
+			p.getReader().reportError("", new DuplicateEntityException("Duplicate package found: " + oldPackage.getPackageName()));
 		}
 		PackageSpecification<WebObjectSpecification> webComponentPackageSpecification = p.getWebObjectDescriptions(attributeName);
 		Map<String, WebObjectSpecification> webComponentDescriptions = webComponentPackageSpecification.getSpecifications();
@@ -304,7 +304,13 @@ class WebSpecReader
 		for (WebObjectSpecification desc : webComponentDescriptions.values())
 		{
 			WebObjectSpecification old = allWebObjectSpecifications.put(desc.getName(), desc);
-			if (old != null) log.error("Conflict found! Duplicate web component / web service definition name: " + old.getName());
+			if (old != null)
+			{
+				String s = "Duplicate web object definition found; name: " + old.getName() + ". Packages: " + old.getPackageName() + " and " +
+					desc.getPackageName() + ".";
+				log.error(s);
+				p.getReader().reportError(desc.getSpecURL().toString(), new DuplicateEntityException(s));
+			}
 			else
 			{
 				packageComponents.put(desc.getName(), desc);

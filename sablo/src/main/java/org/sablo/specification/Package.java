@@ -195,10 +195,10 @@ public class Package
 
 			for (String specpath : getWebEntrySpecNames(mf, attributeName))
 			{
-				String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
-				if (specfileContent != null)
+				try
 				{
-					try
+					String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
+					if (specfileContent != null)
 					{
 						WebObjectSpecification parsed = WebObjectSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
 						if (reader instanceof ISpecificationFilter && ((ISpecificationFilter)reader).filter(parsed)) continue;
@@ -223,14 +223,16 @@ public class Package
 						}
 						descriptions.put(parsed.getName(), parsed);
 					}
-					catch (Exception e)
+					else
 					{
-						reader.reportError(specpath, e);
+						String s = "could not read specification files content of " + specpath + ", url is not resolved, casing problem?";
+						log.warn(s);
+						reader.reportError("META-INF/MANIFEST.MF", new RuntimeException(s));
 					}
 				}
-				else
+				catch (Exception e)
 				{
-					log.warn("could not read specification files content of " + specpath + ", url is not resolved, casing problem?");
+					reader.reportError("META-INF/MANIFEST.MF", e);
 				}
 			}
 		}
@@ -1016,11 +1018,12 @@ public class Package
 		return manifest.getMainAttributes().getValue(BUNDLE_NAME);
 	}
 
-	public static class DuplicatePackageException extends Exception
+	public static class DuplicateEntityException extends Exception
 	{
-		public DuplicatePackageException(String message)
+		public DuplicateEntityException(String message)
 		{
 			super(message);
 		}
 	}
+
 }

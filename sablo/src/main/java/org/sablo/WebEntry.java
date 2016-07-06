@@ -92,7 +92,7 @@ public abstract class WebEntry implements Filter, IContributionFilter
 	protected abstract IWebsocketSessionFactory createSessionFactory();
 
 	public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain, Collection<String> cssContributions,
-		Collection<String> jsContributions, Map<String, String> variableSubstitution) throws IOException, ServletException
+		Collection<String> jsContributions, Collection<String> extraMetaData, Map<String, String> variableSubstitution) throws IOException, ServletException
 	{
 		HttpServletRequest request = (HttpServletRequest)servletRequest;
 
@@ -120,7 +120,8 @@ public abstract class WebEntry implements Filter, IContributionFilter
 			((HttpServletResponse)servletResponse).setContentType("text/html");
 			((HttpServletResponse)servletResponse).setCharacterEncoding("UTF-8");
 			PrintWriter w = servletResponse.getWriter();
-			IndexPageEnhancer.enhance(indexPageResource, request.getContextPath(), cssContributions, jsContributions, variableSubstitution, w, this);
+			IndexPageEnhancer.enhance(indexPageResource, request.getContextPath(), cssContributions, jsContributions, extraMetaData, variableSubstitution, w,
+				this);
 			w.flush();
 			return;
 		}

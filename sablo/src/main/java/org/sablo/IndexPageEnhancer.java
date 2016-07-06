@@ -71,7 +71,7 @@ public class IndexPageEnhancer
 	 * @throws IOException
 	 */
 	public static void enhance(URL resource, String contextPath, Collection<String> cssContributions, Collection<String> jsContributions,
-		Map<String, String> variableSubstitution, Writer writer, IContributionFilter contributionFilter) throws IOException
+		Collection<String> extraMetaData, Map<String, String> variableSubstitution, Writer writer, IContributionFilter contributionFilter) throws IOException
 	{
 		String index_file = IOUtils.toString(resource);
 		String lowercase_index_file = index_file.toLowerCase();
@@ -95,7 +95,7 @@ public class IndexPageEnhancer
 		}
 		else
 		{
-			sb.insert(headend + COMPONENT_CONTRIBUTIONS.length(), getAllContributions(cssContributions, jsContributions, contributionFilter));
+			sb.insert(headend + COMPONENT_CONTRIBUTIONS.length(), getAllContributions(cssContributions, jsContributions, extraMetaData, contributionFilter));
 		}
 		if (headstart < 0)
 		{
@@ -122,7 +122,8 @@ public class IndexPageEnhancer
 	 * Returns the contributions for webcomponents and services
 	 * @return headContributions
 	 */
-	static String getAllContributions(Collection<String> cssContributions, Collection<String> jsContributions, IContributionFilter contributionFilter)
+	static String getAllContributions(Collection<String> cssContributions, Collection<String> jsContributions, Collection<String> extraMetaData,
+		IContributionFilter contributionFilter)
 	{
 		ArrayList<String> allCSSContributions = new ArrayList<String>();
 		ArrayList<String> allJSContributions = new ArrayList<String>();
@@ -187,7 +188,13 @@ public class IndexPageEnhancer
 		{
 			retval.append(String.format("<script src=\"%s\"></script>\n", lib));
 		}
-
+		if (extraMetaData != null)
+		{
+			for (String extra : extraMetaData)
+			{
+				retval.append(extra + "\n");
+			}
+		}
 
 		// lists properties that need to be watched for client to server changes for each component/service type
 		retval.append("<script src=\"spec/").append(ModifiablePropertiesGenerator.PUSH_TO_SERVER_BINDINGS_LIST).append(".js\"></script>\n");

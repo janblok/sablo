@@ -118,12 +118,7 @@ public class IndexPageEnhancer
 		return String.format("<base href=\"%s/\">\n", contextPath);
 	}
 
-	/**
-	 * Returns the contributions for webcomponents and services
-	 * @return headContributions
-	 */
-	static String getAllContributions(Collection<String> cssContributions, Collection<String> jsContributions, Collection<String> extraMetaData,
-		IContributionFilter contributionFilter)
+	public static Object[] getAllContributions()
 	{
 		ArrayList<String> allCSSContributions = new ArrayList<String>();
 		ArrayList<String> allJSContributions = new ArrayList<String>();
@@ -165,6 +160,20 @@ public class IndexPageEnhancer
 					log.warn("Unknown mimetype " + lib);
 			}
 		}
+		return new Object[] { allCSSContributions, allJSContributions };
+	}
+
+	/**
+	 * Returns the contributions for webcomponents and services
+	 * @return headContributions
+	 */
+	static String getAllContributions(Collection<String> cssContributions, Collection<String> jsContributions, Collection<String> extraMetaData,
+		IContributionFilter contributionFilter)
+	{
+		Object[] all = getAllContributions();
+		ArrayList<String> allCSSContributions = (ArrayList<String>)all[0];
+		ArrayList<String> allJSContributions = (ArrayList<String>)all[1];
+
 
 		if (cssContributions != null)
 		{

@@ -118,7 +118,15 @@ public class IndexPageEnhancer
 		return String.format("<base href=\"%s/\">\n", contextPath);
 	}
 
-	public static Object[] getAllContributions()
+	/**
+	 * Gets all JS and CSS contributions.
+	 * @param supportGrouping Boolean; if TRUE returns the contributions which support grouping,
+	 * 								   if FALSE returns the contributions which do not support grouping
+	 * 								   if NULL returns all contributions
+	 * @return an object array which has as a first element the collection of css contributions, and as
+	 * the second element the collection of the js contributions.
+	 */
+	public static Object[] getAllContributions(Boolean supportGrouping)
 	{
 		ArrayList<String> allCSSContributions = new ArrayList<String>();
 		ArrayList<String> allJSContributions = new ArrayList<String>();
@@ -132,17 +140,17 @@ public class IndexPageEnhancer
 		{
 			if (packageDesc.getCssClientLibrary() != null)
 			{
-				mergeLibs(allLibraries, packageLibsToJSON(packageDesc.getCssClientLibrary(), "text/css"));
+				mergeLibs(allLibraries, packageLibsToJSON(packageDesc.getCssClientLibrary(), "text/css"), supportGrouping);
 			}
 			if (packageDesc.getJsClientLibrary() != null)
 			{
-				mergeLibs(allLibraries, packageLibsToJSON(packageDesc.getJsClientLibrary(), "text/javascript"));
+				mergeLibs(allLibraries, packageLibsToJSON(packageDesc.getJsClientLibrary(), "text/javascript"), supportGrouping);
 			}
 
 			for (WebObjectSpecification spec : packageDesc.getSpecifications().values())
 			{
 				allJSContributions.add(spec.getDefinition());
-				mergeLibs(allLibraries, spec.getLibraries());
+				mergeLibs(allLibraries, spec.getLibraries(), supportGrouping);
 			}
 		}
 
@@ -170,7 +178,7 @@ public class IndexPageEnhancer
 	static String getAllContributions(Collection<String> cssContributions, Collection<String> jsContributions, Collection<String> extraMetaData,
 		IContributionFilter contributionFilter)
 	{
-		Object[] all = getAllContributions();
+		Object[] all = getAllContributions(null);
 		ArrayList<String> allCSSContributions = (ArrayList<String>)all[0];
 		ArrayList<String> allJSContributions = (ArrayList<String>)all[1];
 
@@ -216,7 +224,7 @@ public class IndexPageEnhancer
 	 * @param allLibs JSONObject list with libraries from all components
 	 * @param libs JSONObject list with new libraries to add
 	 */
-	private static void mergeLibs(LinkedHashMap<String, JSONObject> allLibs, JSONArray libs)
+	private static void mergeLibs(LinkedHashMap<String, JSONObject> allLibs, JSONArray libs, Boolean supportGrouping)
 	{
 		JSONObject lib;
 		for (int i = 0; i < libs.length(); i++)
@@ -224,6 +232,7 @@ public class IndexPageEnhancer
 			lib = libs.optJSONObject(i);
 			if (lib != null)
 			{
+				if (supportGrouping != null && supportGrouping.booleanValue() != lib.optBoolean("group", true)) continue;
 				String name = lib.optString("name", null);
 				String version = lib.optString("version", null);
 				if (name != null && lib.has("url") && lib.has("mimetype"))

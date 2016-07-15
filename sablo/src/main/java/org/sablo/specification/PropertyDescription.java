@@ -288,10 +288,14 @@ public class PropertyDescription
 					propertyName = propertyName.substring(0, propertyName.indexOf('['));
 				}
 				propertyDescription = properties.get(customType);
-				if (propertyDescription != null)
+				if (propertyDescription instanceof ICustomType)
 				{
 					PropertyDescription typeSpec = ((ICustomType< ? >)propertyDescription.getType()).getCustomJSONTypeDefinition();
 					return typeSpec.getProperty(propertyName);
+				}
+				else if (propertyDescription != null)
+				{
+					return propertyDescription.getProperty(propertyName);
 				}
 			}
 		}

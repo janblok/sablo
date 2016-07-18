@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 
@@ -118,15 +119,22 @@ public class IndexPageEnhancer
 		return String.format("<base href=\"%s/\">\n", contextPath);
 	}
 
+	public static Object[] getAllContributions(Boolean supportGrouping)
+	{
+		return getAllContributions(null, supportGrouping);
+	}
+
 	/**
 	 * Gets all JS and CSS contributions.
+	 * @param set2
+	 * @param set
 	 * @param supportGrouping Boolean; if TRUE returns the contributions which support grouping,
 	 * 								   if FALSE returns the contributions which do not support grouping
 	 * 								   if NULL returns all contributions
 	 * @return an object array which has as a first element the collection of css contributions, and as
 	 * the second element the collection of the js contributions.
 	 */
-	public static Object[] getAllContributions(Boolean supportGrouping)
+	public static Object[] getAllContributions(Set<String> exportedWebObjects, Boolean supportGrouping)
 	{
 		ArrayList<String> allCSSContributions = new ArrayList<String>();
 		ArrayList<String> allJSContributions = new ArrayList<String>();
@@ -149,6 +157,7 @@ public class IndexPageEnhancer
 
 			for (WebObjectSpecification spec : packageDesc.getSpecifications().values())
 			{
+				if (exportedWebObjects != null && !exportedWebObjects.contains(spec.getName())) continue;
 				allJSContributions.add(spec.getDefinition());
 				mergeLibs(allLibraries, spec.getLibraries(), supportGrouping);
 			}

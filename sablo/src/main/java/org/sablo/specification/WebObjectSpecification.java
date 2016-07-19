@@ -109,6 +109,8 @@ public class WebObjectSpecification extends PropertyDescription
 
 	private final String preview;
 
+	private boolean supportsGrouping;
+
 	public WebObjectSpecification(String name, String packageName, String displayName, String categoryName, String icon, String preview, String definition,
 		JSONArray libs)
 	{
@@ -332,6 +334,7 @@ public class WebObjectSpecification extends PropertyDescription
 				spec.addApiFunction(def);
 			}
 		}
+		spec.setSupportGrouping(json.optBoolean("group", true));
 		return spec;
 	}
 
@@ -622,5 +625,15 @@ public class WebObjectSpecification extends PropertyDescription
 	public URL getDefinitionURL()
 	{
 		return definitionURL;
+	}
+
+	public void setSupportGrouping(boolean supportsGrouping)
+	{
+		this.supportsGrouping = supportsGrouping;
+	}
+
+	public boolean supportGrouping()
+	{
+		return supportsGrouping;
 	}
 }

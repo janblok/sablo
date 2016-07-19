@@ -157,7 +157,8 @@ public class IndexPageEnhancer
 
 			for (WebObjectSpecification spec : packageDesc.getSpecifications().values())
 			{
-				if (exportedWebObjects != null && !exportedWebObjects.contains(spec.getName())) continue;
+				if (exportedWebObjects != null && !exportedWebObjects.contains(spec.getName()) ||
+				supportGrouping != null && spec.supportGrouping() != supportGrouping.booleanValue()) continue;
 				allJSContributions.add(spec.getDefinition());
 				mergeLibs(allLibraries, spec.getLibraries(), supportGrouping);
 			}
@@ -201,6 +202,7 @@ public class IndexPageEnhancer
 		{
 			allJSContributions.addAll(jsContributions);
 		}
+
 
 		StringBuilder retval = new StringBuilder();
 		List<String> filteredCSSContributions = contributionFilter != null ? contributionFilter.filterCSSContributions(allCSSContributions)

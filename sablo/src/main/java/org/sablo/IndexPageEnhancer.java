@@ -157,9 +157,12 @@ public class IndexPageEnhancer
 
 			for (WebObjectSpecification spec : packageDesc.getSpecifications().values())
 			{
-				if (exportedWebObjects != null && !exportedWebObjects.contains(spec.getName()) ||
-				supportGrouping != null && spec.supportGrouping() != supportGrouping.booleanValue()) continue;
-				allJSContributions.add(spec.getDefinition());
+				if (exportedWebObjects != null && !exportedWebObjects.contains(spec.getName())) continue;
+
+				if (supportGrouping == null || spec.supportGrouping() == supportGrouping.booleanValue())
+				{
+					allJSContributions.add(spec.getDefinition());
+				}
 				mergeLibs(allLibraries, spec.getLibraries(), supportGrouping);
 			}
 		}

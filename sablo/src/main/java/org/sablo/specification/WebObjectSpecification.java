@@ -376,7 +376,7 @@ public class WebObjectSpecification extends PropertyDescription
 							// hmm why not set the array field instead of configObject here?
 							config = param;
 						}
-						def.addParameter(new PropertyDescription((String)param.get("name"), propertyType, config, null, false, null, null, null,
+						def.addParameter(new PropertyDescription((String)param.get("name"), propertyType, config, null, null, false, null, null, null,
 							Boolean.TRUE.equals(param.opt("optional"))));
 					}
 				}
@@ -520,6 +520,7 @@ public class WebObjectSpecification extends PropertyDescription
 
 				JSONObject configObject = null;
 				Object defaultValue = null;
+				Object initialValue = null;
 				boolean hasDefault = false;
 				PushToServerEnum pushToServer = PushToServerEnum.reject;
 				JSONObject tags = null;
@@ -534,6 +535,7 @@ public class WebObjectSpecification extends PropertyDescription
 					pp = parsePropertyString(((JSONObject)value).getString("type"));
 					configObject = ((JSONObject)value);
 					defaultValue = configObject.opt("default");
+					initialValue = configObject.opt("initialValue");
 					hasDefault = configObject.has("default");
 
 					pushToServer = PushToServerEnum.fromString(configObject.optString(PUSH_TO_SERVER_KEY, pushToServer.name()));
@@ -564,7 +566,7 @@ public class WebObjectSpecification extends PropertyDescription
 						JSONObject elementConfig = configObject != null && configObject.optJSONObject(CustomJSONArrayType.ELEMENT_CONFIG_KEY) != null
 							? configObject.optJSONObject(CustomJSONArrayType.ELEMENT_CONFIG_KEY) : new JSONObject();
 						PropertyDescription elementDescription = new PropertyDescription(ARRAY_ELEMENT_PD_NAME, type, type.parseConfig(elementConfig),
-							defaultValue, hasDefault, values, pushToServer, tags, false);
+							defaultValue, initialValue, hasDefault, values, pushToServer, tags, false);
 						if (pp.array)
 						{
 							type = TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, elementDescription);
@@ -575,8 +577,8 @@ public class WebObjectSpecification extends PropertyDescription
 						}
 					}
 
-					pds.put(key,
-						new PropertyDescription(key, type, type.parseConfig(configObject), defaultValue, hasDefault, values, pushToServer, tags, false));
+					pds.put(key, new PropertyDescription(key, type, type.parseConfig(configObject), defaultValue, initialValue, hasDefault, values,
+						pushToServer, tags, false));
 				}
 			}
 		}

@@ -44,6 +44,7 @@ public class PropertyDescription
 	private final Object config;
 	private final boolean optional;
 	private final Object defaultValue;
+	private final Object initialValue;
 	private final List<Object> values;
 	private final PushToServerEnum pushToServer;
 	private final JSONObject tags;
@@ -56,27 +57,27 @@ public class PropertyDescription
 
 	public PropertyDescription(String name, IPropertyType< ? > type)
 	{
-		this(name, type, null, null, false, null, null, null, false);
+		this(name, type, null, null, null, false, null, null, null, false);
 	}
 
 	public PropertyDescription(String name, IPropertyType< ? > type, PushToServerEnum pushToServer)
 	{
-		this(name, type, null, null, false, null, pushToServer, null, false);
+		this(name, type, null, null, null, false, null, pushToServer, null, false);
 	}
 
 	public PropertyDescription(String name, IPropertyType< ? > type, Object config)
 	{
-		this(name, type, config, null, false, null, null, null, false);
+		this(name, type, config, null, null, false, null, null, null, false);
 	}
 
-	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Object defaultValue, boolean hasDefault, List<Object> values,
-		PushToServerEnum pushToServer, JSONObject tags, boolean optional)
+	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Object defaultValue, Object initialValue, boolean hasDefault,
+		List<Object> values, PushToServerEnum pushToServer, JSONObject tags, boolean optional)
 	{
 		this.name = name;
 		this.hasDefault = hasDefault;
 		if (type instanceof IYieldingType)
 		{
-			YieldDescriptionArguments params = new YieldDescriptionArguments(config, defaultValue, values, pushToServer, tags, optional);
+			YieldDescriptionArguments params = new YieldDescriptionArguments(config, defaultValue, initialValue, values, pushToServer, tags, optional);
 			this.type = ((IYieldingType< ? , ? >)type).yieldToOtherIfNeeded(name, params);
 
 			if (this.type != type)
@@ -84,6 +85,7 @@ public class PropertyDescription
 				// it yielded; use new argument values in case yielding required it
 				this.config = params.getConfig();
 				this.defaultValue = params.defaultValue;
+				this.initialValue = params.initialValue;
 				this.values = params.values;
 				this.pushToServer = params.pushToServer;
 				this.tags = params.tags;
@@ -94,6 +96,7 @@ public class PropertyDescription
 				// didn't yield to another type; just use same args
 				this.config = config;
 				this.defaultValue = defaultValue;
+				this.initialValue = initialValue;
 				this.values = values;
 				this.pushToServer = pushToServer;
 				this.tags = tags;
@@ -106,6 +109,7 @@ public class PropertyDescription
 
 			this.config = config;
 			this.defaultValue = defaultValue;
+			this.initialValue = initialValue;
 			this.values = values;
 			this.pushToServer = pushToServer;
 			this.tags = tags;
@@ -190,6 +194,11 @@ public class PropertyDescription
 	public Object getDefaultValue()
 	{
 		return defaultValue;
+	}
+
+	public Object getInitialValue()
+	{
+		return initialValue;
 	}
 
 	public List<Object> getValues()

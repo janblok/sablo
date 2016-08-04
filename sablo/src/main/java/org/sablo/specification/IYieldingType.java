@@ -56,11 +56,12 @@ public interface IYieldingType<T, YT> extends IPropertyType<T>
 	public class YieldDescriptionArguments
 	{
 
-		public YieldDescriptionArguments(Object config, Object defaultValue, List<Object> values, PushToServerEnum pushToServer, JSONObject tags,
-			boolean optional)
+		public YieldDescriptionArguments(Object config, Object defaultValue, Object initialValue, List<Object> values, PushToServerEnum pushToServer,
+			JSONObject tags, boolean optional)
 		{
 			this.config = config;
 			this.defaultValue = defaultValue;
+			this.initialValue = initialValue;
 			this.values = values;
 			this.pushToServer = pushToServer;
 			this.tags = tags;
@@ -68,6 +69,7 @@ public interface IYieldingType<T, YT> extends IPropertyType<T>
 		}
 
 		public final Object defaultValue;
+		public final Object initialValue;
 		public final List<Object> values;
 		public final PushToServerEnum pushToServer;
 		public final JSONObject tags;

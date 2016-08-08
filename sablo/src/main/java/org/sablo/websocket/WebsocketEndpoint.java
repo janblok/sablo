@@ -316,27 +316,35 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 							final Object msgId = obj.opt("cmsgid");
 							if (msgId != null) // client wants response
 							{
-								try
+								if (session == null && window == null)
 								{
-									if (error == null)
-									{
-										Object resultObject = result;
-										PropertyDescription objectType = null;
-										if (result instanceof TypedData)
-										{
-											resultObject = ((TypedData< ? >)result).content;
-											objectType = ((TypedData< ? >)result).contentType;
-										}
-										sendResponse(msgId, resultObject, objectType, true);
-									}
-									else
-									{
-										sendResponse(msgId, error, null, false);
-									}
+									// this websocket endpoint is already closed, ignore the stuff that can't be send..
+									log.warn("return value of the service call: " + methodName + " is ignored because the websocket is already closed");
 								}
-								catch (IOException e)
+								else
 								{
-									log.warn(e.getMessage(), e);
+									try
+									{
+										if (error == null)
+										{
+											Object resultObject = result;
+											PropertyDescription objectType = null;
+											if (result instanceof TypedData)
+											{
+												resultObject = ((TypedData< ? >)result).content;
+												objectType = ((TypedData< ? >)result).contentType;
+											}
+											sendResponse(msgId, resultObject, objectType, true);
+										}
+										else
+										{
+											sendResponse(msgId, error, null, false);
+										}
+									}
+									catch (IOException e)
+									{
+										log.warn(e.getMessage(), e);
+									}
 								}
 							}
 						}

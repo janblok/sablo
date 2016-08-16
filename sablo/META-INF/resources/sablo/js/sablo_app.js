@@ -290,17 +290,10 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 					// "{ conversions: {product: {datatextfield1: {0: "Date"}}} }
 					var call = msg.call;
 
-					function executeAPICall(formState) {
+					function getAPICallFunctions(formState) {
+						var funcThis;
 						if (call.viewIndex != undefined) {
-							var funcThis = formState.api[call.bean][call.viewIndex]; 
-							if (funcThis)
-							{
-								var func = funcThis[call.api];
-							}
-							else
-							{
-								console.warn("cannot call " + call.api + " on " + call.bean + " because viewIndex "+ call.viewIndex +" api is not found")
-							}
+							funcThis = formState.api[call.bean][call.viewIndex];
 						}
 						else if (call.propertyPath != undefined)
 						{
@@ -310,13 +303,17 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 							var obj = formState.model;
 							var pn;
 							for (pn in call.propertyPath) obj = obj[call.propertyPath[pn]];
-							var func = obj.api[call.api];
+							funcThis = obj.api;
 						}
 						else {
-							var funcThis = formState.api[call.bean];
-							var func = funcThis[call.api];
+							funcThis = formState.api[call.bean];
 						}
-				
+						return funcThis;
+					}
+					
+					function executeAPICall(formState) {			
+						var funcThis = getAPICallFunctions(formState);
+						var func = funcThis ? funcThis[call.api] : null;
 						var returnValue;
 						if (!func) {
 							console.warn("bean " + call.bean + " did not provide the api: " + call.api)
@@ -345,9 +342,14 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 						return getFormState(call.form).then(
 								function() {
 									// do it in timeout (after current digest cycle) so any form data change is already applied to the ui
+									var apiFunctions = getAPICallFunctions(formStates[call.form]); 
+									// api functions may not be set yet, because even we have the form state marked as resolved,
+									// in the post-compile of the svyFormload directive, the children elements link may not be executed yet (and there are the api set),
+									// if the child is using the 'template directive', that is loaded async, so lets delay the api call
+									var t = (apiFunctions && apiFunctions[call.api]) ? 0 : 1000;
 									return $timeout(function() {
 										return executeAPICall(formStates[call.form]); 
-									}).then(function(result){
+									}, t).then(function(result){
 										return result;
 									},function(err){
 										return $q.reject(err);

@@ -311,19 +311,34 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 						return funcThis;
 					}
 					
-					function executeAPICall(formState) {			
-						var funcThis = getAPICallFunctions(formState);
-						var func = funcThis ? funcThis[call.api] : null;
+					function executeAPICall(apiCallFunctions) {			
+						var func = apiCallFunctions ? apiCallFunctions[call.api] : null;
 						var returnValue;
 						if (!func) {
 							console.warn("bean " + call.bean + " did not provide the api: " + call.api)
 							returnValue = null;
 						}
 						else {
-							returnValue = func.apply(funcThis, call.args);
+							returnValue = func.apply(apiCallFunctions, call.args);
 						}
 						return returnValue;
 					};
+					
+					function executeAPICallInTimeout(formState, count, timeout) {
+						return $timeout(function() {
+							var apiFunctions = getAPICallFunctions(formState);
+							if((apiFunctions && apiFunctions[call.api]) || count < 1) {
+								return executeAPICall(apiFunctions);
+							}
+							else {
+								return executeAPICallInTimeout(formState, count - 1, timeout)
+							} 
+						}, timeout).then(function(result){
+							return result;
+						},function(err){
+							return $q.reject(err);
+						});
+					}
 
 					var previousApiCallPromise = null;
 					if(apiCallDeferredQueue.length > 0) {
@@ -341,19 +356,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 						
 						return getFormState(call.form).then(
 								function() {
-									// do it in timeout (after current digest cycle) so any form data change is already applied to the ui
-									var apiFunctions = getAPICallFunctions(formStates[call.form]); 
-									// api functions may not be set yet, because even we have the form state marked as resolved,
-									// in the post-compile of the svyFormload directive, the children elements link may not be executed yet (and there are the api set),
-									// if the child is using the 'template directive', that is loaded async, so lets delay the api call
-									var t = (apiFunctions && apiFunctions[call.api]) ? 0 : 1000;
-									return $timeout(function() {
-										return executeAPICall(formStates[call.form]); 
-									}, t).then(function(result){
-										return result;
-									},function(err){
-										return $q.reject(err);
-									});
+									return executeAPICallInTimeout(formStates[call.form], 10, 20);
 								},
 								function(err) {
 									$log.error("Error getting form state: " + err);		

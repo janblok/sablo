@@ -873,7 +873,7 @@ webSocketModule.factory('$webSocket',
 						eventObj.type = 'event'; 
 						eventObj.eventName = eventName; 
 						eventObj.modifiers = modifiers;
-						eventObj.timestamp = $event.timeStamp;
+						eventObj.timestamp = new Date().getTime();
 						eventObj.x= $event.pageX;
 						eventObj.y= $event.pageY;
 						arg = eventObj
@@ -883,10 +883,7 @@ webSocketModule.factory('$webSocket',
 						var eventObj = {}
 						eventObj.type = 'event'; 
 						eventObj.eventName = eventName;
-						if (arg)
-						{
-							eventObj.timestamp = arg.timeStamp;
-						}	
+						eventObj.timestamp = new Date().getTime();
 						arg = eventObj
 					}
 					newargs.push(arg)

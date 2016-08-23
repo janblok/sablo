@@ -19,7 +19,6 @@ package org.sablo.specification;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -98,7 +97,7 @@ public class Package
 		/**
 		 * A package can contain either components or services. This method looks in the manifest for the first (not necessarily in definition order) type of web object it can find declared
 		 * and returns that type.
-		 * @return one of {@link #WEB_SERVICE} or {@link #WEB_COMPONENT}; null if no such entry is found in the manifest.
+		 * @return one of {@link #WEB_SERVICE}, {@link #WEB_COMPONENT} or {@link #WEB_LAYOUT}; null if no such entry is found in the manifest.
 		 * @throws IOException if the manifest file cannot be read.
 		 */
 		String getPackageType();
@@ -643,7 +642,7 @@ public class Package
 	public static class DirPackageReader implements IPackageReader
 	{
 
-		private final File dir;
+		protected final File dir;
 		protected Manifest manifest;
 
 		public DirPackageReader(File dir)
@@ -776,21 +775,7 @@ public class Package
 			try
 			{
 				Manifest man = getManifest();
-				if (man.getMainAttributes().getValue("Package-Type") != null) return Package.getPackageType(man);
-				else
-				{
-					String result = Package.getPackageType(man);
-					if (result != null)
-					{
-						//this package does not have the 'Package-Type' attribute, but it does contain at least one item
-						//so if we know the kind of package, we should add the type to the manifest of this DirPackage
-
-						man.getMainAttributes().put(new Attributes.Name(Package.PACKAGE_TYPE), result);
-						man.write(new FileOutputStream(new File(dir, "META-INF/MANIFEST.MF")));
-					}
-
-					return result;
-				}
+				return Package.getPackageType(man);
 			}
 			catch (Exception e)
 			{

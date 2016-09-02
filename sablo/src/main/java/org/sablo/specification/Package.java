@@ -502,7 +502,7 @@ public class Package
 			}
 
 			// fall back to symbolic name
-			return getName();
+			return FilenameUtils.getBaseName(getName());
 		}
 
 		@Override

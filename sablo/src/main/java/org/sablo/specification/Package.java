@@ -580,7 +580,7 @@ public class Package
 				ZipEntry entry = zip.getEntry(pathWithoutSlashPrefix);
 				if (entry != null)
 				{
-					return new URL("jar:file:" + zip.getName() + "!" + pathWithSlashPrefix); //$NON-NLS-1$ //$NON-NLS-2$
+					return new URL("jar:file:" + file.toURI().getPath() + "!" + pathWithSlashPrefix); //$NON-NLS-1$ //$NON-NLS-2$
 				}
 			}
 			catch (IOException e)

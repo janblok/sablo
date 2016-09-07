@@ -61,6 +61,7 @@ import org.slf4j.LoggerFactory;
 
 public class BaseWindow implements IWindow
 {
+
 	private static final Logger log = LoggerFactory.getLogger(BaseWindow.class.getCanonicalName());
 
 	private volatile IWebsocketEndpoint endpoint;
@@ -487,12 +488,17 @@ public class BaseWindow implements IWindow
 				{
 					Map<String, Object> delayedCall = it.next();
 					WebComponent component = (WebComponent)delayedCall.get("component");
-					if (!Boolean.getBoolean(delayedCall.get("waitForFormLoad").toString()) || formLoaded(component))
+					if (!((Boolean)delayedCall.get("delayUntilFormLoads")).booleanValue() || formLoaded(component))
 					{
+						// so it is either async (so not 'delayUntilFormLoads') in which case it must execute anyway or it is 'delayUntilFormLoads' and the form is loaded/resolved so it can get executed on client
 						hasContentToSend = true;
+
+						// the following field(s) were just passed in the map in order to be used above (still on server side) - they are not meant to reach client
 						delayedCall.remove("component");
-						delayedCall.remove("waitForFormLoad");
+						// delayedCall.remove("delayUntilFormLoads"); we keep and do send this to client just in case form is no longer there for some reason when the call arrives - and it shouldn't try to force-load it on client
+
 						it.remove();
+
 						if (!callObjectStarted)
 						{
 							callObjectStarted = true;
@@ -724,9 +730,7 @@ public class BaseWindow implements IWindow
 		if (delayedCall || isAsyncApiCall(receiver, apiFunction))
 		{
 			Map<String, Object> call = getApiCallObject(receiver, apiFunction, arguments, argumentTypes, callContributions);
-			call.put("component", receiver);
-			call.put("waitForFormLoad", Boolean.valueOf(delayedCall));
-			addDelayedOrAsyncCall(apiFunction, call);
+			addDelayedOrAsyncCall(apiFunction, call, receiver, delayedCall);
 			return null;
 		}
 		try
@@ -811,16 +815,23 @@ public class BaseWindow implements IWindow
 		return call;
 	}
 
-	protected void addDelayedOrAsyncCall(final WebObjectFunctionDefinition apiFunction, Map<String, Object> call)
+	protected void addDelayedOrAsyncCall(final WebObjectFunctionDefinition apiFunction, Map<String, Object> call, WebComponent component, boolean isDelayedCall)
 	{
+		if (isDelayedCall)
+		{
+			// just keep the needed information about this delayed call in there (not to be sent to client necessarily, but to be able to check if the form is available on client or not)
+			call.put("component", component);
+			call.put("delayUntilFormLoads", Boolean.valueOf(isDelayedCall));
+		}
+
 		if (apiFunction.shouldDiscardPreviouslyQueuedSimilarCalls())
 		{
 			// for example requestFocus uses that - so that only the last .requestFocus() actually executes (if the form is loaded)
 			Iterator<Map<String, Object>> it = delayedOrAsyncApiCalls.iterator();
 			while (it.hasNext())
 			{
-				Map<String, Object> delayedCall = it.next();
-				if (apiFunction.getName().equals(delayedCall.get("api")))
+				Map<String, Object> delayedOrAsyncCall = it.next();
+				if (apiFunction.getName().equals(delayedOrAsyncCall.get("api")))
 				{
 					it.remove();
 				}

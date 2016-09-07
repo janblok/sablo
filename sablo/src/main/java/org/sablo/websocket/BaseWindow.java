@@ -74,7 +74,7 @@ public class BaseWindow implements IWindow
 	private final AtomicInteger lastSentMessage = new AtomicInteger(0);
 
 	private final List<Map<String, ? >> serviceCalls = new ArrayList<>();
-	private final List<Map<String, Object>> delayedApiCalls = new ArrayList<>();
+	private final List<Map<String, Object>> delayedOrAsyncApiCalls = new ArrayList<>();
 	private final PropertyDescription serviceCallTypes = AggregatedPropertyType.newAggregatedProperty();
 
 	private final WeakHashMap<Container, Object> usedContainers = new WeakHashMap<>(3); // set of used container in order to collect all changes
@@ -442,7 +442,7 @@ public class BaseWindow implements IWindow
 	protected String sendMessageInternal(IToJSONWriter<IBrowserConverterContext> dataWriter, IToJSONConverter<IBrowserConverterContext> converter,
 		Integer smsgidOptional) throws IOException
 	{
-		if (dataWriter == null && serviceCalls.size() == 0 && delayedApiCalls.size() == 0) return null;
+		if (dataWriter == null && serviceCalls.size() == 0 && delayedOrAsyncApiCalls.size() == 0) return null;
 
 		if (endpoint == null)
 		{
@@ -477,10 +477,10 @@ public class BaseWindow implements IWindow
 					new BrowserConverterContext((ClientService)session.getClientService((String)serviceCalls.get(0).get("name")), PushToServerEnum.allow));
 				clientDataConversions.popNode();
 			}
-			if (delayedApiCalls.size() > 0)
+			if (delayedOrAsyncApiCalls.size() > 0)
 			{
 				clientDataConversions.pushNode("calls");
-				Iterator<Map<String, Object>> it = delayedApiCalls.iterator();
+				Iterator<Map<String, Object>> it = delayedOrAsyncApiCalls.iterator();
 				boolean callObjectStarted = false;
 				int callIdx = 0;
 				while (it.hasNext())
@@ -719,12 +719,14 @@ public class BaseWindow implements IWindow
 		final PropertyDescription argumentTypes, final Map<String, Object> callContributions)
 	{
 		// {"call":{"form":"product","bean":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}}
-		if (isDelayedApiCall(receiver, apiFunction) || isAsyncApiCall(receiver, apiFunction))
+		boolean delayedCall = isDelayedApiCall(receiver, apiFunction);
+
+		if (delayedCall || isAsyncApiCall(receiver, apiFunction))
 		{
 			Map<String, Object> call = getApiCallObject(receiver, apiFunction, arguments, argumentTypes, callContributions);
 			call.put("component", receiver);
-			call.put("waitForFormLoad", isDelayedApiCall(receiver, apiFunction));
-			addDelayedCall(apiFunction, call);
+			call.put("waitForFormLoad", Boolean.valueOf(delayedCall));
+			addDelayedOrAsyncCall(apiFunction, call);
 			return null;
 		}
 		try
@@ -809,11 +811,12 @@ public class BaseWindow implements IWindow
 		return call;
 	}
 
-	protected void addDelayedCall(final WebObjectFunctionDefinition apiFunction, Map<String, Object> call)
+	protected void addDelayedOrAsyncCall(final WebObjectFunctionDefinition apiFunction, Map<String, Object> call)
 	{
-		if (apiFunction.isGlobalExclusive())
+		if (apiFunction.shouldDiscardPreviouslyQueuedSimilarCalls())
 		{
-			Iterator<Map<String, Object>> it = delayedApiCalls.iterator();
+			// for example requestFocus uses that - so that only the last .requestFocus() actually executes (if the form is loaded)
+			Iterator<Map<String, Object>> it = delayedOrAsyncApiCalls.iterator();
 			while (it.hasNext())
 			{
 				Map<String, Object> delayedCall = it.next();
@@ -823,7 +826,7 @@ public class BaseWindow implements IWindow
 				}
 			}
 		}
-		delayedApiCalls.add(call);
+		delayedOrAsyncApiCalls.add(call);
 	}
 
 	protected boolean formLoaded(WebComponent component)
@@ -833,7 +836,7 @@ public class BaseWindow implements IWindow
 
 	protected boolean isDelayedApiCall(WebComponent receiver, WebObjectFunctionDefinition apiFunction)
 	{
-		return apiFunction.getReturnType() == null && apiFunction.isDelayUntilFormLoad();
+		return apiFunction.getReturnType() == null && apiFunction.shouldDelayUntilFormLoads();
 	}
 
 	protected boolean isAsyncApiCall(WebComponent receiver, WebObjectFunctionDefinition apiFunction)

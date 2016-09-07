@@ -265,7 +265,12 @@ public class WebObjectSpecification extends PropertyDescription
 		catch (RuntimeException e)
 		{
 			t = ObjectPropertyType.INSTANCE;
-			log.warn("Unknown type name '" + property + "' encountered while parsing spec " + this.getName());
+			if (!"${dataproviderType}".equals(property))
+			{
+				String message = "Unknown type name '" + property + "' encountered while parsing spec " + this.getName();
+				log.warn(message);
+				System.err.println(message);
+			}
 		}
 		return new ParsedProperty(t, isArray, isVarArgs);
 	}

@@ -327,15 +327,14 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 					function executeAPICallInTimeout(formState, count, timeout) {
 						return $timeout(function() {
 							var apiFunctions = getAPICallFunctions(formState);
-							if((apiFunctions && apiFunctions[call.api]) || count < 1) {
+							if ((apiFunctions && apiFunctions[call.api]) || count < 1) {
 								return executeAPICall(apiFunctions);
-							}
-							else {
+							} else {
 								return executeAPICallInTimeout(formState, count - 1, timeout)
 							} 
-						}, timeout).then(function(result){
+						}, timeout).then(function(result) {
 							return result;
-						},function(err){
+						}, function(err) {
 							return $q.reject(err);
 						});
 					}
@@ -355,8 +354,11 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 						}
 						
 						return getFormState(call.form).then(
-								function() {
-									return executeAPICallInTimeout(formStates[call.form], 10, 20);
+								function(formState) {
+									var apiFunctions = getAPICallFunctions(formState);
+									if (apiFunctions && apiFunctions[call.api]) {
+										return executeAPICall(apiFunctions);
+									} else return executeAPICallInTimeout(formState, 10, 20);
 								},
 								function(err) {
 									$log.error("Error getting form state: " + err);		

@@ -774,8 +774,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 
 			function updateCurrentDomElTabIndex() {
 				if (hasOwnTabIndex()) {
-					if (runtimeIndex.startIndex !== 0) $element.attr('tabIndex', runtimeIndex.startIndex);
-					else $element.removeAttr('tabIndex');
+					if (runtimeIndex.startIndex !== 0) $attrs.$set('tabindex', runtimeIndex.startIndex);
+					else $attrs.$set('tabindex', undefined);
 				}
 			}
 

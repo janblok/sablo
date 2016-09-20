@@ -139,7 +139,7 @@ public class WebsocketSessionManager
 	{
 		try
 		{
-			if (closingSessions.compareAndSet(false, true))
+			if (closingSessions.compareAndSet(false, true) || !checkForWindowActivity)
 			{
 				List<IWebsocketSession> expiredSessions = new ArrayList<>(3);
 				Iterator<IWebsocketSession> sessions = wsSessions.values().iterator();

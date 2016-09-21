@@ -102,9 +102,9 @@ public class WebsocketSessionManager
 	{
 		String uuid = prevUuid;
 		IWebsocketSession wsSession = null;
+		creatingLock.lock();
 		try
 		{
-			creatingLock.lock();
 			if (uuid != null && uuid.length() > 0)
 			{
 				wsSession = wsSessions.get(uuid);
@@ -148,9 +148,9 @@ public class WebsocketSessionManager
 	{
 		if (!closingLock.isLocked() || !checkForWindowActivity)
 		{
+			closingLock.lock();
 			try
 			{
-				closingLock.lock();
 				List<IWebsocketSession> expiredSessions = new ArrayList<>(3);
 				Iterator<IWebsocketSession> sessions = wsSessions.values().iterator();
 				while (sessions.hasNext())

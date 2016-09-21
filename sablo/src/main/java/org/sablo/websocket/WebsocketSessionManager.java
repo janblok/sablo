@@ -102,7 +102,7 @@ public class WebsocketSessionManager
 	{
 		String uuid = prevUuid;
 		IWebsocketSession wsSession = null;
-		creatingLock.lock();
+		if (create) creatingLock.lock();
 		try
 		{
 			if (uuid != null && uuid.length() > 0)
@@ -115,21 +115,20 @@ public class WebsocketSessionManager
 			}
 			if (wsSession == null || !wsSession.isValid())
 			{
-				wsSessions.remove(uuid);
 				wsSession = null;
 				if (create && websocketSessionFactories.containsKey(endpointType))
 				{
 					wsSession = websocketSessionFactories.get(endpointType).createSession(uuid);
-				}
-				if (wsSession != null)
-				{
-					wsSessions.put(uuid, wsSession);
+					if (wsSession != null)
+					{
+						wsSessions.put(uuid, wsSession);
+					}
 				}
 			}
 		}
 		finally
 		{
-			creatingLock.unlock();
+			if (create) creatingLock.unlock();
 		}
 		return wsSession;
 	}

@@ -44,6 +44,7 @@ public class WebsocketSessionManager
 	private final static ConcurrentMap<String, IWebsocketSession> wsSessions = new ConcurrentHashMap<>();
 
 	private final static ReentrantLock closingLock = new ReentrantLock();
+	private final static ReentrantLock creatingLock = new ReentrantLock();
 
 	public static void addSession(IWebsocketSession wsSession)
 	{
@@ -101,28 +102,34 @@ public class WebsocketSessionManager
 	{
 		String uuid = prevUuid;
 		IWebsocketSession wsSession = null;
-		if (uuid != null && uuid.length() > 0)
+		try
 		{
-			wsSession = wsSessions.get(uuid);
-		}
-		else
-		{
-			uuid = UUID.randomUUID().toString();
-		}
-		if (wsSession == null || !wsSession.isValid())
-		{
-			wsSessions.remove(uuid);
-			wsSession = null;
-			if (create && websocketSessionFactories.containsKey(endpointType))
+			creatingLock.lock();
+			if (uuid != null && uuid.length() > 0)
 			{
-				wsSession = websocketSessionFactories.get(endpointType).createSession(uuid);
+				wsSession = wsSessions.get(uuid);
 			}
-			if (wsSession != null)
+			else
 			{
-				// if somehow the 2 creates are called for the same uuid, then do use only the first one.
-				IWebsocketSession prevValue = wsSessions.putIfAbsent(uuid, wsSession);
-				if (prevValue != null) wsSession = prevValue;
+				uuid = UUID.randomUUID().toString();
 			}
+			if (wsSession == null || !wsSession.isValid())
+			{
+				wsSessions.remove(uuid);
+				wsSession = null;
+				if (create && websocketSessionFactories.containsKey(endpointType))
+				{
+					wsSession = websocketSessionFactories.get(endpointType).createSession(uuid);
+				}
+				if (wsSession != null)
+				{
+					wsSessions.put(uuid, wsSession);
+				}
+			}
+		}
+		finally
+		{
+			creatingLock.unlock();
 		}
 		return wsSession;
 	}

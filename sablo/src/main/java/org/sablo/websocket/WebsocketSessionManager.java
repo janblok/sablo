@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +43,7 @@ public class WebsocketSessionManager
 	//maps form uuid to session
 	private final static ConcurrentMap<String, IWebsocketSession> wsSessions = new ConcurrentHashMap<>();
 
-	private final static AtomicBoolean closingSessions = new AtomicBoolean(false);
+	private final static ReentrantLock closingLock = new ReentrantLock();
 
 	public static void addSession(IWebsocketSession wsSession)
 	{
@@ -119,7 +119,9 @@ public class WebsocketSessionManager
 			}
 			if (wsSession != null)
 			{
-				wsSessions.put(uuid, wsSession);
+				// if somehow the 2 creates are called for the same uuid, then do use only the first one.
+				IWebsocketSession prevValue = wsSessions.putIfAbsent(uuid, wsSession);
+				if (prevValue != null) wsSession = prevValue;
 			}
 		}
 		return wsSession;
@@ -137,10 +139,11 @@ public class WebsocketSessionManager
 
 	private static void closeSessions(boolean checkForWindowActivity)
 	{
-		try
+		if (!closingLock.isLocked() || !checkForWindowActivity)
 		{
-			if (closingSessions.compareAndSet(false, true) || !checkForWindowActivity)
+			try
 			{
+				closingLock.lock();
 				List<IWebsocketSession> expiredSessions = new ArrayList<>(3);
 				Iterator<IWebsocketSession> sessions = wsSessions.values().iterator();
 				while (sessions.hasNext())
@@ -174,10 +177,10 @@ public class WebsocketSessionManager
 					}
 				}
 			}
-		}
-		finally
-		{
-			closingSessions.set(false);
+			finally
+			{
+				closingLock.unlock();
+			}
 		}
 
 	}

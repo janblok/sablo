@@ -145,12 +145,21 @@ public class WebsocketSessionManager
 
 	private static void closeSessions(boolean checkForWindowActivity)
 	{
-		if (!closingLock.isLocked() || !checkForWindowActivity)
+		boolean hasLock = false;
+		if (!checkForWindowActivity)
 		{
 			closingLock.lock();
+			hasLock = true;
+		}
+		else
+		{
+			hasLock = closingLock.tryLock();
+		}
+		if (hasLock)
+		{
+			List<IWebsocketSession> expiredSessions = new ArrayList<>(3);
 			try
 			{
-				List<IWebsocketSession> expiredSessions = new ArrayList<>(3);
 				Iterator<IWebsocketSession> sessions = wsSessions.values().iterator();
 				while (sessions.hasNext())
 				{
@@ -161,31 +170,31 @@ public class WebsocketSessionManager
 						expiredSessions.add(session);
 					}
 				}
-
-				for (IWebsocketSession session : expiredSessions)
-				{
-					try
-					{
-						session.sessionExpired();
-					}
-					catch (Exception e)
-					{
-						log.error("Error expiring session " + session.getUuid(), e);
-					}
-
-					try
-					{
-						session.dispose();
-					}
-					catch (Exception e)
-					{
-						log.error("Error disposing expired session " + session.getUuid(), e);
-					}
-				}
 			}
 			finally
 			{
 				closingLock.unlock();
+			}
+
+			for (IWebsocketSession session : expiredSessions)
+			{
+				try
+				{
+					session.sessionExpired();
+				}
+				catch (Exception e)
+				{
+					log.error("Error expiring session " + session.getUuid(), e);
+				}
+
+				try
+				{
+					session.dispose();
+				}
+				catch (Exception e)
+				{
+					log.error("Error disposing expired session " + session.getUuid(), e);
+				}
 			}
 		}
 

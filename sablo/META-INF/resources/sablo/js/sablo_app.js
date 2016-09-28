@@ -269,8 +269,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 					if (typeof(formStates[formname]) == 'undefined') continue;
 					// we just checked before that formStates exists so getFormState(formname) deferr below will actually be instant right
 					// it's called like this to reuse getFormState() similar to the rest of the code
-					getFormState(formname).then(getFormMessageHandler(formname, msg, conversionInfo), 
-							function(err) { $log.error("Error getting form state when trying to handle msg. from server: " + err); });
+					getFormMessageHandler(formname, msg, conversionInfo)(formStates[formname]);
 				}
 
 				if (conversionInfo && conversionInfo.call) msg.call = $sabloConverters.convertFromServerToClient(msg.call, conversionInfo.call, undefined, undefined, undefined);
@@ -412,14 +411,14 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 						} 
 					}
 
-					var watchesRemoved = formState.removeWatches(newFormData);
+					var watchesRemoved = formState.removeWatches?formState.removeWatches(newFormData):false;
 					try {
 						for (var beanname in newFormData) {
 							// copy over the changes, skip for form properties (beanname empty)
 							if (beanname != '') {
 								var newBeanConversionInfo = newFormConversionInfo ? newFormConversionInfo[beanname] : undefined;
 								var beanConversionInfo = newBeanConversionInfo ? $sabloUtils.getOrCreateInDepthProperty(formStatesConversionInfo, formname, beanname) : $sabloUtils.getInDepthProperty(formStatesConversionInfo, formname, beanname);
-								applyBeanData(formModel[beanname], newFormData[beanname], formState.properties.designSize, getChangeNotifierGenerator(formname, beanname), beanConversionInfo, newBeanConversionInfo, formState.getScope());
+								applyBeanData(formModel[beanname], newFormData[beanname], formState.properties.designSize, getChangeNotifierGenerator(formname, beanname), beanConversionInfo, newBeanConversionInfo, formState.getScope?formState.getScope():undefined);
 							}
 						}
 					}

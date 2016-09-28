@@ -153,6 +153,14 @@ webSocketModule.factory('$webSocket',
 				$sabloLoadingIndicator.hideLoading();
 			}
 
+			// message
+			if (obj.msg) {
+				for (var handler in onMessageObjectHandlers) {
+					var ret = onMessageObjectHandlers[handler](obj.msg, obj.conversions ? obj.conversions.msg : undefined)
+					if (ret) responseValue = ret;
+				}
+			}
+
 			if (obj.msg && obj.msg.services) {
 				$services.updateServiceScopes(obj.msg.services, (obj.conversions && obj.conversions.msg) ? obj.conversions.msg.services : undefined);
 			}
@@ -171,14 +179,6 @@ webSocketModule.factory('$webSocket',
 						responseValue = serviceInstance[service.call].apply(serviceInstance, service.args);
 						$services.digest(service.name);
 					}
-				}
-			}
-
-			// message
-			if (obj.msg) {
-				for (var handler in onMessageObjectHandlers) {
-					var ret = onMessageObjectHandlers[handler](obj.msg, obj.conversions ? obj.conversions.msg : undefined)
-					if (ret) responseValue = ret;
 				}
 			}
 

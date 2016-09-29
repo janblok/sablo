@@ -124,6 +124,12 @@ public class WebsocketSessionWindows implements IWindow
 	}
 
 	@Override
+	public void unregisterContainer(Container container)
+	{
+		// ignore
+	}
+
+	@Override
 	public void onOpen(java.util.Map<String, List<String>> requestParams)
 	{
 		// ignore

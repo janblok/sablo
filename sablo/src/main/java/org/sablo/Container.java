@@ -111,6 +111,8 @@ public abstract class Container extends WebComponent
 
 	public boolean writeAllComponentsProperties(JSONWriter w, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException
 	{
+		// FIXME if this container was previously registered to another window, unregister it from there as well
+		// if (this.getParentOfType(window) != CurrentWindow.get()) ... // problem is now that containers are not required to have parents so can we really rely on parent hierarchy?
 		CurrentWindow.get().registerContainer(this);
 
 		DataConversion clientDataConversions = new DataConversion();

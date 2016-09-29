@@ -62,6 +62,15 @@ import org.slf4j.LoggerFactory;
 public class BaseWindow implements IWindow
 {
 
+	private static final String API_KEY_DELAY_UNTIL_FORM_LOADS = "delayUntilFormLoads"; //$NON-NLS-1$
+	private static final String API_SERVER_ONLY_KEY_FORM_CONTAINER = "forServerOnly_formContainer"; //$NON-NLS-1$
+	private static final String API_SERVER_ONLY_KEY_COMPONENT = "forServerOnly_component"; //$NON-NLS-1$
+	private static final String API_SERVER_ONLY_KEY_ARG_TYPES = "forServerOnly_callTypes"; //$NON-NLS-1$
+	private static final String API_KEY_ARGS = "args"; //$NON-NLS-1$
+	private static final String API_KEY_FUNCTION_NAME = "api"; //$NON-NLS-1$
+	private static final String API_KEY_COMPONENT_NAME = "bean"; //$NON-NLS-1$
+	private static final String API_KEY_FORM_NAME = "form"; //$NON-NLS-1$
+
 	private static final Logger log = LoggerFactory.getLogger(BaseWindow.class.getCanonicalName());
 
 	private volatile IWebsocketEndpoint endpoint;
@@ -148,6 +157,12 @@ public class BaseWindow implements IWindow
 		{
 			session.updateLastAccessed(this);
 		}
+	}
+
+	@Override
+	public Container getForm(String formName)
+	{
+		return null;
 	}
 
 	@Override
@@ -285,8 +300,7 @@ public class BaseWindow implements IWindow
 	{
 	}
 
-	@Override
-	public Container getForm(String formName)
+	protected Container getFormContainer(WebComponent component)
 	{
 		return null;
 	}
@@ -338,6 +352,12 @@ public class BaseWindow implements IWindow
 	public void registerContainer(Container container)
 	{
 		usedContainers.put(container, new Object());
+	}
+
+	@Override
+	public void unregisterContainer(Container container)
+	{
+		usedContainers.remove(container);
 	}
 
 	/**
@@ -487,15 +507,17 @@ public class BaseWindow implements IWindow
 				while (it.hasNext())
 				{
 					Map<String, Object> delayedCall = it.next();
-					WebComponent component = (WebComponent)delayedCall.get("component");
-					if (!((Boolean)delayedCall.get("delayUntilFormLoads")).booleanValue() || formLoaded(component))
+					WebComponent component = (WebComponent)delayedCall.get(API_SERVER_ONLY_KEY_COMPONENT);
+					Container formContainer = (Container)delayedCall.get(API_SERVER_ONLY_KEY_FORM_CONTAINER);
+					if (!((Boolean)delayedCall.get(API_KEY_DELAY_UNTIL_FORM_LOADS)).booleanValue() || isFormResolved(formContainer))
 					{
 						// so it is either async (so not 'delayUntilFormLoads') in which case it must execute anyway or it is 'delayUntilFormLoads' and the form is loaded/resolved so it can get executed on client
 						hasContentToSend = true;
 
 						// the following field(s) were just passed in the map in order to be used above (still on server side) - they are not meant to reach client
-						delayedCall.remove("component");
-						// delayedCall.remove("delayUntilFormLoads"); we keep and do send this to client just in case form is no longer there for some reason when the call arrives - and it shouldn't try to force-load it on client
+						delayedCall.remove(API_SERVER_ONLY_KEY_COMPONENT);
+						delayedCall.remove(API_SERVER_ONLY_KEY_FORM_CONTAINER);
+						// delayedCall.remove(API_KEY_DELAY_UNTIL_FORM_LOADS); we keep and do send this to client just in case form is no longer there for some reason when the call arrives - and it shouldn't try to force-load it on client
 
 						it.remove();
 
@@ -504,7 +526,7 @@ public class BaseWindow implements IWindow
 							callObjectStarted = true;
 							w.key("calls").array();
 						}
-						PropertyDescription callTypes = (PropertyDescription)delayedCall.remove("callTypes");
+						PropertyDescription callTypes = (PropertyDescription)delayedCall.remove(API_SERVER_ONLY_KEY_ARG_TYPES);
 						w.object().key("call").object();
 						clientDataConversions.pushNode(String.valueOf(callIdx));
 						clientDataConversions.pushNode("call");
@@ -560,7 +582,7 @@ public class BaseWindow implements IWindow
 	public void sendChanges() throws IOException
 	{
 		// TODO this should not send to the currently active end-point, but to each of all end-points their own changes...
-		// so that any change from 1 end-point request ends up in all the end points.
+		// so that any change from 1 end-point request ends up in all the needed/affected end points (depending on where the form is).
 		sendAsyncMessage(new IToJSONWriter<IBrowserConverterContext>()
 		{
 			@Override
@@ -643,8 +665,8 @@ public class BaseWindow implements IWindow
 			}
 		}
 
-		serviceCall.put("args", arguments);
-		if (argumentTypes != null) typesOfThisCall.putProperty("args", argumentTypes);
+		serviceCall.put(API_KEY_ARGS, arguments);
+		if (argumentTypes != null) typesOfThisCall.putProperty(API_KEY_ARGS, argumentTypes);
 		serviceCalls.add(serviceCall);
 		serviceCallTypes.putProperty(String.valueOf(serviceCalls.size() - 1), typesOfThisCall);
 	}
@@ -671,7 +693,7 @@ public class BaseWindow implements IWindow
 
 		for (Container fc : usedContainers.keySet())
 		{
-			if (fc.isVisible() && fc.isChanged())
+			if (fc.isChanged() && shouldSendChangesToClientWhenAvailable(fc))
 			{
 				if (!contentHasBeenWritten)
 				{
@@ -687,6 +709,18 @@ public class BaseWindow implements IWindow
 		}
 		if (contentHasBeenWritten) w.endObject();
 		return contentHasBeenWritten;
+	}
+
+	/**
+	 * Can be overriden. If it returns true, it means that when the given container has changes it will send them to browser.
+	 * If this returns false, no changes are sent for that container, even if it does have changes.
+	 *
+	 * @param formContainer the container that has changes
+	 * @return see description.
+	 */
+	protected boolean shouldSendChangesToClientWhenAvailable(Container formContainer)
+	{
+		return formContainer.isVisible(); // subclasses may decide to override this and also send changes for hidden forms
 	}
 
 	public boolean writeAllServicesChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
@@ -748,7 +782,7 @@ public class BaseWindow implements IWindow
 					writeAllComponentsChanges(w, "forms", converter, clientDataConversions);
 					clientDataConversions.popNode();
 					Map<String, Object> call = getApiCallObject(receiver, apiFunction, arguments, argumentTypes, callContributions);
-					PropertyDescription callTypes = (PropertyDescription)call.remove("callTypes");
+					PropertyDescription callTypes = (PropertyDescription)call.remove(API_SERVER_ONLY_KEY_ARG_TYPES);
 					w.key("call").object();
 					clientDataConversions.pushNode("call");
 					JSONUtils.writeData(converter, w, call, callTypes, clientDataConversions, new BrowserConverterContext(receiver, PushToServerEnum.allow));
@@ -803,15 +837,15 @@ public class BaseWindow implements IWindow
 		{
 			topContainer = topContainer.getParent();
 		}
-		call.put("form", topContainer.getName());
-		call.put("bean", receiver.getName());
-		call.put("api", apiFunction.getName());
+		call.put(API_KEY_FORM_NAME, topContainer.getName());
+		call.put(API_KEY_COMPONENT_NAME, receiver.getName());
+		call.put(API_KEY_FUNCTION_NAME, apiFunction.getName());
 		if (arguments != null && arguments.length > 0)
 		{
-			call.put("args", arguments);
-			if (argumentTypes != null) callTypes.putProperty("args", argumentTypes);
+			call.put(API_KEY_ARGS, arguments);
+			if (argumentTypes != null) callTypes.putProperty(API_KEY_ARGS, argumentTypes);
 		}
-		call.put("callTypes", callTypes);
+		call.put(API_SERVER_ONLY_KEY_ARG_TYPES, callTypes);
 		return call;
 	}
 
@@ -820,8 +854,9 @@ public class BaseWindow implements IWindow
 		if (isDelayedCall)
 		{
 			// just keep the needed information about this delayed call in there (not to be sent to client necessarily, but to be able to check if the form is available on client or not)
-			call.put("component", component);
-			call.put("delayUntilFormLoads", Boolean.valueOf(isDelayedCall));
+			call.put(API_SERVER_ONLY_KEY_COMPONENT, component);
+			call.put(API_SERVER_ONLY_KEY_FORM_CONTAINER, getFormContainer(component));
+			call.put(API_KEY_DELAY_UNTIL_FORM_LOADS, Boolean.valueOf(isDelayedCall));
 		}
 
 		if (apiFunction.shouldDiscardPreviouslyQueuedSimilarCalls())
@@ -831,7 +866,7 @@ public class BaseWindow implements IWindow
 			while (it.hasNext())
 			{
 				Map<String, Object> delayedOrAsyncCall = it.next();
-				if (apiFunction.getName().equals(delayedOrAsyncCall.get("api")))
+				if (apiFunction.getName().equals(delayedOrAsyncCall.get(API_KEY_FUNCTION_NAME)))
 				{
 					it.remove();
 				}
@@ -840,7 +875,27 @@ public class BaseWindow implements IWindow
 		delayedOrAsyncApiCalls.add(call);
 	}
 
-	protected boolean formLoaded(WebComponent component)
+	protected boolean hasPendingDelayedCalls(Container formContainer)
+	{
+		boolean hasPendingDelayedCalls = false;
+		if (delayedOrAsyncApiCalls.size() > 0)
+		{
+			Iterator<Map<String, Object>> it = delayedOrAsyncApiCalls.iterator();
+			while (it.hasNext())
+			{
+				Map<String, Object> delayedCall = it.next();
+				if (((Boolean)delayedCall.get(API_KEY_DELAY_UNTIL_FORM_LOADS)).booleanValue() &&
+					formContainer == (Container)delayedCall.get(API_SERVER_ONLY_KEY_FORM_CONTAINER))
+				{
+					hasPendingDelayedCalls = true;
+					break;
+				}
+			}
+		}
+		return hasPendingDelayedCalls;
+	}
+
+	protected boolean isFormResolved(Container formContainer)
 	{
 		return true;
 	}

@@ -1,11 +1,42 @@
 angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(function($provide, $logProvider,$rootScopeProvider) {
 	____logProvider = $logProvider; // just in case someone wants to alter debug at runtime from browser console for example
+	
+	// log levels for when debugEnabled(true) is called - if that is false, these levels are irrelevant
+	// any custom debug levels can be used as well - these are just stored here so that custom code can test the level and see if it should log it's message
+	$logProvider.DEBUG = 1;
+	$logProvider.SPAM = 2;
+	
+	$logProvider.debugLvl = $logProvider.DEBUG; // default value; if someone wants SPAM debug logging, they can just switch this
+	$logProvider.debugLevel = function(val) {
+		if (val) {
+			$logProvider.debugLvl = val;
+			return $logProvider;
+		} else {
+			return $logProvider.debugLvl;
+		}
+	}
 	$logProvider.debugEnabled(false);
+	
 	$provide.decorator("$log", function($delegate) {
 		Object.defineProperty($delegate, "debugEnabled", {
 			enumerable: false,
 			configurable: false,
 			get: $logProvider.debugEnabled
+		});
+		Object.defineProperty($delegate, "debugLevel", {
+			enumerable: false,
+			configurable: false,
+			get: $logProvider.debugLevel
+		});
+		Object.defineProperty($delegate, "DEBUG", {
+			enumerable: false,
+			configurable: false,
+			value: $logProvider.DEBUG
+		});
+		Object.defineProperty($delegate, "SPAM", {
+			enumerable: false,
+			configurable: false,
+			value: $logProvider.SPAM
 		});
 		return $delegate;
 	})
@@ -295,6 +326,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 					function getAPICallFunctions(formState) {
 						var funcThis;
 						if (call.viewIndex != undefined) {
+							// I think this viewIndex' is never used; it was probably intended for components with multiple rows targeted by the same component if it want to allow calling API on non-selected rows, but it is not used
 							funcThis = formState.api[call.bean][call.viewIndex];
 						}
 						else if (call.propertyPath != undefined)
@@ -330,6 +362,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 					function executeAPICallInTimeout(formState, count, timeout) {
 						return $timeout(function() {
 							var apiFunctions = getAPICallFunctions(formState);
+							if ($log.debugEnabled) $log.debug("sbl * Remaining wait cycles upon execution of API: '" + call.api + "' of form " + call.form + ", component " + (call.propertyPath ? call.propertyPath : call.bean) + ": " + count);
 							if ((apiFunctions && apiFunctions[call.api]) || count < 1) {
 								return executeAPICall(apiFunctions);
 							} else {
@@ -359,7 +392,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 							formResolver.prepareUnresolvedFormForUse(call.form);
 						}
 						
-						return getFormState(call.form).then(
+						return getFormStateWithData(call.form).then(
 								function(formState) {
 									var apiFunctions = getAPICallFunctions(formState);
 									if (apiFunctions && apiFunctions[call.api]) {
@@ -519,10 +552,10 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 		// form state has data but is not ready to be used (maybe it was hidden / temporarily with DOM disposed)
 		unResolveFormState: function(formName) {
 			if (formStates[formName]) {
+				if ($log.debugEnabled) $log.debug('sbl * Unresolving form: ' + formName + ". Was: resolving=" + formStates[formName].resolving + ", resolved=" + formStates[formName].resolved);
 				delete formStates[formName].resolving;
 				delete formStates[formName].resolved;
 			}
-			if ($log.debugEnabled) $log.debug('sbl * Unresolved form: ' + formName);
 		},
 
 		// requestDataCallback gets 2 parameters, the initalFormData and the currentFormState

@@ -67,10 +67,20 @@ public interface IWindow
 	void setCurrentFormUrl(String currentFormUrl);
 
 	/**
-	 * Register a container at the websocket for traversal of changes
-	 * @param container
+	 * Register a container on this window for traversal of changes (when changes are detected on that container after handling an event, they will be sent to client).<br/>
+	 * The window will only keep a weak reference to the container, so it will automatically unregister it when that container can be garbage collected.
+	 *
+	 * @param container the container that is registered to this window.
 	 */
 	void registerContainer(Container container);
+
+	/**
+	 * Unregisters the given container from this window. This window will no longer look for change in this container.</br>
+	 * Useful when for example a container is moved to another window completely.
+	 *
+	 * @param container the container that is registered to this window.
+	 */
+	void unregisterContainer(Container container);
 
 	String getUuid();
 

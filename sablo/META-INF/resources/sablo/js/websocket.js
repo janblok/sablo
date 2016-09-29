@@ -108,7 +108,8 @@ webSocketModule.factory('$webSocket',
 		var obj
 		var responseValue
 		try {
-			
+			if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Received message from server: " + JSON.stringify(message));
+
 			var message_data = message.data;
 			var separator = message_data.indexOf('#');
 			if (separator >= 0 && separator < 5) {
@@ -257,10 +258,12 @@ webSocketModule.factory('$webSocket',
 		}
 		var msg = JSON.stringify(obj)
 		if (isConnected()) {
+			if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Sending message to server: " + msg);
 			websocket.send(msg)
 		}
 		else
 		{
+			if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Disconnected; will add the following to pending messages to be sent to server: " + msg);
 			pendingMessages = pendingMessages || []
 			pendingMessages.push(msg)
 		}
@@ -326,10 +329,12 @@ webSocketModule.factory('$webSocket',
 		if (!angular.isDefined(heartbeatMonitor)) {
 			lastHeartbeat = new Date().getTime();
 			heartbeatMonitor = $interval(function() {
+				if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Sending heartbeat... (" + new Date().getTime() + ")");
 				websocket.send("P"); // ping
 				if (isConnected() && new Date().getTime() - lastHeartbeat > 8000) {
 					// no response within 8 seconds
 					if (connected !== 'RECONNECTING') {
+						if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Heartbeat timed out; connection lots; waiting to reconnect... (" + new Date().getTime() + ")");
 						connected = 'RECONNECTING';
 						$rootScope.$apply();
 					}
@@ -351,6 +356,7 @@ webSocketModule.factory('$webSocket',
 
 		if (pendingMessages) {
 			for (var i in pendingMessages) {
+				if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Connected; sending pending message to server: " + pendingMessages[i]);
 				websocket.send(pendingMessages[i])
 			}
 			pendingMessages = undefined
@@ -358,8 +364,10 @@ webSocketModule.factory('$webSocket',
 	}
 	
 	function handleHeartbeat(message) {
+		if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Received heartbeat... (" + new Date().getTime() + ")");
 		lastHeartbeat = new Date().getTime(); // something is received, the server connection is up
 		if (isReconnecting()) {
+			if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Heartbeat received, connection re-established...");
 			$rootScope.$apply(setConnected);
 		}
 		return message.data == "p"; // pong

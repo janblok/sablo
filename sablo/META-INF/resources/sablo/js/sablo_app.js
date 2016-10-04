@@ -293,14 +293,15 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 			wsSession.onMessageObject(function (msg, conversionInfo) {
 				// data got back from the server
 				for(var formname in msg.forms) {
-					// TODO: replace with service call "applyChanges(form, changes)"
-					// current model
-					// if the formState is on the server but not here anymore, skip it. 
-					// this can happen with a refresh on the browser.
-					if (typeof(formStates[formname]) == 'undefined') continue;
-					// we just checked before that formStates exists so getFormState(formname) deferr below will actually be instant right
-					// it's called like this to reuse getFormState() similar to the rest of the code
-					getFormMessageHandler(formname, msg, conversionInfo)(formStates[formname]);
+					if (typeof(formStates[formname]) == 'undefined') {
+						// if the form is not there yet, wait for the form state.
+						getFormState(formname).then(getFormMessageHandler(formname, msg, conversionInfo), 
+								function(err) { $log.error("Error getting form state when trying to handle msg. from server: " + err); });
+					}
+					else {
+						// if the form is there apply it directly so that it is there when the form is recreated
+						getFormMessageHandler(formname, msg, conversionInfo)(formStates[formname]);
+					}
 				}
 
 				if (conversionInfo && conversionInfo.call) msg.call = $sabloConverters.convertFromServerToClient(msg.call, conversionInfo.call, undefined, undefined, undefined);

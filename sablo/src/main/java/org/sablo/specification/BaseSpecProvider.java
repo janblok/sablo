@@ -20,6 +20,7 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.sablo.specification.Package.IPackageReader;
 
@@ -59,7 +60,7 @@ public abstract class BaseSpecProvider
 
 	public IPackageReader[] getAllPackageReaders()
 	{
-		Set<String> packageNames = getPackageNames();
+		Set<String> packageNames = new CopyOnWriteArraySet<String>(getPackageNames());
 		IPackageReader[] readers = new IPackageReader[packageNames.size()];
 		int i = 0;
 		for (String name : packageNames)

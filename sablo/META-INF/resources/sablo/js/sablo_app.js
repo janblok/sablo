@@ -293,14 +293,16 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 			wsSession.onMessageObject(function (msg, conversionInfo) {
 				// data got back from the server
 				for(var formname in msg.forms) {
-					if (typeof(formStates[formname]) == 'undefined') {
+					var formState = formStates[formname];
+					if (typeof(formState) == 'undefined') {
 						// if the form is not there yet, wait for the form state.
 						getFormState(formname).then(getFormMessageHandler(formname, msg, conversionInfo), 
 								function(err) { $log.error("Error getting form state when trying to handle msg. from server: " + err); });
 					}
 					else {
 						// if the form is there apply it directly so that it is there when the form is recreated
-						getFormMessageHandler(formname, msg, conversionInfo)(formStates[formname]);
+						getFormMessageHandler(formname, msg, conversionInfo)(formState);
+						if (formState.getScope) formState.getScope().$digest();
 					}
 				}
 

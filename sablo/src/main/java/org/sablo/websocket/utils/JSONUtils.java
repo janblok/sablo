@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
 public class JSONUtils
 {
 
+	public static final String TYPES_KEY = "svy_types";
 	private static final Logger log = LoggerFactory.getLogger(JSONUtils.class.getCanonicalName());
 
 	@SuppressWarnings("unchecked")
@@ -104,7 +105,7 @@ public class JSONUtils
 	{
 		if (dataConversion != null && dataConversion.getConversions().size() > 0)
 		{
-			writer.key("conversions").object();
+			writer.key(TYPES_KEY).object();
 			writeConversions(writer, dataConversion.getConversions());
 			writer.endObject();
 		}
@@ -149,8 +150,8 @@ public class JSONUtils
 	 * is useful for cases when you don't want the value written at all in resulting JSON in which case you don't write neither key or value. If
 	 * key is null and you want to write the converted value write only the converted value to the writer, ignore the key.
 	 */
-	public static JSONWriter toBrowserJSONFullValue(JSONWriter writer, String key, Object value, PropertyDescription valueType,
-		DataConversion clientConversion, BrowserConverterContext context) throws JSONException, IllegalArgumentException
+	public static JSONWriter toBrowserJSONFullValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion clientConversion,
+		BrowserConverterContext context) throws JSONException, IllegalArgumentException
 	{
 		return JSONUtils.FullValueToJSONConverter.INSTANCE.toJSONValue(writer, key, value, valueType, clientConversion, context);
 	}
@@ -252,7 +253,7 @@ public class JSONUtils
 					toJSONConverter.toJSONValue(w, keys[1], entry.getValue(), valueType != null ? valueType.getProperty(entry.getKey()) : null,
 						clientConversion, contextObject);
 					w.endObject();
-				}// END TODO REMOVE
+				} // END TODO REMOVE
 				else
 				{
 					toJSONConverter.toJSONValue(w, entry.getKey(), entry.getValue(), valueType != null ? valueType.getProperty(entry.getKey()) : null,
@@ -462,8 +463,8 @@ public class JSONUtils
 				// addKeyIfPresent(w, key);
 				// w = w.value(new JSONObject("{}"));
 				// write nothing here, neither key nor value as we know not how to do the conversion...
-				log.error("unsupported value type:" + valueType + " for value: " + value + " current json: " + writer.toString(), new IllegalArgumentException(
-					"unsupported value type for value: " + value));
+				log.error("unsupported value type:" + valueType + " for value: " + value + " current json: " + writer.toString(),
+					new IllegalArgumentException("unsupported value type for value: " + value));
 			}
 
 			return writer;

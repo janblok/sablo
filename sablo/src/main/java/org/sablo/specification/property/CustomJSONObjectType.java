@@ -403,7 +403,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 				writer.endObject();
 				if (objConversionMarkers.getConversions().size() > 0)
 				{
-					writer.key("conversions").object();
+					writer.key(JSONUtils.TYPES_KEY).object();
 					JSONUtils.writeConversions(writer, objConversionMarkers.getConversions());
 					writer.endObject();
 				}
@@ -435,7 +435,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 				writer.endArray();
 				if (objConversionMarkers.getConversions().size() > 0)
 				{
-					writer.key("conversions").object();
+					writer.key(JSONUtils.TYPES_KEY).object();
 					JSONUtils.writeConversions(writer, objConversionMarkers.getConversions());
 					writer.endObject();
 				}

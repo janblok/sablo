@@ -31,7 +31,7 @@ import java.util.Map;
  */
 public class DataConversion
 {
-	private final Map<String, Object> conversions = new HashMap<>();
+	private final Map<String, Object> conversionTypes = new HashMap<>();
 
 	private final List<String> path = new ArrayList<>(3);
 
@@ -74,12 +74,12 @@ public class DataConversion
 
 	public DataConversion convert(DataConversion writeData)
 	{
-		if (writeData != null && writeData.conversions.size() != 0)
+		if (writeData != null && writeData.conversionTypes.size() != 0)
 		{
-			Object conversionsToAdd = writeData.conversions;
+			Object conversionsToAdd = writeData.conversionTypes;
 
 			// if someone used a DataConversion to write in it just one conversion value we will find that in the null key
-			if (writeData.conversions.size() == 1 && writeData.conversions.keySet().iterator().next() == null) conversionsToAdd = writeData.conversions.get(null);
+			if (writeData.conversionTypes.size() == 1 && writeData.conversionTypes.keySet().iterator().next() == null) conversionsToAdd = writeData.conversionTypes.get(null);
 
 			Map<String, Object> map = getOrCreatePathMap();
 			map.put(path.size() > 0 ? path.get(path.size() - 1) : null, conversionsToAdd);
@@ -89,7 +89,7 @@ public class DataConversion
 
 	private Map<String, Object> getOrCreatePathMap()
 	{
-		Map<String, Object> map = conversions;
+		Map<String, Object> map = conversionTypes;
 		for (int i = 0; i < path.size() - 1; i++)
 		{
 			Map<String, Object> nextMap = (Map<String, Object>)map.get(path.get(i));
@@ -107,7 +107,7 @@ public class DataConversion
 	 */
 	public Map<String, Object> getConversions()
 	{
-		return conversions;
+		return conversionTypes;
 	}
 
 }

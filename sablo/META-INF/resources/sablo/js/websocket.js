@@ -134,15 +134,15 @@ webSocketModule.factory('$webSocket',
 				if (deferredEvent != null && angular.isDefined(deferredEvent)) {
 					if (obj.exception) {
 						// something went wrong
-						if (obj.conversions && obj.conversions.exception) {
-							obj.exception = $sabloConverters.convertFromServerToClient(obj.exception, obj.conversions.exception, undefined, undefined, undefined)
+						if (obj[$sabloConverters.TYPES_KEY] && obj[$sabloConverters.TYPES_KEY].exception) {
+							obj.exception = $sabloConverters.convertFromServerToClient(obj.exception, obj[$sabloConverters.TYPES_KEY].exception, undefined, undefined, undefined)
 						}
 						$rootScope.$apply(function() {
 							deferredEvent.reject(obj.exception);
 						})
 					} else {
-						if (obj.conversions && obj.conversions.ret) {
-							obj.ret = $sabloConverters.convertFromServerToClient(obj.ret, obj.conversions.ret, undefined, undefined, undefined)
+						if (obj[$sabloConverters.TYPES_KEY] && obj[$sabloConverters.TYPES_KEY].ret) {
+							obj.ret = $sabloConverters.convertFromServerToClient(obj.ret, obj[$sabloConverters.TYPES_KEY].ret, undefined, undefined, undefined)
 						}
 						$rootScope.$apply(function() {
 							deferredEvent.resolve(obj.ret);
@@ -157,19 +157,19 @@ webSocketModule.factory('$webSocket',
 			// message
 			if (obj.msg) {
 				for (var handler in onMessageObjectHandlers) {
-					var ret = onMessageObjectHandlers[handler](obj.msg, obj.conversions ? obj.conversions.msg : undefined)
+					var ret = onMessageObjectHandlers[handler](obj.msg, obj[$sabloConverters.TYPES_KEY] ? obj[$sabloConverters.TYPES_KEY].msg : undefined)
 					if (ret) responseValue = ret;
 				}
 			}
 
 			if (obj.msg && obj.msg.services) {
-				$services.updateServiceScopes(obj.msg.services, (obj.conversions && obj.conversions.msg) ? obj.conversions.msg.services : undefined);
+				$services.updateServiceScopes(obj.msg.services, (obj[$sabloConverters.TYPES_KEY] && obj[$sabloConverters.TYPES_KEY].msg) ? obj[$sabloConverters.TYPES_KEY].msg.services : undefined);
 			}
 
 			if (obj.services) {
 				// services call
-				if (obj.conversions && obj.conversions.services) {
-					obj.services = $sabloConverters.convertFromServerToClient(obj.services, obj.conversions.services, undefined, undefined, undefined)
+				if (obj[$sabloConverters.TYPES_KEY] && obj[$sabloConverters.TYPES_KEY].services) {
+					obj.services = $sabloConverters.convertFromServerToClient(obj.services, obj[$sabloConverters.TYPES_KEY].services, undefined, undefined, undefined)
 				}
 				for (var index in obj.services) {
 					var service = obj.services[index];
@@ -189,7 +189,7 @@ webSocketModule.factory('$webSocket',
 				for(var index = 0;index < obj.calls.length;index++) 
 				{
 					for (var handler in onMessageObjectHandlers) {
-						onMessageObjectHandlers[handler](obj.calls[index], (obj.conversions && obj.conversions.calls) ? obj.conversions.calls[index] : undefined);
+						onMessageObjectHandlers[handler](obj.calls[index], (obj[$sabloConverters.TYPES_KEY] && obj[$sabloConverters.TYPES_KEY].calls) ? obj[$sabloConverters.TYPES_KEY].calls[index] : undefined);
 					}
 				}
 			}	
@@ -715,6 +715,7 @@ webSocketModule.factory('$webSocket',
 		 * In a custom property value, the val[$sabloConverters.INTERNAL_IMPL] is to be used for internal state/impl details only - not to be accessed by components
 		 */
 		INTERNAL_IMPL: '__internalState',
+		TYPES_KEY: 'svy_types',
 
 		prepareInternalState: function(propertyValue, optionalInternalStateValue) {
 			if (!propertyValue.hasOwnProperty(this.INTERNAL_IMPL))

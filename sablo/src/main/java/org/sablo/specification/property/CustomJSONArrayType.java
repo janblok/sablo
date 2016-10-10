@@ -39,7 +39,7 @@ import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
  * @author acostescu
  */
 @SuppressWarnings("nls")
-public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>implements IAdjustablePropertyType<Object>,
+public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> implements IAdjustablePropertyType<Object>,
 	IWrapperType<Object, ChangeAwareList<ET, WT>>, ISupportsGranularUpdates<ChangeAwareList<ET, WT>>, IPushToServerSpecialType
 {
 
@@ -380,7 +380,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>i
 
 				if (arrayConversionMarkers.getConversions().size() > 0)
 				{
-					writer.key("conversions").object();
+					writer.key(JSONUtils.TYPES_KEY).object();
 					JSONUtils.writeConversions(writer, arrayConversionMarkers.getConversions());
 					writer.endObject();
 				}
@@ -412,7 +412,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>i
 				writer.endArray();
 				if (arrayConversionMarkers.getConversions().size() > 0)
 				{
-					writer.key("conversions").object();
+					writer.key(JSONUtils.TYPES_KEY).object();
 					JSONUtils.writeConversions(writer, arrayConversionMarkers.getConversions());
 					writer.endObject();
 				}

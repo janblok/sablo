@@ -582,8 +582,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 					if ($log.debugEnabled) $log.debug('sbl * Applying initial data: ' + formName);
 					initialFormData = initialFormData[0]; // ret value is an one item array; the item contains both data and conversion info
 					if (initialFormData) {
-						var conversionInfo = initialFormData.conversions;
-						if (conversionInfo) delete initialFormData.conversions;
+						var conversionInfo = initialFormData[$sabloConverters.TYPES_KEY];
+						if (conversionInfo) delete initialFormData[$sabloConverters.TYPES_KEY];
 
 						// if the formState is on the server but not here anymore, skip it. 
 						// this can happen with a refresh on the browser.

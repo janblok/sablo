@@ -44,7 +44,7 @@ import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
  */
 @SuppressWarnings("nls")
 // TODO these ET and WT are improper - as for object type they can represent multiple types (a different set for each child key), but they help to avoid some bugs at compile-time
-public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<String, ET>>implements IAdjustablePropertyType<Map<String, ET>>,
+public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<String, ET>> implements IAdjustablePropertyType<Map<String, ET>>,
 	IWrapperType<Map<String, ET>, ChangeAwareMap<ET, WT>>, ISupportsGranularUpdates<ChangeAwareMap<ET, WT>>, IPushToServerSpecialType
 {
 
@@ -187,7 +187,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 							{
 								JSONObject row = updatedRows.getJSONObject(i);
 								String key = row.getString(KEY);
-								Object val = row.get(VALUE);
+								Object val = row.opt(VALUE);
 
 								PropertyDescription keyPD = getCustomJSONTypeDefinition().getProperty(key);
 								// check that these updates are allowed

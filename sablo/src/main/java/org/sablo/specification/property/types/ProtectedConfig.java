@@ -20,9 +20,9 @@ import org.json.JSONObject;
 
 /**
  * Property configuration for protected types.
- * 
+ *
  * TODO: validate if for-entries refer to existing properties
- * 
+ *
  * @author rgansevles
  *
  */
@@ -68,6 +68,6 @@ public class ProtectedConfig
 			return defaultBlockingOn ? DEFAULTBLOCKING_TRUE : DEFAULTBLOCKING_FALSE;
 		}
 
-		return new ProtectedConfig(ForentriesConfig.parse(json), json.optBoolean("blockingOn", defaultBlockingOn));
+		return new ProtectedConfig(ForentriesConfig.parse(json), json.has("blockingOn") ? json.optBoolean("blockingOn", defaultBlockingOn) : defaultBlockingOn);
 	}
 }

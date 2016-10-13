@@ -46,7 +46,7 @@ public class WebLayoutSpecification extends WebObjectSpecification
 		JSONObject json = new JSONObject(specfileContent);
 		List<String> children = new ArrayList<>();
 
-		boolean topContainer = json.optBoolean("topContainer", false);
+		boolean topContainer = json.has("topContainer") ? json.optBoolean("topContainer", false) : false;
 
 		List<String> excludes = new ArrayList<>();
 		JSONArray excludesChildren = json.optJSONArray("excludes");

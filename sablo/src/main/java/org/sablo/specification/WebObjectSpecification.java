@@ -339,7 +339,7 @@ public class WebObjectSpecification extends PropertyDescription
 				spec.addApiFunction(def);
 			}
 		}
-		spec.setSupportGrouping(json.optBoolean("group", true));
+		spec.setSupportGrouping(json.has("group") ? json.optBoolean("group", true) : true);
 		return spec;
 	}
 

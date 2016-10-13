@@ -353,7 +353,6 @@ public class PropertyDescription
 		else childProp = null;
 
 		return childProp;
-
 	}
 
 	// TODO: move to constructor so PropertyDescription is immutable

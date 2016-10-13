@@ -514,9 +514,15 @@ public abstract class BaseWebObject
 			firstProperty = firstProperty.substring(0, firstProperty.indexOf('['));
 		}
 		Object oldValue = properties.get(firstProperty);
-		if (oldValue instanceof List && arrayIndex >= 0)
+		if (arrayIndex >= 0)
 		{
-			oldValue = ((List)oldValue).get(arrayIndex);
+			if (oldValue instanceof List) oldValue = ((List)oldValue).get(arrayIndex);
+			else if (oldValue != null)
+			{
+				log.error("Trying to get an array element while the value is not an array: property=" + propertyName + ", component=" + getName() + ", spec=" +
+					getSpecification(), new RuntimeException());
+				return null;
+			}
 		}
 		if (oldValue == null && !properties.containsKey(firstProperty))
 		{
@@ -550,6 +556,8 @@ public abstract class BaseWebObject
 		}
 		if (parts.length > 1)
 		{
+			// here we rely on the fact that .spec does not allow nesting arrays directly into other arrays directly so you can't currently have prop: int[][],
+			// you have to have something like prop: {a: int[]}[] so you access it like prop[4].a[3] not prop[4][3]
 			for (int i = 1; i < parts.length; i++)
 			{
 				String pathProperty = parts[i];
@@ -565,9 +573,15 @@ public abstract class BaseWebObject
 				if (oldValue instanceof Map)
 				{
 					oldValue = ((Map)oldValue).get(pathProperty);
-					if (oldValue instanceof List && arrayIndex >= 0)
+					if (arrayIndex >= 0)
 					{
-						oldValue = ((List)oldValue).get(arrayIndex);
+						if (oldValue instanceof List) oldValue = ((List)oldValue).get(arrayIndex);
+						else if (oldValue != null)
+						{
+							log.error("Trying to get a nested array element while the nested value is not an array: property=" + propertyName + ", component=" +
+								getName() + ", spec=" + getSpecification() + ", part=" + parts[i], new RuntimeException());
+							return null;
+						}
 					}
 				}
 			}
@@ -610,7 +624,7 @@ public abstract class BaseWebObject
 		Object oldWrappedValue = getRawPropertyValue(propertyName, true);
 		ValueReference<Boolean> returnValueAdjustedIncommingValue = new ValueReference<Boolean>(Boolean.FALSE);
 		Object newWrappedValue = convertValueFromJSON(propertyName, oldWrappedValue, propertyValue, returnValueAdjustedIncommingValue);
-		if (propertyName.indexOf('.') < 0)
+		if (propertyName.indexOf('.') < 0 && propertyName.indexOf('[') < 0)
 		{
 			// if nested above function should already update the value
 			properties.put(propertyName, newWrappedValue);

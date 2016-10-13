@@ -511,6 +511,33 @@ public class WebObjectSpecification extends PropertyDescription
 		}
 	}
 
+	private class StandardTypeConfigSettings
+	{
+		public final Object defaultValue;
+		public final Object initialValue;
+		public final boolean hasDefault;
+		public final PushToServerEnum pushToServer;
+		public final JSONObject tags;
+		public final List<Object> values;
+
+		public StandardTypeConfigSettings(Object defaultValue, Object initialValue, boolean hasDefault, PushToServerEnum pushToServer, JSONObject tags,
+			List<Object> values)
+		{
+			this.defaultValue = defaultValue;
+			this.initialValue = initialValue;
+			this.hasDefault = hasDefault;
+			this.pushToServer = pushToServer;
+			this.tags = tags;
+			this.values = values;
+		}
+
+		public StandardTypeConfigSettings()
+		{
+			this(null, null, false, PushToServerEnum.reject, null, null);
+		}
+
+	}
+
 	protected Map<String, PropertyDescription> parseProperties(String propKey, JSONObject json) throws JSONException
 	{
 		Map<String, PropertyDescription> pds = new HashMap<>();
@@ -524,43 +551,25 @@ public class WebObjectSpecification extends PropertyDescription
 				Object value = jsonProps.get(key);
 
 				JSONObject configObject = null;
-				Object defaultValue = null;
-				Object initialValue = null;
-				boolean hasDefault = false;
-				PushToServerEnum pushToServer = PushToServerEnum.reject;
-				JSONObject tags = null;
-				List<Object> values = null;
 				ParsedProperty pp = null;
+				StandardTypeConfigSettings standardConfigurationSettings = null;
 				if (value instanceof String)
 				{
 					pp = parsePropertyString((String)value);
+					standardConfigurationSettings = new StandardTypeConfigSettings();
 				}
 				else if (value instanceof JSONObject && ((JSONObject)value).has("type"))
 				{
 					pp = parsePropertyString(((JSONObject)value).getString("type"));
 					configObject = ((JSONObject)value);
-					defaultValue = configObject.opt("default");
-					initialValue = configObject.opt("initialValue");
-					hasDefault = configObject.has("default");
-
-					pushToServer = PushToServerEnum.fromString(configObject.optString(PUSH_TO_SERVER_KEY, pushToServer.name()));
-					tags = configObject.optJSONObject("tags");
-
-					JSONArray valuesArray = configObject.optJSONArray("values");
-					if (valuesArray != null)
-					{
-						values = new ArrayList<Object>(valuesArray.length());
-						for (int i = 0; i < valuesArray.length(); i++)
-						{
-							values.add(valuesArray.get(i));
-						}
-					}
+					standardConfigurationSettings = parseStandardConfigurationSettings(configObject);
 				}
 				else if (value instanceof JSONObject && "handlers".equals(propKey))
 				{
 					pds.put(key, new PropertyDescription(key, TypesRegistry.getType(FunctionPropertyType.TYPE_NAME), value));
 				}
-				if (pp != null && pp.type != null)
+
+				if (pp != null && pp.type != null /* && standardConfigurationSettings != null -- is implied by pp != null -- */)
 				{
 					IPropertyType< ? > type = pp.type;
 					if (pp.array || pp.varArgs)
@@ -568,10 +577,25 @@ public class WebObjectSpecification extends PropertyDescription
 						// here we could have something like { type: 'myprop[]', a: ..., b: ... } so with a config object;
 						// the config object will be used by the 'CustomJSONArray' type;
 						// a config for the element type can be specified like this: { type: 'myprop[]', a: ..., b: ..., elementConfig: {...} } and we could give that to the elementDescription instead
-						JSONObject elementConfig = configObject != null && configObject.optJSONObject(CustomJSONArrayType.ELEMENT_CONFIG_KEY) != null
-							? configObject.optJSONObject(CustomJSONArrayType.ELEMENT_CONFIG_KEY) : new JSONObject();
+						JSONObject elementConfig;
+						StandardTypeConfigSettings elementStandardConfigurationSettings;
+						if (configObject != null && configObject.optJSONObject(CustomJSONArrayType.ELEMENT_CONFIG_KEY) != null)
+						{
+							elementConfig = configObject.optJSONObject(CustomJSONArrayType.ELEMENT_CONFIG_KEY);
+							elementStandardConfigurationSettings = parseStandardConfigurationSettings(elementConfig);
+						}
+						else
+						{
+							elementConfig = new JSONObject();
+							// for the standard configuration settings in this case - inherit them where it's possible from array (currently that is only pushToServer to make it easier to declare arrays with pushToServer); TODO should we just use defaults always here?
+							elementStandardConfigurationSettings = new StandardTypeConfigSettings(null, null, false, standardConfigurationSettings.pushToServer,
+								null, null);
+						}
+
 						PropertyDescription elementDescription = new PropertyDescription(ARRAY_ELEMENT_PD_NAME, type, type.parseConfig(elementConfig),
-							defaultValue, initialValue, hasDefault, values, pushToServer, tags, false);
+							elementStandardConfigurationSettings.defaultValue, elementStandardConfigurationSettings.initialValue,
+							elementStandardConfigurationSettings.hasDefault, elementStandardConfigurationSettings.values,
+							elementStandardConfigurationSettings.pushToServer, elementStandardConfigurationSettings.tags, false);
 						if (pp.array)
 						{
 							type = TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, elementDescription);
@@ -582,12 +606,43 @@ public class WebObjectSpecification extends PropertyDescription
 						}
 					}
 
-					pds.put(key, new PropertyDescription(key, type, type.parseConfig(configObject), defaultValue, initialValue, hasDefault, values,
-						pushToServer, tags, false));
+					pds.put(key,
+						new PropertyDescription(key, type, type.parseConfig(configObject), standardConfigurationSettings.defaultValue,
+							standardConfigurationSettings.initialValue, standardConfigurationSettings.hasDefault, standardConfigurationSettings.values,
+							standardConfigurationSettings.pushToServer, standardConfigurationSettings.tags, false));
 				}
 			}
 		}
 		return pds;
+	}
+
+	private StandardTypeConfigSettings parseStandardConfigurationSettings(JSONObject configObject)
+	{
+		Object defaultValue = null;
+		Object initialValue = null;
+		boolean hasDefault = false;
+		PushToServerEnum pushToServer = PushToServerEnum.reject;
+		JSONObject tags = null;
+		List<Object> values = null;
+
+		defaultValue = configObject.opt("default");
+		initialValue = configObject.opt("initialValue");
+		hasDefault = configObject.has("default");
+
+		pushToServer = PushToServerEnum.fromString(configObject.optString(PUSH_TO_SERVER_KEY, pushToServer.name()));
+		tags = configObject.optJSONObject("tags");
+
+		JSONArray valuesArray = configObject.optJSONArray("values");
+		if (valuesArray != null)
+		{
+			values = new ArrayList<Object>(valuesArray.length());
+			for (int i = 0; i < valuesArray.length(); i++)
+			{
+				values.add(valuesArray.get(i));
+			}
+		}
+
+		return new StandardTypeConfigSettings(defaultValue, initialValue, hasDefault, pushToServer, tags, values);
 	}
 
 	@Override

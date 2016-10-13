@@ -27,10 +27,14 @@ import java.util.Map.Entry;
 import org.json.JSONObject;
 import org.sablo.specification.IYieldingType.YieldDescriptionArguments;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
+import org.sablo.specification.property.CustomJSONArrayType;
+import org.sablo.specification.property.CustomJSONObjectType;
 import org.sablo.specification.property.CustomJSONPropertyType;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
 import org.sablo.websocket.utils.PropertyUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Property description as parsed from web component spec file.
@@ -38,6 +42,8 @@ import org.sablo.websocket.utils.PropertyUtils;
  */
 public class PropertyDescription
 {
+
+	private static final Logger log = LoggerFactory.getLogger(WebObjectSpecification.class.getCanonicalName());
 
 	private final String name;
 	private final IPropertyType< ? > type;
@@ -275,53 +281,88 @@ public class PropertyDescription
 
 	public PropertyDescription getProperty(String propname)
 	{
+		PropertyDescription childProp;
+
 		if (properties != null)
 		{
-			PropertyDescription propertyDescription = properties.get(propname);
-			if (propertyDescription != null)
+			// so it's not an Array type PD (those don't have stuff in properties map); it must be either a custom object description or a web object specification
+			if (propname.startsWith(".")) propname = propname.substring(1); // in case of multiple nesting levels for example a[3].b, the ".b" part will end up here so we must ignore the first dot if present
+
+			childProp = properties.get(propname);
+			if (childProp == null)
 			{
-				return propertyDescription;
-			}
-			int indexOfDot = propname.indexOf('.');
-			if (indexOfDot >= 0)
-			{
-				// this must be a custom type then; also handle arrays
-				String customType = propname.substring(0, indexOfDot);
-				if (customType.indexOf('[') > 0)
+				// see if a nested property was requested
+				int indexOfFirstDot = propname.indexOf('.');
+				int indexOfFirstOpenBracket = propname.indexOf('[');
+				if (indexOfFirstDot >= 0 || indexOfFirstOpenBracket >= 0)
 				{
-					customType = customType.substring(0, customType.indexOf('['));
-				}
-				String propertyName = propname.substring(indexOfDot + 1);
-				if (propertyName.indexOf('[') > 0)
-				{
-					propertyName = propertyName.substring(0, propertyName.indexOf('['));
-				}
-				propertyDescription = properties.get(customType);
-				if (propertyDescription instanceof ICustomType)
-				{
-					PropertyDescription typeSpec = ((ICustomType< ? >)propertyDescription.getType()).getCustomJSONTypeDefinition();
-					return typeSpec.getProperty(propertyName);
-				}
-				else if (propertyDescription != null)
-				{
-					return propertyDescription.getProperty(propertyName);
+					int firstSeparatorIndex = Math.min(indexOfFirstDot >= 0 ? indexOfFirstDot : indexOfFirstOpenBracket,
+						indexOfFirstOpenBracket >= 0 ? indexOfFirstOpenBracket : indexOfFirstDot);
+
+					// this must be a custom type then;
+					String firstChildPropName = propname.substring(0, firstSeparatorIndex);
+					childProp = properties.get(firstChildPropName);
+					if (childProp != null) // so it wants to get a deeper nested PD; forward it to child PD to deal with it further
+					{
+						// here it should (according to check above) always be that firstSeparatorIndex < propname.length()
+						childProp = childProp.getProperty(propname.substring(firstSeparatorIndex));
+					}
 				}
 			}
 		}
-		else if (type instanceof CustomJSONPropertyType)
+		else if (type instanceof CustomJSONObjectType)
 		{
-			return ((CustomJSONPropertyType< ? >)type).getCustomJSONTypeDefinition().getProperty(propname);
+			// if it's a custom object type use that to get child prop. def
+			childProp = ((CustomJSONPropertyType< ? >)type).getCustomJSONTypeDefinition().getProperty(propname);
 		}
-		return null;
+		else if (type instanceof CustomJSONArrayType)
+		{
+			// check that propname starts with an index
+			boolean ok = false;
+
+			int idxOfFirstOpenBracket = propname.indexOf("[");
+			int idxOfFirstCloseBracket = propname.indexOf("]");
+
+			if (idxOfFirstOpenBracket == 0)
+			{
+				if (idxOfFirstCloseBracket > 1)
+				{
+					// if it's an array then use the element prop. def; propname should be an index in this case
+					try
+					{
+						Integer.parseInt(propname.substring(idxOfFirstOpenBracket + 1, idxOfFirstCloseBracket));
+						ok = true;
+					}
+					catch (NumberFormatException e)
+					{
+					}
+				}
+				else if (idxOfFirstCloseBracket == 1) ok = true; // allow []
+			}
+			if (ok)
+			{
+				childProp = ((CustomJSONPropertyType< ? >)type).getCustomJSONTypeDefinition();
+				if (idxOfFirstCloseBracket < propname.length() - 1) childProp = childProp.getProperty(propname.substring(idxOfFirstCloseBracket + 1)); // so it wants to get a deeper nested PD; forward it to element PD to deal with it further
+			}
+			else
+			{
+				log.debug("Property description get was called on an array type with propName that's not similar to [index] or []: " + propname);
+				childProp = null;
+			}
+		}
+		else childProp = null;
+
+		return childProp;
+
 	}
 
 	// TODO: move to constructor so PropertyDescription is immutable
 	public Map<String, PropertyDescription> getProperties()
 	{
 		if (properties != null) return Collections.unmodifiableMap(properties);
-		else if (type instanceof CustomJSONPropertyType)
+		else if (type instanceof ICustomType)
 		{
-			return ((CustomJSONPropertyType< ? >)type).getCustomJSONTypeDefinition().getProperties();
+			return ((ICustomType< ? >)type).getCustomJSONTypeDefinition().getProperties();
 		}
 
 		return Collections.emptyMap();

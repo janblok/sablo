@@ -321,7 +321,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(funct
 				
 				if (msg.call) {
 					// {"call":{"form":"product","element":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}, // optionally "viewIndex":1 
-					// "{ conversions: {product: {datatextfield1: {0: "Date"}}} }
+					// "{ svy_types : {product: {datatextfield1: {0: "Date"}}} }
 					var call = msg.call;
 
 					if ($log.debugEnabled) $log.debug("sbl * Received API call from server: '" + call.api + "' to form " + call.form + ", component " + (call.propertyPath ? call.propertyPath : call.bean));

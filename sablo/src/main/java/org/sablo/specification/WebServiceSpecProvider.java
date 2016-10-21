@@ -18,7 +18,6 @@ package org.sablo.specification;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.jar.Manifest;
 
 import javax.servlet.ServletContext;
@@ -38,6 +37,11 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 	private static final Logger log = LoggerFactory.getLogger(WebServiceSpecProvider.class.getCanonicalName());
 
 	private static volatile WebServiceSpecProvider instance;
+
+	private WebServiceSpecProvider(WebSpecReader reader)
+	{
+		super(reader);
+	}
 
 	public static WebServiceSpecProvider getInstance()
 	{
@@ -101,50 +105,6 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 		{
 			return instance.reader.getLastLoadTimestamp();
 		}
-	}
-
-	private WebServiceSpecProvider(WebSpecReader reader)
-	{
-		super(reader);
-	}
-
-	/**
-	 * get all registered web service specifications.
-	 *
-	 * @return a map of all the specifications
-	 */
-	public Map<String, PackageSpecification<WebObjectSpecification>> getWebServiceSpecifications()
-	{
-		return reader.getWebObjectSpecifications();
-	}
-
-	/**
-	 * get all registered web service specifications.
-	 *
-	 * @return an array of all the specifications
-	 */
-	public WebObjectSpecification[] getAllWebServiceSpecifications()
-	{
-		return reader.getAllWebComponentSpecifications();
-	}
-
-
-	/**
-	 * get a specification for a specific service.
-	 *
-	 * @param serviceName
-	 */
-	public WebObjectSpecification getWebServiceSpecification(String serviceName)
-	{
-		return reader.getWebComponentSpecification(serviceName);
-	}
-
-	/**
-	 * Get a list of all services contained by provided package name
-	 */
-	public PackageSpecification<WebObjectSpecification> getServicesInPackage(String packageName)
-	{
-		return reader.getWebObjectSpecifications().get(packageName);
 	}
 
 }

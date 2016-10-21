@@ -1,0 +1,9 @@
+#!/bin/sh
+set -ex
+cd /crypt/github/sablo/sablo/
+mvn clean install
+#-DskipTests
+cd /crypt/github/sablo/sablo-examples/
+mvn clean install
+#-DskipTests
+cp /crypt/github/sablo/sablo-examples/target/sablo-examples.war /data/programs/apache-tomcat-8/webapps/sablo-examples.war 

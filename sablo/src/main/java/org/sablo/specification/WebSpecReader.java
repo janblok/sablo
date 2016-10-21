@@ -16,11 +16,9 @@
 package org.sablo.specification;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -59,6 +57,8 @@ class WebSpecReader
 	private long lastLoadTimestamp;
 
 	private final Map<String, List<ISpecReloadListener>> specReloadListeners = new HashMap<>();
+
+	private SpecProviderState specProviderState;
 
 	WebSpecReader(IPackageReader[] packageReaders, String attributeName)
 	{
@@ -107,6 +107,8 @@ class WebSpecReader
 				l.webObjectSpecificationReloaded();
 			if (listenerEntry.getKey() != null && !allWebObjectSpecifications.containsKey(listenerEntry.getKey())) it.remove();
 		}
+
+		specProviderState = null;
 	}
 
 	/**
@@ -115,6 +117,9 @@ class WebSpecReader
 	public synchronized void updatePackages(Collection<String> packagesToRemove, Collection<IPackageReader> packagesToAdd)
 	{
 		if (packagesToRemove.size() == 0 && packagesToAdd.size() == 0) return;
+
+		specProviderState = null;
+
 		lastLoadTimestamp = System.currentTimeMillis();
 		List<String> removedOrReloadedSpecs = new ArrayList<>(); // so not newly added
 
@@ -210,14 +215,24 @@ class WebSpecReader
 			for (String removedOrReloadedSpec : removedOrReloadedSpecs)
 			{
 				List<ISpecReloadListener> ls = specReloadListeners.get(removedOrReloadedSpec);
-				if (ls != null) for (ISpecReloadListener l : ls)
-					l.webObjectSpecificationReloaded();
+				if (ls != null)
+				{
+					for (ISpecReloadListener l : ls)
+					{
+						l.webObjectSpecificationReloaded();
+					}
+				}
 				if (!allWebObjectSpecifications.containsKey(removedOrReloadedSpec)) specReloadListeners.remove(removedOrReloadedSpec);
 			}
 			// fire the global listeners under the null key
 			List<ISpecReloadListener> list = specReloadListeners.get(null);
-			if (list != null) for (ISpecReloadListener l : list)
-				l.webObjectSpecificationReloaded();
+			if (list != null)
+			{
+				for (ISpecReloadListener l : list)
+				{
+					l.webObjectSpecificationReloaded();
+				}
+			}
 		}
 	}
 
@@ -263,7 +278,7 @@ class WebSpecReader
 		return globalTypesFound;
 	}
 
-	protected synchronized void cacheWebObjectSpecs(List<Package> packages)
+	private void cacheWebObjectSpecs(List<Package> packages)
 	{
 		for (Package p : packages)
 		{
@@ -317,69 +332,20 @@ class WebSpecReader
 			}
 		}
 
-//		if (packageComponents.size() > 0)
-//		{
 		cachedDescriptions.put(webComponentPackageSpecification.getPackageName(), new PackageSpecification<>(webComponentPackageSpecification.getPackageName(),
 			webComponentPackageSpecification.getPackageDisplayname(), packageComponents, webComponentPackageSpecification.getManifest()));
-//		}
-	}
-
-	public synchronized WebObjectSpecification getWebComponentSpecification(String componentTypeName)
-	{
-		return allWebObjectSpecifications.get(componentTypeName);
-	}
-
-	public synchronized Map<String, PackageSpecification<WebObjectSpecification>> getWebObjectSpecifications()
-	{
-		return Collections.unmodifiableMap(cachedDescriptions);
-	}
-
-	public synchronized WebObjectSpecification[] getAllWebComponentSpecifications()
-	{
-		return allWebObjectSpecifications.values().toArray(new WebObjectSpecification[allWebObjectSpecifications.size()]);
-	}
-
-	public Map<String, PackageSpecification<WebLayoutSpecification>> getLayoutSpecifications()
-	{
-		return Collections.unmodifiableMap(cachedLayoutDescriptions);
 	}
 
 	/**
-	 * Get the map of packages and package URLs.
+	 * Get the current state of spec providers, returns an immutable state.
 	 */
-	public Map<String, URL> getPackagesToURLs()
+	public synchronized SpecProviderState getSpecProviderState()
 	{
-		Map<String, URL> result = new HashMap<String, URL>();
-		for (int i = 0; i < packageReaders.size(); i++)
+		if (specProviderState == null)
 		{
-			IPackageReader reader = packageReaders.get(i);
-			result.put(reader.getPackageName(), reader.getPackageURL());
+			specProviderState = new SpecProviderState(cachedDescriptions, cachedLayoutDescriptions, allWebObjectSpecifications, packageReaders);
 		}
-		return result;
-	}
-
-	/**
-	 * Get the map of packages and package display names.
-	 */
-	public Map<String, String> getPackagesToDisplayNames()
-	{
-		Map<String, String> result = new HashMap<String, String>();
-		for (int i = 0; i < packageReaders.size(); i++)
-		{
-			IPackageReader reader = packageReaders.get(i);
-			result.put(reader.getPackageName(), reader.getPackageDisplayname());
-		}
-		return result;
-	}
-
-	public IPackageReader getPackageReader(String packageName)
-	{
-		for (int i = 0; i < packageReaders.size(); i++)
-		{
-			IPackageReader reader = packageReaders.get(i);
-			if (reader.getPackageName().equals(packageName)) return reader;
-		}
-		return null;
+		return specProviderState;
 	}
 
 	/**

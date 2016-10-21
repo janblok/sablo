@@ -141,8 +141,8 @@ public class IndexPageEnhancer
 
 		LinkedHashMap<String, JSONObject> allLibraries = new LinkedHashMap<>();
 		Collection<PackageSpecification<WebObjectSpecification>> webComponentPackagesDescriptions = new ArrayList<PackageSpecification<WebObjectSpecification>>();
-		webComponentPackagesDescriptions.addAll(WebComponentSpecProvider.getInstance().getWebComponentSpecifications().values());
-		webComponentPackagesDescriptions.addAll(WebServiceSpecProvider.getInstance().getWebServiceSpecifications().values());
+		webComponentPackagesDescriptions.addAll(WebComponentSpecProvider.getInstance().getSpecProviderState().getWebObjectSpecifications().values());
+		webComponentPackagesDescriptions.addAll(WebServiceSpecProvider.getInstance().getSpecProviderState().getWebObjectSpecifications().values());
 
 		for (PackageSpecification<WebObjectSpecification> packageDesc : webComponentPackagesDescriptions)
 		{

@@ -59,7 +59,7 @@ public class ClientService extends BaseWebObject implements IClientService
 	@Override
 	public Object executeServiceCall(String functionName, Object[] arguments) throws IOException
 	{
-		WebObjectSpecification spec = WebServiceSpecProvider.getInstance().getWebServiceSpecification(name);
+		WebObjectSpecification spec = WebServiceSpecProvider.getInstance().getSpecProviderState().getWebComponentSpecification(name);
 		WebObjectFunctionDefinition apiFunction = null;
 		if (spec != null)
 		{

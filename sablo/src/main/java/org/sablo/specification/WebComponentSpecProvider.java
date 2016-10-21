@@ -17,10 +17,7 @@
 package org.sablo.specification;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.jar.Manifest;
 
 import javax.servlet.ServletContext;
@@ -113,67 +110,6 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 	private WebComponentSpecProvider(WebSpecReader reader)
 	{
 		super(reader);
-	}
-
-	/**
-	 * Get the specification for the given component type.
-	 *
-	 * @param componentType
-	 * @return the components specification, null if not found.
-	 */
-	public WebObjectSpecification getWebComponentSpecification(String componentType)
-	{
-		return reader.getWebComponentSpecification(componentType);
-	}
-
-	/**
-	 * get all registered web component specifications.
-	 *
-	 * @return a map of all the specifications
-	 */
-	public Map<String, PackageSpecification<WebObjectSpecification>> getWebComponentSpecifications()
-	{
-		return reader.getWebObjectSpecifications();
-	}
-
-	/**
-	 * get all registered web component specifications.
-	 *
-	 * @return an array of all the specifications
-	 */
-	public WebObjectSpecification[] getAllWebComponentSpecifications()
-	{
-		return reader.getAllWebComponentSpecifications();
-	}
-
-	/**
-	 * get all registered layout component specifications.
-	 *
-	 * @return a map of all the specifications
-	 */
-	public Map<String, PackageSpecification<WebLayoutSpecification>> getLayoutSpecifications()
-	{
-		return reader.getLayoutSpecifications();
-	}
-
-
-	/**
-	 * Get a list of all components contained by provided package name
-	 */
-	public Collection<String> getComponentsInPackage(String packageName)
-	{
-		PackageSpecification<WebObjectSpecification> pkg = reader.getWebObjectSpecifications().get(packageName);
-		return pkg == null ? Collections.<String> emptyList() : pkg.getSpecifications().keySet();
-
-	}
-
-	/**
-	 * Get a list of all layouts contained by provided package name
-	 */
-	public Collection<String> getLayoutsInPackage(String packageName)
-	{
-		PackageSpecification<WebLayoutSpecification> pkg = reader.getLayoutSpecifications().get(packageName);
-		return pkg == null ? Collections.<String> emptyList() : pkg.getSpecifications().keySet();
 	}
 
 }

@@ -16,11 +16,7 @@
 
 package org.sablo.specification;
 
-import java.net.URL;
 import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.sablo.specification.Package.IPackageReader;
 
@@ -38,47 +34,11 @@ public abstract class BaseSpecProvider
 	}
 
 	/**
-	 * Get the set of all package names.
+	 * Get the current state of spec providers, returns an immutable state.
 	 */
-	public Set<String> getPackageNames()
+	public SpecProviderState getSpecProviderState()
 	{
-		return reader.getWebObjectSpecifications().keySet();
-	}
-
-	/**
-	 * Get the map of names to package URLs.
-	 */
-	public Map<String, URL> getPackagesToURLs()
-	{
-		return reader.getPackagesToURLs();
-	}
-
-	public IPackageReader getPackageReader(String packageName)
-	{
-		return reader.getPackageReader(packageName);
-	}
-
-	public IPackageReader[] getAllPackageReaders()
-	{
-		Set<String> packageNames = new CopyOnWriteArraySet<String>(getPackageNames());
-		IPackageReader[] readers = new IPackageReader[packageNames.size()];
-		int i = 0;
-		for (String name : packageNames)
-		{
-			readers[i++] = reader.getPackageReader(name);
-		}
-		return readers;
-	}
-
-	public String getPackageType(String packageName)
-	{
-		IPackageReader packageReader = reader.getPackageReader(packageName);
-		return packageReader != null ? packageReader.getPackageType() : null;
-	}
-
-	public String getPackageDisplayName(String packageName)
-	{
-		return reader.getPackagesToDisplayNames().get(packageName);
+		return reader.getSpecProviderState();
 	}
 
 	/**

@@ -279,10 +279,11 @@ public class PropertyDescription
 		return this;
 	}
 
-	public PropertyDescription getProperty(String propname)
+	public List<PropertyDescription> getPropertyPath(String propname)
 	{
-		PropertyDescription childProp;
+		ArrayList<PropertyDescription> propertyPath = new ArrayList<PropertyDescription>();
 
+		PropertyDescription childProp;
 		if (properties != null)
 		{
 			// so it's not an Array type PD (those don't have stuff in properties map); it must be either a custom object description or a web object specification
@@ -305,7 +306,10 @@ public class PropertyDescription
 					if (childProp != null) // so it wants to get a deeper nested PD; forward it to child PD to deal with it further
 					{
 						// here it should (according to check above) always be that firstSeparatorIndex < propname.length()
-						childProp = childProp.getProperty(propname.substring(firstSeparatorIndex));
+						propertyPath.add(childProp);
+						List<PropertyDescription> childPropertyPath = getPropertyPath(propname.substring(firstSeparatorIndex));
+						propertyPath.addAll(childPropertyPath.subList(0, childPropertyPath.size() - 1));
+						childProp = childPropertyPath.get(childPropertyPath.size() - 1);
 					}
 				}
 			}
@@ -352,7 +356,14 @@ public class PropertyDescription
 		}
 		else childProp = null;
 
-		return childProp;
+		propertyPath.add(childProp);
+		return propertyPath;
+	}
+
+	public PropertyDescription getProperty(String propname)
+	{
+		List<PropertyDescription> propertyPath = getPropertyPath(propname);
+		return propertyPath.get(propertyPath.size() - 1);
 	}
 
 	// TODO: move to constructor so PropertyDescription is immutable

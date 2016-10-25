@@ -35,6 +35,7 @@ import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.sablo.specification.property.BrowserConverterContext;
+import org.sablo.specification.property.CustomJSONArrayType;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IPropertyType;
@@ -260,24 +261,51 @@ public abstract class BaseWebObject
 	 */
 	protected void checkForProtectedProperty(String propName)
 	{
-		PropertyDescription property = specification.getProperty(propName);
-		if (property != null)
+		List<PropertyDescription> propertyPath = specification.getPropertyPath(propName);
+		for (int i = 0; i < propertyPath.size(); i++)
 		{
-			if (property.getType().isProtecting())
+			PropertyDescription property = propertyPath.get(i);
+			boolean isLastInPath = i == propertyPath.size() - 1;
+			if (property != null)
 			{
-				// property is protected, i.e. it cannot be set from the client
-				throw new IllegalComponentAccessException("protecting", getName(), propName);
+				if (property.getType().isProtecting())
+				{
+					// property is protected, i.e. it cannot be set from the client
+					throw new IllegalComponentAccessException("protecting", getName(), propName);
+				}
+
+				if (isLastInPath)
+				{
+					if (PushToServerEnum.allow.compareTo(property.getPushToServer()) > 0 && (!(property.getType() instanceof IPushToServerSpecialType) ||
+						!((IPushToServerSpecialType)property.getType()).shouldAlwaysAllowIncommingJSON()))
+					{
+						// pushToServer not set to allowed, it should not be set from the client
+						throw new IllegalComponentAccessException("pushToServer-reject", getName(), propName);
+					}
+				}
+				else
+				{
+					if (property.getConfig() instanceof JSONObject)
+					{
+						JSONObject config = (JSONObject)property.getConfig();
+						if (config.has(CustomJSONArrayType.ELEMENT_CONFIG_KEY))
+						{
+							config = config.getJSONObject(CustomJSONArrayType.ELEMENT_CONFIG_KEY);
+						}
+						if (config.has(WebObjectSpecification.PUSH_TO_SERVER_KEY))
+						{
+							PushToServerEnum configPushToServer = PushToServerEnum.fromString(config.optString(WebObjectSpecification.PUSH_TO_SERVER_KEY));
+							if (PushToServerEnum.allow.compareTo(configPushToServer) > 0)
+							{
+								throw new IllegalComponentAccessException("pushToServer-reject", getName(), propName);
+							}
+						}
+					}
+				}
 			}
 
-			if (PushToServerEnum.allow.compareTo(property.getPushToServer()) > 0 &&
-				(!(property.getType() instanceof IPushToServerSpecialType) || !((IPushToServerSpecialType)property.getType()).shouldAlwaysAllowIncommingJSON()))
-			{
-				// pushToServer not set to allowed, it should not be set from the client
-				throw new IllegalComponentAccessException("pushToServer-reject", getName(), propName);
-			}
+			// ok
 		}
-
-		// ok
 	}
 
 	/**

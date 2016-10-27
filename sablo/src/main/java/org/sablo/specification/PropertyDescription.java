@@ -307,7 +307,7 @@ public class PropertyDescription
 					{
 						// here it should (according to check above) always be that firstSeparatorIndex < propname.length()
 						propertyPath.add(childProp);
-						List<PropertyDescription> childPropertyPath = getPropertyPath(propname.substring(firstSeparatorIndex));
+						List<PropertyDescription> childPropertyPath = childProp.getPropertyPath(propname.substring(firstSeparatorIndex));
 						propertyPath.addAll(childPropertyPath.subList(0, childPropertyPath.size() - 1));
 						childProp = childPropertyPath.get(childPropertyPath.size() - 1);
 					}

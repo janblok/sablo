@@ -200,8 +200,15 @@ webSocketModule.factory('$webSocket',
 			// message
 			if (obj.msg) {
 				for (var handler in onMessageObjectHandlers) {
-					var ret = onMessageObjectHandlers[handler](obj.msg, obj[$sabloConverters.TYPES_KEY] ? obj[$sabloConverters.TYPES_KEY].msg : undefined)
+					var scopesToDigest = new CustomHashSet(function(s) {
+						return s.$id; // hash them by angular scope id to avoid calling digest on the same scope twice
+					});
+					var ret = onMessageObjectHandlers[handler](obj.msg, obj[$sabloConverters.TYPES_KEY] ? obj[$sabloConverters.TYPES_KEY].msg : undefined, scopesToDigest)
 					if (ret) responseValue = ret;
+					for (var scopeId in scopesToDigest) {
+						if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will call digest (from obj.msg) for scope: " + (scopesToDigest[scopeId] && scopesToDigest[scopeId].formname ? scopesToDigest[scopeId].formname : scopeId));
+						scopesToDigest[scopeId].$digest();
+					}
 				}
 			}
 
@@ -231,8 +238,16 @@ webSocketModule.factory('$webSocket',
 			{
 				for(var index = 0;index < obj.calls.length;index++) 
 				{
+					var scopesToDigest = new CustomHashSet(function(s) {
+						return s.$id; // hash them by angular scope id to avoid calling digest on the same scope twice
+					});
 					for (var handler in onMessageObjectHandlers) {
-						onMessageObjectHandlers[handler](obj.calls[index], (obj[$sabloConverters.TYPES_KEY] && obj[$sabloConverters.TYPES_KEY].calls) ? obj[$sabloConverters.TYPES_KEY].calls[index] : undefined);
+						var scopesToDigestSet = {};
+						onMessageObjectHandlers[handler](obj.calls[index], (obj[$sabloConverters.TYPES_KEY] && obj[$sabloConverters.TYPES_KEY].calls) ? obj[$sabloConverters.TYPES_KEY].calls[index] : undefined, scopesToDigest);
+					}
+					for (var scopeId in scopesToDigest) {
+						if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will call digest (from obj.calls) for scope: " + (scopesToDigest[scopeId] && scopesToDigest[scopeId].formname ? scopesToDigest[scopeId].formname : scopeId));
+						scopesToDigest[scopeId].$digest();
 					}
 				}
 			}	
@@ -685,12 +700,17 @@ webSocketModule.factory('$webSocket',
 					sendServiceChanges(newValue, oldValue, servicename, property);
 				});
 
-				if ($rootScope.$$asyncQueue.length > 0) 
+				if ($rootScope.$$asyncQueue.length > 0) {
+					if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will call digest from updateServiceScopes for rootscope");
 					$rootScope.$digest();
-				else serviceScopes[servicename].$digest();
+				} else {
+					if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will call digest from updateServiceScopes for services scope: " + servicename);
+					serviceScopes[servicename].$digest();
+				}
 			}
 		},
 		digest: function(servicename) {
+			if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will call digest from digest(servicename) for services scope: " + servicename);
 			if (serviceScopes[servicename]) serviceScopes[servicename].$digest();
 		},
 		setSession: function(session) {
@@ -830,6 +850,24 @@ webSocketModule.factory('$webSocket',
 
 	};
 }).factory("$sabloUtils", function($log, $sabloConverters,$swingModifiers) {
+	// define a global custom 'hash set' based on a configurable hash function received in constructor
+	CustomHashSet = function(hashCodeFunc) {
+		Object.defineProperty(this, "hashCode", {
+			configurable: true,
+			enumerable: false,
+			writable: true,
+			value: hashCodeFunc
+		});
+	};
+	Object.defineProperty(CustomHashSet.prototype, "putItem", {
+		configurable: true,
+		enumerable: false,
+		writable: true,
+		value: function(e) {
+			this[this.hashCode(e)] = e; // hash them by angular scope id to avoid calling digest on the same scope twice
+		}
+	});
+	
 	var getCombinedPropertyNames = function(now,prev) {
 		var fulllist = {}
 		if (prev) {

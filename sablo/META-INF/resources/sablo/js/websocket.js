@@ -593,7 +593,7 @@ webSocketModule.factory('$webSocket',
 
 		getURLParameter: getURLParameter
 	};
-}).factory("$services", function($rootScope, $sabloConverters, $sabloUtils, $propertyWatchesRegistry){
+}).factory("$services", function($rootScope, $sabloConverters, $sabloUtils, $propertyWatchesRegistry, $log){
 	// serviceName:{} service model
 	var serviceScopes = $rootScope.$new(true);
 	var serviceScopesConversionInfo = {};

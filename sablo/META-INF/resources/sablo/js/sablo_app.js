@@ -1,47 +1,4 @@
-angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).config(function($provide, $logProvider,$rootScopeProvider) {
-	____logProvider = $logProvider; // just in case someone wants to alter debug at runtime from browser console for example
-	
-	// log levels for when debugEnabled(true) is called - if that is false, these levels are irrelevant
-	// any custom debug levels can be used as well - these are just stored here so that custom code can test the level and see if it should log it's message
-	$logProvider.DEBUG = 1;
-	$logProvider.SPAM = 2;
-	
-	$logProvider.debugLvl = $logProvider.DEBUG; // default value; if someone wants SPAM debug logging, they can just switch this
-	$logProvider.debugLevel = function(val) {
-		if (val) {
-			$logProvider.debugLvl = val;
-			return $logProvider;
-		} else {
-			return $logProvider.debugLvl;
-		}
-	}
-	$logProvider.debugEnabled(false);
-	
-	$provide.decorator("$log", function($delegate) {
-		Object.defineProperty($delegate, "debugEnabled", {
-			enumerable: false,
-			configurable: false,
-			get: $logProvider.debugEnabled
-		});
-		Object.defineProperty($delegate, "debugLevel", {
-			enumerable: false,
-			configurable: false,
-			get: $logProvider.debugLevel
-		});
-		Object.defineProperty($delegate, "DEBUG", {
-			enumerable: false,
-			configurable: false,
-			value: $logProvider.DEBUG
-		});
-		Object.defineProperty($delegate, "SPAM", {
-			enumerable: false,
-			configurable: false,
-			value: $logProvider.SPAM
-		});
-		return $delegate;
-	})
-	$rootScopeProvider.digestTtl(15); 
-}).value("$sabloConstants",  {
+angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabloConstants",  {
 	modelChangeNotifier: "$modelChangeNotifier"
 }).factory('$sabloApplication', function ($rootScope, $window, $timeout, $q, $log, $webSocket, $sabloConverters, $sabloUtils, $sabloConstants, webStorage) {
 

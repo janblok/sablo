@@ -197,6 +197,18 @@ webSocketModule.factory('$webSocket',
 				$sabloLoadingIndicator.hideLoading();
 			}
 
+			function optimezeAndCallFormScopeDigest(scopesToDigest) {
+				for (var scopeId in scopesToDigest) {
+					var s = scopesToDigest[scopeId];
+					var p = s.$parent;
+					while (p && !scopesToDigest[p.$id]) p = p.$parent;
+					if (!p) { // if no parent form scope is going to do digest
+						if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will call digest for scope: " + (s && s.formname ? s.formname : scopeId));
+						s.$digest();
+					} else if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will NOT call digest for scope: " + (s && s.formname ? s.formname : scopeId) + " because a parent form scope " + (p.formname ? p.formname : p.$id) + " is in the list...");
+				}
+			}
+
 			// message
 			if (obj.msg) {
 				for (var handler in onMessageObjectHandlers) {
@@ -205,10 +217,9 @@ webSocketModule.factory('$webSocket',
 					});
 					var ret = onMessageObjectHandlers[handler](obj.msg, obj[$sabloConverters.TYPES_KEY] ? obj[$sabloConverters.TYPES_KEY].msg : undefined, scopesToDigest)
 					if (ret) responseValue = ret;
-					for (var scopeId in scopesToDigest) {
-						if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will call digest (from obj.msg) for scope: " + (scopesToDigest[scopeId] && scopesToDigest[scopeId].formname ? scopesToDigest[scopeId].formname : scopeId));
-						scopesToDigest[scopeId].$digest();
-					}
+					
+					if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Checking if any form scope changes need to be digested (obj.msg).");
+					optimezeAndCallFormScopeDigest(scopesToDigest);
 				}
 			}
 
@@ -242,13 +253,11 @@ webSocketModule.factory('$webSocket',
 						return s.$id; // hash them by angular scope id to avoid calling digest on the same scope twice
 					});
 					for (var handler in onMessageObjectHandlers) {
-						var scopesToDigestSet = {};
 						onMessageObjectHandlers[handler](obj.calls[index], (obj[$sabloConverters.TYPES_KEY] && obj[$sabloConverters.TYPES_KEY].calls) ? obj[$sabloConverters.TYPES_KEY].calls[index] : undefined, scopesToDigest);
 					}
-					for (var scopeId in scopesToDigest) {
-						if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will call digest (from obj.calls) for scope: " + (scopesToDigest[scopeId] && scopesToDigest[scopeId].formname ? scopesToDigest[scopeId].formname : scopeId));
-						scopesToDigest[scopeId].$digest();
-					}
+					
+					if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Checking if any (obj.calls) form scopes changes need to be digested (obj.calls).");
+					optimezeAndCallFormScopeDigest(scopesToDigest);
 				}
 			}	
 			if (obj && obj.smsgid) {

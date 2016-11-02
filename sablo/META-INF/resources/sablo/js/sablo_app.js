@@ -249,10 +249,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 
 			wsSession.onMessageObject(function (msg, conversionInfo, scopesToDigest) {
 				// data got back from the server
-				var formState = null;
-				var count = 0;
-				for(var formname in msg.forms) {
-					formState = formStates[formname];
+				for (var formname in msg.forms) {
+					var formState = formStates[formname];
 					if (typeof(formState) == 'undefined') {
 						// if the form is not there yet, wait for the form state.
 						getFormState(formname).then(getFormMessageHandler(formname, msg, conversionInfo), 
@@ -260,17 +258,12 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 					} else {
 						// if the form is there apply it directly so that it is there when the form is recreated
 						getFormMessageHandler(formname, msg, conversionInfo)(formState);
-						count++;
+						if (formState.getScope) {
+							var s = formState.getScope();
+							if (s) scopesToDigest.putItem(s);
+						}
 					}
 				}
-				
-				// if there is only 1 form just digest on that one, else digest on rootscope because the forms could be nested.
-				if (formState && count == 1) {
-					if (formState.getScope) {
-						var s = formState.getScope();
-						if (s) scopesToDigest.putItem(s);
-					}
-				} else if (count > 0) scopesToDigest.putItem($rootScope);
 				
 				if (conversionInfo && conversionInfo.call) msg.call = $sabloConverters.convertFromServerToClient(msg.call, conversionInfo.call, undefined, undefined, undefined);
 				

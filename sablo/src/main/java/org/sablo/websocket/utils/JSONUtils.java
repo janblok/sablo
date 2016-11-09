@@ -607,6 +607,12 @@ public class JSONUtils
 			return true;
 		}
 
+		@Override
+		public String toString()
+		{
+			return "JSONString:" + toJSONString();
+		}
+
 	}
 
 	public static <X> IJSONStringWithConversions writeToJSONString(IToJSONWriter<X> toJSONWriter, IToJSONConverter<X> converter) throws JSONException

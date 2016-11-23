@@ -11,6 +11,10 @@
     "karma-coverage": "~0.2.7",
     "karma-junit-reporter": "~0.2.2",
     "karma-ng-html2js-preprocessor": "~0.1.2",
-    "jasmine-core": "~2.2.0"
+    "jasmine-core": "~2.2.0",
+    "typescript": "~2.0.10"
+  },
+  "scripts": {
+    "build": "tsc"
   }
 }

@@ -45,7 +45,18 @@
 			</goals>
 		</execution>
  
-		<!-- 3. Run karma tests -->
+    	<!-- 3. npm run build -->
+		<execution>
+			<id>npm run build</id>
+			<goals>
+				<goal>npm</goal>
+			</goals>
+			<configuration>
+				<arguments>run build</arguments>
+			</configuration>
+		</execution>
+ 
+		<!-- 4. Run karma tests -->
 		<execution>
 			<id>javascript tests</id>
 			<goals>

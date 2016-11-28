@@ -155,8 +155,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		} // recreateUI destroying it completely? or complete form unload? or maybe partial load in hidden div interrupted by real show of same form?
 	}
 
-	var wsSession = null;
-	function getSession() {
+	var wsSession:sablo.WSSession = null;
+	function getSession():sablo.WSSession {
 		if (wsSession == null) throw "Session is not created yet, first call connect()";
 		return wsSession;
 	}

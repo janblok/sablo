@@ -643,7 +643,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 					langAndCountry = browserLanguages[1];
 				}
 			} else {
-				langAndCountry = ($window.navigator.language || $window.navigator.userLanguage);
+				langAndCountry = ($window.navigator.language || $window.navigator['userLanguage']);
 			}
 			
 			return langAndCountry;

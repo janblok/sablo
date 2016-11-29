@@ -1,9 +1,10 @@
 /// <reference path="../../../../typings/angularjs/angular.d.ts" />
 /// <reference path="../../../../typings/sablo/sablo.d.ts" />
+/// <reference path="../../../../typings/jquery/jquery.d.ts" />
 
 angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabloConstants",  {
 	modelChangeNotifier: "$modelChangeNotifier"
-}).factory('$sabloApplication', function ($rootScope, $window, $timeout, $q, $log, $webSocket, $sabloConverters, $sabloUtils, $sabloConstants, webStorage) {
+}).factory('$sabloApplication', function ($rootScope:angular.IRootScopeService, $window:angular.IWindowService, $timeout:angular.ITimeoutService, $q:angular.IQService, $log:sablo.ILogService, $webSocket:sablo.IWebSocket, $sabloConverters:sablo.ISabloConverters, $sabloUtils:sablo.ISabloUtils, $sabloConstants:sablo.SabloConstants, webStorage) {
 
 	// close the connection to the server when application is unloaded
 	$window.addEventListener('unload', function(event) {
@@ -236,8 +237,12 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 	var formResolver = null;
 	var apiCallDeferredQueue = [];
 	
-	var wsSessionArgs = {};
-
+	var wsSessionArgs = {
+		context: "",
+		queryArgs: {},
+		websocketUri: ""
+	};
+	
 	function hasResolvedFormState(name) {
 		return typeof(formStates[name]) !== 'undefined' && formStates[name].resolved;
 	}
@@ -249,7 +254,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 				queryArgs: queryArgs,
 				websocketUri: websocketUri
 			};
-			wsSession = $webSocket.connect(wsSessionArgs['context'], [getSessionId(), getWindowName(), getWindowId()], wsSessionArgs['queryArgs'], wsSessionArgs['websocketUri']);
+			wsSession = $webSocket.connect(wsSessionArgs.context, [getSessionId(), getWindowName(), getWindowId()], wsSessionArgs.queryArgs, wsSessionArgs.websocketUri);
 
 			wsSession.onMessageObject(function (msg, conversionInfo, scopesToDigest) {
 				// data got back from the server
@@ -628,7 +633,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		},
 		getLanguageAndCountryFromBrowser: function() {
 			var langAndCountry;
-			var browserLanguages = $window.navigator.languages;
+			var browserLanguages = $window.navigator['languages'];
 			// this returns first one of the languages array if the browser supports this (Chrome and FF) else it falls back to language or userLanguage (IE, and IE seems to return the right one from there)
 			if (browserLanguages && browserLanguages.length > 0) {
 				langAndCountry = browserLanguages[0];
@@ -676,8 +681,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 			if (push != false) callService('formService', 'setCurrentFormUrl', {url:url}, true);
 		}
 	}
-}).filter('trustAsHtml', ['$sce', function($sce) {
-	return function(input, trustAsHtml) {
+}).filter('trustAsHtml', ['$sce', function($sce: angular.ISCEService) {
+	return function(input:string, trustAsHtml:boolean) {
 		if (input && (!angular.isDefined(trustAsHtml) || trustAsHtml)) {
 			return $sce.trustAsHtml(''+input);
 		}
@@ -690,16 +695,17 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 //- this directive requires full jquery to be loaded before angular.js; jQuery lite that ships with angular doesn't
 //have trigger() that bubbles up; if needed that could be implemented using triggerHandler, going from parent to parent
 //- note: -2 means an element and it's children should be skipped by tabsequence
-.directive('sabloTabseq',  ['$parse', '$timeout', function ($parse,$timeout) {
+.directive('sabloTabseq',  ['$parse', '$timeout', function ($parse:angular.IParseService,$timeout:angular.ITimeoutService) {
 	return {
 		restrict: 'A',
 
-		controller: function($scope, $element, $attrs) {
+		controller: function($scope:angular.IScope, $element:JQuery, $attrs:angular.IAttributes) {
 			// called by angular in parents first then in children
-			var designTabSeq = $parse($attrs.sabloTabseq)($scope);
+			var designTabSeq = $parse($attrs['sabloTabseq'])($scope);
 			if (!designTabSeq) designTabSeq = 0;
-			var config = $parse($attrs.sabloTabseqConfig)($scope);
-
+			var config = $parse($attrs['sabloTabseqConfig'])($scope);
+			
+			
 			var designChildIndexToArrayPosition = {};
 			var designChildTabSeq = []; // contains ordered numbers that will be keys in 'runtimeChildIndexes'; can have duplicates
 			var runtimeChildIndexes = {}; // map designChildIndex[i] -> runtimeIndex for child or designChildIndex[i] -> [runtimeIndex1, runtimeIndex2] in case there are multiple equal design time indexes
@@ -861,7 +867,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 			}
 			$element.on("recalculatePSTS", recalculateIndexesHandler);
 
-			var deregisterAttrObserver = $scope.$watch($attrs.sabloTabseq, function (newDesignTabSeq) {
+			var deregisterAttrObserver = $scope.$watch($attrs['sabloTabseq'], function (newDesignTabSeq) {
 				if (designTabSeq !== newDesignTabSeq && !(config && config.root)) {
 					if (designTabSeq != -2) $element.parent().trigger("unregisterCSTS", [designTabSeq, runtimeIndex]);
 					designTabSeq = newDesignTabSeq;
@@ -927,7 +933,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 			}
 		},
 
-		link: function (scope, element, attrs) {
+		link: function (scope:angular.IScope, element:JQuery, attrs:angular.IAttributes) {
 			// called by angular in children first, then in parents
 			var config = $parse(attrs['sabloTabseqConfig'])(scope);
 
@@ -954,7 +960,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		}
 
 	};
-}]).run(function ($sabloConverters) {
+}]).run(function ($sabloConverters: sablo.ISabloConverters) {
 	// Date type -----------------------------------------------
 	$sabloConverters.registerCustomPropertyHandler('Date', {
 		fromServerToClient: function (serverJSONValue, currentClientValue, scope, modelGetter) {

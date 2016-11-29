@@ -1041,12 +1041,6 @@ webSocketModule.factory('$webSocket',
 				}
 
 				return ret;
-			},
-
-			generateWatchFunctionFor: function (model) {
-				return function (scope) {
-					return model.dataProviderID;
-				};
 			}
 	}
 

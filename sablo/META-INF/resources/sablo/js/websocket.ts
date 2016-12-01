@@ -505,7 +505,7 @@ webSocketModule.factory('$webSocket',
 	/**
 	 * The $webSocket service API.
 	 */
-	return {
+	return  <sablo.IWebSocket> {
 
 		connect : function(context, args, queryArgs, websocketUri) {
 
@@ -785,7 +785,7 @@ webSocketModule.factory('$webSocket',
 		}
 	};
 
-	return {
+	return <sablo.ISabloConverters> {
 
 		/**
 		 * In a custom property value, the val[$sabloConverters.INTERNAL_IMPL] is to be used for internal state/impl details only - not to be accessed by components
@@ -940,7 +940,7 @@ webSocketModule.factory('$webSocket',
 		return true;
 	}
 	var currentEventLevelForServer;
-	var sabloUtils = {
+	var sabloUtils:sablo.ISabloUtils = {
 			// execution priority on server value used when for example a blocking API call from server needs to request more data from the server through this change
 			// or whenever during a (blocking) API call to client we want some messages sent to the server to still be processed.
 			EVENT_LEVEL_SYNC_API_CALL: 500,

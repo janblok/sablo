@@ -121,8 +121,10 @@
 	           <directory>src/main/resources</directory>
 	       </resource>
 	      <resource>
-	           <filtering>false</filtering>
 	           <directory>META-INF</directory>
+	           <excludes>
+          		<exclude>**/*.ts</exclude>
+          	   </excludes>
 	           <targetPath>META-INF</targetPath>
 	       </resource>
            <resource>

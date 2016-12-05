@@ -644,7 +644,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 			} else {
 				langAndCountry = ($window.navigator.language || $window.navigator['userLanguage']);
 			}
-
+			// in some weird scenario in firefox is not set, default it to en
+			if (!langAndCountry) langAndCountry = 'en';
 			return langAndCountry;
 		},
 		getLocale: function() {

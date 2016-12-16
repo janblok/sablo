@@ -91,6 +91,14 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 		return instance;
 	}
 
+	/**
+	 * Get the current state of spec providers, returns an immutable state.
+	 */
+	public static SpecProviderState getSpecProviderState()
+	{
+		return instance == null ? null : instance.reader.getSpecProviderState();
+	}
+
 	public static long getLastLoadTimestamp()
 	{
 		synchronized (WebComponentSpecProvider.class)

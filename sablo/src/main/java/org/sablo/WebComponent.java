@@ -35,7 +35,7 @@ public class WebComponent extends BaseWebObject
 
 	public WebComponent(String componentType, String name)
 	{
-		this(name, WebComponentSpecProvider.getInstance().getSpecProviderState().getWebComponentSpecification(componentType));
+		this(name, WebComponentSpecProvider.getSpecProviderState().getWebComponentSpecification(componentType));
 		properties.put("name", name);
 	}
 

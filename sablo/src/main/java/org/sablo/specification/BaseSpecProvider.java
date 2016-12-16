@@ -34,14 +34,6 @@ public abstract class BaseSpecProvider
 	}
 
 	/**
-	 * Get the current state of spec providers, returns an immutable state.
-	 */
-	public SpecProviderState getSpecProviderState()
-	{
-		return reader.getSpecProviderState();
-	}
-
-	/**
 	 * Updates available packages. "toRemove" provided contents will be removed, "toAdd" will be made available.
 	 */
 	public void updatePackages(Collection<String> toRemove, Collection<IPackageReader> toAdd)

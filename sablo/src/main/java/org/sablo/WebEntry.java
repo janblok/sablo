@@ -106,8 +106,8 @@ public abstract class WebEntry implements Filter, IContributionFilter
 
 			PrintWriter w = servletResponse.getWriter();
 			ModifiablePropertiesGenerator.start(w);
-			ModifiablePropertiesGenerator.appendAll(w, WebComponentSpecProvider.getInstance().getSpecProviderState().getAllWebComponentSpecifications(), "components");
-			ModifiablePropertiesGenerator.appendAll(w, WebServiceSpecProvider.getInstance().getSpecProviderState().getAllWebComponentSpecifications(), "services");
+			ModifiablePropertiesGenerator.appendAll(w, WebComponentSpecProvider.getSpecProviderState().getAllWebComponentSpecifications(), "components");
+			ModifiablePropertiesGenerator.appendAll(w, WebServiceSpecProvider.getSpecProviderState().getAllWebComponentSpecifications(), "services");
 			ModifiablePropertiesGenerator.finish(w);
 			w.flush();
 

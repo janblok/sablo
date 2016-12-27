@@ -201,7 +201,7 @@ webSocketModule.factory('$webSocket',
 				$sabloLoadingIndicator.hideLoading();
 			}
 
-			function optimezeAndCallFormScopeDigest(scopesToDigest) {
+			function optimizeAndCallFormScopeDigest(scopesToDigest) {
 				for (var scopeId in scopesToDigest) {
 					var s = scopesToDigest[scopeId];
 					var p = s.$parent;
@@ -215,16 +215,16 @@ webSocketModule.factory('$webSocket',
 
 			// message
 			if (obj.msg) {
+				var scopesToDigest = new window.CustomHashSet(function(s) {
+					return s.$id; // hash them by angular scope id to avoid calling digest on the same scope twice
+				});
 				for (var handler in onMessageObjectHandlers) {
-					var scopesToDigest = new window.CustomHashSet(function(s) {
-						return s.$id; // hash them by angular scope id to avoid calling digest on the same scope twice
-					});
 					var ret = onMessageObjectHandlers[handler](obj.msg, obj[$sabloConverters.TYPES_KEY] ? obj[$sabloConverters.TYPES_KEY].msg : undefined, scopesToDigest)
 					if (ret) responseValue = ret;
 					
 					if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Checking if any form scope changes need to be digested (obj.msg).");
-					optimezeAndCallFormScopeDigest(scopesToDigest);
 				}
+				optimizeAndCallFormScopeDigest(scopesToDigest);
 			}
 
 			if (obj.msg && obj.msg.services) {
@@ -251,18 +251,18 @@ webSocketModule.factory('$webSocket',
 			// delayed calls
 			if (obj.calls)
 			{
+				var scopesToDigest = new window.CustomHashSet(function(s) {
+					return s.$id; // hash them by angular scope id to avoid calling digest on the same scope twice
+				});
 				for(var i = 0;i < obj.calls.length;i++) 
 				{
-					var scopesToDigest = new window.CustomHashSet(function(s) {
-						return s.$id; // hash them by angular scope id to avoid calling digest on the same scope twice
-					});
 					for (var handler in onMessageObjectHandlers) {
 						onMessageObjectHandlers[handler](obj.calls[i], (obj[$sabloConverters.TYPES_KEY] && obj[$sabloConverters.TYPES_KEY].calls) ? obj[$sabloConverters.TYPES_KEY].calls[i] : undefined, scopesToDigest);
 					}
 					
 					if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Checking if any (obj.calls) form scopes changes need to be digested (obj.calls).");
-					optimezeAndCallFormScopeDigest(scopesToDigest);
 				}
+				optimizeAndCallFormScopeDigest(scopesToDigest);
 			}	
 			if (obj && obj.smsgid) {
 				if (isPromiseLike(responseValue)) {

@@ -38,6 +38,8 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 
 	private static volatile WebServiceSpecProvider instance;
 
+	private static SpecReloadSubject specReloadSubject = new SpecReloadSubject();
+
 	private WebServiceSpecProvider(WebSpecReader reader)
 	{
 		super(reader);
@@ -48,16 +50,20 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 		return instance;
 	}
 
+	public static SpecReloadSubject getSpecReloadSubject()
+	{
+		return specReloadSubject;
+	}
+
 	public static synchronized void init(IPackageReader[] locations)
 	{
-		instance = new WebServiceSpecProvider(new WebSpecReader(locations, IPackageReader.WEB_SERVICE));
+		instance = new WebServiceSpecProvider(new WebSpecReader(locations, IPackageReader.WEB_SERVICE, specReloadSubject));
 	}
 
 	public static void disposeInstance()
 	{
 		instance = null;
 	}
-
 
 	public static WebServiceSpecProvider init(ServletContext servletContext, String[] webComponentBundleNames)
 	{
@@ -87,7 +93,7 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 						}
 
 						instance = new WebServiceSpecProvider(
-							new WebSpecReader(readers.toArray(new IPackageReader[readers.size()]), IPackageReader.WEB_SERVICE));
+							new WebSpecReader(readers.toArray(new IPackageReader[readers.size()]), IPackageReader.WEB_SERVICE, specReloadSubject));
 					}
 					catch (Exception e)
 					{

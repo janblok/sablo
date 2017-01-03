@@ -40,33 +40,4 @@ public abstract class BaseSpecProvider
 	{
 		reader.updatePackages(toRemove, toAdd);
 	}
-
-	/**
-	 * Forwards addition of listener to underlying reader.
-	 * @see WebSpecReader#addSpecReloadListener(String, ISpecReloadListener)
-	 */
-	public void addSpecReloadListener(String specName, ISpecReloadListener specReloadListener)
-	{
-		reader.addSpecReloadListener(specName, specReloadListener);
-	}
-
-	/**
-	 * Forwards addition of listener to underlying reader.
-	 * @see WebSpecReader#addSpecReloadListener(String, ISpecReloadListener)
-	 */
-	public void removeSpecReloadListener(String specName, ISpecReloadListener specReloadListener)
-	{
-		reader.removeSpecReloadListener(specName, specReloadListener);
-	}
-
-	public static interface ISpecReloadListener
-	{
-
-		/**
-		 * If the component's or service's specification was reloaded or removed.
-		 */
-		void webObjectSpecificationReloaded();
-
-	}
-
 }

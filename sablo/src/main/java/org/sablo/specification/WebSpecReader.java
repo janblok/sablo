@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -30,7 +29,6 @@ import java.util.TreeMap;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.sablo.specification.BaseSpecProvider.ISpecReloadListener;
 import org.sablo.specification.Package.DuplicateEntityException;
 import org.sablo.specification.Package.IPackageReader;
 import org.sablo.specification.property.types.TypesRegistry;
@@ -54,16 +52,18 @@ class WebSpecReader
 
 	private final String attributeName;
 
-	private long lastLoadTimestamp;
+	private final SpecReloadSubject specReloadSubject;
 
-	private final Map<String, List<ISpecReloadListener>> specReloadListeners = new HashMap<>();
+	private long lastLoadTimestamp;
 
 	private SpecProviderState specProviderState;
 
-	WebSpecReader(IPackageReader[] packageReaders, String attributeName)
+
+	WebSpecReader(IPackageReader[] packageReaders, String attributeName, SpecReloadSubject specReloadSubject)
 	{
 		this.packageReaders = new ArrayList<>(Arrays.asList(packageReaders));
 		this.attributeName = attributeName;
+		this.specReloadSubject = specReloadSubject;
 		load();
 	}
 
@@ -99,14 +99,8 @@ class WebSpecReader
 			}
 		}
 
-		Iterator<Entry<String, List<ISpecReloadListener>>> it = specReloadListeners.entrySet().iterator();
-		while (it.hasNext())
-		{
-			Entry<String, List<ISpecReloadListener>> listenerEntry = it.next();
-			for (ISpecReloadListener l : listenerEntry.getValue())
-				l.webObjectSpecificationReloaded();
-			if (listenerEntry.getKey() != null && !allWebObjectSpecifications.containsKey(listenerEntry.getKey())) it.remove();
-		}
+		specReloadSubject.fireWebObjectSpecificationReloaded();
+		specReloadSubject.removeOtherSpecReloadListeners(allWebObjectSpecifications.keySet());
 
 		specProviderState = null;
 	}
@@ -159,15 +153,7 @@ class WebSpecReader
 			}
 			else
 			{
-				log.warn("Cannot unload an ng package:");
-				try
-				{
-					log.warn("Package name: :" + packageToRemove);
-				}
-				catch (Exception e)
-				{
-					// nothing
-				}
+				log.warn("Cannot unload an ng package: " + packageToRemove);
 			}
 		}
 
@@ -212,27 +198,8 @@ class WebSpecReader
 
 		if (shouldStillFireReloadListeners)
 		{
-			for (String removedOrReloadedSpec : removedOrReloadedSpecs)
-			{
-				List<ISpecReloadListener> ls = specReloadListeners.get(removedOrReloadedSpec);
-				if (ls != null)
-				{
-					for (ISpecReloadListener l : ls)
-					{
-						l.webObjectSpecificationReloaded();
-					}
-				}
-				if (!allWebObjectSpecifications.containsKey(removedOrReloadedSpec)) specReloadListeners.remove(removedOrReloadedSpec);
-			}
-			// fire the global listeners under the null key
-			List<ISpecReloadListener> list = specReloadListeners.get(null);
-			if (list != null)
-			{
-				for (ISpecReloadListener l : list)
-				{
-					l.webObjectSpecificationReloaded();
-				}
-			}
+			specReloadSubject.fireWebObjectSpecificationReloaded(removedOrReloadedSpecs);
+			specReloadSubject.removeOtherSpecReloadListeners(allWebObjectSpecifications.keySet());
 		}
 	}
 
@@ -348,35 +315,5 @@ class WebSpecReader
 		return specProviderState;
 	}
 
-	/**
-	 * Adds a listener that gets notified when a specific component or service specification gets reloaded or removed.
-	 * If it gets removed, the listener will be cleared as well after begin triggered.
-	 *
-	 * @param specName the name of the component/service to listen to for reloads.
-	 */
-	public void addSpecReloadListener(String specName, ISpecReloadListener specReloadListener)
-	{
-		List<ISpecReloadListener> listeners = specReloadListeners.get(specName);
-		if (listeners == null)
-		{
-			listeners = new ArrayList<>();
-			specReloadListeners.put(specName, listeners);
-		}
-		listeners.add(specReloadListener);
-	}
-
-	/**
-	 * Removes the given listener.
-	 * @see #addSpecReloadListener(String, ISpecReloadListener)
-	 */
-	public void removeSpecReloadListener(String specName, ISpecReloadListener specReloadListener)
-	{
-		List<ISpecReloadListener> listeners = specReloadListeners.get(specName);
-		if (listeners != null)
-		{
-			listeners.remove(specReloadListener);
-			if (listeners.size() == 0) specReloadListeners.remove(specName);
-		}
-	}
 
 }

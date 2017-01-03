@@ -36,6 +36,7 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 	private static final Logger log = LoggerFactory.getLogger(WebComponentSpecProvider.class.getCanonicalName());
 
 	private static volatile WebComponentSpecProvider instance;
+	private static final SpecReloadSubject specReloadSubject = new SpecReloadSubject();
 
 	public static WebComponentSpecProvider getInstance()
 	{
@@ -47,9 +48,14 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 		instance = null;
 	}
 
+	public static SpecReloadSubject getSpecReloadSubject()
+	{
+		return specReloadSubject;
+	}
+
 	public static synchronized void init(IPackageReader[] locations)
 	{
-		instance = new WebComponentSpecProvider(new WebSpecReader(locations, "Web-Component"));
+		instance = new WebComponentSpecProvider(new WebSpecReader(locations, "Web-Component", specReloadSubject));
 	}
 
 	public static WebComponentSpecProvider init(ServletContext servletContext, String[] webComponentBundleNames)
@@ -79,7 +85,8 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 							}
 						}
 
-						instance = new WebComponentSpecProvider(new WebSpecReader(readers.toArray(new IPackageReader[readers.size()]), "Web-Component"));
+						instance = new WebComponentSpecProvider(
+							new WebSpecReader(readers.toArray(new IPackageReader[readers.size()]), "Web-Component", specReloadSubject));
 					}
 					catch (Exception e)
 					{

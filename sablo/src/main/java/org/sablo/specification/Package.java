@@ -549,7 +549,10 @@ public class Package
 					}
 					else
 					{
-						manifest = new Manifest(zip.getInputStream(m));
+						try (InputStream is = zip.getInputStream(m))
+						{
+							manifest = new Manifest(is);
+						}
 					}
 				}
 			}

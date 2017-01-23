@@ -811,19 +811,18 @@ public class Package
 			{
 				throw new IllegalArgumentException("Package " + this.packageName + "META-INF/MANIFEST.MF not found in this context");
 			}
-			try
+			if (servletContext.getResource("/WEB-INF/exported_web_objects.properties") != null)
 			{
-				if (servletContext.getResource("/WEB-INF/exported_web_objects.properties") != null)
+				try (InputStream is = servletContext.getResourceAsStream("/WEB-INF/exported_web_objects.properties"))
 				{
-					InputStream is = servletContext.getResourceAsStream("/WEB-INF/exported_web_objects.properties");
 					Properties properties = new Properties();
 					properties.load(is);
 					usedWebObjects = new HashSet<String>(Arrays.asList(properties.getProperty("usedWebObjects").split(",")));
 				}
-			}
-			catch (Exception e)
-			{
-				throw new IllegalArgumentException("Exception while reading exported_web_objects.properties...", e);
+				catch (Exception e)
+				{
+					throw new IllegalArgumentException("Exception while reading exported_web_objects.properties...", e);
+				}
 			}
 		}
 

@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -111,6 +112,8 @@ public class WebObjectSpecification extends PropertyDescription
 
 	private boolean supportsGrouping;
 
+	private Map<String, PropertyDescription> attributes = null;
+
 	public WebObjectSpecification(String name, String packageName, String displayName, String categoryName, String icon, String preview, String definition,
 		JSONArray libs)
 	{
@@ -139,6 +142,15 @@ public class WebObjectSpecification extends PropertyDescription
 		this.foundTypes = new HashMap<>();
 	}
 
+	public void putAllAttributes(Map<String, PropertyDescription> parseProperties)
+	{
+		attributes = new TreeMap<String, PropertyDescription>(parseProperties);
+	}
+
+	public Map<String, PropertyDescription> getAttributes()
+	{
+		return attributes;
+	}
 
 	/**
 	 * @param serverScript the serverScript to set

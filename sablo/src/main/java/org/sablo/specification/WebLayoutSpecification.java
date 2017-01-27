@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -111,18 +109,6 @@ public class WebLayoutSpecification extends WebObjectSpecification
 		}
 
 		return spec;
-	}
-
-	private Map<String, PropertyDescription> attributes = null;
-
-	private void putAllAttributes(Map<String, PropertyDescription> parseProperties)
-	{
-		attributes = new TreeMap<String, PropertyDescription>(parseProperties);
-	}
-
-	public Map<String, PropertyDescription> getAttributes()
-	{
-		return attributes;
 	}
 
 	private final boolean topContainer;

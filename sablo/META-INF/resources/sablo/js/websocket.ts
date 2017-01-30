@@ -616,8 +616,8 @@ webSocketModule.factory('$webSocket',
 		var changes = {}
 		var conversionInfo = serviceScopesConversionInfo[servicename];
 		if (property) {
-			if (conversionInfo && conversionInfo[property]) changes[property] = $sabloConverters.convertFromClientToServer(now, conversionInfo[property], prev);
-			else changes[property] = $sabloUtils.convertClientObject(now)
+			if (conversionInfo && conversionInfo[property]) changes[property] = $sabloConverters.convertFromClientToServer(now[property], conversionInfo[property], prev[property]);
+			else changes[property] = $sabloUtils.convertClientObject(now[property])
 		} else {
 			// first build up a list of all the properties both have.
 			var fulllist = $sabloUtils.getCombinedPropertyNames(now,prev);
@@ -644,7 +644,7 @@ webSocketModule.factory('$webSocket',
 	};
 	var getChangeNotifier = function(servicename, property) {
 		return function() {
-			var serviceModel = serviceScopes[servicename];
+			var serviceModel = serviceScopes[servicename].model;
 			sendServiceChanges(serviceModel, serviceModel, servicename, property);
 		}
 	};

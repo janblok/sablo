@@ -246,7 +246,8 @@ public class IndexPageEnhancer
 			lib = libs.optJSONObject(i);
 			if (lib != null)
 			{
-				if (supportGrouping != null && supportGrouping.booleanValue() != lib.optBoolean("group", true)) continue;
+				boolean group = lib.optString("url").toLowerCase().startsWith("http") ? false : lib.optBoolean("group", true);
+				if (supportGrouping != null && supportGrouping.booleanValue() != group) continue;
 				String name = lib.optString("name", null);
 				String version = lib.optString("version", null);
 				if (name != null && lib.has("url") && lib.has("mimetype"))

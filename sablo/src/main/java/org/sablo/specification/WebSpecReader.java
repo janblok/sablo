@@ -45,7 +45,7 @@ class WebSpecReader
 	private final Map<String, PackageSpecification<WebObjectSpecification>> cachedDescriptions = new HashMap<>();
 	private final Map<String, PackageSpecification<WebLayoutSpecification>> cachedLayoutDescriptions = new TreeMap<>();
 	private final Map<String, WebObjectSpecification> allWebObjectSpecifications = new HashMap<>();
-	private final Map<String, IPackageReader> allPackages = new HashMap<>();
+	private final Map<String, List<IPackageReader>> allPackages = new HashMap<>();
 	private final Set<String> packagesWithGloballyDefinedTypes = new HashSet<>(); // packageNames of packages that have globally defined types
 
 	private final List<IPackageReader> packageReaders;
@@ -108,7 +108,7 @@ class WebSpecReader
 	/**
 	 * Updates available packages. "toRemove" provided contents will be removed, "toAdd" will be made available.
 	 */
-	public synchronized void updatePackages(Collection<String> packagesToRemove, Collection<IPackageReader> packagesToAdd)
+	public synchronized void updatePackages(Collection<IPackageReader> packagesToRemove, Collection<IPackageReader> packagesToAdd)
 	{
 		if (packagesToRemove.size() == 0 && packagesToAdd.size() == 0) return;
 
@@ -118,13 +118,13 @@ class WebSpecReader
 		List<String> removedOrReloadedSpecs = new ArrayList<>(); // so not newly added
 
 		boolean shouldReloadAllDueToGlobalTypeChanges = false;
-		for (String packageToRemove : packagesToRemove)
+		for (IPackageReader packageToRemove : packagesToRemove)
 		{
 			// find the package name from cache - cause the IPackageReader might already be invalid (contents deleted and such - so we can't rely on it's .getPackageName())
 			String packageNameToRemove = null;
-			for (Entry<String, IPackageReader> e : allPackages.entrySet())
+			for (Entry<String, List<IPackageReader>> e : allPackages.entrySet())
 			{
-				if (e.getKey().equals(packageToRemove))
+				if (e.getValue().contains(packageToRemove))
 				{
 					packageNameToRemove = e.getKey();
 					break;
@@ -148,8 +148,26 @@ class WebSpecReader
 					allWebObjectSpecifications.remove(specName);
 					removedOrReloadedSpecs.add(specName);
 				}
-				IPackageReader oldPackageReader = allPackages.remove(packageNameToRemove);
-				if (oldPackageReader != null) packageReaders.remove(oldPackageReader);
+				List<IPackageReader> oldPackageReader = allPackages.remove(packageNameToRemove);
+				if (oldPackageReader != null)
+				{
+					// first remove all of them from the package readers
+					packageReaders.removeAll(oldPackageReader);
+					// remove the one we really want to remove from this list
+					oldPackageReader.remove(packageToRemove);
+					// then add the list back into the packagesToAdd so they are added
+					if (oldPackageReader.size() > 0)
+					{
+						for (IPackageReader pr : oldPackageReader)
+						{
+							if (!packagesToAdd.contains(pr) && !packagesToRemove.contains(pr))
+							{
+								packagesToAdd.add(pr);
+							}
+							pr.clearError();
+						}
+					}
+				}
 			}
 			else
 			{
@@ -271,15 +289,25 @@ class WebSpecReader
 
 	private void cache(Package p) throws IOException
 	{
-		IPackageReader oldPackage = allPackages.put(p.getPackageName(), p.getReader());
-		if (oldPackage != null)
+		List<IPackageReader> list = allPackages.get(p.getPackageName());
+		if (list == null)
 		{
-			log.error("Conflict found! Duplicate web component / web service / web layout package name: " + oldPackage.getPackageName());
-			log.error("Location 1 : " + oldPackage.getPackageURL());
-			log.error("Location 2 : " + p.getReader().getPackageURL());
-			log.error("Will discard location 1 and load location 2... But this should be adressed by the solution.");
-			p.getReader().reportError("", new DuplicateEntityException("Duplicate package found: " + oldPackage.getPackageName()));
+			list = new ArrayList<>(3);
+			allPackages.put(p.getPackageName(), list);
 		}
+		else if (list.size() > 0)
+		{
+			IPackageReader oldPackage = list.get(0);
+			if (oldPackage != null)
+			{
+				log.error("Conflict found! Duplicate web component / web service / web layout package name: " + oldPackage.getPackageName());
+				log.error("Location 1 : " + oldPackage.getPackageURL());
+				log.error("Location 2 : " + p.getReader().getPackageURL());
+				log.error("Will discard location 1 and load location 2... But this should be adressed by the solution.");
+				p.getReader().reportError("", new DuplicateEntityException("Duplicate package found: " + oldPackage.getPackageName()));
+			}
+		}
+		list.add(p.getReader());
 		PackageSpecification<WebObjectSpecification> webComponentPackageSpecification = p.getWebObjectDescriptions(attributeName);
 		Map<String, WebObjectSpecification> webComponentDescriptions = webComponentPackageSpecification.getSpecifications();
 		Map<String, WebObjectSpecification> packageComponents = new HashMap<>(webComponentDescriptions.size());
@@ -293,10 +321,7 @@ class WebSpecReader
 				log.error(s);
 				p.getReader().reportError(desc.getSpecURL().toString(), new DuplicateEntityException(s));
 			}
-			else
-			{
-				packageComponents.put(desc.getName(), desc);
-			}
+			packageComponents.put(desc.getName(), desc);
 		}
 
 		cachedDescriptions.put(webComponentPackageSpecification.getPackageName(), new PackageSpecification<>(webComponentPackageSpecification.getPackageName(),

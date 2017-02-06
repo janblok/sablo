@@ -108,6 +108,11 @@ public class InMemPackageReader implements IPackageReader
 	}
 
 	@Override
+	public void clearError()
+	{
+	}
+
+	@Override
 	public URL getPackageURL()
 	{
 		return null;

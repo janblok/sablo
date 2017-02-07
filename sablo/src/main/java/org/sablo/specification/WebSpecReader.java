@@ -309,23 +309,22 @@ class WebSpecReader
 		}
 		list.add(p.getReader());
 		PackageSpecification<WebObjectSpecification> webComponentPackageSpecification = p.getWebObjectDescriptions(attributeName);
-		Map<String, WebObjectSpecification> webComponentDescriptions = webComponentPackageSpecification.getSpecifications();
-		Map<String, WebObjectSpecification> packageComponents = new HashMap<>(webComponentDescriptions.size());
-		for (WebObjectSpecification desc : webComponentDescriptions.values())
+		if (!cachedDescriptions.containsKey(webComponentPackageSpecification.getPackageName()))
 		{
-			WebObjectSpecification old = allWebObjectSpecifications.put(desc.getName(), desc);
-			if (old != null)
+			cachedDescriptions.put(webComponentPackageSpecification.getPackageName(), webComponentPackageSpecification);
+			Map<String, WebObjectSpecification> webComponentDescriptions = webComponentPackageSpecification.getSpecifications();
+			for (WebObjectSpecification desc : webComponentDescriptions.values())
 			{
-				String s = "Duplicate web object definition found; name: " + old.getName() + ". Packages: " + old.getPackageName() + " and " +
-					desc.getPackageName() + ".";
-				log.error(s);
-				p.getReader().reportError(desc.getSpecURL().toString(), new DuplicateEntityException(s));
+				WebObjectSpecification old = allWebObjectSpecifications.put(desc.getName(), desc);
+				if (old != null)
+				{
+					String s = "Duplicate web object definition found; name: " + old.getName() + ". Packages: " + old.getPackageName() + " and " +
+						desc.getPackageName() + ".";
+					log.error(s);
+					p.getReader().reportError(desc.getSpecURL().toString(), new DuplicateEntityException(s));
+				}
 			}
-			packageComponents.put(desc.getName(), desc);
 		}
-
-		cachedDescriptions.put(webComponentPackageSpecification.getPackageName(), new PackageSpecification<>(webComponentPackageSpecification.getPackageName(),
-			webComponentPackageSpecification.getPackageDisplayname(), packageComponents, webComponentPackageSpecification.getManifest()));
 	}
 
 	/**

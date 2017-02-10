@@ -334,10 +334,12 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 												resultObject = ((TypedData< ? >)result).content;
 												objectType = ((TypedData< ? >)result).contentType;
 											}
+											getWindow().sendChanges();
 											sendResponse(msgId, resultObject, objectType, true);
 										}
 										else
 										{
+											getWindow().sendChanges();
 											sendResponse(msgId, error, null, false);
 										}
 									}

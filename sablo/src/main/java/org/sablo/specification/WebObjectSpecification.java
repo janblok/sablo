@@ -378,8 +378,7 @@ public class WebObjectSpecification extends PropertyDescription
 						{
 							ParsedProperty pp = spec.parsePropertyString(param.getString("type"));
 							propertyType = resolveArrayType(pp);
-							// hmm why not set the array field instead of configObject here?
-							config = param;
+							config = propertyType.parseConfig(null);
 						}
 						def.addParameter(new PropertyDescription((String)param.get("name"), propertyType, config, null, null, false, null, null, null,
 							Boolean.TRUE.equals(param.opt("optional"))));

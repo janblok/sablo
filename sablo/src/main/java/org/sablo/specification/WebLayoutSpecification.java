@@ -48,10 +48,11 @@ public class WebLayoutSpecification extends WebObjectSpecification
 
 		boolean topContainer = json.has("topContainer") ? json.optBoolean("topContainer", false) : false;
 
-		List<String> excludes = new ArrayList<>();
+		List<String> excludes = null;
 		JSONArray excludesChildren = json.optJSONArray("excludes");
 		if (excludesChildren != null)
 		{
+			excludes = new ArrayList<>();
 			for (int i = 0; i < excludesChildren.length(); i++)
 			{
 				excludes.add(excludesChildren.optString(i));

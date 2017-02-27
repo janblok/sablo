@@ -170,11 +170,13 @@ public class WebsocketSessionWindows implements IWindow
 	@Override
 	public Object invokeApi(WebComponent receiver, WebObjectFunctionDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes)
 	{
+		Object retValue = null;
 		for (IWindow window : session.getWindows())
 		{
-			window.invokeApi(receiver, apiFunction, arguments, argumentTypes);
+			if (retValue == null) retValue = window.invokeApi(receiver, apiFunction, arguments, argumentTypes);
+			else window.invokeApi(receiver, apiFunction, arguments, argumentTypes);
 		}
-		return null;
+		return retValue;
 	}
 
 	@Override

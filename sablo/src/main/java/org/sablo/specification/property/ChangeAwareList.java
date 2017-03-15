@@ -499,11 +499,14 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	public ET set(int index, ET element)
 	{
 		WT oldWV = getWrappedBaseList().get(index);
-		if (element == baseList.get(index) || element != null && element.equals(baseList.get(index))) return element;
 		ET tmp = baseList.set(index, element);
-		detachIfNeeded(index, oldWV, false);
-		attachToBaseObjectIfNeeded(index, getWrappedBaseList().get(index), false);
-		markElementChanged(index);
+
+		if (tmp != element || true)
+		{
+			detachIfNeeded(index, oldWV, false);
+			attachToBaseObjectIfNeeded(index, getWrappedBaseList().get(index), false);
+			markElementChanged(index);
+		}
 		return tmp;
 	}
 

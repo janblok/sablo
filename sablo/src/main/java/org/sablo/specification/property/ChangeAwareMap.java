@@ -300,10 +300,14 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	@Override
 	public ET put(String key, ET value)
 	{
-		if (value == baseMap.get(key) || value != null && value.equals(baseMap.get(key))) return value;
+		WT oldWV = getWrappedBaseMap().get(key);
 		ET tmp = baseMap.put(key, value);
-		attachToBaseObjectIfNeeded(key, getWrappedBaseMap().get(key));
-		markElementChanged(key);
+		if (tmp != value || true)
+		{
+			detachIfNeeded(key, oldWV);
+			attachToBaseObjectIfNeeded(key, getWrappedBaseMap().get(key));
+			markElementChanged(key);
+		}
 		return tmp;
 	}
 

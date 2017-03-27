@@ -398,6 +398,8 @@ webSocketModule.factory('$webSocket',
 	var lastHeartbeat = undefined;
 	function startHeartbeat() {
 		if (!angular.isDefined(heartbeatMonitor)) {
+			if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Starting heartbeat... (" + new Date().getTime() + ")");
+
 			lastHeartbeat = new Date().getTime();
 			heartbeatMonitor = $interval(function() {
 				if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Sending heartbeat... (" + new Date().getTime() + ")");
@@ -405,7 +407,7 @@ webSocketModule.factory('$webSocket',
 				if (isConnected() && new Date().getTime() - lastHeartbeat > 8000) {
 					// no response within 8 seconds
 					if (connected !== 'RECONNECTING') {
-						if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Heartbeat timed out; connection lots; waiting to reconnect... (" + new Date().getTime() + ")");
+						if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Heartbeat timed out; connection lost; waiting to reconnect... (" + new Date().getTime() + ")");
 						connected = 'RECONNECTING';
 						$rootScope.$apply();
 					}
@@ -416,6 +418,7 @@ webSocketModule.factory('$webSocket',
 	
 	function stopHeartbeat() {
 		if (angular.isDefined(heartbeatMonitor)) {
+			if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Stopping heartbeat... (" + new Date().getTime() + ")");
 			$interval.cancel(heartbeatMonitor);
 			heartbeatMonitor = undefined;
 		}

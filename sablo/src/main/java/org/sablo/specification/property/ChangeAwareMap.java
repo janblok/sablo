@@ -302,7 +302,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	{
 		WT oldWV = getWrappedBaseMap().get(key);
 		ET tmp = baseMap.put(key, value);
-		if (tmp != value || true)
+		if (tmp != value)
 		{
 			detachIfNeeded(key, oldWV);
 			attachToBaseObjectIfNeeded(key, getWrappedBaseMap().get(key));

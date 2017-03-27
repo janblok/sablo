@@ -501,7 +501,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		WT oldWV = getWrappedBaseList().get(index);
 		ET tmp = baseList.set(index, element);
 
-		if (tmp != element || true)
+		if (tmp != element)
 		{
 			detachIfNeeded(index, oldWV, false);
 			attachToBaseObjectIfNeeded(index, getWrappedBaseList().get(index), false);

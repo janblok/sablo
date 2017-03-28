@@ -4,6 +4,7 @@
 
 /// <reference path="../../../../typings/angularjs/angular.d.ts" />
 /// <reference path="../../../../typings/window/window.d.ts" />
+/// <reference path="../../../../typings/sablo/sablo.d.ts" />
 
 var webSocketModule = angular.module('webSocketModule', ['pushToServerData']).config(function($provide, $logProvider,$rootScopeProvider) {
 	window.____logProvider = $logProvider; // just in case someone wants to alter debug at runtime from browser console for example

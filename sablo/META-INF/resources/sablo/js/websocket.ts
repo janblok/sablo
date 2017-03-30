@@ -662,7 +662,7 @@ webSocketModule.factory('$webSocket',
 			// this should do the same as ClientService.java #convertToJSName()
 			var packageAndName = serviceName.split("-");
 			if (packageAndName.length > 1) {
-				serviceName += packageAndName[0];
+				serviceName = packageAndName[0];
 				for (var i = 1; i < packageAndName.length; i++) {
 					if (packageAndName[1].length > 0) serviceName += packageAndName[i].charAt(0).toUpperCase() + packageAndName[i].slice(1);
 				}

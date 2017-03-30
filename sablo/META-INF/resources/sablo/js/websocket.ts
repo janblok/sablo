@@ -617,9 +617,10 @@ webSocketModule.factory('$webSocket',
 		var changes = {}
 		var conversionInfo = serviceScopesConversionInfo[servicename];
 		if (property) {
-			if (conversionInfo && conversionInfo[property]) changes[property] = $sabloConverters.convertFromClientToServer(now[property], conversionInfo[property], prev[property]);
-			else changes[property] = $sabloUtils.convertClientObject(now[property])
+			if (conversionInfo && conversionInfo[property]) changes[property] = $sabloConverters.convertFromClientToServer(now, conversionInfo[property], prev);
+			else changes[property] = $sabloUtils.convertClientObject(now);
 		} else {
+			// TODO hmm I think it will never go through here anymore; remove this else code
 			// first build up a list of all the properties both have.
 			var fulllist = $sabloUtils.getCombinedPropertyNames(now,prev);
 			var changes = {};
@@ -638,7 +639,7 @@ webSocketModule.factory('$webSocket',
 				}
 			}
 		}
-		for (var prop in changes) {
+		for (var prop in changes) { // weird way to only send it if it has at least one element
 			wsSession.sendMessageObject({servicedatapush:servicename,changes:changes})
 			return;
 		}
@@ -646,7 +647,7 @@ webSocketModule.factory('$webSocket',
 	var getChangeNotifier = function(servicename, property) {
 		return function() {
 			var serviceModel = serviceScopes[servicename].model;
-			sendServiceChanges(serviceModel, serviceModel, servicename, property);
+			sendServiceChanges(serviceModel[property], serviceModel[property], servicename, property);
 		}
 	};
 	return {
@@ -886,13 +887,13 @@ webSocketModule.factory('$webSocket',
 		var fulllist = {}
 		if (prev) {
 			var prevNames = Object.getOwnPropertyNames(prev);
-			for(var i=0;i<prevNames.length;i++) {
+			for(var i=0; i < prevNames.length; i++) {
 				fulllist[prevNames[i]] = true;
 			}
 		}
 		if (now) {
 			var nowNames = Object.getOwnPropertyNames(now);
-			for(var i=0;i<nowNames.length;i++) {
+			for(var i=0;i < nowNames.length;i++) {
 				fulllist[nowNames[i]] = true;
 			}
 		}

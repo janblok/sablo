@@ -4,6 +4,7 @@
 
 /// <reference path="../../../../typings/angularjs/angular.d.ts" />
 /// <reference path="../../../../typings/window/window.d.ts" />
+/// <reference path="../../../../typings/sablo/sablo.d.ts" />
 
 var webSocketModule = angular.module('webSocketModule', ['pushToServerData']).config(function($provide, $logProvider,$rootScopeProvider) {
 	window.____logProvider = $logProvider; // just in case someone wants to alter debug at runtime from browser console for example
@@ -619,9 +620,10 @@ webSocketModule.factory('$webSocket',
 		var changes = {}
 		var conversionInfo = serviceScopesConversionInfo[servicename];
 		if (property) {
-			if (conversionInfo && conversionInfo[property]) changes[property] = $sabloConverters.convertFromClientToServer(now[property], conversionInfo[property], prev[property]);
-			else changes[property] = $sabloUtils.convertClientObject(now[property])
+			if (conversionInfo && conversionInfo[property]) changes[property] = $sabloConverters.convertFromClientToServer(now, conversionInfo[property], prev);
+			else changes[property] = $sabloUtils.convertClientObject(now);
 		} else {
+			// TODO hmm I think it will never go through here anymore; remove this else code
 			// first build up a list of all the properties both have.
 			var fulllist = $sabloUtils.getCombinedPropertyNames(now,prev);
 			var changes = {};
@@ -640,7 +642,7 @@ webSocketModule.factory('$webSocket',
 				}
 			}
 		}
-		for (var prop in changes) {
+		for (var prop in changes) { // weird way to only send it if it has at least one element
 			wsSession.sendMessageObject({servicedatapush:servicename,changes:changes})
 			return;
 		}
@@ -648,11 +650,31 @@ webSocketModule.factory('$webSocket',
 	var getChangeNotifier = function(servicename, property) {
 		return function() {
 			var serviceModel = serviceScopes[servicename].model;
-			sendServiceChanges(serviceModel, serviceModel, servicename, property);
+			sendServiceChanges(serviceModel[property], serviceModel[property], servicename, property);
 		}
 	};
+	
+	function scriptifyServiceNameIfNeeded(serviceName) {
+		if (serviceName) {
+			// transform serviceNames like testpackage-myTestService into testPackageMyTestService - as latter is how getServiceScope usually gets called (from developer generated code for services) from service client js;
+			// but who knows, maybe someone will try the dashed version and wonder why it doesn't work
+			
+			// this should do the same as ClientService.java #convertToJSName()
+			var packageAndName = serviceName.split("-");
+			if (packageAndName.length > 1) {
+				serviceName += packageAndName[0];
+				for (var i = 1; i < packageAndName.length; i++) {
+					if (packageAndName[1].length > 0) serviceName += packageAndName[i].charAt(0).toUpperCase() + packageAndName[i].slice(1);
+				}
+			}
+		}
+		return serviceName;
+	}
+
 	return {
 		getServiceScope: function(serviceName) {
+			serviceName = scriptifyServiceNameIfNeeded(serviceName);
+			
 			if (!serviceScopes[serviceName]) {
 				serviceScopes[serviceName] = serviceScopes.$new(true);
 				serviceScopes[serviceName].model = {};
@@ -888,13 +910,13 @@ webSocketModule.factory('$webSocket',
 		var fulllist = {}
 		if (prev) {
 			var prevNames = Object.getOwnPropertyNames(prev);
-			for(var i=0;i<prevNames.length;i++) {
+			for(var i=0; i < prevNames.length; i++) {
 				fulllist[prevNames[i]] = true;
 			}
 		}
 		if (now) {
 			var nowNames = Object.getOwnPropertyNames(now);
-			for(var i=0;i<nowNames.length;i++) {
+			for(var i=0;i < nowNames.length;i++) {
 				fulllist[nowNames[i]] = true;
 			}
 		}

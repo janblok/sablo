@@ -355,7 +355,7 @@ public class WebComponentTest
 	@Test
 	public void setColorPropertyWithOldValue()
 	{
-		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", "", null, null, null, "", null);
+		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null);
 		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
 		formSpec.putProperty("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
 
@@ -424,7 +424,7 @@ public class WebComponentTest
 	@Test
 	public void setIntPropertyWithOldValue()
 	{
-		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", "", null, null, null, "", null);
+		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null);
 		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
 		formSpec.putProperty("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
 

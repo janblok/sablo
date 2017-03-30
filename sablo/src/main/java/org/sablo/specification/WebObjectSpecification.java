@@ -39,6 +39,7 @@ import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.types.FunctionPropertyType;
 import org.sablo.specification.property.types.ObjectPropertyType;
 import org.sablo.specification.property.types.TypesRegistry;
+import org.sablo.websocket.impl.ClientService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,6 +102,11 @@ public class WebObjectSpecification extends PropertyDescription
 
 	private final Map<String, IPropertyType< ? >> foundTypes;
 
+	/**
+	 * Different then name only for services, not components/layouts.
+	 */
+	private final String scriptingName;
+
 	private URL serverScript;
 
 	private URL specURL;
@@ -111,10 +117,14 @@ public class WebObjectSpecification extends PropertyDescription
 
 	private boolean supportsGrouping;
 
-	public WebObjectSpecification(String name, String packageName, String displayName, String categoryName, String icon, String preview, String definition,
-		JSONArray libs)
+	/**
+	 * @param packageType one of {@link IPackageReader#WEB_SERVICE}, {@link IPackageReader#WEB_COMPONENT} and {@link IPackageReader#WEB_LAYOUT}.
+	 */
+	public WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
+		String definition, JSONArray libs)
 	{
 		super(name, null);
+		this.scriptingName = scriptifyNameIfNeeded(name, packageType);
 		this.packageName = packageName;
 		this.displayName = displayName;
 		this.categoryName = categoryName;
@@ -125,10 +135,14 @@ public class WebObjectSpecification extends PropertyDescription
 		this.foundTypes = new HashMap<>();
 	}
 
-	public WebObjectSpecification(String name, String packageName, String displayName, String categoryName, String icon, String preview, String definition,
-		JSONArray libs, Object configObject)
+	/**
+	 * @param packageType one of {@link IPackageReader#WEB_SERVICE}, {@link IPackageReader#WEB_COMPONENT} and {@link IPackageReader#WEB_LAYOUT}.
+	 */
+	public WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
+		String definition, JSONArray libs, Object configObject)
 	{
 		super(name, null, configObject);
+		this.scriptingName = scriptifyNameIfNeeded(name, packageType);
 		this.packageName = packageName;
 		this.displayName = displayName;
 		this.categoryName = categoryName;
@@ -139,6 +153,15 @@ public class WebObjectSpecification extends PropertyDescription
 		this.foundTypes = new HashMap<>();
 	}
 
+	protected String scriptifyNameIfNeeded(String name, String packageType)
+	{
+		String scriptingN = name;
+		if (scriptingN != null && IPackageReader.WEB_SERVICE.equals(packageType))
+		{
+			scriptingN = ClientService.convertToJSName(scriptingN);
+		} // else other types (components/layouts don't get their scope on client in the same way and work directly with "name")
+		return scriptingN;
+	}
 
 	/**
 	 * @param serverScript the serverScript to set
@@ -206,6 +229,14 @@ public class WebObjectSpecification extends PropertyDescription
 	public String getCategoryName()
 	{
 		return categoryName;
+	}
+
+	/**
+	 * This is the name used in client side scripting (module name, for services service scope and factory name...).
+	 */
+	public String getScriptingName()
+	{
+		return scriptingName;
 	}
 
 	public String getIcon()
@@ -285,7 +316,7 @@ public class WebObjectSpecification extends PropertyDescription
 
 	public static Map<String, IPropertyType< ? >> getTypes(JSONObject typesContainer) throws JSONException
 	{
-		WebObjectSpecification spec = new WebObjectSpecification("", "", "", null, null, null, "", null);
+		WebObjectSpecification spec = new WebObjectSpecification("", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null);
 		spec.parseTypes(typesContainer);
 		return spec.foundTypes;
 	}
@@ -295,9 +326,9 @@ public class WebObjectSpecification extends PropertyDescription
 	{
 		JSONObject json = new JSONObject(specfileContent);
 
-		WebObjectSpecification spec = new WebObjectSpecification(json.getString("name"), packageName, json.optString("displayName", null),
-			json.optString("categoryName", null), json.optString("icon", null), json.optString("preview", null), json.getString("definition"),
-			json.optJSONArray("libraries"));
+		WebObjectSpecification spec = new WebObjectSpecification(json.getString("name"), packageName, reader != null ? reader.getPackageType() : null,
+			json.optString("displayName", null), json.optString("categoryName", null), json.optString("icon", null), json.optString("preview", null),
+			json.getString("definition"), json.optJSONArray("libraries"));
 
 		if (json.has("serverscript"))
 		{

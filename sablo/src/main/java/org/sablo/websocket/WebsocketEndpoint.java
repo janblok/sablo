@@ -363,11 +363,10 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 					log.info("Unknown service called from the client: " + serviceName);
 				}
 			}
-
 			else if (obj.has("servicedatapush"))
 			{
-				final String serviceName = obj.optString("servicedatapush");
-				final IClientService service = window.getSession().getClientService(serviceName);
+				final String serviceScriptingName = obj.optString("servicedatapush");
+				final IClientService service = window.getSession().getClientServiceByScriptingName(serviceScriptingName);
 				if (service != null)
 				{
 					final int eventLevel = obj.optInt("prio", IEventDispatcher.EVENT_LEVEL_DEFAULT);
@@ -389,7 +388,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 							}
 							catch (JSONException e)
 							{
-								log.error("JSONException while executing service " + serviceName + " datachange.", e);
+								log.error("JSONException while executing service " + serviceScriptingName + " datachange.", e);
 								return;
 							}
 						}
@@ -397,7 +396,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 				}
 				else
 				{
-					log.info("Unknown service datapush from client; ignoring: " + serviceName);
+					log.info("Unknown service datapush from client; ignoring: " + serviceScriptingName);
 				}
 
 			}

@@ -650,8 +650,28 @@ webSocketModule.factory('$webSocket',
 			sendServiceChanges(serviceModel[property], serviceModel[property], servicename, property);
 		}
 	};
+	
+	function scriptifyServiceNameIfNeeded(serviceName) {
+		if (serviceName) {
+			// transform serviceNames like testpackage-myTestService into testPackageMyTestService - as latter is how getServiceScope usually gets called (from developer generated code for services) from service client js;
+			// but who knows, maybe someone will try the dashed version and wonder why it doesn't work
+			
+			// this should do the same as ClientService.java #convertToJSName()
+			var packageAndName = serviceName.split("-");
+			if (packageAndName.length > 1) {
+				serviceName += packageAndName[0];
+				for (var i = 1; i < packageAndName.length; i++) {
+					if (packageAndName[1].length > 0) serviceName += packageAndName[i].charAt(0).toUpperCase() + packageAndName[i].slice(1);
+				}
+			}
+		}
+		return serviceName;
+	}
+
 	return {
 		getServiceScope: function(serviceName) {
+			serviceName = scriptifyServiceNameIfNeeded(serviceName);
+			
 			if (!serviceScopes[serviceName]) {
 				serviceScopes[serviceName] = serviceScopes.$new(true);
 				serviceScopes[serviceName].model = {};

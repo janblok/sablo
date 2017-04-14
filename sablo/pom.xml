@@ -13,6 +13,7 @@
   	<name>Servoy</name>
   	<url>servoy.com</url>
   </organization>
+  
   <url>http://maven.apache.org</url>
   <properties>
 	  <maven.compiler.source>1.7</maven.compiler.source>

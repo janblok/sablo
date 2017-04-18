@@ -55,7 +55,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 
 	protected Set<Integer> changedIndexes = new HashSet<Integer>();
 	protected List<Integer> removedIndexes = new ArrayList<Integer>();
-	private final List<Integer> addedIndexes = new ArrayList<Integer>();
+	protected List<Integer> addedIndexes = new ArrayList<Integer>();
 	protected boolean allChanged;
 
 	protected boolean mustSendTypeToClient;

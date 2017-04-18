@@ -414,6 +414,7 @@ webSocketModule.factory('$webSocket',
 	var wsSession = new WebsocketSession();
 
 	var connected = 'INITIAL'; // INITIAL/CONNECTED/RECONNECTING/CLOSED
+	if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Connection mode: ... INITIAL (" + new Date().getTime() + ")");
 	var pendingMessages = undefined
 
 	// heartbeat, detect disconnects before websocket gives us connection-closed.
@@ -430,7 +431,7 @@ webSocketModule.factory('$webSocket',
 				if (isConnected() && new Date().getTime() - lastHeartbeat > 8000) {
 					// no response within 8 seconds
 					if (connected !== 'RECONNECTING') {
-						if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Heartbeat timed out; connection lost; waiting to reconnect... (" + new Date().getTime() + ")");
+						if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Connection mode (Heartbeat timed out; connection lost; waiting to reconnect): ... RECONNECTING (" + new Date().getTime() + ")");
 						connected = 'RECONNECTING';
 						$rootScope.$apply();
 					}
@@ -448,8 +449,8 @@ webSocketModule.factory('$webSocket',
 	}
 	
 	function setConnected() {
-
 		connected = 'CONNECTED';
+		if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Connection mode: ... CONNECTED (" + new Date().getTime() + ")");
 
 		if (pendingMessages) {
 			for (var i in pendingMessages) {
@@ -566,7 +567,10 @@ webSocketModule.factory('$webSocket',
 			websocket.onclose = function(evt) {
 				stopHeartbeat();
 				$rootScope.$apply(function() {
-					if (connected != 'CLOSED') connected = 'RECONNECTING';
+					if (connected != 'CLOSED') {
+						connected = 'RECONNECTING';
+						if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Connection mode (onclose receidev while not CLOSED): ... RECONNECTING (" + new Date().getTime() + ")");
+					}
 				});
 				for (var handler in onCloseHandlers) {
 					onCloseHandlers[handler](evt);
@@ -587,6 +591,7 @@ webSocketModule.factory('$webSocket',
 					// server disconnected, do not try to reconnect
 					$rootScope.$apply(function() {
 						connected = 'CLOSED';
+						if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Connection mode (onconnecting got a server disconnect/close with reason " + evt.reason + "): ... CLOSED (" + new Date().getTime() + ")");
 					});
 				}
 			}
@@ -629,6 +634,7 @@ webSocketModule.factory('$webSocket',
 			if(websocket) {
 				websocket.close();
 				connected = 'CLOSED';
+				if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Connection mode (disconnect): ... CLOSED (" + new Date().getTime() + ")");
 			}
 		},
 

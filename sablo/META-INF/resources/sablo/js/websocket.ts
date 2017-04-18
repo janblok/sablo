@@ -138,6 +138,8 @@ webSocketModule.factory('$webSocket',
 	var lastServerMessageNumber = null;
 
 	var nextMessageId = 1;
+	
+	var functionsToExecuteAfterIncommingMessageWasHandled = undefined;
 
 	var getNextMessageId = function() {
 		return nextMessageId++;
@@ -155,6 +157,8 @@ webSocketModule.factory('$webSocket',
 	var handleMessage = function(message) {
 		var obj
 		var responseValue
+		var functionsToExecuteAfterIncommingMessageWasHandled = [];
+
 		try {
 			if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Received message from server: " + JSON.stringify(message));
 
@@ -321,7 +325,25 @@ webSocketModule.factory('$webSocket',
 				}
 				sendMessageObject(response);
 			}
+		} finally {
+			var err;
+			for (var i = 0; i < functionsToExecuteAfterIncommingMessageWasHandled.length; i++) {
+				try {
+					functionsToExecuteAfterIncommingMessageWasHandled[i]();
+				} catch (e) {
+					$log.error("Error (follows below) in executing PostIncommingMessageHandlingTask: " + functionsToExecuteAfterIncommingMessageWasHandled[i]);
+					$log.error(e);
+					err = e;
+				}
+			}
+			functionsToExecuteAfterIncommingMessageWasHandled = undefined;
+			if (err) throw err;
 		}
+	}
+	
+	var addIncommingMessageHandlingDoneTask = function(func) {
+		if (functionsToExecuteAfterIncommingMessageWasHandled) functionsToExecuteAfterIncommingMessageWasHandled.push(func);
+		else func(); // will not addPostIncommingMessageHandlingTask while not handling an incoming message; the task can execute right away then (maybe it was called due to a change detected in a watch instead of property listener)
 	}
 
 	var sendMessageObject = function(obj) {
@@ -600,6 +622,8 @@ webSocketModule.factory('$webSocket',
 		isConnected: isConnected,
 
 		isReconnecting: isReconnecting,
+		
+		addIncommingMessageHandlingDoneTask: addIncommingMessageHandlingDoneTask,
 		
 		disconnect: function() {
 			if(websocket) {

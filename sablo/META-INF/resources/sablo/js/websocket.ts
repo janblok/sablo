@@ -341,7 +341,7 @@ webSocketModule.factory('$webSocket',
 		}
 	}
 	
-	var addIncommingMessageHandlingDoneTask = function(func) {
+	var addIncomingMessageHandlingDoneTask = function(func) {
 		if (functionsToExecuteAfterIncommingMessageWasHandled) functionsToExecuteAfterIncommingMessageWasHandled.push(func);
 		else func(); // will not addPostIncommingMessageHandlingTask while not handling an incoming message; the task can execute right away then (maybe it was called due to a change detected in a watch instead of property listener)
 	}
@@ -628,7 +628,7 @@ webSocketModule.factory('$webSocket',
 
 		isReconnecting: isReconnecting,
 		
-		addIncommingMessageHandlingDoneTask: addIncommingMessageHandlingDoneTask,
+		addIncomingMessageHandlingDoneTask: addIncomingMessageHandlingDoneTask,
 		
 		disconnect: function() {
 			if(websocket) {

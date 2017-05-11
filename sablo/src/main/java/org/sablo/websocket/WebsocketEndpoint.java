@@ -219,7 +219,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 
 	private void unbindWindow()
 	{
-		window.setEndpoint(null);
+		if (window != null) window.setEndpoint(null);
 		window = null;
 	}
 

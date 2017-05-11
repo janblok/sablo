@@ -794,11 +794,17 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 
 				function updateCurrentDomElTabIndex() {
 					if (hasOwnTabIndex()) {
-						if (runtimeIndex.startIndex !== 0) $attrs.$set('tabindex', runtimeIndex.startIndex);
-						else $attrs.$set('tabindex', undefined);
+						if (runtimeIndex.startIndex !== 0)
+						{	
+							$attrs.$set('tabindex', runtimeIndex.startIndex);
+						}
+						else 
+						{	
+							$attrs.$set('tabindex', undefined);
+						}
 						if (tabSeqCallback)
 						{
-							tabSeqCallback($scope);
+							tabSeqCallback($scope, {$tabindex : (runtimeIndex.startIndex !== 0 ? runtimeIndex.startIndex : undefined)});
 						}	
 					}
 				}

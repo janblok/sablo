@@ -120,10 +120,6 @@
       
         <resources>
 	      <resource>
-	           <filtering>false</filtering>
-	           <directory>src/main/resources</directory>
-	       </resource>
-	      <resource>
 	           <directory>META-INF</directory>
 	           <excludes>
           		<exclude>**/*.ts</exclude>

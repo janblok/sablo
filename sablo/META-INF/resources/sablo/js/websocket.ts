@@ -70,13 +70,15 @@ angular.module('pushToServer', []).factory('$propertyWatchesRegistry', function 
 	function watchDumbProperties(scope, model, propertiesToAutoWatch, changedCallbackFunction) {
 		var unwatchF = [];
 		function getChangeFunction(property, initialV) {
+			var firstTime = true;
 			return function(newValue, oldValue) {
-				if (typeof initialV !== 'undefined') {
+				if (firstTime) {
 					// value from server should not be sent back; but as directives in their controller methods can already change the values or properties
 					// (so before the first watch execution) we can't just rely only on the "if (oldValue === newValue) return;" below cause in that case it won't send
 					// a value that actually changed to server
 					oldValue = initialV;
 					initialV = undefined;
+					firstTime = false;
 				}
 				if (oldValue === newValue) return;
 				changedCallbackFunction(newValue, oldValue, property);

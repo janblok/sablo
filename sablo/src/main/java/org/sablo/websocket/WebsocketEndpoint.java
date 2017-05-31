@@ -66,9 +66,9 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 
 	private final String endpointType;
 
-	private Session session;
+	private volatile Session session;
 
-	private IWindow window;
+	private volatile IWindow window;
 
 	private final Map<Integer, List<Object>> pendingMessages = new HashMap<>();
 
@@ -219,8 +219,11 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 
 	private void unbindWindow()
 	{
-		window.setEndpoint(null);
-		window = null;
+		if (window != null)
+		{
+			window.setEndpoint(null);
+			window = null;
+		}
 	}
 
 	public void onError(Throwable t)
@@ -264,6 +267,11 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 			{
 				log.warn("could not reply to ping message for window " + window, e);
 			}
+			return;
+		}
+		if (window == null)
+		{
+			log.info("incomming message " + msg + " but the window is already unbinded");
 			return;
 		}
 

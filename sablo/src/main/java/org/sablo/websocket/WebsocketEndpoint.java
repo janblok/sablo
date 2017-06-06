@@ -66,9 +66,9 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 
 	private final String endpointType;
 
-	private Session session;
+	private volatile Session session;
 
-	private IWindow window;
+	private volatile IWindow window;
 
 	private final Map<Integer, List<Object>> pendingMessages = new HashMap<>();
 
@@ -219,8 +219,11 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 
 	private void unbindWindow()
 	{
-		if (window != null) window.setEndpoint(null);
-		window = null;
+		if (window != null)
+		{
+			window.setEndpoint(null);
+			window = null;
+		}
 	}
 
 	public void onError(Throwable t)
@@ -266,6 +269,11 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 			}
 			return;
 		}
+		if (window == null)
+		{
+			log.info("incomming message " + msg + " but the window is already unbinded");
+			return;
+		}
 
 		CurrentWindow.set(window);
 		try
@@ -301,83 +309,86 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 			{
 				// service call
 				final String serviceName = obj.optString("service");
-				final IServerService service = window.getSession().getServerService(serviceName);
-
-				if (service != null)
+				if (window != null)
 				{
-					final String methodName = obj.optString("methodname");
-					final int prio = obj.has("prio") ? obj.optInt("prio", IEventDispatcher.EVENT_LEVEL_DEFAULT) : IEventDispatcher.EVENT_LEVEL_DEFAULT;
-					final JSONObject arguments = obj.optJSONObject("args");
-					int eventLevel = (service instanceof IEventDispatchAwareServerService)
-						? ((IEventDispatchAwareServerService)service).getMethodEventThreadLevel(methodName, arguments, prio) : prio;
+					final IServerService service = window.getSession().getServerService(serviceName);
 
-					window.getSession().getEventDispatcher().addEvent(new Runnable()
+					if (service != null)
 					{
-						@Override
-						public void run()
-						{
-							Object result = null;
-							String error = null;
-							try
-							{
-								result = service.executeMethod(methodName, arguments);
-							}
-							catch (ParseException pe)
-							{
-								log.warn("Warning: " + pe.getMessage(), pe);
-							}
-							catch (IllegalComponentAccessException ilcae)
-							{
-								log.warn("Warning: " + ilcae.getMessage());
-							}
-							catch (Exception e)
-							{
-								error = "Error: " + e.getMessage();
-								log.error(error, e);
-							}
+						final String methodName = obj.optString("methodname");
+						final int prio = obj.has("prio") ? obj.optInt("prio", IEventDispatcher.EVENT_LEVEL_DEFAULT) : IEventDispatcher.EVENT_LEVEL_DEFAULT;
+						final JSONObject arguments = obj.optJSONObject("args");
+						int eventLevel = (service instanceof IEventDispatchAwareServerService)
+							? ((IEventDispatchAwareServerService)service).getMethodEventThreadLevel(methodName, arguments, prio) : prio;
 
-							final Object msgId = obj.opt("cmsgid");
-							if (msgId != null) // client wants response
+						window.getSession().getEventDispatcher().addEvent(new Runnable()
+						{
+							@Override
+							public void run()
 							{
-								if (session == null && window == null)
+								Object result = null;
+								String error = null;
+								try
 								{
-									// this websocket endpoint is already closed, ignore the stuff that can't be send..
-									log.warn("return value of the service call: " + methodName + " is ignored because the websocket is already closed");
+									result = service.executeMethod(methodName, arguments);
 								}
-								else
+								catch (ParseException pe)
 								{
-									try
+									log.warn("Warning: " + pe.getMessage(), pe);
+								}
+								catch (IllegalComponentAccessException ilcae)
+								{
+									log.warn("Warning: " + ilcae.getMessage());
+								}
+								catch (Exception e)
+								{
+									error = "Error: " + e.getMessage();
+									log.error(error, e);
+								}
+
+								final Object msgId = obj.opt("cmsgid");
+								if (msgId != null) // client wants response
+								{
+									if (session == null && window == null)
 									{
-										if (error == null)
-										{
-											Object resultObject = result;
-											PropertyDescription objectType = null;
-											if (result instanceof TypedData)
-											{
-												resultObject = ((TypedData< ? >)result).content;
-												objectType = ((TypedData< ? >)result).contentType;
-											}
-											getWindow().sendChanges();
-											sendResponse(msgId, resultObject, objectType, true);
-										}
-										else
-										{
-											getWindow().sendChanges();
-											sendResponse(msgId, error, null, false);
-										}
+										// this websocket endpoint is already closed, ignore the stuff that can't be send..
+										log.warn("return value of the service call: " + methodName + " is ignored because the websocket is already closed");
 									}
-									catch (IOException e)
+									else
 									{
-										log.warn(e.getMessage(), e);
+										try
+										{
+											if (error == null)
+											{
+												Object resultObject = result;
+												PropertyDescription objectType = null;
+												if (result instanceof TypedData)
+												{
+													resultObject = ((TypedData< ? >)result).content;
+													objectType = ((TypedData< ? >)result).contentType;
+												}
+												getWindow().sendChanges();
+												sendResponse(msgId, resultObject, objectType, true);
+											}
+											else
+											{
+												getWindow().sendChanges();
+												sendResponse(msgId, error, null, false);
+											}
+										}
+										catch (IOException e)
+										{
+											log.warn(e.getMessage(), e);
+										}
 									}
 								}
 							}
-						}
-					}, eventLevel);
-				}
-				else
-				{
-					log.info("Unknown service called from the client: " + serviceName);
+						}, eventLevel);
+					}
+					else
+					{
+						log.info("Unknown service called from the client: " + serviceName);
+					}
 				}
 			}
 			else if (obj.has("servicedatapush"))

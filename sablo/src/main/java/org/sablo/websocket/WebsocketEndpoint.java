@@ -309,86 +309,83 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 			{
 				// service call
 				final String serviceName = obj.optString("service");
-				if (window != null)
+				final IServerService service = window.getSession().getServerService(serviceName);
+
+				if (service != null)
 				{
-					final IServerService service = window.getSession().getServerService(serviceName);
+					final String methodName = obj.optString("methodname");
+					final int prio = obj.has("prio") ? obj.optInt("prio", IEventDispatcher.EVENT_LEVEL_DEFAULT) : IEventDispatcher.EVENT_LEVEL_DEFAULT;
+					final JSONObject arguments = obj.optJSONObject("args");
+					int eventLevel = (service instanceof IEventDispatchAwareServerService)
+						? ((IEventDispatchAwareServerService)service).getMethodEventThreadLevel(methodName, arguments, prio) : prio;
 
-					if (service != null)
+					window.getSession().getEventDispatcher().addEvent(new Runnable()
 					{
-						final String methodName = obj.optString("methodname");
-						final int prio = obj.has("prio") ? obj.optInt("prio", IEventDispatcher.EVENT_LEVEL_DEFAULT) : IEventDispatcher.EVENT_LEVEL_DEFAULT;
-						final JSONObject arguments = obj.optJSONObject("args");
-						int eventLevel = (service instanceof IEventDispatchAwareServerService)
-							? ((IEventDispatchAwareServerService)service).getMethodEventThreadLevel(methodName, arguments, prio) : prio;
-
-						window.getSession().getEventDispatcher().addEvent(new Runnable()
+						@Override
+						public void run()
 						{
-							@Override
-							public void run()
+							Object result = null;
+							String error = null;
+							try
 							{
-								Object result = null;
-								String error = null;
-								try
-								{
-									result = service.executeMethod(methodName, arguments);
-								}
-								catch (ParseException pe)
-								{
-									log.warn("Warning: " + pe.getMessage(), pe);
-								}
-								catch (IllegalComponentAccessException ilcae)
-								{
-									log.warn("Warning: " + ilcae.getMessage());
-								}
-								catch (Exception e)
-								{
-									error = "Error: " + e.getMessage();
-									log.error(error, e);
-								}
+								result = service.executeMethod(methodName, arguments);
+							}
+							catch (ParseException pe)
+							{
+								log.warn("Warning: " + pe.getMessage(), pe);
+							}
+							catch (IllegalComponentAccessException ilcae)
+							{
+								log.warn("Warning: " + ilcae.getMessage());
+							}
+							catch (Exception e)
+							{
+								error = "Error: " + e.getMessage();
+								log.error(error, e);
+							}
 
-								final Object msgId = obj.opt("cmsgid");
-								if (msgId != null) // client wants response
+							final Object msgId = obj.opt("cmsgid");
+							if (msgId != null) // client wants response
+							{
+								if (session == null && window == null)
 								{
-									if (session == null && window == null)
+									// this websocket endpoint is already closed, ignore the stuff that can't be send..
+									log.warn("return value of the service call: " + methodName + " is ignored because the websocket is already closed");
+								}
+								else
+								{
+									try
 									{
-										// this websocket endpoint is already closed, ignore the stuff that can't be send..
-										log.warn("return value of the service call: " + methodName + " is ignored because the websocket is already closed");
+										if (error == null)
+										{
+											Object resultObject = result;
+											PropertyDescription objectType = null;
+											if (result instanceof TypedData)
+											{
+												resultObject = ((TypedData< ? >)result).content;
+												objectType = ((TypedData< ? >)result).contentType;
+											}
+											getWindow().sendChanges();
+											sendResponse(msgId, resultObject, objectType, true);
+										}
+										else
+										{
+											getWindow().sendChanges();
+											sendResponse(msgId, error, null, false);
+										}
 									}
-									else
+									catch (IOException e)
 									{
-										try
-										{
-											if (error == null)
-											{
-												Object resultObject = result;
-												PropertyDescription objectType = null;
-												if (result instanceof TypedData)
-												{
-													resultObject = ((TypedData< ? >)result).content;
-													objectType = ((TypedData< ? >)result).contentType;
-												}
-												getWindow().sendChanges();
-												sendResponse(msgId, resultObject, objectType, true);
-											}
-											else
-											{
-												getWindow().sendChanges();
-												sendResponse(msgId, error, null, false);
-											}
-										}
-										catch (IOException e)
-										{
-											log.warn(e.getMessage(), e);
-										}
+										log.warn(e.getMessage(), e);
 									}
 								}
 							}
-						}, eventLevel);
-					}
-					else
-					{
-						log.info("Unknown service called from the client: " + serviceName);
-					}
+						}
+					}, eventLevel);
+				}
+				else
+				{
+					log.info("Unknown service called from the client: " + serviceName);
 				}
 			}
 			else if (obj.has("servicedatapush"))

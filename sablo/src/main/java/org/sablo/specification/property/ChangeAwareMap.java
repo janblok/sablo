@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.sablo.CustomObjectContext;
 import org.sablo.IChangeListener;
@@ -72,8 +73,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		this(baseMap, 1, componentOrServiceExtension, customObjectPD);
 	}
 
-	public ChangeAwareMap(Map<String, ET> baseMap, int initialVersion, CustomObjectContext<ET, WT> customObjectContext,
-		PropertyDescription customObjectPD)
+	public ChangeAwareMap(Map<String, ET> baseMap, int initialVersion, CustomObjectContext<ET, WT> customObjectContext, PropertyDescription customObjectPD)
 	{
 		this.componentOrServiceExtension = customObjectContext;
 		this.customObjectPD = customObjectPD;
@@ -230,18 +230,19 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	}
 
 	@Override
-	public void attachToBaseObject(final IChangeListener changeMonitor, IWebObjectContext webObjectContext)
+	public void attachToBaseObject(final IChangeListener changeMntr, IWebObjectContext webObjectCntxt)
 	{
-		this.changeMonitor = changeMonitor;
-		this.webObjectContext = webObjectContext;
+		this.changeMonitor = changeMntr;
+		this.webObjectContext = webObjectCntxt;
 
 		Map<String, WT> wrappedBaseList = getWrappedBaseMap();
-		for (java.util.Map.Entry<String, WT> e : wrappedBaseList.entrySet())
+		TreeSet<String> sortedKeys = new TreeSet<>(wrappedBaseList.keySet()); // just make sure it always attaches them in the same order to avoid random bugs
+		for (String key : sortedKeys)
 		{
-			attachToBaseObject(e.getKey(), e.getValue());
+			attachToBaseObject(key, wrappedBaseList.get(key));
 		}
 
-		if (isChanged()) changeMonitor.valueChanged();
+		if (isChanged()) changeMntr.valueChanged();
 	}
 
 	protected boolean isChanged()

@@ -54,6 +54,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	protected IWebObjectContext webObjectContext;
 
 	protected Set<Integer> changedIndexes = new HashSet<Integer>();
+	protected List<Integer> removedIndexes = new ArrayList<Integer>();
+	protected List<Integer> addedIndexes = new ArrayList<Integer>();
 	protected boolean allChanged;
 
 	protected boolean mustSendTypeToClient;
@@ -120,7 +122,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 
 	public boolean mustSendAll()
 	{
-		return allChanged;
+		int totalChanges = addedIndexes.size() + removedIndexes.size() + changedIndexes.size();
+		return allChanged || (totalChanges > 1 && totalChanges > size() / 2);
 	}
 
 	public void clearChanges()
@@ -128,6 +131,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		allChanged = false;
 		mustSendTypeToClient = false;
 		changedIndexes.clear();
+		removedIndexes.clear();
+		addedIndexes.clear();
 	}
 
 	/**
@@ -200,7 +205,18 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 
 	protected void markElementChanged(int i)
 	{
-		if (changedIndexes.add(Integer.valueOf(i)) && !allChanged && !mustSendTypeToClient && changeMonitor != null) changeMonitor.valueChanged();
+		if (!addedIndexes.contains(Integer.valueOf(i)) && changedIndexes.add(Integer.valueOf(i)) && !allChanged && !mustSendTypeToClient &&
+			changeMonitor != null) changeMonitor.valueChanged();
+	}
+
+	private void markElementRemoved(int i)
+	{
+		if (removedIndexes.add(Integer.valueOf(i)) && !allChanged && !mustSendTypeToClient && changeMonitor != null) changeMonitor.valueChanged();
+	}
+
+	private void markElementAdded(int i)
+	{
+		if (addedIndexes.add(Integer.valueOf(i)) && !allChanged && !mustSendTypeToClient && changeMonitor != null) changeMonitor.valueChanged();
 	}
 
 	public void markAllChanged()
@@ -234,7 +250,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 
 	protected boolean isChanged()
 	{
-		return (allChanged || mustSendTypeToClient || changedIndexes.size() > 0);
+		return (allChanged || mustSendTypeToClient || changedIndexes.size() > 0 || removedIndexes.size() > 0);
 	}
 
 	// called whenever a new element was added or inserted into the array
@@ -381,8 +397,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			{
 				it.remove();
 				detachIfNeeded(i, getWrappedBaseList().get(i), true);
+				markElementRemoved(i);
 				i--;
-				markAllChanged();
 			}
 		};
 	}
@@ -404,7 +420,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	{
 		boolean tmp = baseList.add(e);
 		attachToBaseObjectIfNeeded(baseList.size() - 1, getWrappedBaseList().get(baseList.size() - 1), false);
-		markAllChanged();
+		markElementAdded(baseList.size() - 1);
 		return tmp;
 	}
 
@@ -417,7 +433,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			WT oldWrappedValue = getWrappedBaseList().get(idx);
 			baseList.remove(idx);
 			detachIfNeeded(idx, oldWrappedValue, true);
-			markAllChanged();
+			markElementRemoved(idx);
 			return true;
 		}
 		return false;
@@ -516,7 +532,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	{
 		baseList.add(index, element);
 		attachToBaseObjectIfNeeded(index, getWrappedBaseList().get(index), true);
-		markAllChanged();
+		markElementAdded(index);
 	}
 
 	@Override
@@ -525,7 +541,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		WT oldWV = getWrappedBaseList().get(index);
 		ET tmp = baseList.remove(index);
 		detachIfNeeded(index, oldWV, true);
-		markAllChanged();
+		markElementRemoved(index);
 		return tmp;
 	}
 
@@ -611,7 +627,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			int i = it.previousIndex() + 1;
 			it.remove();
 			detachIfNeeded(i, getWrappedBaseList().get(i), true);
-			markAllChanged();
+			markElementRemoved(i);
 		}
 
 		@Override
@@ -631,7 +647,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			int i = it.nextIndex();
 			it.add(e);
 			attachToBaseObjectIfNeeded(i, getWrappedBaseList().get(i), true);
-			markAllChanged();
+			markElementAdded(i);
 		}
 	}
 
@@ -658,6 +674,16 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	public String toString()
 	{
 		return "#CAL# " + getBaseList().toString();
+	}
+
+	public List<Integer> getRemovedIndexes()
+	{
+		return removedIndexes;
+	}
+
+	public List<Integer> getAddedIndexes()
+	{
+		return addedIndexes;
 	}
 
 }

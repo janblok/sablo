@@ -93,6 +93,7 @@ public class WebObjectSpecification extends PropertyDescription
 
 	private final Map<String, WebObjectFunctionDefinition> handlers = new HashMap<>(); // second String is always a "function" for now, but in the future it will probably contain more (to specify sent args/types...)
 	private final Map<String, WebObjectFunctionDefinition> apis = new HashMap<>();
+	private final Map<String, WebObjectFunctionDefinition> internalApis = new HashMap<>();
 	private final String definition;
 	private final JSONArray libraries;
 	private final String displayName;
@@ -185,6 +186,11 @@ public class WebObjectSpecification extends PropertyDescription
 		apis.put(apiFunction.getName(), apiFunction);
 	}
 
+	protected final void addInternalApiFunction(WebObjectFunctionDefinition apiFunction)
+	{
+		internalApis.put(apiFunction.getName(), apiFunction);
+	}
+
 	protected final void addHandler(WebObjectFunctionDefinition propertyDescription)
 	{
 		handlers.put(propertyDescription.getName(), propertyDescription);
@@ -216,9 +222,19 @@ public class WebObjectSpecification extends PropertyDescription
 		return apis.get(apiFunctionName);
 	}
 
+	public WebObjectFunctionDefinition getInternalApiFunction(String apiFunctionName)
+	{
+		return internalApis.get(apiFunctionName);
+	}
+
 	public Map<String, WebObjectFunctionDefinition> getApiFunctions()
 	{
 		return Collections.unmodifiableMap(apis);
+	}
+
+	public Map<String, WebObjectFunctionDefinition> getInternalApiFunctions()
+	{
+		return Collections.unmodifiableMap(internalApis);
 	}
 
 	public String getDisplayName()
@@ -368,6 +384,17 @@ public class WebObjectSpecification extends PropertyDescription
 			{
 				WebObjectFunctionDefinition def = parseFunctionDefinition(spec, api, itk.next());
 				spec.addApiFunction(def);
+			}
+		}
+		//internal api
+		if (json.has("internalApi"))
+		{
+			JSONObject api = json.getJSONObject("internalApi");
+			Iterator<String> itk = api.keys();
+			while (itk.hasNext())
+			{
+				WebObjectFunctionDefinition def = parseFunctionDefinition(spec, api, itk.next());
+				spec.addInternalApiFunction(def);
 			}
 		}
 		spec.setSupportGrouping(json.has("group") ? json.optBoolean("group", true) : true);

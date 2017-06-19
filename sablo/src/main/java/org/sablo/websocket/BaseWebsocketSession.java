@@ -48,9 +48,10 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BaseWebsocketSession implements IWebsocketSession, IChangeListener
 {
-	public static final String PROPERTY_WINDOW_TIMEOUT = "sablo.window.timeout.secs";
-	public static final String DEFAULT_WINDOW_TIMEOUT = "60";
+	private static final String PROPERTY_WINDOW_TIMEOUT = "sablo.window.timeout.secs";
+	private static final String DEFAULT_WINDOW_TIMEOUT = "60";
 	private static Long windowTimeout;
+	private Long sessionWindowTimeout;
 
 	private static final Logger log = LoggerFactory.getLogger(BaseWebsocketSession.class.getCanonicalName());
 
@@ -207,8 +208,9 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 			while (iterator.hasNext())
 			{
 				ObjectReference<IWindow> ref = iterator.next();
-				if ((!ref.getObject().hasEndpoint() && currentTime - ref.getLastAccessed() > getWindowTimeout()) ||
-					(ref.getObject().getLastPingTime() != 0 && (currentTime - ref.getObject().getLastPingTime() > getWindowTimeout())))
+				long timeout = getWindowTimeout() * 1000;
+				if ((!ref.getObject().hasEndpoint() && currentTime - ref.getLastAccessed() > timeout) ||
+					(ref.getObject().getLastPingTime() != 0 && (currentTime - ref.getObject().getLastPingTime() > timeout)))
 				{
 					iterator.remove();
 					inactiveWindows.add(ref.getObject());
@@ -237,6 +239,11 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	@Override
 	public long getWindowTimeout()
 	{
+		if (sessionWindowTimeout != null)
+		{
+			return sessionWindowTimeout.longValue();
+		}
+
 		if (windowTimeout == null)
 		{
 			try
@@ -250,9 +257,17 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 				windowTimeout = Long.valueOf(DEFAULT_WINDOW_TIMEOUT);
 			}
 		}
-		return windowTimeout.longValue() * 1000; // setting is in seconds
+
+		return windowTimeout.longValue();
 	}
 
+	/**
+	 * @param sessionWindowTimeout the sessionWindowTimeout to set
+	 */
+	public void setSessionWindowTimeout(Long sessionWindowTimeout)
+	{
+		this.sessionWindowTimeout = sessionWindowTimeout;
+	}
 
 	protected IServerService createFormService()
 	{

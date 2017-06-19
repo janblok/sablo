@@ -55,20 +55,30 @@ public class ListTest
 		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
 		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
 
+		assertEquals(4, lst.addedIndexes.size());
 		assertTrue(changed[0]);
 
+		lst.clearChanges();
 		changed[0] = false;
 
+		assertEquals(0, lst.changedIndexes.size());
 		lst.get(0).put("test", "test");
-		assertEquals(lst.changedIndexes.size(), 1);
+		assertEquals(1, lst.changedIndexes.size());
 
-		assertEquals(lst.changedIndexes.toArray()[0], new Integer(0));
+		assertEquals(new Integer(0), lst.changedIndexes.toArray()[0]);
 
 		lst.clearChanges();
 
 		lst.set(1, lst.get(2));
 		lst.set(2, lst.get(3));
 		lst.remove(3);
+
+		assertEquals(2, lst.changedIndexes.size());
+		assertEquals(new Integer(1), lst.changedIndexes.toArray()[0]);
+		assertEquals(new Integer(2), lst.changedIndexes.toArray()[1]);
+
+		assertEquals(1, lst.removedIndexes.size());
+		assertEquals(new Integer(3), lst.removedIndexes.toArray()[0]);
 
 		lst.clearChanges();
 

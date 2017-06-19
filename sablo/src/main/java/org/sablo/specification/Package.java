@@ -94,6 +94,8 @@ public class Package
 
 		void reportError(String specpath, Exception e);
 
+		void clearError();
+
 		/**
 		 * A package can contain either components or services. This method looks in the manifest for the first (not necessarily in definition order) type of web object it can find declared
 		 * and returns that type.
@@ -429,6 +431,12 @@ public class Package
 		}
 
 		@Override
+		public void clearError()
+		{
+		}
+
+
+		@Override
 		public String toString()
 		{
 			return "JarPackage: " + getName();
@@ -615,6 +623,12 @@ public class Package
 		}
 
 		@Override
+		public void clearError()
+		{
+		}
+
+
+		@Override
 		public String getPackageType()
 		{
 			try
@@ -750,6 +764,11 @@ public class Package
 		public void reportError(String specpath, Exception e)
 		{
 			log.error("Cannot parse spec file '" + specpath + "' from package '" + toString() + "'. ", e);
+		}
+
+		@Override
+		public void clearError()
+		{
 		}
 
 		@Override
@@ -913,6 +932,12 @@ public class Package
 		{
 			log.error("Cannot parse spec file '" + specpath + "' from package 'WarReeader[ " + urlOfManifest + " ]'. ", e);
 		}
+
+		@Override
+		public void clearError()
+		{
+		}
+
 
 		@Override
 		public URL getPackageURL()

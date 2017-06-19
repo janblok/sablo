@@ -143,13 +143,19 @@ public class SpecProviderState
 	public IPackageReader[] getAllPackageReaders()
 	{
 		Set<String> packageNames = getWebObjectSpecifications().keySet();
-		IPackageReader[] readers = new IPackageReader[packageNames.size()];
+		List<IPackageReader> readers = new ArrayList<>();
 		int i = 0;
 		for (String name : packageNames)
 		{
-			readers[i++] = getPackageReader(name);
+			for (IPackageReader reader : packageReaders)
+			{
+				if (reader.getPackageName().equals(name))
+				{
+					readers.add(reader);
+				}
+			}
 		}
-		return readers;
+		return readers.toArray(new IPackageReader[readers.size()]);
 	}
 
 }

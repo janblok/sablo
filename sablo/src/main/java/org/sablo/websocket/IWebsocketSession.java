@@ -127,9 +127,14 @@ public interface IWebsocketSession
 	Locale getLocale();
 
 	/**
-	 * Get the window timeout for this sessions in ms.
+	 * Get the window timeout for this sessions in sec.
 	 */
 	long getWindowTimeout();
+
+	/**
+	 * Override the window timeout for this sessions in sec.
+	 */
+	void setSessionWindowTimeout(Long sessionWindowTimeout);
 
 	/**
 	 * gets the last ping time of all active windows.

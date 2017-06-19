@@ -36,7 +36,7 @@ public abstract class BaseSpecProvider
 	/**
 	 * Updates available packages. "toRemove" provided contents will be removed, "toAdd" will be made available.
 	 */
-	public void updatePackages(Collection<String> toRemove, Collection<IPackageReader> toAdd)
+	public void updatePackages(Collection<IPackageReader> toRemove, Collection<IPackageReader> toAdd)
 	{
 		reader.updatePackages(toRemove, toAdd);
 	}

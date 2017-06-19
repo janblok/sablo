@@ -29,6 +29,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
+import org.sablo.CustomObjectContext;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.sablo.util.ValueReference;
@@ -94,6 +95,12 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 	public ChangeAwareMap<ET, WT> wrap(Map<String, ET> value, ChangeAwareMap<ET, WT> previousValue, PropertyDescription propertyDescription,
 		IWrappingContext dataConverterContext)
 	{
+		return internalWrap(value, previousValue, propertyDescription, dataConverterContext, null);
+	}
+
+	protected ChangeAwareMap<ET, WT> internalWrap(Map<String, ET> value, ChangeAwareMap<ET, WT> previousValue, PropertyDescription propertyDescription,
+		IWrappingContext dataConverterContext, CustomObjectContext<ET, WT> initialComponentOrServiceExtension)
+	{
 		if (value instanceof ChangeAwareMap< ? , ? >) return (ChangeAwareMap<ET, WT>)value;
 
 		Map<String, ET> wrappedMap = wrapMap(value, propertyDescription, dataConverterContext);
@@ -101,7 +108,8 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		{
 			// ok now we have the map or wrap map (depending on if child types are IWrapperType or not)
 			// wrap this further into a change-aware map; this is used to be able to track changes and perform server to browser full or granular updates
-			return new ChangeAwareMap<ET, WT>(wrappedMap, previousValue != null ? previousValue.getListContentVersion() + 1 : 1);
+			return new ChangeAwareMap<ET, WT>(wrappedMap, previousValue != null ? previousValue.getListContentVersion() + 1 : 1,
+				initialComponentOrServiceExtension, getCustomJSONTypeDefinition());
 		}
 		return null;
 	}
@@ -347,7 +355,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 
 		// TODO how to handle previous null value here; do we need to re-send to client or not (for example initially both client and server had values, at the same time server==null client sends full update); how do we kno case server version is unknown then
 		ChangeAwareMap<ET, WT> retVal = new ChangeAwareMap<ET, WT>(newBaseMap,
-			previousChangeAwareMap != null ? previousChangeAwareMap.increaseContentVersion() : 1);
+			previousChangeAwareMap != null ? previousChangeAwareMap.increaseContentVersion() : 1, null, getCustomJSONTypeDefinition());
 
 		for (String key : adjustedNewValueKeys)
 			retVal.markElementChanged(key);

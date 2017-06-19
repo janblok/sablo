@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
 
-import org.sablo.BaseWebObject;
 import org.sablo.IChangeListener;
+import org.sablo.IWebObjectContext;
 
 /**
  * This list is able to do handle/keep track of server side changes.
@@ -51,7 +51,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 
 	// TODO in order to have fine-grained add/remove operations as well in the future we would need a list of change operations that can be add/remove/change instead
 	protected IChangeListener changeMonitor;
-	protected BaseWebObject component;
+	protected IWebObjectContext webObjectContext;
 
 	protected Set<Integer> changedIndexes = new HashSet<Integer>();
 	protected boolean allChanged;
@@ -216,10 +216,10 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	}
 
 	@Override
-	public void attachToBaseObject(final IChangeListener changeMonitor, BaseWebObject component)
+	public void attachToBaseObject(final IChangeListener changeMonitor, IWebObjectContext webObjectContext)
 	{
 		this.changeMonitor = changeMonitor;
-		this.component = component;
+		this.webObjectContext = webObjectContext;
 
 		List<WT> wrappedBaseList = getWrappedBaseList();
 		int i = 0;
@@ -246,7 +246,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		{
 			ChangeAwareList<ET, WT>.IndexChangeListener changeHandler = new IndexChangeListener(i);
 			changeHandlers.add(changeHandler);
-			((ISmartPropertyValue)el).attachToBaseObject(changeHandler, component);
+			((ISmartPropertyValue)el).attachToBaseObject(changeHandler, webObjectContext);
 		}
 
 		if (insert)
@@ -296,7 +296,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			i++;
 		}
 
-		component = null;
+		webObjectContext = null;
 		changeMonitor = null;
 	}
 
@@ -500,9 +500,14 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	{
 		WT oldWV = getWrappedBaseList().get(index);
 		ET tmp = baseList.set(index, element);
-		detachIfNeeded(index, oldWV, false);
-		attachToBaseObjectIfNeeded(index, getWrappedBaseList().get(index), false);
-		markElementChanged(index);
+		WT newWV = getWrappedBaseList().get(index);
+
+		if (oldWV != newWV)
+		{
+			detachIfNeeded(index, oldWV, false);
+			attachToBaseObjectIfNeeded(index, newWV, false);
+			markElementChanged(index);
+		}
 		return tmp;
 	}
 

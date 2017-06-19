@@ -85,7 +85,7 @@ public class EnabledSabloValue
 		if (!comp.getProperties().content.containsKey(propName))
 		{
 			// if it doesn't have this property yet, now push it (take the one from the default map)
-			EnabledSabloValue defaultValue = (EnabledSabloValue)comp.getRawPropertyValue(propName, true);
+			EnabledSabloValue defaultValue = (EnabledSabloValue)comp.getRawPropertyValue(propName);
 			comp.setProperty(propName, Boolean.valueOf(defaultValue.value));
 		}
 		if (comp instanceof Container)

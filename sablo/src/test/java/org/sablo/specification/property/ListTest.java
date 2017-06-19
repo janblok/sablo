@@ -24,6 +24,8 @@ import java.util.HashMap;
 
 import org.junit.Test;
 import org.sablo.IChangeListener;
+import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.property.types.TypesRegistry;
 
 /**
  * @author jcompagner
@@ -48,10 +50,10 @@ public class ListTest
 			}
 		};
 		lst.attachToBaseObject(listener, null);
-		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>()));
-		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>()));
-		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>()));
-		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>()));
+		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
+		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
+		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
+		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
 
 		assertTrue(changed[0]);
 
@@ -76,7 +78,15 @@ public class ListTest
 		assertEquals(new Integer(1), lst.changedIndexes.toArray()[0]);
 
 		assertEquals(3, lst.changeHandlers.size());
+	}
 
+	private PropertyDescription getDummyCustomObjectPD()
+	{
+		CustomJSONObjectType dummyCustomObjectTypeForChildRelationInfo = (CustomJSONObjectType)TypesRegistry.createNewType(CustomJSONObjectType.TYPE_NAME,
+			"svy__dummyCustomObjectTypeForDeprecatedFMServiceChildRelationInfo");
+		PropertyDescription dummyPD = new PropertyDescription("", dummyCustomObjectTypeForChildRelationInfo);
+		dummyCustomObjectTypeForChildRelationInfo.setCustomJSONDefinition(dummyPD);
+		return dummyPD;
 	}
 
 	@Test
@@ -95,10 +105,10 @@ public class ListTest
 			}
 		};
 		lst.attachToBaseObject(listener, null);
-		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>()));
-		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>()));
-		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>()));
-		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>()));
+		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
+		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
+		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
+		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
 
 		assertTrue(changed[0]);
 
@@ -122,28 +132,28 @@ public class ListTest
 	/*
 	 * @Test public void sameValueRemoveIndexTest() { ChangeAwareList<ChangeAwareMap<String, Object>, Object> lst = new ChangeAwareList<ChangeAwareMap<String,
 	 * Object>, Object>( new ArrayList<ChangeAwareMap<String, Object>>());
-	 * 
+	 *
 	 * final boolean[] changed = new boolean[1]; IChangeListener listener = new IChangeListener() {
-	 * 
+	 *
 	 * @Override public void valueChanged() { changed[0] = true; } }; lst.attachToBaseObject(listener, null);
-	 * 
+	 *
 	 * ChangeAwareMap<String, Object> value = new ChangeAwareMap<String, Object>(new HashMap<String, String>()); lst.add(value); lst.add(value); lst.add(value);
 	 * lst.add(value);
-	 * 
+	 *
 	 * assertTrue(changed[0]);
-	 * 
+	 *
 	 * changed[0] = false;
-	 * 
+	 *
 	 * lst.clearChanges();
-	 * 
+	 *
 	 * lst.remove(1);
-	 * 
+	 *
 	 * assertTrue(changed[0]);
-	 * 
+	 *
 	 * lst.clearChanges();
-	 * 
+	 *
 	 * lst.get(1).put("test1", "test1");
-	 * 
+	 *
 	 * assertEquals(1, lst.changedIndexes.size()); assertEquals(new Integer(1), lst.changedIndexes.toArray()[0]); }
 	 */
 }

@@ -24,8 +24,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.sablo.BaseWebObject;
+import org.sablo.CustomObjectContext;
 import org.sablo.IChangeListener;
+import org.sablo.IWebObjectContext;
+import org.sablo.specification.PropertyDescription;
 
 /**
  * This map is able to do handle/keep track of server side changes.
@@ -53,7 +55,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 
 	// TODO in order to have fine-grained add/remove operations as well in the future we would need a list of change operations that can be add/remove/change instead
 	protected IChangeListener changeMonitor;
-	protected BaseWebObject component;
+	protected IWebObjectContext webObjectContext;
 
 	protected Set<String> changedKeys = new HashSet<String>();
 	protected boolean allChanged;
@@ -62,13 +64,22 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 
 	protected EntrySet entrySet;
 
-	public ChangeAwareMap(Map<String, ET> baseMap)
+	private CustomObjectContext<ET, WT> componentOrServiceExtension;
+	private PropertyDescription customObjectPD;
+
+	public ChangeAwareMap(Map<String, ET> baseMap, CustomObjectContext<ET, WT> componentOrServiceExtension, PropertyDescription customObjectPD)
 	{
-		this(baseMap, 1);
+		this(baseMap, 1, componentOrServiceExtension, customObjectPD);
 	}
 
-	public ChangeAwareMap(Map<String, ET> baseMap, int initialVersion)
+	public ChangeAwareMap(Map<String, ET> baseMap, int initialVersion, CustomObjectContext<ET, WT> customObjectContext,
+		PropertyDescription customObjectPD)
 	{
+		this.componentOrServiceExtension = customObjectContext;
+		this.customObjectPD = customObjectPD;
+
+		if (customObjectContext != null) customObjectContext.setPropertyValues(this);
+
 		this.baseMap = baseMap;
 		this.version = initialVersion;
 
@@ -167,10 +178,11 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 
 	public WT putInWrappedBaseList(String key, WT value, boolean markChanged)
 	{
-		WT tmp = getWrappedBaseMapForReadOnly().put(key, value);
+		WT tmp = getWrappedBaseMap().put(key, value);
 		if (tmp != value)
 		{
 			detachIfNeeded(key, tmp);
+			if (componentOrServiceExtension != null) componentOrServiceExtension.triggerPropertyChange(key, tmp, value);
 			attachToBaseObjectIfNeeded(key, value);
 		}
 		if (markChanged) markElementChanged(key);
@@ -218,10 +230,10 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	}
 
 	@Override
-	public void attachToBaseObject(final IChangeListener changeMonitor, BaseWebObject component)
+	public void attachToBaseObject(final IChangeListener changeMonitor, IWebObjectContext webObjectContext)
 	{
 		this.changeMonitor = changeMonitor;
-		this.component = component;
+		this.webObjectContext = webObjectContext;
 
 		Map<String, WT> wrappedBaseList = getWrappedBaseMap();
 		for (java.util.Map.Entry<String, WT> e : wrappedBaseList.entrySet())
@@ -246,7 +258,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		{
 			ChangeAwareMap<ET, WT>.KeyChangeListener changeHandler = new KeyChangeListener(key);
 			changeHandlers.put(key, changeHandler);
-			((ISmartPropertyValue)el).attachToBaseObject(changeHandler, component);
+			((ISmartPropertyValue)el).attachToBaseObject(changeHandler, getOrCreateComponentOrServiceExtension());
 		}
 	}
 
@@ -277,8 +289,11 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 			detach(e.getKey(), e.getValue());
 		}
 
-		component = null;
+		componentOrServiceExtension.dispose();
+
+		webObjectContext = null;
 		changeMonitor = null;
+		componentOrServiceExtension = null;
 	}
 
 	// TODO currently here we use the wrapped value for ISmartPropertyValue, but BaseWebObject uses the unwrapped value; I think the BaseWebObject
@@ -300,9 +315,18 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	@Override
 	public ET put(String key, ET value)
 	{
+		WT oldWrappedVal = getWrappedBaseMapForReadOnly().get(key);
 		ET tmp = baseMap.put(key, value);
-		attachToBaseObjectIfNeeded(key, getWrappedBaseMap().get(key));
-		markElementChanged(key);
+		WT newWrappedValue = getWrappedBaseMapForReadOnly().get(key);
+
+		if (componentOrServiceExtension != null) componentOrServiceExtension.triggerPropertyChange(key, oldWrappedVal, newWrappedValue);
+
+		if (oldWrappedVal != newWrappedValue)
+		{
+			detachIfNeeded(key, oldWrappedVal);
+			attachToBaseObjectIfNeeded(key, newWrappedValue);
+			markElementChanged(key);
+		}
 		return tmp;
 	}
 
@@ -674,6 +698,16 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	public String toString()
 	{
 		return "#CAM# " + getBaseMap().toString();
+	}
+
+	public CustomObjectContext<ET, WT> getOrCreateComponentOrServiceExtension()
+	{
+		if (componentOrServiceExtension == null)
+		{
+			componentOrServiceExtension = new CustomObjectContext<ET, WT>(customObjectPD, webObjectContext);
+			componentOrServiceExtension.setPropertyValues(this);
+		}
+		return componentOrServiceExtension;
 	}
 
 }

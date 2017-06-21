@@ -151,7 +151,7 @@ public class JSONUtils
 	 * key is null and you want to write the converted value write only the converted value to the writer, ignore the key.
 	 */
 	public static JSONWriter toBrowserJSONFullValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion clientConversion,
-		BrowserConverterContext context) throws JSONException, IllegalArgumentException
+		IBrowserConverterContext context) throws JSONException, IllegalArgumentException
 	{
 		return JSONUtils.FullValueToJSONConverter.INSTANCE.toJSONValue(writer, key, value, valueType, clientConversion, context);
 	}

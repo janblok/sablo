@@ -123,7 +123,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	public boolean mustSendAll()
 	{
 		int totalChanges = addedIndexes.size() + removedIndexes.size() + changedIndexes.size();
-		return allChanged || (totalChanges > 1 && totalChanges > size() / 2);
+		//we should send all if allChanged is true or if we have more types of changes
+		return allChanged || !(totalChanges == changedIndexes.size() || totalChanges == addedIndexes.size() || totalChanges == removedIndexes.size());
 	}
 
 	public void clearChanges()

@@ -17,6 +17,7 @@ package org.sablo;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,8 +52,10 @@ import org.sablo.specification.property.types.ProtectedConfig;
 import org.sablo.specification.property.types.VisiblePropertyType;
 import org.sablo.util.ValueReference;
 import org.sablo.websocket.TypedData;
+import org.sablo.websocket.TypedDataWithChangeInfo;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
+import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,6 +69,8 @@ public abstract class BaseWebObject implements IWebObjectContext
 {
 
 	private static final TypedData<Map<String, Object>> EMPTY_PROPERTIES = new TypedData<Map<String, Object>>(Collections.<String, Object> emptyMap(), null);
+	private static final TypedDataWithChangeInfo EMPTY_PROPERTIES_WITH_CHANGE_INFO = new TypedDataWithChangeInfo(Collections.<String, Object> emptyMap(), null,
+		null);
 
 	private static final Logger log = LoggerFactory.getLogger(BaseWebObject.class.getCanonicalName());
 
@@ -83,9 +88,14 @@ public abstract class BaseWebObject implements IWebObjectContext
 	protected final Map<String, Object> defaultPropertiesUnwrapped = new HashMap<>();
 
 	/**
-	 * the changed properties
+	 * Keeps track of properties that have changed content.
 	 */
-	private final Set<String> changedProperties = new HashSet<>(3);
+	private final Set<String> propertiesWithChangedContent = new HashSet<>(3);
+
+	/**
+	 * Keeps track of properties that have changed by reference (a different (!=) value was assigned to them).
+	 */
+	private final Set<String> propertiesChangedByRef = new HashSet<>(3);
 
 	/**
 	 * the event handlers
@@ -342,7 +352,14 @@ public abstract class BaseWebObject implements IWebObjectContext
 
 	public boolean hasChanges()
 	{
-		for (String propertyName : changedProperties)
+		for (String propertyName : propertiesWithChangedContent)
+		{
+			if (isVisible(propertyName) || isVisibilityProperty(propertyName))
+			{
+				return true;
+			}
+		}
+		for (String propertyName : propertiesChangedByRef)
 		{
 			if (isVisible(propertyName) || isVisibilityProperty(propertyName))
 			{
@@ -358,20 +375,29 @@ public abstract class BaseWebObject implements IWebObjectContext
 	 * When the component is not visible, only the visibility-properties are returned and cleared from the changes.
 	 *
 	 */
-	public TypedData<Map<String, Object>> getAndClearChanges()
+	public TypedDataWithChangeInfo getAndClearChanges()
 	{
-		if (changedProperties.isEmpty())
+		if (propertiesChangedByRef.isEmpty() && propertiesWithChangedContent.isEmpty())
 		{
-			return EMPTY_PROPERTIES;
+			return EMPTY_PROPERTIES_WITH_CHANGE_INFO;
 		}
 
 		Map<String, Object> changes = null;
 		PropertyDescription changeTypes = null;
-		for (String propertyName : changedProperties.toArray(new String[changedProperties.size()]))
+		Set<String> propertiesWithContentUpdateOnly = null;
+
+		// add all changes to an array to iterate on all
+		int idxStartChangedByRef = propertiesWithChangedContent.size();
+		ArrayList<String> allChangedPropertyNames = new ArrayList<String>(idxStartChangedByRef + propertiesChangedByRef.size());
+		allChangedPropertyNames.addAll(propertiesWithChangedContent);
+		allChangedPropertyNames.addAll(propertiesChangedByRef);
+
+		for (int i = 0; i < allChangedPropertyNames.size(); i++)
 		{
+			String propertyName = allChangedPropertyNames.get(i);
 			if (isVisible(propertyName) || isVisibilityProperty(propertyName))
 			{
-				flagPropertyAsDirty(propertyName, false);
+				clearChangedStatusForProperty(propertyName);
 				if (changes == null)
 				{
 					changes = new HashMap<>();
@@ -386,15 +412,21 @@ public abstract class BaseWebObject implements IWebObjectContext
 					}
 					changeTypes.putProperty(propertyName, t);
 				}
+				if (i < idxStartChangedByRef)
+				{
+					// this is a property with content updates only
+					if (propertiesWithContentUpdateOnly == null) propertiesWithContentUpdateOnly = new HashSet<>();
+					propertiesWithContentUpdateOnly.add(propertyName);
+				}
 			}
 		}
 
 		if (changes == null)
 		{
-			return EMPTY_PROPERTIES;
+			return EMPTY_PROPERTIES_WITH_CHANGE_INFO;
 		}
 
-		return new TypedData<Map<String, Object>>(changes, changeTypes);
+		return new TypedDataWithChangeInfo(changes, changeTypes, propertiesWithContentUpdateOnly);
 	}
 
 	/**
@@ -429,7 +461,8 @@ public abstract class BaseWebObject implements IWebObjectContext
 	 */
 	public void clearChanges()
 	{
-		changedProperties.clear();
+		propertiesChangedByRef.clear();
+		propertiesWithChangedContent.clear();
 	}
 
 	/**
@@ -498,7 +531,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 
 			if ((oldValue != null && !oldValue.equals(propertyValue)) || (propertyValue != null && !propertyValue.equals(oldValue)))
 			{
-				flagPropertyAsDirty(firstPropertyPart, true);
+				markPropertyAsChangedByRef(firstPropertyPart);
 				dirty = true;
 			}
 		}
@@ -508,7 +541,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 			map.put(lastPropertyPart, wrappedValue);
 			propertyValue = getProperty(propertyName); // this is required as a wrap + unwrap might result in a different object then the initial one
 
-			flagPropertyAsDirty(firstPropertyPart, true);
+			markPropertyAsChangedByRef(firstPropertyPart);
 			dirty = true;
 		}
 
@@ -664,7 +697,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 			onPropertyChange(propertyName, oldWrappedValue, newWrappedValue);
 		}
 
-		if (returnValueAdjustedIncommingValue.value.booleanValue()) flagPropertyAsDirty(propertyName, true);
+		if (returnValueAdjustedIncommingValue.value.booleanValue()) markPropertyAsChangedByRef(propertyName);
 	}
 
 	/**
@@ -706,7 +739,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 					@Override
 					public void valueChanged()
 					{
-						flagPropertyAsDirty(complexPropertyRoot, true);
+						markPropertyContentsUpdated(complexPropertyRoot);
 
 						if (defaultPropertiesUnwrapped.containsKey(complexPropertyRoot))
 						{
@@ -722,9 +755,32 @@ public abstract class BaseWebObject implements IWebObjectContext
 		if (propertyChangeSupport != null) propertyChangeSupport.firePropertyChange(propertyName, oldWrappedValue, newWrappedValue);
 	}
 
-	public boolean flagPropertyAsDirty(String key, boolean dirty)
+	public boolean markPropertyAsChangedByRef(String key)
 	{
-		return dirty ? changedProperties.add(key) : changedProperties.remove(key);
+		boolean somethingHappened = propertiesChangedByRef.add(key); // whether or not we will add it to a changes map (if it is already there or can't be removed, it will be false)
+		if (somethingHappened) propertiesWithChangedContent.remove(key); // we just added it to be sent fully; remove it from contents changed so that it will not be sent twice
+
+		return somethingHappened;
+	}
+
+	public boolean clearChangedStatusForProperty(String key)
+	{
+		boolean somethingHappened = propertiesChangedByRef.remove(key); // whether or not we will add or remove it from a changes map (if it is already there or can't be removed, it will be false)
+		// remove it from any of the 2 changes map (it can't be in both)
+		somethingHappened = propertiesWithChangedContent.remove(key) || somethingHappened;
+
+		return somethingHappened;
+	}
+
+	public boolean markPropertyContentsUpdated(String key)
+	{
+		boolean somethingHappened = false;
+		if (!propertiesWithChangedContent.contains(key))
+		{
+			somethingHappened = propertiesWithChangedContent.add(key);
+		} // else don't add it in the changes map as it's already in the ref. changed map; it will be fully sent to client
+
+		return somethingHappened;
 	}
 
 	protected boolean writeComponentProperties(JSONWriter w, IToJSONConverter<IBrowserConverterContext> converter, String nodeName,
@@ -747,16 +803,17 @@ public abstract class BaseWebObject implements IWebObjectContext
 			if (isVisibilityProperty(propertyName) || isVisible(propertyName))
 			{
 				data.put(propertyName, entry.getValue());
-				flagPropertyAsDirty(propertyName, false);
+				clearChangedStatusForProperty(propertyName);
 			}
 			else
 			{
 				// will be sent as changed when component becomes visible
-				flagPropertyAsDirty(propertyName, true);
+				markPropertyAsChangedByRef(propertyName);
 			}
 		}
 
-		writeProperties(converter, w, data, typedProperties.contentType, clientDataConversions);
+		// here converter is always a full-value-to-json type; so don give a second parameter as this should be used in any case (we don't want to send changes)
+		writeProperties(converter, null, w, new TypedData<Map<String, Object>>(data, typedProperties.contentType), clientDataConversions);
 		clientDataConversions.popNode();
 		w.endObject();
 
@@ -860,10 +917,10 @@ public abstract class BaseWebObject implements IWebObjectContext
 		propertyChangeSupport = null;
 	}
 
-	protected boolean writeOwnComponentChanges(JSONWriter w, String keyInParent, String nodeName, IToJSONConverter<IBrowserConverterContext> converter,
+	public boolean writeOwnComponentChanges(JSONWriter w, String keyInParent, String nodeName, IToJSONConverter<IBrowserConverterContext> converter,
 		DataConversion clientDataConversions) throws JSONException
 	{
-		TypedData<Map<String, Object>> changes = getAndClearChanges();
+		TypedDataWithChangeInfo changes = getAndClearChanges();
 		if (changes.content.isEmpty())
 		{
 			return false;
@@ -876,26 +933,45 @@ public abstract class BaseWebObject implements IWebObjectContext
 
 		w.key(nodeName).object();
 		clientDataConversions.pushNode(nodeName);
-		writeProperties(converter, w, changes.content, changes.contentType, clientDataConversions);
+		// converter here is always ChangesToJSONConverter except for some unit tests
+		writeProperties(converter, FullValueToJSONConverter.INSTANCE, w, changes, clientDataConversions);
 		clientDataConversions.popNode();
 		w.endObject();
 
 		return true;
 	}
 
-	public void writeProperties(IToJSONConverter<IBrowserConverterContext> converter, JSONWriter w, Map<String, Object> propertyValues,
-		PropertyDescription propertyTypes, DataConversion clientDataConversions) throws IllegalArgumentException, JSONException
+	/**
+	 * @param converterForSendingFullValue can be null, if only the main converter should be used.
+	 */
+	public void writeProperties(IToJSONConverter<IBrowserConverterContext> mainConverter,
+		IToJSONConverter<IBrowserConverterContext> converterForSendingFullValue, JSONWriter w, TypedData<Map<String, Object>> propertiesToWrite,
+		DataConversion clientDataConversions) throws IllegalArgumentException, JSONException
 	{
-		for (Entry<String, ? > entry : propertyValues.entrySet())
+		TypedDataWithChangeInfo propertiesToWriteWithChangeInfo = (propertiesToWrite instanceof TypedDataWithChangeInfo)
+			? (TypedDataWithChangeInfo)propertiesToWrite : null;
+
+		for (Entry<String, Object> entry : propertiesToWrite.content.entrySet())
 		{
 			clientDataConversions.pushNode(entry.getKey());
-			PropertyDescription pd = propertyTypes != null ? propertyTypes.getProperty(entry.getKey()) : null;
+			PropertyDescription pd = propertiesToWrite.contentType != null ? propertiesToWrite.contentType.getProperty(entry.getKey()) : null;
 
 			BrowserConverterContext context;
 			if (pd != null) context = new BrowserConverterContext(this, pd.getPushToServer());
 			else context = new BrowserConverterContext(this, PushToServerEnum.reject); // should this ever happen? should we use allow here instead?
 
-			converter.toJSONValue(w, entry.getKey(), entry.getValue(), pd, clientDataConversions, context);
+			if (propertiesToWriteWithChangeInfo != null && converterForSendingFullValue != null &&
+				propertiesToWriteWithChangeInfo.hasFullyChanged(entry.getKey()))
+			{
+				// the property val needs to be sent whole - use the right converter for that
+				converterForSendingFullValue.toJSONValue(w, entry.getKey(), entry.getValue(), pd, clientDataConversions, context);
+			}
+			else
+			{
+				// use 'main' converter (which can be a full value converter or only changes converter depending on caller wants)
+				mainConverter.toJSONValue(w, entry.getKey(), entry.getValue(), pd, clientDataConversions, context);
+			}
+
 			clientDataConversions.popNode();
 		}
 	}

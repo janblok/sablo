@@ -27,6 +27,7 @@ import org.json.JSONObject;
 import org.json.JSONString;
 import org.json.JSONStringer;
 import org.json.JSONWriter;
+import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.IBrowserConverterContext;
@@ -126,6 +127,14 @@ public class JSONUtils
 	{
 		JSONWriter writer = new JSONStringer().object();
 		writeDataWithConversions(converter, writer, data, dataTypes, contextObject);
+		return writer.endObject().toString();
+	}
+
+	public static <ContextT> String writeComponentChanges(WebComponent component, ChangesToJSONConverter converter, DataConversion dataConversion)
+		throws JSONException
+	{
+		JSONWriter writer = new JSONStringer().object();
+		if (component.writeOwnComponentChanges(writer, "comp", component.getName(), converter, dataConversion)) writer.endObject();
 		return writer.endObject().toString();
 	}
 

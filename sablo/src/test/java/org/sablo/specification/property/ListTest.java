@@ -61,31 +61,38 @@ public class ListTest
 		lst.clearChanges();
 		changed[0] = false;
 
-		assertEquals(0, lst.changedIndexes.size());
+		assertEquals(0, lst.getIndexesChangedByRef().size());
+		assertEquals(0, lst.getIndexesWithContentUpdates().size());
 		lst.get(0).put("test", "test");
-		assertEquals(1, lst.changedIndexes.size());
+		assertEquals(0, lst.getIndexesChangedByRef().size());
+		assertEquals(1, lst.getIndexesWithContentUpdates().size());
 
-		assertEquals(new Integer(0), lst.changedIndexes.toArray()[0]);
+		assertEquals(new Integer(0), lst.getIndexesWithContentUpdates().toArray()[0]);
 
 		lst.clearChanges();
 
 		lst.set(1, lst.get(2));
 		lst.set(2, lst.get(3));
+		lst.get(1).put("test1", "test123");
 		lst.remove(3);
 
-		assertEquals(2, lst.changedIndexes.size());
-		assertEquals(new Integer(1), lst.changedIndexes.toArray()[0]);
-		assertEquals(new Integer(2), lst.changedIndexes.toArray()[1]);
+		assertEquals(2, lst.getIndexesChangedByRef().size());
+		assertEquals(0, lst.getIndexesWithContentUpdates().size());
+		assertEquals(new Integer(1), lst.getIndexesChangedByRef().toArray()[0]);
+		assertEquals(new Integer(2), lst.getIndexesChangedByRef().toArray()[1]);
 
 		assertEquals(1, lst.removedIndexes.size());
 		assertEquals(new Integer(3), lst.removedIndexes.toArray()[0]);
+		assertTrue(lst.mustSendAll());
 
 		lst.clearChanges();
+		lst.get(1).clearChanges();
 
 		lst.get(1).put("test1", "test1");
-		assertEquals(1, lst.changedIndexes.size());
+		assertEquals(1, lst.getIndexesWithContentUpdates().size());
+		assertEquals(0, lst.getIndexesChangedByRef().size());
 
-		assertEquals(new Integer(1), lst.changedIndexes.toArray()[0]);
+		assertEquals(new Integer(1), lst.getIndexesWithContentUpdates().toArray()[0]);
 
 		assertEquals(3, lst.changeHandlers.size());
 	}
@@ -134,8 +141,9 @@ public class ListTest
 
 		lst.get(1).put("test1", "test1");
 
-		assertEquals(1, lst.changedIndexes.size());
-		assertEquals(new Integer(1), lst.changedIndexes.toArray()[0]);
+		assertEquals(1, lst.getIndexesWithContentUpdates().size());
+		assertEquals(0, lst.getIndexesChangedByRef().size());
+		assertEquals(new Integer(1), lst.getIndexesWithContentUpdates().toArray()[0]);
 
 	}
 

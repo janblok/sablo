@@ -75,13 +75,9 @@ public class EnabledSabloValue
 		}
 	}
 
-	/**
-	 * @param comp
-	 *
-	 */
 	protected void flagChanged(BaseWebObject comp, String propName)
 	{
-		comp.flagPropertyAsDirty(propName, true);
+		comp.markPropertyAsChangedByRef(propName);
 		if (!comp.getProperties().content.containsKey(propName))
 		{
 			// if it doesn't have this property yet, now push it (take the one from the default map)

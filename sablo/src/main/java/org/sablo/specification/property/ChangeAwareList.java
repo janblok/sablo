@@ -133,7 +133,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	{
 		int totalChanges = addedIndexes.size() + removedIndexes.size() + indexesWithContentUpdates.size() + indexesChangedByRef.size();
 		//we should send all if allChanged is true or if we have more types of changes
-		return allChanged || !(totalChanges == changedIndexes.size() || totalChanges == addedIndexes.size() || totalChanges == removedIndexes.size());
+		return allChanged || !(totalChanges == indexesWithContentUpdates.size() + indexesChangedByRef.size() || totalChanges == addedIndexes.size() ||
+			totalChanges == removedIndexes.size());
 	}
 
 	public void clearChanges()

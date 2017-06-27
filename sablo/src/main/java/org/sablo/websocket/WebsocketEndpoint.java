@@ -130,7 +130,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 					if (CurrentWindow.safeGet() == win && session != null) // window or session my already be closed
 					{
 						win.onOpen(session.getRequestParameterMap());
-						if (session.isOpen())
+						if (session != null && session.isOpen())
 						{
 							wsSession.onOpen(session.getRequestParameterMap());
 						}

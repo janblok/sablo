@@ -117,8 +117,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	}
 
 	/**
-		 * You should not change the contents of the returned Set.
-		 */
+	 * You should not change the contents of the returned Set.
+	 */
 	public Set<Integer> getIndexesWithContentUpdates()
 	{
 		return indexesWithContentUpdates;

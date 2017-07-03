@@ -804,7 +804,8 @@ public class BaseWindow implements IWindow
 					PropertyDescription callTypes = (PropertyDescription)call.remove(API_SERVER_ONLY_KEY_ARG_TYPES);
 					w.key(API_KEY_CALL).object();
 					clientDataConversions.pushNode(API_KEY_CALL);
-					JSONUtils.writeData(converter, w, call, callTypes, clientDataConversions, new BrowserConverterContext(receiver, PushToServerEnum.allow));
+					JSONUtils.writeData(FullValueToJSONConverter.INSTANCE, w, call, callTypes, clientDataConversions,
+						new BrowserConverterContext(receiver, PushToServerEnum.allow));
 					clientDataConversions.popNode();
 					w.endObject();
 

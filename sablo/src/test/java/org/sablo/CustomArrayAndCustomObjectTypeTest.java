@@ -371,7 +371,7 @@ public class CustomArrayAndCustomObjectTypeTest
 		map.put("name", "firstMyType1"); // changing it should still send full value of the map - as a granular add of the array
 
 		JSONAssert.assertEquals(
-				"{\"comp\":{\"test\":{\"types\":{\"a\":[{\"v\":{\"vEr\":2,\"v\":{\"name\":\"firstMyType\"}},\"i\":0}],\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}}}}}}",
+			"{\"comp\":{\"test\":{\"types\":{\"a\":[{\"v\":{\"vEr\":2,\"v\":{\"name\":\"firstMyType\"}},\"i\":0}],\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}}}}}}",
 			JSONUtils.writeComponentChanges(component, ChangesToJSONConverter.INSTANCE, new DataConversion()), JSONCompareMode.NON_EXTENSIBLE);
 
 		// set a whole new obj/map into an existing index of the array - that map should be sent fully as an update of the array, instead of NO-OP
@@ -420,6 +420,37 @@ public class CustomArrayAndCustomObjectTypeTest
 		list.get(0).put("in_date", new Date(12345));
 		JSONAssert.assertEquals(
 			"{\"comp\":{\"test\":{\"types\":{\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"vEr\":4,\"svy_types\":{\"0\":{\"v\":\"JSON_arr\"}},\"u\":[{\"v\":{\"vEr\":4,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"Date\"}},\"u\":[{\"v\":12345,\"k\":\"in_date\"}]},\"i\":0}]},\"k\":\"subtypearray\"}]},\"i\":0}]}}}}",
+			JSONUtils.writeComponentChanges(component, ChangesToJSONConverter.INSTANCE, new DataConversion()), JSONCompareMode.NON_EXTENSIBLE);
+	}
+
+	@Test
+	public void shouldGivePrioToChangeByRefOnComponent() throws Exception
+	{
+		WebComponent component = new WebComponent("mycomponent", "test");
+		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow);
+		assertNull(component.getProperty("types"));
+
+		// arrays are wrapped in a smart array that can wrap and convert/handle changes automatically
+		Object[] array = new Object[0];
+		assertTrue(component.setProperty("types", array));
+
+		ChangeAwareList<Object, Object> typesArray = (ChangeAwareList)component.getProperty("types"); // ChangeAwareList
+
+		// so now we have a ref change already for types; do add an element to notify a content change for types as well; ref
+		// change should be leading still because the full value was not yet sent and has to be sent no matter if there were changes afterwards
+		Map<Object, Object> map = new HashMap<>();
+		map.put("name", "firstMyType");
+		typesArray.add(map);
+
+		// test array element reference change on component (should sent whole value, not a NO-OP or an update)
+		JSONAssert.assertEquals(
+			"{\"comp\":{\"test\":{\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"firstMyType\"}}],\"svy_types\":{\"0\":\"JSON_obj\"}}}}}",
+			JSONUtils.writeComponentChanges(component, ChangesToJSONConverter.INSTANCE, new DataConversion()), JSONCompareMode.NON_EXTENSIBLE);
+
+		// now change by content and afterwards by ref; should still send only full prop. value
+		typesArray.remove(0);
+		component.setProperty("types", new Object[0]);
+		JSONAssert.assertEquals("{\"comp\":{\"test\":{\"types\":{\"vEr\":4,\"v\":[]}}}}",
 			JSONUtils.writeComponentChanges(component, ChangesToJSONConverter.INSTANCE, new DataConversion()), JSONCompareMode.NON_EXTENSIBLE);
 	}
 

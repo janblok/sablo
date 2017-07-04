@@ -775,7 +775,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 	public boolean markPropertyContentsUpdated(String key)
 	{
 		boolean somethingHappened = false;
-		if (!propertiesWithChangedContent.contains(key))
+		if (!propertiesWithChangedContent.contains(key) && !propertiesChangedByRef.contains(key))
 		{
 			somethingHappened = propertiesWithChangedContent.add(key);
 		} // else don't add it in the changes map as it's already in the ref. changed map; it will be fully sent to client

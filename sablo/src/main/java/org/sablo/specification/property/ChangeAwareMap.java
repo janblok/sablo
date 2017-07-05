@@ -208,7 +208,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		return ++version;
 	}
 
-	protected int getListContentVersion()
+	public int getListContentVersion()
 	{
 		return version;
 	}

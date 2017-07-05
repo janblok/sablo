@@ -119,7 +119,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		return (IPropertyType<ET>)getCustomJSONTypeDefinition().getProperty(childPropertyName).getType();
 	}
 
-	private Map<String, ET> wrapMap(Map<String, ET> value, PropertyDescription pd, IWrappingContext dataConverterContext)
+	protected Map<String, ET> wrapMap(Map<String, ET> value, PropertyDescription pd, IWrappingContext dataConverterContext)
 	{
 		// this type will wrap (if needed; that means it will end up as a normal list if element type is not wrapped type
 		// or a WrapperList otherwise) an [] or List into a list; unwrap will simply return that list that will further

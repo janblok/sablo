@@ -120,8 +120,7 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 			((HttpServletResponse)servletResponse).setContentType("text/html");
 			((HttpServletResponse)servletResponse).setCharacterEncoding("UTF-8");
 			PrintWriter w = servletResponse.getWriter();
-			IndexPageEnhancer.enhance(indexPageResource, request.getContextPath(), cssContributions, jsContributions, extraMetaData, variableSubstitution, w,
-				this, this);
+			IndexPageEnhancer.enhance(indexPageResource, cssContributions, jsContributions, extraMetaData, variableSubstitution, w, this, this);
 			w.flush();
 			return;
 		}

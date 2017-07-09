@@ -64,21 +64,19 @@ public class IndexPageEnhancer
 	/**
 	 * Enhance the provided index.html
 	 * @param resource url to index.html
-	 * @param contextPath the path to express in base tag
 	 * @param cssContributions possible css contributions
 	 * @param jsContributions possible js contributions
 	 * @param variableSubstitution replace variables
 	 * @param writer the writer to write to
 	 * @throws IOException
 	 */
-	public static void enhance(URL resource, String contextPath, Collection<String> cssContributions, Collection<String> jsContributions,
-		Collection<String> extraMetaData, Map<String, String> variableSubstitution, Writer writer, IContributionFilter contributionFilter,
-		IContributionEntryFilter contributionEntryFilter) throws IOException
+	public static void enhance(URL resource, Collection<String> cssContributions, Collection<String> jsContributions, Collection<String> extraMetaData,
+		Map<String, String> variableSubstitution, Writer writer, IContributionFilter contributionFilter, IContributionEntryFilter contributionEntryFilter)
+		throws IOException
 	{
 		String index_file = IOUtils.toString(resource);
 		String lowercase_index_file = index_file.toLowerCase();
-		int headstart = lowercase_index_file.indexOf("<head>");
-		int headend = lowercase_index_file.indexOf(COMPONENT_CONTRIBUTIONS);
+		int componentContributionsIndex = lowercase_index_file.indexOf(COMPONENT_CONTRIBUTIONS);
 
 		//use real html parser here instead?
 		if (variableSubstitution != null)
@@ -91,34 +89,16 @@ public class IndexPageEnhancer
 		}
 
 		StringBuilder sb = new StringBuilder(index_file);
-		if (headend < 0)
+		if (componentContributionsIndex < 0)
 		{
 			log.warn("Could not find marker for component contributions: " + COMPONENT_CONTRIBUTIONS + " for resource " + resource);
 		}
 		else
 		{
-			sb.insert(headend + COMPONENT_CONTRIBUTIONS.length(),
+			sb.insert(componentContributionsIndex + COMPONENT_CONTRIBUTIONS.length(),
 				getAllContributions(cssContributions, jsContributions, extraMetaData, contributionFilter, contributionEntryFilter));
 		}
-		if (headstart < 0)
-		{
-			log.warn("Could not find empty head tag for base tag for resource " + resource);
-		}
-		else
-		{
-			sb.insert(headstart + 6, getBaseTag(contextPath));
-		}
 		writer.append(sb);
-	}
-
-	/**
-	 * Get the Base tag to use
-	 * @param contextPath the contextPath to be used in base tag
-	 * @return the decorated base tag
-	 */
-	private static String getBaseTag(String contextPath)
-	{
-		return String.format("<base href=\"%s/\">\n", contextPath);
 	}
 
 	public static Object[] getAllContributions(Boolean supportGrouping, IContributionEntryFilter ceFilter)

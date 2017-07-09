@@ -133,6 +133,8 @@ angular.module('pushToServer', []).factory('$propertyWatchesRegistry', function 
 webSocketModule.factory('$webSocket',
 		function($rootScope, $injector, $window, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers, $interval, wsCloseCodes,$sabloLoadingIndicator, $timeout, $sabloTestability) {
 
+	var pathname = null;
+	
 	var websocket = null;
 	
 	var connectionArguments = {};
@@ -150,6 +152,14 @@ webSocketModule.factory('$webSocket',
 	var deferredEvents = {};
 	function isPromiseLike(obj) {
 		  return obj && angular.isFunction(obj.then);
+	}
+	
+	function setPathname(name) {
+		pathname = name;
+	}
+	
+	function getPathname() {
+		return pathname || window.location.pathname;
 	}
 	
 	var getURLParameter = function getURLParameter(name) {
@@ -489,7 +499,7 @@ webSocketModule.factory('$webSocket',
 			new_uri = "ws:";
 		}
 		new_uri += "//" + loc.host;
-		var pathname = loc.pathname;
+		var pathname = getPathname();
 		var lastIndex = pathname.lastIndexOf("/");
 		if (lastIndex > 0) {
 			pathname = pathname.substring(0, lastIndex);
@@ -640,7 +650,11 @@ webSocketModule.factory('$webSocket',
 			}
 		},
 
-		getURLParameter: getURLParameter
+		getURLParameter: getURLParameter,
+		
+		setPathname: setPathname,
+		
+		getPathname: getPathname
 	};
 }).factory("$services", function($rootScope, $sabloConverters, $sabloUtils, $propertyWatchesRegistry, $log){
 	// serviceName:{} service model

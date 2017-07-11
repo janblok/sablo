@@ -75,8 +75,6 @@ public class IndexPageEnhancer
 		throws IOException
 	{
 		String index_file = IOUtils.toString(resource);
-		String lowercase_index_file = index_file.toLowerCase();
-		int componentContributionsIndex = lowercase_index_file.indexOf(COMPONENT_CONTRIBUTIONS);
 
 		//use real html parser here instead?
 		if (variableSubstitution != null)
@@ -87,6 +85,7 @@ public class IndexPageEnhancer
 				index_file = index_file.replaceAll(Matcher.quoteReplacement(variableReplace), variableSubstitution.get(variableName));
 			}
 		}
+		int componentContributionsIndex = index_file.indexOf(COMPONENT_CONTRIBUTIONS);
 
 		StringBuilder sb = new StringBuilder(index_file);
 		if (componentContributionsIndex < 0)

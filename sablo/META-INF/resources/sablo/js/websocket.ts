@@ -169,7 +169,7 @@ webSocketModule.factory('$webSocket',
 	var handleMessage = function(message) {
 		var obj
 		var responseValue
-		var functionsToExecuteAfterIncommingMessageWasHandled = [];
+		functionsToExecuteAfterIncommingMessageWasHandled = [];
 
 		try {
 			if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Received message from server: " + JSON.stringify(message));

@@ -285,7 +285,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	{
 		if (el instanceof ISmartPropertyValue)
 		{
-			CustomJSONPropertyType.log.debug("[CAL] Checking to ATTACH idx " + i);
+			if (CustomJSONPropertyType.log.isDebugEnabled()) CustomJSONPropertyType.log.debug("[CAL] Checking to ATTACH idx " + i);
 
 			ChangeAwareList<ET, WT>.IndexChangeListener changeHandler = getChangeHandler(el);
 			if (changeHandler == null || dueToFullArrayAttach) // hmm I think if dueToFullArrayAttach is true then changeHandler would always be null (as elements would not be attached either...) but just in case
@@ -304,7 +304,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 
 				// just adjust the index of the change handler
 				changeHandler.attachedToIdx = i;
-				CustomJSONPropertyType.log.debug("[CAL] SKIPPING ATTACH due to el. already being added in the list (splice?) for idx " + i);
+				if (CustomJSONPropertyType.log.isDebugEnabled())
+					CustomJSONPropertyType.log.debug("[CAL] SKIPPING ATTACH due to el. already being added in the list (splice?) for idx " + i);
 			}
 		}
 
@@ -377,7 +378,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	{
 		if (el instanceof ISmartPropertyValue)
 		{
-			CustomJSONPropertyType.log.debug("[CAL] Checking to DETACH idx " + idx);
+			if (CustomJSONPropertyType.log.isDebugEnabled()) CustomJSONPropertyType.log.debug("[CAL] Checking to DETACH idx " + idx);
 
 			// if the wrapper list still has this el then don't call detach on it.
 			if (dueToFullArrayDetach || !getWrappedBaseList().contains(el))
@@ -398,7 +399,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 				// from JS does copy elements after the removed one 1 by one to lower index; so it first sets an already attached value to a lower index, then removes/replaces it from it's previous index.
 				// we want in this case to not trigger either attach or detach - as basically the element is still in the array, but we must adjust change handler indexes;
 				// so we do nothing in this case as the
-				CustomJSONPropertyType.log.debug("[CAL] SKIPPING DETACH of still present element at idx " + idx);
+				if (CustomJSONPropertyType.log.isDebugEnabled())
+					CustomJSONPropertyType.log.debug("[CAL] SKIPPING DETACH of still present element at idx " + idx);
 			}
 		}
 

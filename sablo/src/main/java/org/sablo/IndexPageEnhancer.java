@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
@@ -37,6 +38,7 @@ import org.sablo.specification.PackageSpecification;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.WebServiceSpecProvider;
+import org.sablo.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +73,7 @@ public class IndexPageEnhancer
 	 * @throws IOException
 	 */
 	public static void enhance(URL resource, Collection<String> cssContributions, Collection<String> jsContributions, Collection<String> extraMetaData,
-		Map<String, String> variableSubstitution, Writer writer, IContributionFilter contributionFilter, IContributionEntryFilter contributionEntryFilter)
+		Map<String, Object> variableSubstitution, Writer writer, IContributionFilter contributionFilter, IContributionEntryFilter contributionEntryFilter)
 		throws IOException
 	{
 		String index_file = IOUtils.toString(resource);
@@ -79,10 +81,19 @@ public class IndexPageEnhancer
 		//use real html parser here instead?
 		if (variableSubstitution != null)
 		{
-			for (String variableName : variableSubstitution.keySet())
+			for (Entry<String, Object> entry : variableSubstitution.entrySet())
 			{
-				String variableReplace = VAR_START + variableName + VAR_END;
-				index_file = index_file.replaceAll(Matcher.quoteReplacement(variableReplace), variableSubstitution.get(variableName));
+				String value;
+				if (entry.getValue() == null || entry.getValue() instanceof Number)
+				{
+					value = String.valueOf(entry.getValue());
+				}
+				else
+				{
+					value = '"' + Matcher.quoteReplacement(TextUtils.escapeForDoubleQuotedJavascript(entry.getValue().toString())) + '"';
+				}
+
+				index_file = index_file.replaceAll(VAR_START + entry.getKey() + VAR_END, value);
 			}
 		}
 		int componentContributionsIndex = index_file.indexOf(COMPONENT_CONTRIBUTIONS);

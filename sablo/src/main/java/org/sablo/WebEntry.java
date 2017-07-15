@@ -92,7 +92,7 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 	protected abstract IWebsocketSessionFactory createSessionFactory();
 
 	public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain, Collection<String> cssContributions,
-		Collection<String> jsContributions, Collection<String> extraMetaData, Map<String, String> variableSubstitution) throws IOException, ServletException
+		Collection<String> jsContributions, Collection<String> extraMetaData, Map<String, Object> variableSubstitution) throws IOException, ServletException
 	{
 		HttpServletRequest request = (HttpServletRequest)servletRequest;
 

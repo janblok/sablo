@@ -174,7 +174,7 @@ webSocketModule.factory('$webSocket',
 		}
 		
 		var search = $window.location.search;
-		if (search && search.startsWith('?')) {
+		if (search && search.indexOf('?') == 0) {
 			return search.substring(1);
 		}
 		

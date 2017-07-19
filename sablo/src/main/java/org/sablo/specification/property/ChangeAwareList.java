@@ -404,6 +404,23 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			}
 		}
 
+		// If a detach did happen and the changeHandlers are not in sync
+		// anymore with the data, then look for the changehandler that has 
+		// a value that is not in the list anymore and remove that one.
+		List<WT> lst = getWrappedBaseList();
+		if (changeHandlers.size() != lst.size())
+		{
+			Iterator<ChangeAwareList<ET, WT>.IndexChangeListener> iterator = changeHandlers.iterator();
+			outer : while (iterator.hasNext())
+			{
+				Object forValue = iterator.next().forValue;
+				for (WT wt : lst)
+				{
+					if (wt == forValue) continue outer;
+				}
+				iterator.remove();
+			}
+		}
 		if (remove)
 		{
 			// other change handler indexes might need to be updated

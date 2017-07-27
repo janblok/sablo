@@ -381,7 +381,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			if (CustomJSONPropertyType.log.isDebugEnabled()) CustomJSONPropertyType.log.debug("[CAL] Checking to DETACH idx " + idx);
 
 			// if the wrapper list still has this el then don't call detach on it.
-			if (dueToFullArrayDetach || !getWrappedBaseList().contains(el))
+			if (dueToFullArrayDetach || (!containsByReference(getWrappedBaseList(), el)))
 			{
 				((ISmartPropertyValue)el).detach();
 
@@ -395,7 +395,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			else
 			{
 				// it is still in the list after being removed from idx;
-				// that can happen when array operations such as splice are performed on the array from JSf (for example a splice that remove one element
+				// that can happen when array operations such as splice are performed on the array from JS (for example a splice that remove one element
 				// from JS does copy elements after the removed one 1 by one to lower index; so it first sets an already attached value to a lower index, then removes/replaces it from it's previous index.
 				// we want in this case to not trigger either attach or detach - as basically the element is still in the array, but we must adjust change handler indexes;
 				// so we do nothing in this case as the
@@ -404,23 +404,6 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			}
 		}
 
-		// If a detach did happen and the changeHandlers are not in sync
-		// anymore with the data, then look for the changehandler that has 
-		// a value that is not in the list anymore and remove that one.
-		List<WT> lst = getWrappedBaseList();
-		if (changeHandlers.size() != lst.size())
-		{
-			Iterator<ChangeAwareList<ET, WT>.IndexChangeListener> iterator = changeHandlers.iterator();
-			outer : while (iterator.hasNext())
-			{
-				Object forValue = iterator.next().forValue;
-				for (WT wt : lst)
-				{
-					if (wt == forValue) continue outer;
-				}
-				iterator.remove();
-			}
-		}
 		if (remove)
 		{
 			// other change handler indexes might need to be updated
@@ -431,6 +414,17 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 				if (ch.attachedToIdx > idx) ch.attachedToIdx--;
 			}
 		}
+	}
+
+	/**
+	 * Search by reference, not using .equals(), because list.contains() would match similar maps/arrays/... even if the references are different.
+	 * When we don't want that, when we are only interested in references then we use this method.
+	 */
+	private static <X> boolean containsByReference(List<X> list, X elToSearchFor)
+	{
+		for (X el : list)
+			if (elToSearchFor == el) return true;
+		return false;
 	}
 
 	protected void detachIfNeeded(int idx, WT el, boolean remove)

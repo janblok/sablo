@@ -441,7 +441,8 @@ public class JSONUtils
 					}
 					catch (Exception ex)
 					{
-						log.error("Error while converting value: " + value + " to type: " + type + " current json: " + writer.toString(), ex);
+						log.error("Error while converting value: " + value + " of key: " + key + " to type: " + type + " current json: " + writer.toString(),
+							ex);
 						return writer;
 					}
 				}
@@ -454,7 +455,7 @@ public class JSONUtils
 					}
 					catch (Exception ex)
 					{
-						log.error("Error while converting value: " + value + " to type: " + type + " current json: " + writer.toString(), ex);
+						log.error("Error while converting value: " + value + " of key: " + key + " to type: " + type + " current json: " + writer.toString(), ex);
 						return writer;
 					}
 				}

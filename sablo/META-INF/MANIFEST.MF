@@ -2,10 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Sablo core library
 Bundle-SymbolicName: sablo;singleton:=true
-Bundle-Version: 8.2.0.3101_rc1
+Bundle-Version: 8.2.0.3102_rc2
 Export-Package: org.sablo,
  org.sablo.eventthread,
- org.sablo.property.types,
  org.sablo.services.client,
  org.sablo.services.server,
  org.sablo.services.template,

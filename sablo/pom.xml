@@ -5,7 +5,7 @@
 		<maven>3.3.3</maven>
 	</prerequisites>
 	<groupId>org.sablo</groupId>
-	<version>8.2.0.3103</version>
+	<version>8.3.0.3200_b1</version>
 	<artifactId>sablo</artifactId>
 	<packaging>eclipse-plugin</packaging>
 	<name>Sablo Core</name>
@@ -21,8 +21,7 @@
 		<maven.compiler.source>1.7</maven.compiler.source>
 		<maven.compiler.target>1.7</maven.compiler.target>
 		<jenkins.javascript_tests.reportsDirectory>target/protractor-reports</jenkins.javascript_tests.reportsDirectory>
-		<servoy-repo.url>http://developer.servoy.com/p2_repository/compile_target/install/</servoy-repo.url>
-		<servoy-deltapack.url>http://developer.servoy.com/p2_repository/compile_target/install/deltapack/</servoy-deltapack.url>
+		<servoy-repo.url>http://download.eclipse.org/eclipse/updates/4.7-M-builds/M-4.7.1RC3-201709011220/</servoy-repo.url>
 		<servoy-shiplibs.url>http://developer.servoy.com/p2_repository/ship_plugins/</servoy-shiplibs.url>
 	</properties>
 
@@ -35,11 +34,6 @@
 		<repository>
 			<id>servoy_shiblibs</id>
 			<url>${servoy-shiplibs.url}</url>
-			<layout>p2</layout>
-		</repository>
-		<repository>
-			<id>servoy_deltapack</id>
-			<url>${servoy-deltapack.url}</url>
 			<layout>p2</layout>
 		</repository>
 	</repositories>

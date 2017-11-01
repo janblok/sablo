@@ -41,7 +41,7 @@ public class WebObjectFunctionDefinition
 	private boolean async = false;
 	private boolean discardPreviouslyQueuedSimilarCalls = false;
 	private PropertyDescription asPropertyDescription;
-	private boolean applyFirst;
+	private boolean preDataServiceCall;
 
 	public WebObjectFunctionDefinition(String name)
 	{
@@ -185,17 +185,17 @@ public class WebObjectFunctionDefinition
 	/**
 	 * @param b
 	 */
-	public void setApplyFirst(boolean applyFirst)
+	public void setPreDataServiceCall(boolean preDataServiceCall)
 	{
-		this.applyFirst = applyFirst;
+		this.preDataServiceCall = preDataServiceCall;
 	}
 
 	/**
 	 * @return the applyFirst
 	 */
-	public boolean isApplyFirst()
+	public boolean isPreDataServiceCall()
 	{
-		return applyFirst;
+		return preDataServiceCall;
 	}
 
 }

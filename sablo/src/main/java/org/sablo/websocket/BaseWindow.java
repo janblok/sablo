@@ -670,7 +670,7 @@ public class BaseWindow implements IWindow
 		serviceCall.put(API_KEY_NAME, clientService.getScriptingName());
 		serviceCall.put(API_KEY_CALL, functionName);
 		WebObjectFunctionDefinition handler = clientService.getSpecification().getApiFunction(functionName);
-		if (handler != null && handler.isApplyFirst()) serviceCall.put(API_PRE_DATA_SERVICE_CALL, Boolean.TRUE);
+		if (handler != null && handler.isPreDataServiceCall()) serviceCall.put(API_PRE_DATA_SERVICE_CALL, Boolean.TRUE);
 		if (argumentTypes != null && argumentTypes.getProperties().size() > 0)
 		{
 			int typesNumber = argumentTypes.getProperties().size();

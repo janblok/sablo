@@ -41,6 +41,7 @@ public class WebObjectFunctionDefinition
 	private boolean async = false;
 	private boolean discardPreviouslyQueuedSimilarCalls = false;
 	private PropertyDescription asPropertyDescription;
+	private boolean applyFirst;
 
 	public WebObjectFunctionDefinition(String name)
 	{
@@ -179,6 +180,22 @@ public class WebObjectFunctionDefinition
 	{
 		this.asPropertyDescription = propertyDescription;
 
+	}
+
+	/**
+	 * @param b
+	 */
+	public void setApplyFirst(boolean applyFirst)
+	{
+		this.applyFirst = applyFirst;
+	}
+
+	/**
+	 * @return the applyFirst
+	 */
+	public boolean isApplyFirst()
+	{
+		return applyFirst;
 	}
 
 }

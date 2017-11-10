@@ -185,9 +185,8 @@ public class WebComponentTest
 		data.put("msg", properties);
 
 		String msg = JSONUtils.writeDataWithConversions(data, null, null);
-		assertEquals(
-			new JSONObject(
-				"{\"msg\":{\"font\":{\"fontWeight\":\"bold\",\"fontStyle\":\"normal\",\"fontSize\":\"12px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"},\"name\":\"test\"}}").toString(),
+		assertEquals(new JSONObject(
+			"{\"msg\":{\"font\":{\"fontWeight\":\"bold\",\"fontStyle\":\"normal\",\"fontSize\":\"12px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"},\"name\":\"test\"}}").toString(),
 			new JSONObject(msg).toString());
 
 		component.putBrowserProperty("font", new JSONObject("{\"fontStyle\":\"italic\",\"fontSize\":\"10px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"}"));
@@ -293,8 +292,8 @@ public class WebComponentTest
 	public void testCustomTypeAsArray() throws JSONException
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
-		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow);
-		BrowserConverterContext shallowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.shallow);
+		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow, null);
+		BrowserConverterContext shallowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.shallow, null);
 		assertNull(component.getProperty("types"));
 
 		// custom types are always a Map of values..
@@ -328,15 +327,13 @@ public class WebComponentTest
 		messageTypes.putProperty("msg", properties.contentType);
 
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(
-			new JSONObject(
-				"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
+		assertEquals(new JSONObject(
+			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
 			new JSONObject(msg).toString());
 
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, shallowDataConverterContext);
-		assertEquals(
-			new JSONObject(
-				"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":3,\"w\":false,\"v\":[{\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
+		assertEquals(new JSONObject(
+			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":3,\"w\":false,\"v\":[{\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
 			new JSONObject(msg).toString());
 
 		component.putBrowserProperty("types",

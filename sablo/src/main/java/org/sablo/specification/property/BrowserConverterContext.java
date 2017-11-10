@@ -16,6 +16,7 @@
 package org.sablo.specification.property;
 
 import org.sablo.BaseWebObject;
+import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,14 +33,17 @@ public class BrowserConverterContext extends WrappingContext implements IBrowser
 	/**
 	 * Just to save CPU - for cases that don't have a web-object available but need a BrowserConverterContext. (return values of server side java service handlers, special messages, ...)
 	 */
-	public static final BrowserConverterContext NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER = new BrowserConverterContext(null, PushToServerEnum.reject);
+	public static final BrowserConverterContext NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER = new BrowserConverterContext(null, PushToServerEnum.reject, null);
 
 	private final PushToServerEnum parentPropertyPushToServerValue;
 
-	public BrowserConverterContext(BaseWebObject webObject, PushToServerEnum rootPropertyPushToServerValue)
+	private final PropertyDescription propertyDescription;
+
+	public BrowserConverterContext(BaseWebObject webObject, PushToServerEnum rootPropertyPushToServerValue, PropertyDescription propertyDescription)
 	{
 		super(webObject, null); //TODO get the property name somehow
 		this.parentPropertyPushToServerValue = rootPropertyPushToServerValue;
+		this.propertyDescription = propertyDescription;
 	}
 
 	@Override
@@ -95,6 +99,17 @@ public class BrowserConverterContext extends WrappingContext implements IBrowser
 		}
 
 		return v;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see org.sablo.specification.property.IBrowserConverterContext#getPropertyDescription()
+	 */
+	@Override
+	public PropertyDescription getPropertyDescription()
+	{
+		return propertyDescription;
 	}
 
 }

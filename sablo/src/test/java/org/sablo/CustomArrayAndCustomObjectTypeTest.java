@@ -83,7 +83,7 @@ public class CustomArrayAndCustomObjectTypeTest
 	public void shouldNotAllowSetValueWhenRejectSmartElements() throws Exception
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
-		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow);
+		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow, null);
 		assertNull(component.getProperty("typesReject"));
 
 		// custom types are always a Map of values..
@@ -117,9 +117,8 @@ public class CustomArrayAndCustomObjectTypeTest
 		messageTypes.putProperty("msg", properties.contentType);
 
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(
-			new JSONObject(
-				"{\"msg\":{\"typesReject\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}").toString(),
+		assertEquals(new JSONObject(
+			"{\"msg\":{\"typesReject\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}").toString(),
 			new JSONObject(msg).toString());
 
 		// try to change whole thing... should be blocked by array property
@@ -131,9 +130,8 @@ public class CustomArrayAndCustomObjectTypeTest
 		properties = component.getProperties();
 		data.put("msg", properties.content);
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(
-			new JSONObject(
-				"{\"msg\":{\"typesReject\":{\"vEr\":3,\"v\":[{\"vEr\":3,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":3,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}").toString(),
+		assertEquals(new JSONObject(
+			"{\"msg\":{\"typesReject\":{\"vEr\":3,\"v\":[{\"vEr\":3,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":3,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}").toString(),
 			new JSONObject(msg).toString());
 
 		// try to update by setting one whole value of the array... should be blocked by element custom object type
@@ -143,9 +141,8 @@ public class CustomArrayAndCustomObjectTypeTest
 		properties = component.getProperties();
 		data.put("msg", properties.content);
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(
-			new JSONObject(
-				"{\"msg\":{\"typesReject\":{\"vEr\":4,\"v\":[{\"vEr\":4,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":4,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}").toString(),
+		assertEquals(new JSONObject(
+			"{\"msg\":{\"typesReject\":{\"vEr\":4,\"v\":[{\"vEr\":4,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":4,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}").toString(),
 			new JSONObject(msg).toString());
 
 		// try to update by updating one value of the array... should be blocked by element custom object type
@@ -155,9 +152,8 @@ public class CustomArrayAndCustomObjectTypeTest
 		properties = component.getProperties();
 		data.put("msg", properties.content);
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(
-			new JSONObject(
-				"{\"msg\":{\"typesReject\":{\"vEr\":5,\"v\":[{\"vEr\":5,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":5,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}").toString(),
+		assertEquals(new JSONObject(
+			"{\"msg\":{\"typesReject\":{\"vEr\":5,\"v\":[{\"vEr\":5,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":5,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}").toString(),
 			new JSONObject(msg).toString());
 	}
 
@@ -165,7 +161,7 @@ public class CustomArrayAndCustomObjectTypeTest
 	public void shouldAllowSetValueWhenAllowSmartElements() throws Exception
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
-		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow);
+		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow, null);
 		assertNull(component.getProperty("types"));
 
 		// custom types are always a Map of values..
@@ -199,9 +195,8 @@ public class CustomArrayAndCustomObjectTypeTest
 		messageTypes.putProperty("msg", properties.contentType);
 
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(
-			new JSONObject(
-				"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
+		assertEquals(new JSONObject(
+			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
 			new JSONObject(msg).toString());
 
 		// try to change whole thing... should not be blocked by array property
@@ -213,9 +208,8 @@ public class CustomArrayAndCustomObjectTypeTest
 		properties = component.getProperties();
 		data.put("msg", properties.content);
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(
-			new JSONObject(
-				"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":4,\"v\":[{\"vEr\":4,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":4,\"v\":{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}],\"svy_types\":{\"2\":\"JSON_obj\",\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
+		assertEquals(new JSONObject(
+			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":4,\"v\":[{\"vEr\":4,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":4,\"v\":{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}],\"svy_types\":{\"2\":\"JSON_obj\",\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
 			new JSONObject(msg).toString());
 
 		// try to update by setting one whole value of the array...
@@ -225,9 +219,8 @@ public class CustomArrayAndCustomObjectTypeTest
 		properties = component.getProperties();
 		data.put("msg", properties.content);
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(
-			new JSONObject(
-				"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":5,\"v\":[{\"vEr\":5,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":6,\"v\":{\"name\":\"myname100\",\"active\":true,\"foreground\":\"#00ff00\"}},{\"vEr\":3,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}],\"svy_types\":{\"2\":\"JSON_obj\",\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
+		assertEquals(new JSONObject(
+			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":5,\"v\":[{\"vEr\":5,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":6,\"v\":{\"name\":\"myname100\",\"active\":true,\"foreground\":\"#00ff00\"}},{\"vEr\":3,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}],\"svy_types\":{\"2\":\"JSON_obj\",\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
 			new JSONObject(msg).toString());
 
 		// try to update by updating one value of the array...
@@ -237,9 +230,8 @@ public class CustomArrayAndCustomObjectTypeTest
 		properties = component.getProperties();
 		data.put("msg", properties.content);
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(
-			new JSONObject(
-				"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":6,\"v\":[{\"vEr\":6,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":7,\"v\":{\"name\":\"some_modified_text\",\"active\":true,\"foreground\":\"#00ff00\"}},{\"vEr\":4,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}],\"svy_types\":{\"2\":\"JSON_obj\",\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
+		assertEquals(new JSONObject(
+			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":6,\"v\":[{\"vEr\":6,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":7,\"v\":{\"name\":\"some_modified_text\",\"active\":true,\"foreground\":\"#00ff00\"}},{\"vEr\":4,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}],\"svy_types\":{\"2\":\"JSON_obj\",\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
 			new JSONObject(msg).toString());
 	}
 
@@ -247,7 +239,7 @@ public class CustomArrayAndCustomObjectTypeTest
 	public void shouldNotAllowSetValueWhenRejectDumbElements() throws Exception
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
-		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow);
+		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow, null);
 		assertNull(component.getProperty("simpleArrayReject"));
 
 		Object[] array = new Object[] { 1, 2, 3, 4 };
@@ -269,9 +261,8 @@ public class CustomArrayAndCustomObjectTypeTest
 		messageTypes.putProperty("msg", properties.contentType);
 
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(
-			new JSONObject(
-				"{\"msg\":{\"name\":\"test\",\"simpleArrayReject\":{\"vEr\":2,\"v\":[1,2,3,4]}},\"svy_types\":{\"msg\":{\"simpleArrayReject\":\"JSON_arr\"}}}").toString(),
+		assertEquals(new JSONObject(
+			"{\"msg\":{\"name\":\"test\",\"simpleArrayReject\":{\"vEr\":2,\"v\":[1,2,3,4]}},\"svy_types\":{\"msg\":{\"simpleArrayReject\":\"JSON_arr\"}}}").toString(),
 			new JSONObject(msg).toString());
 
 		// try to change whole thing... should be blocked by array property
@@ -280,9 +271,8 @@ public class CustomArrayAndCustomObjectTypeTest
 		properties = component.getProperties();
 		data.put("msg", properties.content);
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(
-			new JSONObject(
-				"{\"msg\":{\"name\":\"test\",\"simpleArrayReject\":{\"vEr\":3,\"v\":[1,2,3,4]}},\"svy_types\":{\"msg\":{\"simpleArrayReject\":\"JSON_arr\"}}}").toString(),
+		assertEquals(new JSONObject(
+			"{\"msg\":{\"name\":\"test\",\"simpleArrayReject\":{\"vEr\":3,\"v\":[1,2,3,4]}},\"svy_types\":{\"msg\":{\"simpleArrayReject\":\"JSON_arr\"}}}").toString(),
 			new JSONObject(msg).toString());
 
 		// try to update by setting one whole value of the array... should be blocked by element custom object type
@@ -291,9 +281,8 @@ public class CustomArrayAndCustomObjectTypeTest
 		properties = component.getProperties();
 		data.put("msg", properties.content);
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(
-			new JSONObject(
-				"{\"msg\":{\"name\":\"test\",\"simpleArrayReject\":{\"vEr\":4,\"v\":[1,2,3,4]}},\"svy_types\":{\"msg\":{\"simpleArrayReject\":\"JSON_arr\"}}}").toString(),
+		assertEquals(new JSONObject(
+			"{\"msg\":{\"name\":\"test\",\"simpleArrayReject\":{\"vEr\":4,\"v\":[1,2,3,4]}},\"svy_types\":{\"msg\":{\"simpleArrayReject\":\"JSON_arr\"}}}").toString(),
 			new JSONObject(msg).toString());
 	}
 
@@ -301,7 +290,7 @@ public class CustomArrayAndCustomObjectTypeTest
 	public void shouldAllowSetValueWhenAllowDumbElements() throws Exception
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
-		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow);
+		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow, null);
 		assertNull(component.getProperty("simpleArrayAllow"));
 
 		// arrays are wrapped in a smart array that can wrap and convert/handle changes automatically
@@ -352,7 +341,7 @@ public class CustomArrayAndCustomObjectTypeTest
 	public void shouldHandleDifferentlyChangeByRefAndChangeOfContentInElements() throws Exception
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
-		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow);
+		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow, null);
 		assertNull(component.getProperty("types"));
 
 		// arrays are wrapped in a smart array that can wrap and convert/handle changes automatically
@@ -429,7 +418,7 @@ public class CustomArrayAndCustomObjectTypeTest
 	public void shouldGivePrioToChangeByRefOnComponent() throws Exception
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
-		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow);
+		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow, null);
 		assertNull(component.getProperty("types"));
 
 		// arrays are wrapped in a smart array that can wrap and convert/handle changes automatically
@@ -460,7 +449,7 @@ public class CustomArrayAndCustomObjectTypeTest
 	public void shouldOnlyAttachDetachAsNeededAndKeepIndexesUpToDateInChangeHandlersWhenDoingArraySplice() throws Exception
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
-		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow);
+		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow, null);
 		assertNull(component.getProperty("typesReject"));
 
 		// arrays are wrapped in a smart array that can wrap and convert/handle changes automatically

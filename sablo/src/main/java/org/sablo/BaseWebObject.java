@@ -897,7 +897,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 
 		PropertyDescription propertyDesc = specification.getProperty(propertyName);
 		Object value = propertyDesc != null ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDesc,
-			new BrowserConverterContext(this, propertyDesc.getPushToServer()), returnValueAdjustedIncommingValue) : null;
+			new BrowserConverterContext(this, propertyDesc.getPushToServer(), propertyDesc), returnValueAdjustedIncommingValue) : null;
 		return value;
 	}
 
@@ -996,8 +996,8 @@ public abstract class BaseWebObject implements IWebObjectContext
 			PropertyDescription pd = propertiesToWrite.contentType != null ? propertiesToWrite.contentType.getProperty(entry.getKey()) : null;
 
 			BrowserConverterContext context;
-			if (pd != null) context = new BrowserConverterContext(this, pd.getPushToServer());
-			else context = new BrowserConverterContext(this, PushToServerEnum.reject); // should this ever happen? should we use allow here instead?
+			if (pd != null) context = new BrowserConverterContext(this, pd.getPushToServer(), pd);
+			else context = new BrowserConverterContext(this, PushToServerEnum.reject, null); // should this ever happen? should we use allow here instead?
 
 			if (propertiesToWriteWithChangeInfo != null && converterForSendingFullValue != null &&
 				propertiesToWriteWithChangeInfo.hasFullyChanged(entry.getKey()))

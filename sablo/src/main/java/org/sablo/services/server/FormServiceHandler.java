@@ -195,8 +195,8 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 					Object oldValue = oldvalues.opt(key);
 					Object currentValue = webComponent.getProperty(key);
 					PropertyDescription propertyDesc = webComponent.getSpecification().getProperty(key);
-					oldValue = propertyDesc != null ? JSONUtils.fromJSON(null, oldValue, propertyDesc,
-						new BrowserConverterContext(webComponent, PushToServerEnum.allow, propertyDesc), null) : null; // Is allow here ok?
+					oldValue = propertyDesc != null
+						? JSONUtils.fromJSON(null, oldValue, propertyDesc, new BrowserConverterContext(webComponent, PushToServerEnum.allow), null) : null; // Is allow here ok?
 					if (oldValue != null && currentValue != null && !oldValue.equals(currentValue))
 					{
 						if (!(oldValue instanceof Number && currentValue instanceof Number &&

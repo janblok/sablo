@@ -83,7 +83,7 @@ public class CustomArrayAndCustomObjectTypeTest
 	public void shouldNotAllowSetValueWhenRejectSmartElements() throws Exception
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
-		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow, null);
+		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow);
 		assertNull(component.getProperty("typesReject"));
 
 		// custom types are always a Map of values..
@@ -161,7 +161,7 @@ public class CustomArrayAndCustomObjectTypeTest
 	public void shouldAllowSetValueWhenAllowSmartElements() throws Exception
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
-		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow, null);
+		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow);
 		assertNull(component.getProperty("types"));
 
 		// custom types are always a Map of values..
@@ -239,7 +239,7 @@ public class CustomArrayAndCustomObjectTypeTest
 	public void shouldNotAllowSetValueWhenRejectDumbElements() throws Exception
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
-		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow, null);
+		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow);
 		assertNull(component.getProperty("simpleArrayReject"));
 
 		Object[] array = new Object[] { 1, 2, 3, 4 };
@@ -290,7 +290,7 @@ public class CustomArrayAndCustomObjectTypeTest
 	public void shouldAllowSetValueWhenAllowDumbElements() throws Exception
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
-		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow, null);
+		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow);
 		assertNull(component.getProperty("simpleArrayAllow"));
 
 		// arrays are wrapped in a smart array that can wrap and convert/handle changes automatically
@@ -341,7 +341,7 @@ public class CustomArrayAndCustomObjectTypeTest
 	public void shouldHandleDifferentlyChangeByRefAndChangeOfContentInElements() throws Exception
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
-		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow, null);
+		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow);
 		assertNull(component.getProperty("types"));
 
 		// arrays are wrapped in a smart array that can wrap and convert/handle changes automatically
@@ -418,7 +418,7 @@ public class CustomArrayAndCustomObjectTypeTest
 	public void shouldGivePrioToChangeByRefOnComponent() throws Exception
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
-		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow, null);
+		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow);
 		assertNull(component.getProperty("types"));
 
 		// arrays are wrapped in a smart array that can wrap and convert/handle changes automatically
@@ -449,7 +449,7 @@ public class CustomArrayAndCustomObjectTypeTest
 	public void shouldOnlyAttachDetachAsNeededAndKeepIndexesUpToDateInChangeHandlersWhenDoingArraySplice() throws Exception
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
-		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow, null);
+		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow);
 		assertNull(component.getProperty("typesReject"));
 
 		// arrays are wrapped in a smart array that can wrap and convert/handle changes automatically

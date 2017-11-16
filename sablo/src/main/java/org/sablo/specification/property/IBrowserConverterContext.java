@@ -16,7 +16,6 @@
 package org.sablo.specification.property;
 
 import org.sablo.BaseWebObject;
-import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 
 /**
@@ -38,7 +37,5 @@ public interface IBrowserConverterContext
 	 * @return one of the PushToServerEnum values as specified in the spec file (for root property).
 	 */
 	PushToServerEnum getPushToServerValue();
-
-	PropertyDescription getPropertyDescription();
 
 }

@@ -426,8 +426,7 @@ public class BaseWindow implements IWindow
 				if (data != null && data.size() > 0)
 				{
 					JSONUtils.addKeyIfPresent(w, keyInParent);
-					converterParam.toJSONValue(w, null, data, dataTypes, clientDataConversions,
-						new BrowserConverterContext(service, PushToServerEnum.allow, dataTypes));
+					converterParam.toJSONValue(w, null, data, dataTypes, clientDataConversions, new BrowserConverterContext(service, PushToServerEnum.allow));
 					return true;
 				}
 				return false;
@@ -512,8 +511,7 @@ public class BaseWindow implements IWindow
 					if (clientDataConversions != null) clientDataConversions.pushNode(String.valueOf(i));
 					ClientService clientService = (ClientService)serviceCalls.get(i).remove(API_SERVER_ONLY_KEY_SERVICE);
 					FullValueToJSONConverter.INSTANCE.toJSONValue(w, null, serviceCalls.get(i), serviceCallTypes.getProperty(String.valueOf(i)),
-						clientDataConversions,
-						new BrowserConverterContext(clientService, PushToServerEnum.allow, serviceCallTypes.getProperty(String.valueOf(i))));
+						clientDataConversions, new BrowserConverterContext(clientService, PushToServerEnum.allow));
 					if (clientDataConversions != null) clientDataConversions.popNode();
 				}
 				w.endArray();
@@ -553,7 +551,7 @@ public class BaseWindow implements IWindow
 						clientDataConversions.pushNode(String.valueOf(callIdx));
 						clientDataConversions.pushNode(API_KEY_CALL);
 						JSONUtils.writeData(converter, w, delayedCall, callTypes, clientDataConversions,
-							new BrowserConverterContext(component, PushToServerEnum.allow, callTypes));
+							new BrowserConverterContext(component, PushToServerEnum.allow));
 						clientDataConversions.popNode();
 						clientDataConversions.popNode();
 						callIdx++;
@@ -810,7 +808,7 @@ public class BaseWindow implements IWindow
 					w.key(API_KEY_CALL).object();
 					clientDataConversions.pushNode(API_KEY_CALL);
 					JSONUtils.writeData(FullValueToJSONConverter.INSTANCE, w, call, callTypes, clientDataConversions,
-						new BrowserConverterContext(receiver, PushToServerEnum.allow, callTypes));
+						new BrowserConverterContext(receiver, PushToServerEnum.allow));
 					clientDataConversions.popNode();
 					w.endObject();
 
@@ -823,8 +821,7 @@ public class BaseWindow implements IWindow
 			{
 				try
 				{
-					return JSONUtils.fromJSON(null, ret, apiFunction.getReturnType(),
-						new BrowserConverterContext(receiver, PushToServerEnum.allow, apiFunction.getReturnType()), null);
+					return JSONUtils.fromJSON(null, ret, apiFunction.getReturnType(), new BrowserConverterContext(receiver, PushToServerEnum.allow), null);
 				}
 				catch (Exception e)
 				{

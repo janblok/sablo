@@ -292,8 +292,8 @@ public class WebComponentTest
 	public void testCustomTypeAsArray() throws JSONException
 	{
 		WebComponent component = new WebComponent("mycomponent", "test");
-		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow, null);
-		BrowserConverterContext shallowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.shallow, null);
+		BrowserConverterContext allowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.allow);
+		BrowserConverterContext shallowDataConverterContext = new BrowserConverterContext(component, PushToServerEnum.shallow);
 		assertNull(component.getProperty("types"));
 
 		// custom types are always a Map of values..

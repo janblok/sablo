@@ -247,7 +247,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 	{
 		if (t instanceof IOException)
 		{
-			log.warn("IOException happened", t.getMessage()); // TODO if it has no message but has a 'cause' it will not print anything useful
+			log.info("IOException happened", t.getMessage()); // TODO if it has no message but has a 'cause' it will not print anything useful
 		}
 		else
 		{

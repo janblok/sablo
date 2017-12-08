@@ -286,6 +286,10 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 			}
 			return;
 		}
+		else if ("p".equals(message)) // pong
+		{
+			return;
+		}
 		if (window == null)
 		{
 			log.info("incomming message " + msg + " but the window is already unbinded");

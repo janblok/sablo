@@ -498,19 +498,19 @@ public class WebComponentTest
 		});
 	}
 
-	@Test(expected = IllegalComponentAccessException.class)
+	@Test(expected = IllegalChangeFromClientException.class)
 	public void shouldNotAllowSetValueByDefault() throws Exception
 	{
 		new WebComponent("mycomponent", "test").putBrowserProperty("nochangeint1", Integer.valueOf(42));
 	}
 
-	@Test(expected = IllegalComponentAccessException.class)
+	@Test(expected = IllegalChangeFromClientException.class)
 	public void shouldNotAllowSetValueByDefaultType() throws Exception
 	{
 		new WebComponent("mycomponent", "test").putBrowserProperty("nochangeint2", Integer.valueOf(42));
 	}
 
-	@Test(expected = IllegalComponentAccessException.class)
+	@Test(expected = IllegalChangeFromClientException.class)
 	public void shouldNotAllowSetValueWhenReject() throws Exception
 	{
 		new WebComponent("mycomponent", "test").putBrowserProperty("nochangeint3", Integer.valueOf(42));

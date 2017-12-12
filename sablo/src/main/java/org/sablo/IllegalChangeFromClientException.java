@@ -34,7 +34,7 @@ public class IllegalChangeFromClientException extends RuntimeException
 	private IllegalChangeFromClientException e;
 
 	/**
-	 * @param blockedByProperty can be null if the blockedProperty is itself 'protecting' (so it can never be changed from client anyway) or has 'pushToServer' set to 'reject' or it was blocked by the parent container directly. {@link IPropertyType#isProtecting()}
+	 * @param blockedByProperty can be null if the blockedProperty is itself 'protecting' (so it can never be changed from client anyway) or has 'pushToServer' set to 'reject'. {@link IPropertyType#isProtecting()}
 	 */
 	public IllegalChangeFromClientException(String blockedByProperty, String blockReason, String componentName, String blockedProperty)
 	{
@@ -46,7 +46,7 @@ public class IllegalChangeFromClientException extends RuntimeException
 	}
 
 	/**
-	 * @param blockedByProperty can be null if the blockedProperty is itself 'protecting' (so it can never be changed from client anyway) or has 'pushToServer' set to 'reject' or it was blocked by the parent container directly. {@link IPropertyType#isProtecting()}
+	 * @param blockedByProperty can be null if the blockedProperty is itself 'protecting' (so it can never be changed from client anyway) or has 'pushToServer' set to 'reject'. {@link IPropertyType#isProtecting()}
 	 */
 	public IllegalChangeFromClientException(String blockedByProperty, String blockReason, String name, String eventType, IllegalChangeFromClientException e)
 	{
@@ -57,7 +57,7 @@ public class IllegalChangeFromClientException extends RuntimeException
 	/**
 	 * The property that blocked the change of the blocked property.
 	 *
-	 * @return the 'protecting' property that block change from client for the blocked property; can be null if the blockedProperty is itself 'protecting' (so it can never be changed from client anyway) or has 'pushToServer' set to 'reject' or it was blocked by the parent container directly. {@link IPropertyType#isProtecting()}
+	 * @return the 'protecting' property that block change from client for the blocked property; can be null if the blockedProperty is itself 'protecting' (so it can never be changed from client anyway) or has 'pushToServer' set to 'reject'. {@link IPropertyType#isProtecting()}
 	 */
 	public String getBlockedByProperty()
 	{

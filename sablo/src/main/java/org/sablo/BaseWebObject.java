@@ -145,6 +145,11 @@ public abstract class BaseWebObject implements IWebObjectContext
 	{
 		checkProtection(eventType);
 
+		// test if this is a private handler, should not be callable from a client
+		WebObjectFunctionDefinition handler = getSpecification().getHandler(eventType);
+		if (handler != null && handler.isPrivate()) throw new IllegalAccessException(
+			"Event " + eventType + " is called from the client, but it is a private event of " + this + " with spec " + specification);
+
 		return doExecuteEvent(eventType, args);
 	}
 
@@ -260,9 +265,8 @@ public abstract class BaseWebObject implements IWebObjectContext
 						}
 					}
 					// general protected property or specific for this property
-					throw new IllegalChangeFromClientException(prop.getName(),
-						"Changes from client for property '" + property + "' are not allowed when the value of property '" + prop.getName() + "' is " + blockingOn,
-						getName(), property);
+					throw new IllegalChangeFromClientException(prop.getName(), "Changes from client for property '" + property +
+						"' are not allowed when the value of property '" + prop.getName() + "' is " + blockingOn, getName(), property);
 				}
 			}
 		}

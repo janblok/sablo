@@ -191,19 +191,27 @@ webSocketModule.factory('$webSocket',
 		functionsToExecuteAfterIncommingMessageWasHandled = [];
 
 		try {
-			if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Received message from server: " + JSON.stringify(message));
+			if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Received message from server: " + JSON.stringify(message, function(key, value) {
+				  if (key === 'data') {
+				    return "...see below...";
+				  }
+				  return value;
+				}, "  "));
 
 			var message_data = message.data;
 			var separator = message_data.indexOf('#');
 			if (separator >= 0 && separator < 5) {
 				// the json is prefixed with a message number: 123#{bla: "hello"}
 				lastServerMessageNumber = message_data.substring(0, separator);
-				message_data = message_data.substr(separator+1);
+				if ($log.debugLevel === $log.SPAM) $log.debug("sbl * message number = " + lastServerMessageNumber);
+				message_data = message_data.substr(separator + 1);
 			}
 			// else message has no seq-no
 			
 			obj = JSON.parse(message_data);
 			
+			if ($log.debugLevel === $log.SPAM) $log.debug("sbl * message.data (parsed) = " + JSON.stringify(obj, null, "  "));
+
 			if (obj.services) {
 				// services call, first process the once with the flag 'apply_first'
 				if (obj[$sabloConverters.TYPES_KEY] && obj[$sabloConverters.TYPES_KEY].services) {
@@ -401,7 +409,7 @@ webSocketModule.factory('$webSocket',
 		}
 		var msg = JSON.stringify(obj)
 		if (isConnected()) {
-			if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Sending message to server: " + msg);
+			if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Sending message to server: " + JSON.stringify(obj, null, "  "));
 			websocket.send(msg)
 		}
 		else

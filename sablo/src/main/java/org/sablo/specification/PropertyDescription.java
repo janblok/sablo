@@ -19,6 +19,7 @@ package org.sablo.specification;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -384,6 +385,22 @@ public class PropertyDescription
 		}
 
 		return Collections.emptyMap();
+	}
+
+	public List<PropertyDescription> getSortedProperties()
+	{
+		List<PropertyDescription> props = new ArrayList<PropertyDescription>();
+		props.addAll(getProperties().values());
+		Collections.sort(props, new Comparator<PropertyDescription>()
+		{
+
+			@Override
+			public int compare(PropertyDescription o1, PropertyDescription o2)
+			{
+				return o1.getName().toString().compareToIgnoreCase(o2.getName().toString());
+			}
+		});
+		return props;
 	}
 
 	public Map<String, PropertyDescription> getCustomJSONProperties()

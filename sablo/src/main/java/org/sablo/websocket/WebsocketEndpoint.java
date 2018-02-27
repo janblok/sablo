@@ -355,9 +355,9 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 							{
 								log.warn("Warning: " + pe.getMessage(), pe);
 							}
-							catch (IllegalChangeFromClientException ilcae)
+							catch (IllegalChangeFromClientException | IllegalAccessException e)
 							{
-								log.warn("Warning: " + ilcae.getMessage());
+								log.warn("Warning: " + e.getMessage());
 							}
 							catch (Exception e)
 							{

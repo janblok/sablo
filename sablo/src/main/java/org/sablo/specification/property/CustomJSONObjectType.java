@@ -58,6 +58,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 	protected static final String PUSH_TO_SERVER = "w";
 	protected static final String INITIALIZE = "in";
 	protected static final String NO_OP = "n";
+	protected static final String REAL_TYPE = "rt";
 
 	protected static Set<String> angularAutoAddedKeysToIgnore = new HashSet<>();
 
@@ -389,6 +390,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 
 			Map<String, WT> wrappedBaseMap = changeAwareMap.getWrappedBaseMapForReadOnly();
 			writer.object();
+			writer.key(REAL_TYPE).value(getName());
 			if (changeAwareMap.mustSendAll() || fullValue)
 			{
 				// send all (currently we don't support granular updates for remove but we could in the future)

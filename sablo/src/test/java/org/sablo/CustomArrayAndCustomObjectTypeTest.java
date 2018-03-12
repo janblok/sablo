@@ -18,6 +18,7 @@ package org.sablo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 
 import java.awt.Color;
 import java.io.InputStream;
@@ -118,8 +119,8 @@ public class CustomArrayAndCustomObjectTypeTest
 
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"msg\":{\"typesReject\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}").toString(),
-			new JSONObject(msg).toString());
+			"{\"msg\":{\"typesReject\":{\"vEr\":2,\"v\":[{\"rt\":\"mycomponent.mytype\",\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"rt\":\"mycomponent.mytype\",\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}"),
+			new JSONObject(msg), true);
 
 		// try to change whole thing... should be blocked by array property
 		component.putBrowserProperty("typesReject",
@@ -131,8 +132,8 @@ public class CustomArrayAndCustomObjectTypeTest
 		data.put("msg", properties.content);
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"msg\":{\"typesReject\":{\"vEr\":3,\"v\":[{\"vEr\":3,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":3,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}").toString(),
-			new JSONObject(msg).toString());
+			"{\"msg\":{\"typesReject\":{\"vEr\":3,\"v\":[{\"vEr\":3,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":3,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}"),
+			new JSONObject(msg), false);
 
 		// try to update by setting one whole value of the array... should be blocked by element custom object type
 		component.putBrowserProperty("typesReject",
@@ -142,8 +143,8 @@ public class CustomArrayAndCustomObjectTypeTest
 		data.put("msg", properties.content);
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"msg\":{\"typesReject\":{\"vEr\":4,\"v\":[{\"vEr\":4,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":4,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}").toString(),
-			new JSONObject(msg).toString());
+			"{\"msg\":{\"typesReject\":{\"vEr\":4,\"v\":[{\"vEr\":4,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":4,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}"),
+			new JSONObject(msg), false);
 
 		// try to update by updating one value of the array... should be blocked by element custom object type
 		component.putBrowserProperty("typesReject",
@@ -153,8 +154,8 @@ public class CustomArrayAndCustomObjectTypeTest
 		data.put("msg", properties.content);
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"msg\":{\"typesReject\":{\"vEr\":5,\"v\":[{\"vEr\":5,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":5,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}").toString(),
-			new JSONObject(msg).toString());
+			"{\"msg\":{\"typesReject\":{\"vEr\":5,\"v\":[{\"vEr\":5,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":5,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}"),
+			new JSONObject(msg), false);
 	}
 
 	@Test
@@ -196,8 +197,8 @@ public class CustomArrayAndCustomObjectTypeTest
 
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
-			new JSONObject(msg).toString());
+			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"rt\":\"mycomponent.mytype\",\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}"),
+			new JSONObject(msg), false);
 
 		// try to change whole thing... should not be blocked by array property
 		component.putBrowserProperty("types",
@@ -209,8 +210,8 @@ public class CustomArrayAndCustomObjectTypeTest
 		data.put("msg", properties.content);
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":4,\"v\":[{\"vEr\":4,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":4,\"v\":{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}],\"svy_types\":{\"2\":\"JSON_obj\",\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
-			new JSONObject(msg).toString());
+			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":4,\"v\":[{\"vEr\":4,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":4,\"v\":{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}],\"svy_types\":{\"2\":\"JSON_obj\",\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}"),
+			new JSONObject(msg), false);
 
 		// try to update by setting one whole value of the array...
 		component.putBrowserProperty("types",
@@ -220,8 +221,8 @@ public class CustomArrayAndCustomObjectTypeTest
 		data.put("msg", properties.content);
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":5,\"v\":[{\"vEr\":5,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":6,\"v\":{\"name\":\"myname100\",\"active\":true,\"foreground\":\"#00ff00\"}},{\"vEr\":3,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}],\"svy_types\":{\"2\":\"JSON_obj\",\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
-			new JSONObject(msg).toString());
+			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":5,\"v\":[{\"vEr\":5,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":6,\"v\":{\"name\":\"myname100\",\"active\":true,\"foreground\":\"#00ff00\"}},{\"vEr\":3,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}],\"svy_types\":{\"2\":\"JSON_obj\",\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}"),
+			new JSONObject(msg), false);
 
 		// try to update by updating one value of the array...
 		component.putBrowserProperty("types",
@@ -231,8 +232,8 @@ public class CustomArrayAndCustomObjectTypeTest
 		data.put("msg", properties.content);
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":6,\"v\":[{\"vEr\":6,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":7,\"v\":{\"name\":\"some_modified_text\",\"active\":true,\"foreground\":\"#00ff00\"}},{\"vEr\":4,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}],\"svy_types\":{\"2\":\"JSON_obj\",\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
-			new JSONObject(msg).toString());
+			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":6,\"v\":[{\"vEr\":6,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":7,\"v\":{\"name\":\"some_modified_text\",\"active\":true,\"foreground\":\"#00ff00\"}},{\"vEr\":4,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}],\"svy_types\":{\"2\":\"JSON_obj\",\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}"),
+			new JSONObject(msg), false);
 	}
 
 	@Test
@@ -362,7 +363,7 @@ public class CustomArrayAndCustomObjectTypeTest
 		map.put("name", "firstMyType1"); // changing it should still send full value of the map - as a granular add of the array
 
 		JSONAssert.assertEquals(
-			"{\"comp\":{\"test\":{\"types\":{\"a\":[{\"v\":{\"vEr\":2,\"v\":{\"name\":\"firstMyType\"}},\"i\":0}],\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}}}}}}",
+			"{\"comp\":{\"test\":{\"types\":{\"a\":[{\"v\":{\"rt\":\"mycomponent.mytype\",\"vEr\":2,\"v\":{\"name\":\"firstMyType\"}},\"i\":0}],\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}}}}}}",
 			JSONUtils.writeComponentChanges(component, ChangesToJSONConverter.INSTANCE, new DataConversion()), JSONCompareMode.NON_EXTENSIBLE);
 
 		// set a whole new obj/map into an existing index of the array - that map should be sent fully as an update of the array, instead of NO-OP
@@ -371,7 +372,7 @@ public class CustomArrayAndCustomObjectTypeTest
 		typesArray.set(0, map);
 
 		JSONAssert.assertEquals(
-			"{\"comp\":{\"test\":{\"types\":{\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"vEr\":4,\"v\":{\"name\":\"hmm1\"}},\"i\":0}]}}}}",
+			"{\"comp\":{\"test\":{\"types\":{\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"rt\":\"mycomponent.mytype\",\"vEr\":4,\"v\":{\"name\":\"hmm1\"}},\"i\":0}]}}}}",
 			JSONUtils.writeComponentChanges(component, ChangesToJSONConverter.INSTANCE, new DataConversion()), JSONCompareMode.NON_EXTENSIBLE);
 
 
@@ -380,37 +381,37 @@ public class CustomArrayAndCustomObjectTypeTest
 		map.put("text", "txthmm1");
 
 		JSONAssert.assertEquals(
-			"{\"comp\":{\"test\":{\"types\":{\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"vEr\":4,\"u\":[{\"v\":\"txthmm1\",\"k\":\"text\"}]},\"i\":0}]}}}}",
+			"{\"comp\":{\"test\":{\"types\":{\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"rt\":\"mycomponent.mytype\",\"vEr\":4,\"u\":[{\"v\":\"txthmm1\",\"k\":\"text\"}]},\"i\":0}]}}}}",
 			JSONUtils.writeComponentChanges(component, ChangesToJSONConverter.INSTANCE, new DataConversion()), JSONCompareMode.NON_EXTENSIBLE);
 
 		// set an array by ref - updates of that full sub-array value should be sent
 		map.put("subtypearray", new Object[0]);
 		JSONAssert.assertEquals(
-			"{\"comp\":{\"test\":{\"types\":{\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"vEr\":4,\"svy_types\":{\"0\":{\"v\":\"JSON_arr\"}},\"u\":[{\"v\":{\"vEr\":2,\"v\":[]},\"k\":\"subtypearray\"}]},\"i\":0}]}}}}",
+			"{\"comp\":{\"test\":{\"types\":{\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"rt\":\"mycomponent.mytype\",\"vEr\":4,\"svy_types\":{\"0\":{\"v\":\"JSON_arr\"}},\"u\":[{\"v\":{\"vEr\":2,\"v\":[]},\"k\":\"subtypearray\"}]},\"i\":0}]}}}}",
 			JSONUtils.writeComponentChanges(component, ChangesToJSONConverter.INSTANCE, new DataConversion()), JSONCompareMode.NON_EXTENSIBLE);
 
 		// once more to also test if it was not null previously
 		map.put("subtypearray", new Object[0]);
 		JSONAssert.assertEquals(
-			"{\"comp\":{\"test\":{\"types\":{\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"vEr\":4,\"svy_types\":{\"0\":{\"v\":\"JSON_arr\"}},\"u\":[{\"v\":{\"vEr\":4,\"v\":[]},\"k\":\"subtypearray\"}]},\"i\":0}]}}}}",
+			"{\"comp\":{\"test\":{\"types\":{\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"rt\":\"mycomponent.mytype\",\"vEr\":4,\"svy_types\":{\"0\":{\"v\":\"JSON_arr\"}},\"u\":[{\"v\":{\"vEr\":4,\"v\":[]},\"k\":\"subtypearray\"}]},\"i\":0}]}}}}",
 			JSONUtils.writeComponentChanges(component, ChangesToJSONConverter.INSTANCE, new DataConversion()), JSONCompareMode.NON_EXTENSIBLE);
 
 		// now add something to that sub-array and make a granular change to it - to test the parent object will send only an update
 		List<Map<String, Object>> list = (List<Map<String, Object>>)map.get("subtypearray");
 		list.add(new HashMap<String, Object>());
 		JSONAssert.assertEquals(
-			"{\"comp\":{\"test\":{\"types\":{\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"vEr\":4,\"svy_types\":{\"0\":{\"v\":\"JSON_arr\"}},\"u\":[{\"v\":{\"a\":[{\"v\":{\"vEr\":2,\"v\":{}},\"i\":0}],\"vEr\":4,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}}},\"k\":\"subtypearray\"}]},\"i\":0}]}}}}",
+			"{\"comp\":{\"test\":{\"types\":{\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"rt\":\"mycomponent.mytype\",\"vEr\":4,\"svy_types\":{\"0\":{\"v\":\"JSON_arr\"}},\"u\":[{\"v\":{\"a\":[{\"v\":{\"rt\":\"mycomponent.mysubtype\",\"vEr\":2,\"v\":{}},\"i\":0}],\"vEr\":4,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}}},\"k\":\"subtypearray\"}]},\"i\":0}]}}}}",
 			JSONUtils.writeComponentChanges(component, ChangesToJSONConverter.INSTANCE, new DataConversion()), JSONCompareMode.NON_EXTENSIBLE);
 
 		list.get(0).put("caption", "captionhmm1");
 		JSONAssert.assertEquals(
-			"{\"comp\":{\"test\":{\"types\":{\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"vEr\":4,\"svy_types\":{\"0\":{\"v\":\"JSON_arr\"}},\"u\":[{\"v\":{\"vEr\":4,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"vEr\":2,\"u\":[{\"v\":\"captionhmm1\",\"k\":\"caption\"}]},\"i\":0}]},\"k\":\"subtypearray\"}]},\"i\":0}]}}}}",
+			"{\"comp\":{\"test\":{\"types\":{\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"rt\":\"mycomponent.mytype\",\"vEr\":4,\"svy_types\":{\"0\":{\"v\":\"JSON_arr\"}},\"u\":[{\"v\":{\"vEr\":4,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"rt\":\"mycomponent.mysubtype\",\"vEr\":2,\"u\":[{\"v\":\"captionhmm1\",\"k\":\"caption\"}]},\"i\":0}]},\"k\":\"subtypearray\"}]},\"i\":0}]}}}}",
 			JSONUtils.writeComponentChanges(component, ChangesToJSONConverter.INSTANCE, new DataConversion()), JSONCompareMode.NON_EXTENSIBLE);
 
 		// set another property; see that only that granular update gets sent
 		list.get(0).put("in_date", new Date(12345));
 		JSONAssert.assertEquals(
-			"{\"comp\":{\"test\":{\"types\":{\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"vEr\":4,\"svy_types\":{\"0\":{\"v\":\"JSON_arr\"}},\"u\":[{\"v\":{\"vEr\":4,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"Date\"}},\"u\":[{\"v\":12345,\"k\":\"in_date\"}]},\"i\":0}]},\"k\":\"subtypearray\"}]},\"i\":0}]}}}}",
+			"{\"comp\":{\"test\":{\"types\":{\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"rt\":\"mycomponent.mytype\",\"vEr\":4,\"svy_types\":{\"0\":{\"v\":\"JSON_arr\"}},\"u\":[{\"v\":{\"vEr\":4,\"svy_types\":{\"0\":{\"v\":\"JSON_obj\"}},\"u\":[{\"v\":{\"rt\":\"mycomponent.mysubtype\",\"vEr\":2,\"svy_types\":{\"0\":{\"v\":\"Date\"}},\"u\":[{\"v\":12345,\"k\":\"in_date\"}]},\"i\":0}]},\"k\":\"subtypearray\"}]},\"i\":0}]}}}}",
 			JSONUtils.writeComponentChanges(component, ChangesToJSONConverter.INSTANCE, new DataConversion()), JSONCompareMode.NON_EXTENSIBLE);
 	}
 
@@ -435,7 +436,7 @@ public class CustomArrayAndCustomObjectTypeTest
 
 		// test array element reference change on component (should sent whole value, not a NO-OP or an update)
 		JSONAssert.assertEquals(
-			"{\"comp\":{\"test\":{\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"firstMyType\"}}],\"svy_types\":{\"0\":\"JSON_obj\"}}}}}",
+			"{\"comp\":{\"test\":{\"types\":{\"vEr\":2,\"v\":[{\"rt\":\"mycomponent.mytype\",\"vEr\":2,\"v\":{\"name\":\"firstMyType\"}}],\"svy_types\":{\"0\":\"JSON_obj\"}}}}}",
 			JSONUtils.writeComponentChanges(component, ChangesToJSONConverter.INSTANCE, new DataConversion()), JSONCompareMode.NON_EXTENSIBLE);
 
 		// now change by content and afterwards by ref; should still send only full prop. value

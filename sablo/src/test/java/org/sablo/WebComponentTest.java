@@ -328,12 +328,12 @@ public class WebComponentTest
 
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
+			"{\"msg\":{\"types\":{\"vEr\":2,\"v\":[{\"rt\":\"mycomponent.mytype\",\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"rt\":\"mycomponent.mytype\",\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"0\":\"JSON_obj\",\"1\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
 			new JSONObject(msg).toString());
 
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, shallowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":3,\"w\":false,\"v\":[{\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
+			"{\"msg\":{\"types\":{\"vEr\":3,\"w\":false,\"v\":[{\"rt\":\"mycomponent.mytype\",\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"rt\":\"mycomponent.mytype\",\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"0\":\"JSON_obj\",\"1\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
 			new JSONObject(msg).toString());
 
 		component.putBrowserProperty("types",

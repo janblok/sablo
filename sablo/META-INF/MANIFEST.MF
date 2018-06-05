@@ -19,7 +19,7 @@ Export-Package: org.sablo,
 Require-Bundle: org.junit,
  org.apache.commons.io,
  org.slf4j.api
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ClassPath: .
 Bundle-Vendor: Servoy
 Bundle-Activator: org.sablo.startup.Activator

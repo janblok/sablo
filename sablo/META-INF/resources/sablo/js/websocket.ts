@@ -1227,20 +1227,39 @@ webSocketModule.factory('$webSocket',
 	DOWN_MASK : 4096,
 	ALT_GRAPH_DOWN_MASK : 8192
 	
-}).directive('sabloReconnectingFeedback', function ($webSocket) {
-
-  function reconnecting() { 
-	  return $webSocket.isReconnecting(); 
-  }
- 
-  // TODO: should we not introduce a scope and just watch '$webSocket.isReconnecting()'?
+}).directive('sabloReconnectingFeedback', function ($webSocket,$timeout,$services) {
   return {
     restrict: 'EA',
-    template: '<div ng-show="reconnecting()" style="z-index:2147483647;background:lightgray;opacity:.75;width:100%;height:100%;position:absolute;" ng-transclude></div>',
+    template: '<div ng-show="showReconnecting" style="z-index:2147483647;background:lightgray;opacity:.75;width:100%;height:100%;position:absolute;" ng-transclude></div>',
     transclude: true,
     scope: true,
     controller: function($scope, $element, $attrs) {
-      $scope.reconnecting = reconnecting;
+    	var timeoutPromise;
+    	$scope.$watch(function(){
+    		return $webSocket.isReconnecting();
+    	},
+    	function(newVal)
+    	{
+    		if (newVal)
+    		{
+    			if (timeoutPromise) $timeout.cancel(timeoutPromise);
+    			var delay = 500;
+    			var ngUtilsScope = $services.getServiceScope('ngclientutils');
+    			if (ngUtilsScope && ngUtilsScope.model && ngUtilsScope.model['websocketReconnectUIDelay'])
+    			{
+    				delay = ngUtilsScope.model['websocketReconnectUIDelay'];
+    			}	
+    			timeoutPromise =  $timeout(function(){
+        	        $scope.showReconnecting = true;
+        	    }, delay);
+    		}
+    		else
+    		{
+    			if (timeoutPromise) $timeout.cancel(timeoutPromise);
+    			timeoutPromise = null;
+    			$scope.showReconnecting = false;
+    		}	
+    	});
     }
   }
 }).factory("$sabloLoadingIndicator", function($injector, $window,$log,$timeout) {

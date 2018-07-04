@@ -1299,7 +1299,64 @@ webSocketModule.factory('$webSocket',
 			return showCounter > 0;
 		}
 	};
-})
+}).factory("$sabloDeferHelper", function($timeout, $log, $sabloTestability, $q) {
+	function retrieveDeferForHandling(msgId, internalState) {
+	     var deferred = internalState.deferred[msgId];
+	     var defer;
+	     if (deferred) {
+	    	 defer = deferred.defer;
+	    	 $timeout.cancel(deferred.timeoutPromise);
+	    	 delete internalState.deferred[msgId];
+	    	 
+	    	 if (Object.keys(internalState.deferred).length == 0) $sabloTestability.block(false);
+	     }
+	     return defer;
+	}
+	
+	return <sablo.ISabloDeferHelper> {
+		
+		initInternalStateForDeferring: function(internalState, timeoutRejectLogPrefix) {
+			internalState.deferred = {}; // key is msgId (which always increases), values is { defer: ...q defer..., timeoutPromise: ...timeout promise for cancel... }
+			internalState.currentMsgId = 0;
+			internalState.timeoutRejectLogPrefix = timeoutRejectLogPrefix;
+		},
+		
+		initInternalStateForDeferringFromOldInternalState: function(internalState, oldInternalState) {
+			internalState.deferred = oldInternalState.deferred;
+			internalState.currentMsgId = oldInternalState.currentMsgId;
+			internalState.timeoutRejectLogPrefix = oldInternalState.timeoutRejectLogPrefix;
+		},
+		
+		getNewDeferId: function(internalState) {
+			if (Object.keys(internalState.deferred).length == 0) $sabloTestability.block(true);
+				
+			var d = $q.defer();
+			var newMsgID = ++internalState.currentMsgId;
+			internalState.deferred[newMsgID] = { defer: d, timeoutPromise : $timeout(function() {
+				// if nothing comes back for a while do cancel the promise to avoid memory leaks/infinite waiting
+				var defer = retrieveDeferForHandling(newMsgID, internalState);
+				if (defer) {
+					var rejMsg = "deferred req. with id " + newMsgID + " was rejected due to timeout...";
+					defer.reject(rejMsg);
+					if ($log.debugEnabled && $log.debugLevel === $log.SPAM) $log.debug((internalState.timeoutRejectLogPrefix ? internalState.timeoutRejectLogPrefix : "") + rejMsg);
+				}
+			}, 120000) }; // is 2 minutes cancel-if-not-resolved too high or too low?
+
+			return newMsgID;
+		},
+		
+		cancelAll: function(internalState) {
+			for (var id in internalState.deferred) {
+				$timeout.cancel(internalState.deferred[id].timeoutPromise);
+				internalState.deferred[id].defer.reject();
+			}
+			internalState.deferred = {};
+		},
+		
+		retrieveDeferForHandling: retrieveDeferForHandling
+		
+	};
+});
 
 angular.module("webSocketModule").factory("$sabloTestability", ["$window",function($window) {
 	var blockEventLoop = 0;

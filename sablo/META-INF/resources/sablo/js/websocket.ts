@@ -182,7 +182,7 @@ webSocketModule.factory('$webSocket',
 	}
 	
 	var getURLParameter = function getURLParameter(name) {
-		return decodeURIComponent((new RegExp('[&]?' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(getQueryString())||[,""])[1].replace(/\+/g, '%20'))||null
+		return decodeURIComponent((new RegExp('[&]?\\b' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(getQueryString())||[,""])[1].replace(/\+/g, '%20'))||null
 	};
 
 	var handleMessage = function(message) {

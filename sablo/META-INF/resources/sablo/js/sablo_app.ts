@@ -479,6 +479,11 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 			delete formStates[formName];
 			delete formStatesConversionInfo[formName];
 		},
+		
+		clearSession:function (){
+	        webStorage.session.remove('windowid');
+			webStorage.session.remove('sessionid');
+		},
 
 		initFormState: function(formName, beanDatas, formProperties, formScope, resolve) {
 			var state = formStates[formName];

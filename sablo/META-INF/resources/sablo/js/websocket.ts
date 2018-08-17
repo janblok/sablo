@@ -131,7 +131,7 @@ angular.module('pushToServer', []).factory('$propertyWatchesRegistry', function 
  * Setup the $webSocket service.
  */
 webSocketModule.factory('$webSocket',
-		function($rootScope, $injector, $window, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers, $interval, wsCloseCodes,$sabloLoadingIndicator, $timeout, $sabloTestability) {
+		function($rootScope, $injector, $window, $log, $q, $services, $sabloConstants, $sabloConverters, $sabloUtils, $swingModifiers, $interval, wsCloseCodes,$sabloLoadingIndicator, $timeout, $sabloTestability) {
 
 	var pathname = null;
 	
@@ -579,7 +579,7 @@ webSocketModule.factory('$webSocket',
 		var queryString = getQueryString();
 		if (queryString)
 		{
-			new_uri += queryString; 
+			new_uri += queryString.replace(queryString.substring(queryString.indexOf($sabloConstants.CLEAR_SESSION_PARAM)-1,queryString.indexOf($sabloConstants.CLEAR_SESSION_PARAM)+$sabloConstants.CLEAR_SESSION_PARAM.length+5),"");
 		}
 		else
 		{

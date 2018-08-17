@@ -5,7 +5,7 @@
 namespace sablo_app { export class Model{}}
 
 angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabloConstants", {
-	modelChangeNotifier: "$modelChangeNotifier"
+	modelChangeNotifier: "$modelChangeNotifier", CLEAR_SESSION_PARAM:"sabloClearSession";
 }).factory('$sabloApplication', function($rootScope: angular.IRootScopeService, $window: angular.IWindowService, $timeout: angular.ITimeoutService, $q: angular.IQService, $log: sablo.ILogService, $webSocket: sablo.IWebSocket, $sabloConverters: sablo.ISabloConverters, $sabloUtils: sablo.ISabloUtils, $sabloConstants: sablo.SabloConstants, webStorage) {
 
 	// close the connection to the server when application is unloaded
@@ -260,6 +260,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 				queryArgs: queryArgs,
 				websocketUri: websocketUri
 			};
+		   if($webSocket.getURLParameter($sabloConstants.CLEAR_SESSION_PARAM) == 'true'){
+	            this.clearSabloSession();
+	       }
 			wsSession = $webSocket.connect(wsSessionArgs.context, [getSessionId(), getWindowName(), getWindowId()], wsSessionArgs.queryArgs, wsSessionArgs.websocketUri);
 
 			wsSession.onMessageObject(function(msg, conversionInfo, scopesToDigest) {

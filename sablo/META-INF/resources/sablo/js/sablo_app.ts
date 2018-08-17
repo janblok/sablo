@@ -480,7 +480,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 			delete formStatesConversionInfo[formName];
 		},
 		
-		clearSession:function (){
+		clearSabloSession:function (){
 	        webStorage.session.remove('windowid');
 			webStorage.session.remove('sessionid');
 		},

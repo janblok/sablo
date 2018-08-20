@@ -718,23 +718,27 @@ public abstract class BaseWebObject implements IWebObjectContext
 	private void checkIfAccessIsAllowedDisregardingProtection(String propertyName, IllegalChangeFromClientException e, Object propertyValue)
 	{
 		boolean rethrow = true;
-		Object allowEditTag = getPropertyDescription(propertyName).getTag(WebObjectSpecification.ALLOW_ACCESS);
-		// allowEditTag is either a String or an array of Strings representing 'blocked by' property name(s) that should not block the given property (the spec makes specific exceptions in the property itself for the other props. that should not block it)
-		if (allowEditTag instanceof JSONArray)
+		PropertyDescription pd = getPropertyDescription(propertyName);
+		if (pd != null)
 		{
-			Iterator<Object> iterator = ((JSONArray)allowEditTag).iterator();
-			while (iterator.hasNext())
+			Object allowEditTag = pd.getTag(WebObjectSpecification.ALLOW_ACCESS);
+			// allowEditTag is either a String or an array of Strings representing 'blocked by' property name(s) that should not block the given property (the spec makes specific exceptions in the property itself for the other props. that should not block it)
+			if (allowEditTag instanceof JSONArray)
 			{
-				if (iterator.next().equals(e.getBlockedByProperty()))
+				Iterator<Object> iterator = ((JSONArray)allowEditTag).iterator();
+				while (iterator.hasNext())
 				{
-					rethrow = false;
-					break;
+					if (iterator.next().equals(e.getBlockedByProperty()))
+					{
+						rethrow = false;
+						break;
+					}
 				}
 			}
-		}
-		else if (allowEditTag instanceof String && allowEditTag.equals(e.getBlockedByProperty()))
-		{
-			rethrow = false;
+			else if (allowEditTag instanceof String && allowEditTag.equals(e.getBlockedByProperty()))
+			{
+				rethrow = false;
+			}
 		}
 		if (rethrow)
 		{

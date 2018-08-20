@@ -745,6 +745,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 		}
 		if (rethrow)
 		{
+			e.setData(propertyValue);
 			throw e;
 		}
 	}

@@ -709,13 +709,13 @@ public abstract class BaseWebObject implements IWebObjectContext
 		}
 		catch (IllegalChangeFromClientException e)
 		{
-			checkIfAccessIsAllowedDisregardingProtection(propertyName, e);
+			checkIfAccessIsAllowedDisregardingProtection(propertyName, e, propertyValue);
 		}
 
 		doPutBrowserProperty(propertyName, propertyValue);
 	}
 
-	private void checkIfAccessIsAllowedDisregardingProtection(String propertyName, IllegalChangeFromClientException e)
+	private void checkIfAccessIsAllowedDisregardingProtection(String propertyName, IllegalChangeFromClientException e, Object propertyValue)
 	{
 		boolean rethrow = true;
 		Object allowEditTag = getPropertyDescription(propertyName).getTag(WebObjectSpecification.ALLOW_ACCESS);
@@ -738,6 +738,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 		}
 		if (rethrow)
 		{
+			e.setData(propertyValue);
 			throw e;
 		}
 	}

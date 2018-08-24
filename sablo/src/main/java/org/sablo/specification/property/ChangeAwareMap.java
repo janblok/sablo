@@ -80,34 +80,9 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		this.customObjectPD = customObjectPD;
 
 		this.baseMap = baseMap;
-
-		if (customObjectContext != null) customObjectContext.setPropertyValues(this);
-
 		this.version = initialVersion;
 
-		if (baseMap instanceof IAttachAware) ((IAttachAware<WT>)baseMap).setAttachHandler(new IAttachHandler<WT>()
-		{
-			@Override
-			public void attachToBaseObjectIfNeeded(String key, WT value)
-			{
-				if (changeMonitor != null) attachToBaseObject(key, value);
-			}
-
-			@Override
-			public void detachFromBaseObjectIfNeeded(String key, WT value)
-			{
-				detachIfNeeded(key, value);
-			}
-		});
-	}
-
-	/**
-	 * This interface can be used when this change aware map is based on a map that can change it's returned contents
-	 * by other means then through this proxy wrapper. It provides a way to attach / detach elements directly from the base map.
-	 */
-	public static interface IAttachAware<WT>
-	{
-		void setAttachHandler(IAttachHandler<WT> attachHandler);
+		if (customObjectContext != null) customObjectContext.setPropertyValues(this);
 	}
 
 	/**

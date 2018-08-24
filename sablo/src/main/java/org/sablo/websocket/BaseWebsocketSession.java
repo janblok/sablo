@@ -451,4 +451,10 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		log.info("Unknown message from client ignored: " + obj.toString());
 	}
 
+	@Override
+	public boolean shouldTest()
+	{
+		return true;
+	}
+
 }

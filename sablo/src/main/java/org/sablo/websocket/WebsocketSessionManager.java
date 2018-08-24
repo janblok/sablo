@@ -52,7 +52,7 @@ public class WebsocketSessionManager
 			{
 				for (IWebsocketSession session : wsSessions.values())
 				{
-					if (session != null)
+					if (session != null && session.shouldTest())
 					{
 						long timeout = session.getWindowTimeout() * 1000;
 						long wantedLastPingTime = System.currentTimeMillis() - timeout;

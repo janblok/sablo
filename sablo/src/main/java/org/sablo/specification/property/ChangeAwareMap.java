@@ -79,9 +79,10 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		this.componentOrServiceExtension = customObjectContext;
 		this.customObjectPD = customObjectPD;
 
+		this.baseMap = baseMap;
+
 		if (customObjectContext != null) customObjectContext.setPropertyValues(this);
 
-		this.baseMap = baseMap;
 		this.version = initialVersion;
 
 		if (baseMap instanceof IAttachAware) ((IAttachAware<WT>)baseMap).setAttachHandler(new IAttachHandler<WT>()

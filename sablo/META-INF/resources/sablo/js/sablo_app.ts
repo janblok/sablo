@@ -6,7 +6,7 @@ namespace sablo_app { export class Model{}}
 
 angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabloConstants", {
 	modelChangeNotifier: "$modelChangeNotifier"
-}).factory('$sabloApplication', function($rootScope: angular.IRootScopeService, $window: angular.IWindowService, $timeout: angular.ITimeoutService, $q: angular.IQService, $log: sablo.ILogService, $webSocket: sablo.IWebSocket, $sabloConverters: sablo.ISabloConverters, $sabloUtils: sablo.ISabloUtils, $sabloConstants: sablo.SabloConstants, webStorage) {
+}).factory('$sabloApplication', function($rootScope: angular.IRootScopeService, $window: angular.IWindowService, $timeout: angular.ITimeoutService, $q: angular.IQService, $log: sablo.ILogService, $webSocket: sablo.IWebSocket, $sabloConverters: sablo.ISabloConverters, $sabloUtils: sablo.ISabloUtils, $sabloConstants: sablo.SabloConstants, webStorage,$websocketConstants) {
 
 	// close the connection to the server when application is unloaded
 	$window.addEventListener('unload', function(event) {
@@ -231,6 +231,10 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 	var getWindowId = function() {
 		return webStorage.session.get('windowid');
 	}
+	
+	var getClearSessionParam = function(){
+		return $websocketConstants.CLEAR_SESSION_PARAM;
+	}
 
 	var getWindowUrl = function(windowname: string) {
 		return "index.html?windowname=" + encodeURIComponent(windowname) + "&sessionid=" + getSessionId();
@@ -260,7 +264,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 				queryArgs: queryArgs,
 				websocketUri: websocketUri
 			};
-		   if($webSocket.getURLParameter($sabloConstants.CLEAR_SESSION_PARAM) == 'true'){
+		   if($webSocket.getURLParameter(getClearSessionParam()) == 'true'){
 	            this.clearSabloSession();
 	       }
 			wsSession = $webSocket.connect(wsSessionArgs.context, [getSessionId(), getWindowName(), getWindowId()], wsSessionArgs.queryArgs, wsSessionArgs.websocketUri);

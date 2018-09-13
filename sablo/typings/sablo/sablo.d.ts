@@ -41,7 +41,6 @@ declare namespace sablo {
 	
 	interface SabloConstants {
 		modelChangeNotifier:string,
-		CLEAR_SESSION_PARAM: string
 	}
 	
 	interface ISabloApplication {

@@ -788,7 +788,7 @@ webSocketModule.factory('$webSocket',
 					// so no previous service state; set it now
 					if (conversionInfo && conversionInfo[servicename]) {
 						// convert all properties, remember type for when a client-server conversion will be needed
-						services[servicename] = $sabloConverters.convertFromServerToClient(services[servicename], conversionInfo[servicename], undefined, serviceScope, function() { return serviceScope.model })
+						services[servicename] = $sabloConverters.convertFromServerToClient(services[servicename], conversionInfo[servicename], undefined, serviceScope, function(propertyName: string) { return serviceScope.model ? serviceScope.model[propertyName] : serviceScope.model })
 						
 						for (var pn in conversionInfo[servicename]) {
 							if (services[servicename][pn] && services[servicename][pn][$sabloConverters.INTERNAL_IMPL]
@@ -812,7 +812,7 @@ webSocketModule.factory('$webSocket',
 						if (conversionInfo && conversionInfo[servicename] && conversionInfo[servicename][key]) {
 							// convert property, remember type for when a client-server conversion will be needed
 							if (!serviceScopesConversionInfo[servicename]) serviceScopesConversionInfo[servicename] = {};
-							serviceData[key] = $sabloConverters.convertFromServerToClient(serviceData[key], conversionInfo[servicename][key], serviceScope.model[key], serviceScope, function() { return serviceScope.model })
+							serviceData[key] = $sabloConverters.convertFromServerToClient(serviceData[key], conversionInfo[servicename][key], serviceScope.model[key], serviceScope, function(propertyName: string) { return serviceScope.model ? serviceScope.model[propertyName] : serviceScope.model })
 
 							if ((serviceData[key] !== serviceScope.model[key] || serviceScopesConversionInfo[servicename][key] !== conversionInfo[servicename][key]) && serviceData[key]
 							&& serviceData[key][$sabloConverters.INTERNAL_IMPL] && serviceData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
@@ -855,16 +855,17 @@ webSocketModule.factory('$webSocket',
 	 */
 	var customPropertyConverters = {};
 
-	var convertFromServerToClient = function(serverSentData, conversionInfo, currentClientData, scope, modelGetter) {
+	var convertFromServerToClient = function(serverSentData, conversionInfo, currentClientData, scope, propertyContext) {
 		if (typeof conversionInfo === 'string' || typeof conversionInfo === 'number') {
 			var customConverter = customPropertyConverters[conversionInfo];
-			if (customConverter) serverSentData = customConverter.fromServerToClient(serverSentData, currentClientData, scope, modelGetter);
+			if (customConverter) serverSentData = customConverter.fromServerToClient(serverSentData, currentClientData, scope, propertyContext);
 			else { //converter not found - will not convert
 				$log.error("cannot find type converter (s->c) for: '" + conversionInfo + "'.");
 			}
 		} else if (conversionInfo) {
+			// typed custom objects will no go here but on the if branch above; this is for untyped arrays/objects that need to be converted
 			for (var conKey in conversionInfo) {
-				serverSentData[conKey] = convertFromServerToClient(serverSentData[conKey], conversionInfo[conKey], currentClientData ? currentClientData[conKey] : undefined, scope, modelGetter); // TODO should componentScope really stay the same here? 
+				serverSentData[conKey] = convertFromServerToClient(serverSentData[conKey], conversionInfo[conKey], currentClientData ? currentClientData[conKey] : undefined, scope, propertyContext); 
 			}
 		}
 		return serverSentData;
@@ -949,8 +950,9 @@ webSocketModule.factory('$webSocket',
 		 *				//        conversion happens for service API call parameters for example...
 		 *				// @param scope scope that can be used to add component/service and property related watches; can be null/undefined if
 		 *				//        conversion happens for service/component API call parameters for example...
-		 *				// @param modelGetter a function that returns the model that can be used to find other properties of the service/component if needed (if the
-		 *              //        property is 'linked' to another one); can be null/undefined if conversion happens for service/component API call parameters for example...
+		 *				// @param propertyContext a function that can be used to find other properties (by name) of the same service/component/custom object (if property is
+		 *              //        not found it also searches upwards in case of object nesting) if needed (if the property is 'linked' to another one); can be
+		 *              //        null/undefined if conversion happens for service/component API call parameters for example...
 		 *				// @return the new/updated client side property value; if this returned value is interested in triggering
 		 *				//         updates to server when something changes client side it must have these member functions in this[$sabloConverters.INTERNAL_IMPL]:
 		 *				//				setChangeNotifier: function(changeNotifier) - where changeNotifier is a function that can be called when
@@ -958,7 +960,7 @@ webSocketModule.factory('$webSocket',
 		 *				//                                                          not be called when value is a call parameter for example, but will
 		 *				//                                                          be called when set into a component's/service's property/model
 		 *				//              isChanged: function() - should return true if the value needs to send updates to server // TODO this could be kept track of internally
-		 * 				fromServerToClient: function (serverSentJSONValue, currentClientValue, scope, modelGetter) { (...); return newClientValue; },
+		 * 				fromServerToClient: function (serverSentJSONValue, currentClientValue, scope, propertyContext) { (...); return newClientValue; },
 		 * 
 		 *				// Converts from a client property JS value to a JSON that will be sent to the server.
 		 *				// @param newClientData the new JS client side property value

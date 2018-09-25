@@ -231,10 +231,6 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 	var getWindowId = function() {
 		return webStorage.session.get('windowid');
 	}
-	
-	var getClearSessionParam = function(){
-		return $websocketConstants.CLEAR_SESSION_PARAM;
-	}
 
 	var getWindowUrl = function(windowname: string) {
 		return "index.html?windowname=" + encodeURIComponent(windowname) + "&sessionid=" + getSessionId();
@@ -264,7 +260,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 				queryArgs: queryArgs,
 				websocketUri: websocketUri
 			};
-		   if($webSocket.getURLParameter(getClearSessionParam()) == 'true'){
+		   if($webSocket.getURLParameter($websocketConstants.CLEAR_SESSION_PARAM) == 'true'){
 	            this.clearSabloSession();
 	       }
 			wsSession = $webSocket.connect(wsSessionArgs.context, [getSessionId(), getWindowName(), getWindowId()], wsSessionArgs.queryArgs, wsSessionArgs.websocketUri);

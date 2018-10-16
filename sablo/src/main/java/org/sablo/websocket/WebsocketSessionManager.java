@@ -25,6 +25,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.locks.ReentrantLock;
 
 import javax.websocket.CloseReason;
@@ -41,6 +44,15 @@ public class WebsocketSessionManager
 	private static final Logger log = LoggerFactory.getLogger(WebsocketSessionManager.class.getCanonicalName());
 
 	private final static Map<String, IWebsocketSessionFactory> websocketSessionFactories = new HashMap<>();
+
+	private final static ExecutorService expiredThreadPool = Executors.newFixedThreadPool(1, new ThreadFactory()
+	{
+		@Override
+		public Thread newThread(Runnable r)
+		{
+			return new Thread(r, "Sablo Session closer"); //$NON-NLS-1$
+		}
+	});
 
 	private static volatile boolean stop = false;
 	private final static Thread pingEndpointsThread = new Thread(new Runnable()
@@ -203,6 +215,7 @@ public class WebsocketSessionManager
 		stop = true;
 		closeAllSessions();
 		pingEndpointsThread.interrupt();
+		expiredThreadPool.shutdownNow();
 	}
 
 	private static void closeSessions(boolean checkForWindowActivity)
@@ -219,7 +232,7 @@ public class WebsocketSessionManager
 		}
 		if (hasLock)
 		{
-			List<IWebsocketSession> expiredSessions = new ArrayList<>(3);
+			final List<IWebsocketSession> expiredSessions = new ArrayList<>(3);
 			try
 			{
 				Iterator<IWebsocketSession> sessions = wsSessions.values().iterator();
@@ -238,26 +251,35 @@ public class WebsocketSessionManager
 				closingLock.unlock();
 			}
 
-			for (IWebsocketSession session : expiredSessions)
+			if (!expiredSessions.isEmpty()) expiredThreadPool.execute(new Runnable()
 			{
-				try
-				{
-					session.sessionExpired();
-				}
-				catch (Exception e)
-				{
-					log.error("Error expiring session " + session.getUuid(), e);
-				}
 
-				try
+				@Override
+				public void run()
 				{
-					session.dispose();
+					for (IWebsocketSession session : expiredSessions)
+					{
+						try
+						{
+							session.sessionExpired();
+						}
+						catch (Exception e)
+						{
+							log.error("Error expiring session " + session.getUuid(), e);
+						}
+
+						try
+						{
+							session.dispose();
+						}
+						catch (Exception e)
+						{
+							log.error("Error disposing expired session " + session.getUuid(), e);
+						}
+					}
 				}
-				catch (Exception e)
-				{
-					log.error("Error disposing expired session " + session.getUuid(), e);
-				}
-			}
+			});
+
 		}
 
 	}

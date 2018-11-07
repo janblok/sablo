@@ -418,7 +418,7 @@ public class Package
 			{
 				if (inputStream != null)
 				{
-					return IOUtils.toString(inputStream, charset);
+					return IOUtils.toString(inputStream, charset.name());
 				}
 			}
 			return null;
@@ -577,7 +577,7 @@ public class Package
 				{
 					try (InputStream is = zip.getInputStream(entry))
 					{
-						return IOUtils.toString(is, charset);
+						return IOUtils.toString(is, charset.name());
 					}
 				}
 			}
@@ -759,7 +759,7 @@ public class Package
 		{
 			try (InputStream is = new BufferedInputStream(new FileInputStream(new File(dir, path))))
 			{
-				return IOUtils.toString(is, charset);
+				return IOUtils.toString(is, charset.name());
 			}
 		}
 
@@ -926,7 +926,7 @@ public class Package
 
 			try (InputStream is = url.openStream())
 			{
-				return IOUtils.toString(is, charset);
+				return IOUtils.toString(is, charset.name());
 			}
 		}
 

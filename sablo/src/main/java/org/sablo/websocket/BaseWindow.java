@@ -658,20 +658,51 @@ public class BaseWindow implements IWindow
 	{
 		PropertyDescription argumentTypes = (apiFunction != null ? BaseWebObject.getParameterTypes(apiFunction) : null);
 		addServiceCall(clientService, functionName, arguments, argumentTypes);
+		return executeCall(clientService, functionName, arguments, pendingChangesWriter, blockEventProcessing, true);
+	}
+
+	private Object executeCall(IClientService clientService, String functionName, Object[] arguments,
+		IToJSONWriter<IBrowserConverterContext> pendingChangesWriter, boolean blockEventProcessing, boolean retry) throws IOException
+	{
 		try
 		{
 			return sendSyncMessage(pendingChangesWriter, ChangesToJSONConverter.INSTANCE, blockEventProcessing); // will return response from last service call
 		}
 		catch (CancellationException e)
 		{
-			throw new RuntimeException("Cancelled while executing service call " + clientService.getName() + "." + functionName + "(...). Arguments: " +
-				(arguments == null ? null : Arrays.asList(arguments)), e);
+			if (!retry)
+			{
+				throw new RuntimeException("Cancelled while executing service call " + clientService.getName() + "." + functionName + "(...). Arguments: " +
+					(arguments == null ? null : Arrays.asList(arguments)), e);
+			}
 		}
 		catch (TimeoutException e)
 		{
-			throw new RuntimeException("Timed out while executing service call " + clientService.getName() + "." + functionName + "(...). Arguments: " +
-				(arguments == null ? null : Arrays.asList(arguments)), e);
+			if (!retry)
+			{
+				throw new RuntimeException("Timed out while executing service call " + clientService.getName() + "." + functionName + "(...). Arguments: " +
+					(arguments == null ? null : Arrays.asList(arguments)), e);
+			}
 		}
+		catch (IOException e)
+		{
+			if (!retry)
+			{
+				throw e;
+			}
+		}
+		if (!hasEndpoint())
+		{
+			try
+			{
+				Thread.sleep(4000);
+			}
+			catch (InterruptedException e)
+			{
+				log.warn("InterruptedException occurred", e);
+			}
+		}
+		return executeCall(clientService, functionName, arguments, pendingChangesWriter, blockEventProcessing, false);
 	}
 
 	@Override

@@ -60,10 +60,8 @@ public interface IPropertyConverter<JT, ContextT>
 	 * @param sabloValue the value to convert to JSON.
 	 * @param propertyDescription the description of the property that is being converted.
 	 * @param clientConversion can be use to mark needed client/browser side conversion types.
-	 * @param fullValue if true, a full value is requested from the property, as if no other value was previously available client side; if false, then
-	 * only changes are requested. For most types this flag can be ignored and the whole value sent. It is only useful for types that can send granular
 	 * updates and have their own JSON protocol (for example object and array types are implemented to support this).
-	 * @param context runtime context
+	 * @param dataConverterContext runtime context; it can be null in rare cases.
 	 * @return the writer for cascaded usage.
 	 * @throws JSONException if a JSON exception happens.
 	 */

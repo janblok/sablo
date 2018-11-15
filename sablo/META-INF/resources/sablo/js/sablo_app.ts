@@ -43,6 +43,10 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		callService('consoleLogger', 'debug', { message: msg }, true)
 	}
 	
+	$window.onerror = function(message, source, lineno, colno, error) {
+		var msg = message + "\n" + source +":" + lineno +":" + colno + "\n" + error;
+		callService('consoleLogger', 'error', { message: msg }, true)
+	}
 	// formName:[beanname:{property1:1,property2:"test"}] needs to be synced to and from server
 	// this holds the form model with all the data, per form is this the "synced" view of the the IFormUI on the server 
 	// (3 way binding)

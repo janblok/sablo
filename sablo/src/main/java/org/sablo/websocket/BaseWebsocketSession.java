@@ -34,6 +34,7 @@ import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
 import org.sablo.eventthread.WebsocketSessionWindows;
 import org.sablo.services.client.SabloService;
+import org.sablo.services.server.ConsoleLoggerServiceHandler;
 import org.sablo.services.server.FormServiceHandler;
 import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.WebServiceSpecProvider;
@@ -74,6 +75,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	{
 		this.uuid = uuid;
 		registerServerService("formService", createFormService());
+		registerServerService("consoleLogger", createConsoleLoggerService());
 	}
 
 	@Override
@@ -254,6 +256,11 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	protected IServerService createFormService()
 	{
 		return FormServiceHandler.INSTANCE;
+	}
+
+	protected IServerService createConsoleLoggerService()
+	{
+		return new ConsoleLoggerServiceHandler(this);
 	}
 
 	public boolean isValid()

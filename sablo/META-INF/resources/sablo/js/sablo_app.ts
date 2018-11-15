@@ -13,6 +13,30 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		$webSocket.disconnect();
 	});
 
+	var realConsole = $window.console;
+	$window['con'+'sole'] = {
+		error: function(msg) {
+			realConsole.error(msg)
+			callService('consoleLogger', 'error', { message: msg }, true)
+		},
+		warn: function(msg) {
+			realConsole.warn(msg)
+			callService('consoleLogger', 'warn', { message: msg }, true)
+		},
+		info: function(msg) {
+			realConsole.info(msg)
+			callService('consoleLogger', 'info', { message: msg }, true)
+		},
+		log: function(msg) {
+			realConsole.log(msg)
+			callService('consoleLogger', 'info', { message: msg }, true)
+		},
+		debug: function(msg) {
+			realConsole.debug(msg)
+			callService('consoleLogger', 'debug', { message: msg }, true)
+		}
+	}
+	
 
 	// formName:[beanname:{property1:1,property2:"test"}] needs to be synced to and from server
 	// this holds the form model with all the data, per form is this the "synced" view of the the IFormUI on the server 

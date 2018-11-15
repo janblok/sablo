@@ -13,31 +13,36 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		$webSocket.disconnect();
 	});
 
-	var realConsole = $window.console;
-	$window['con'+'sole'] = {
-		error: function(msg) {
-			realConsole.error(msg)
-			callService('consoleLogger', 'error', { message: msg }, true)
-		},
-		warn: function(msg) {
-			realConsole.warn(msg)
-			callService('consoleLogger', 'warn', { message: msg }, true)
-		},
-		info: function(msg) {
-			realConsole.info(msg)
-			callService('consoleLogger', 'info', { message: msg }, true)
-		},
-		log: function(msg) {
-			realConsole.log(msg)
-			callService('consoleLogger', 'info', { message: msg }, true)
-		},
-		debug: function(msg) {
-			realConsole.debug(msg)
-			callService('consoleLogger', 'debug', { message: msg }, true)
-		}
+	var oldLog = $window.console.log;
+	$window.console.log =  function(msg) {
+		oldLog.apply($window.console, arguments);
+		callService('consoleLogger', 'info', { message: msg }, true)
 	}
 	
-
+	var oldError = $window.console.error;
+	$window.console.error =  function(msg) {
+		oldError.apply($window.console, arguments);
+		callService('consoleLogger', 'error', { message: msg }, true)
+	}
+	
+	var oldWarn = $window.console.warn;
+	$window.console.warn =  function(msg) {
+		oldWarn.apply($window.console, arguments);
+		callService('consoleLogger', 'warn', { message: msg }, true)
+	}
+	
+	var oldInfo = $window.console.info;
+	$window.console.info =  function(msg) {
+		oldInfo.apply($window.console, arguments);
+		callService('consoleLogger', 'info', { message: msg }, true)
+	}
+	
+	var oldDebug = $window.console.debug;
+	$window.console.debug =  function(msg) {
+		oldDebug.apply($window.console, arguments);
+		callService('consoleLogger', 'debug', { message: msg }, true)
+	}
+	
 	// formName:[beanname:{property1:1,property2:"test"}] needs to be synced to and from server
 	// this holds the form model with all the data, per form is this the "synced" view of the the IFormUI on the server 
 	// (3 way binding)

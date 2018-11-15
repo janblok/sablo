@@ -14,7 +14,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 	});
 
 	var realConsole = $window.console;
-	$window.console = {
+	$window['con'+'sole'] = {
 		error: function(msg) {
 			realConsole.error(msg)
 			callService('consoleLogger', 'error', { message: msg }, true)

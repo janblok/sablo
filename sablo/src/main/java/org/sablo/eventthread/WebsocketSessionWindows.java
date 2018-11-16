@@ -166,6 +166,15 @@ public class WebsocketSessionWindows implements IWindow
 	}
 
 	@Override
+	public void executeAsyncNowServiceCall(IClientService clientService, String functionName, Object[] arguments, PropertyDescription argumentTypes)
+	{
+		for (IWindow window : session.getWindows())
+		{
+			window.executeAsyncNowServiceCall(clientService, functionName, arguments, argumentTypes);
+		}
+	}
+
+	@Override
 	public Object executeServiceCall(IClientService clientService, String functionName, Object[] arguments, WebObjectFunctionDefinition apiFunction,
 		IToJSONWriter<IBrowserConverterContext> pendingChangesWriter, boolean blockEventProcessing) throws IOException
 	{

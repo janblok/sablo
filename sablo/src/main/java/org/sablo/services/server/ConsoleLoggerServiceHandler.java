@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ConsoleLoggerServiceHandler implements IServerService
 {
-	public static final Logger log = LoggerFactory.getLogger(ConsoleLoggerServiceHandler.class.getCanonicalName());
+	public static final Logger log = LoggerFactory.getLogger("org.sablo.BrowserConsole");
 
 	private final IWebsocketSession session;
 
@@ -40,30 +40,29 @@ public class ConsoleLoggerServiceHandler implements IServerService
 	@Override
 	public Object executeMethod(String methodName, JSONObject args) throws Exception
 	{
-		String message = args.optString("message");
-		String clientInformation = getClientInformationMessage();
+		String message = getInformationMessage(args.optString("message"));
 		switch (methodName)
 		{
 			case "error" :
 			{
-				log.error("[Browser error]" + clientInformation + message);
+				log.error(message);
 				break;
 			}
 
 			case "warn" :
 			{
-				log.warn("[Browser warning]" + clientInformation + message);
+				log.warn(message);
 				break;
 			}
 
 			case "info" :
 			{
-				log.info("[Browser info]" + clientInformation + message);
+				log.info(message);
 				break;
 			}
 			case "debug" :
 			{
-				log.debug("[Browser debug]" + clientInformation + message);
+				log.debug(message);
 				break;
 			}
 			default :
@@ -72,9 +71,9 @@ public class ConsoleLoggerServiceHandler implements IServerService
 		return null;
 	}
 
-	protected String getClientInformationMessage()
+	protected String getInformationMessage(String message)
 	{
-		return session.getUuid() + "|";
+		return session.getUuid() + "|" + message;
 	}
 
 	protected IWebsocketSession getSession()

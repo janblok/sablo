@@ -27,6 +27,7 @@ import org.json.JSONObject;
  *
  * @author rgansevles
  */
+@SuppressWarnings("nls")
 public class WebObjectFunctionDefinition
 {
 
@@ -39,6 +40,7 @@ public class WebObjectFunctionDefinition
 	private boolean blockEventProcessing = true;
 	private boolean delayUntilFormLoads = false;
 	private boolean async = false;
+	private boolean asyncNow = false;
 	private boolean discardPreviouslyQueuedSimilarCalls = false;
 	private PropertyDescription asPropertyDescription;
 	private boolean preDataServiceCall;
@@ -84,11 +86,6 @@ public class WebObjectFunctionDefinition
 		return this.customConfigOptions;
 	}
 
-	@Override
-	public String toString()
-	{
-		return "WebObjectApiDefinition[name:" + name + ",returnType:" + returnType + ", parameters:" + parameters + "]";
-	}
 
 	public void setDocumentation(String documentation)
 	{
@@ -123,6 +120,11 @@ public class WebObjectFunctionDefinition
 		return blockEventProcessing;
 	}
 
+	/**
+	 * Only for components, not services. This is a special type of async method call that waits for a form to be loaded on client before executing the method.
+	 * Calling this kind of methods will not forcefully load the form in hidden DOM just to call the method.
+	 * @return
+	 */
 	public boolean shouldDelayUntilFormLoads()
 	{
 		return delayUntilFormLoads;
@@ -134,7 +136,8 @@ public class WebObjectFunctionDefinition
 	}
 
 	/**
-	 * @param async the async to set
+	 * Setter.
+	 * @see #isAsync()
 	 */
 	public void setAsync(boolean async)
 	{
@@ -142,6 +145,7 @@ public class WebObjectFunctionDefinition
 	}
 
 	/**
+	 * Async methods are to be executed later and they do not wait for a return value.
 	 * @return the async
 	 */
 	public boolean isAsync()
@@ -150,7 +154,29 @@ public class WebObjectFunctionDefinition
 	}
 
 	/**
+	 * Async-now methods are to be executed right away but do not wait for a return value.
+	 * The async-now call does not send any component/service pending changes - or call other pending async/delayed api to client; it just calls the method.
+	 *
+	 * @return the asyncNow
+	 */
+	public boolean isAsyncNow()
+	{
+		return asyncNow;
+	}
+
+	/**
+	 * Setter.
+	 * @see #isAsyncNow()
+	 */
+	public void setAsyncNow(boolean asyncNow)
+	{
+		this.asyncNow = asyncNow;
+	}
+
+	/**
 	 * False by default.<br/><br/>
+	 *
+	 * Only component methods support this, not service methods.
 	 *
 	 * When true (only makes sense for 'async' or 'delayUntilFormLoads' type of calls), only the last call (inside an event handler on the event thread - when multiple async/delayed API calls get queued
 	 * before being sent to the client) to this method (identified by method name) on any component on the current window will be executed. The previous calls are discarded.<br/><br/>
@@ -213,6 +239,14 @@ public class WebObjectFunctionDefinition
 	public boolean isPrivate()
 	{
 		return priv;
+	}
+
+	@Override
+	public String toString()
+	{
+		return "WebObjectFunctionDefinition [name=" + name + ",\nreturnType=" + returnType + ",\nparameters=" + parameters + ",\nasync=" + async +
+			", delayUntilFormLoads=" + delayUntilFormLoads + ", discardPreviouslyQueuedSimilarCalls=" + discardPreviouslyQueuedSimilarCalls +
+			", blockEventProcessing=" + blockEventProcessing + ", asyncNow=" + asyncNow + "]";
 	}
 
 }

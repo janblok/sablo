@@ -44,6 +44,7 @@ import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.CustomVariableArgsType;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.types.AggregatedPropertyType;
+import org.sablo.util.DebugFriendlyJSONStringer;
 import org.sablo.websocket.impl.ClientService;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
@@ -58,13 +59,10 @@ import org.slf4j.LoggerFactory;
  *
  * @author jcompagner, rgansevles
  */
-
+@SuppressWarnings("nls")
 public class BaseWindow implements IWindow
 {
 
-	/**
-	 *
-	 */
 	private static final String API_KEY_DELAY_UNTIL_FORM_LOADS = "delayUntilFormLoads"; //$NON-NLS-1$
 	private static final String API_SERVER_ONLY_KEY_FORM_CONTAINER = "forServerOnly_formContainer"; //$NON-NLS-1$
 	private static final String API_SERVER_ONLY_KEY_COMPONENT = "forServerOnly_component"; //$NON-NLS-1$
@@ -91,7 +89,7 @@ public class BaseWindow implements IWindow
 	private final AtomicInteger lastSentMessage = new AtomicInteger(0);
 
 	private final List<Map<String, ? >> serviceCalls = new ArrayList<>();
-	private final List<Map<String, Object>> delayedOrAsyncApiCalls = new ArrayList<>();
+	private final List<Map<String, Object>> delayedOrAsyncComponentApiCalls = new ArrayList<>();
 	private final PropertyDescription serviceCallTypes = AggregatedPropertyType.newAggregatedProperty();
 
 	private final WeakHashMap<Container, Object> usedContainers = new WeakHashMap<>(3); // set of used container in order to collect all changes
@@ -405,7 +403,7 @@ public class BaseWindow implements IWindow
 	}
 
 	/**
-	 * Sends a message to the client/browser, containing the given data (transformed into JSON based on give dataTypes).
+	 * Sends a message to the client/browser, containing the given data (transformed into JSON based on given dataTypes).
 	 *
 	 * If there are any pending service calls those will be sent to the client/attached to the message as well.
 	 *
@@ -486,7 +484,7 @@ public class BaseWindow implements IWindow
 	protected String sendMessageInternal(IToJSONWriter<IBrowserConverterContext> dataWriter, IToJSONConverter<IBrowserConverterContext> converter,
 		Integer smsgidOptional) throws IOException
 	{
-		if (dataWriter == null && serviceCalls.size() == 0 && delayedOrAsyncApiCalls.size() == 0) return null;
+		if (dataWriter == null && serviceCalls.size() == 0 && delayedOrAsyncComponentApiCalls.size() == 0) return null;
 
 		if (getEndpoint() == null)
 		{
@@ -496,14 +494,7 @@ public class BaseWindow implements IWindow
 		try
 		{
 			boolean hasContentToSend = false;
-			JSONStringer w = new JSONStringer()
-			{
-				@Override
-				public String toString()
-				{
-					return writer.toString();
-				}
-			};
+			JSONStringer w = new DebugFriendlyJSONStringer();
 			w.object();
 			DataConversion clientDataConversions = new DataConversion();
 
@@ -532,10 +523,10 @@ public class BaseWindow implements IWindow
 
 				clientDataConversions.popNode();
 			}
-			if (delayedOrAsyncApiCalls.size() > 0)
+			if (delayedOrAsyncComponentApiCalls.size() > 0)
 			{
 				clientDataConversions.pushNode("calls");
-				Iterator<Map<String, Object>> it = delayedOrAsyncApiCalls.iterator();
+				Iterator<Map<String, Object>> it = delayedOrAsyncComponentApiCalls.iterator();
 				boolean callObjectStarted = false;
 				int callIdx = 0;
 				while (it.hasNext())
@@ -603,6 +594,49 @@ public class BaseWindow implements IWindow
 	}
 
 	/**
+	 * This IGNORES any other pending API calls on services or components as well as any pending changes to be sent. It will not send those.
+	 * Returns the text that it really sent...
+	 */
+	protected String sendOnlyThisMessageInternal(IToJSONWriter<IBrowserConverterContext> dataWriter, IToJSONConverter<IBrowserConverterContext> converter)
+		throws IOException
+	{
+		if (dataWriter == null) return null;
+
+		if (getEndpoint() == null)
+		{
+			throw new IOException("Endpoint was closed"); //$NON-NLS-1$
+		}
+
+		try
+		{
+			boolean hasContentToSend = false;
+			JSONStringer w = new DebugFriendlyJSONStringer();
+			w.object();
+			DataConversion clientDataConversions = new DataConversion();
+
+			if (dataWriter != null)
+			{
+				hasContentToSend = dataWriter.writeJSONContent(w, null, converter, clientDataConversions);
+			}
+			w.endObject();
+
+			String text = null;
+
+			if (hasContentToSend)
+			{
+				text = w.toString();
+				sendMessageText(text);
+			}
+
+			return text;
+		}
+		catch (JSONException e)
+		{
+			throw new IOException(e);
+		}
+	}
+
+	/**
 	 * Send the message text prepended with the message number.
 	 *
 	 * @param text
@@ -657,8 +691,47 @@ public class BaseWindow implements IWindow
 		IToJSONWriter<IBrowserConverterContext> pendingChangesWriter, boolean blockEventProcessing) throws IOException
 	{
 		PropertyDescription argumentTypes = (apiFunction != null ? BaseWebObject.getParameterTypes(apiFunction) : null);
+
 		addServiceCall(clientService, functionName, arguments, argumentTypes);
 		return executeCall(clientService, functionName, arguments, pendingChangesWriter, blockEventProcessing, true);
+	}
+
+	@Override
+	public void executeAsyncNowServiceCall(IClientService clientService, String functionName, Object[] arguments, PropertyDescription argumentTypes)
+	{
+		try
+		{
+			sendOnlyThisMessageInternal(new IToJSONWriter<IBrowserConverterContext>()
+			{
+				@Override
+				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
+					DataConversion clientDataConversions) throws JSONException
+				{
+					clientDataConversions.pushNode("services");
+					w.key("services");
+
+					w.array();
+
+					Map<String, Object> serviceCall = createServiceCall(clientService, functionName, arguments, argumentTypes);
+					PropertyDescription typesOfThisCall = createTypesOfServiceCall(argumentTypes);
+
+					if (clientDataConversions != null) clientDataConversions.pushNode(String.valueOf(0));
+					FullValueToJSONConverter.INSTANCE.toJSONValue(w, null, serviceCall, typesOfThisCall, clientDataConversions,
+						new BrowserConverterContext((ClientService)clientService, PushToServerEnum.allow));
+					if (clientDataConversions != null) clientDataConversions.popNode();
+
+					w.endArray();
+
+					clientDataConversions.popNode();
+					return true;
+				}
+			}, FullValueToJSONConverter.INSTANCE);
+		}
+		catch (IOException e)
+		{
+			log.warn("IOException occurred when trying to call async-now api call '" + functionName + "'. Arguments: " +
+				(arguments == null ? null : Arrays.asList(arguments)) + ". On service " + clientService, e);
+		}
 	}
 
 	private Object executeCall(IClientService clientService, String functionName, Object[] arguments,
@@ -711,11 +784,10 @@ public class BaseWindow implements IWindow
 		addServiceCall(clientService, functionName, arguments, argumentTypes);
 	}
 
-	private void addServiceCall(IClientService clientService, String functionName, Object[] arguments, PropertyDescription argumentTypes)
+	private Map<String, Object> createServiceCall(IClientService clientService, String functionName, Object[] arguments, PropertyDescription argumentTypes)
 	{
 		// {"services":[{name:serviceName,call:functionName,args:argumentsArray}]}
 		Map<String, Object> serviceCall = new HashMap<>();
-		PropertyDescription typesOfThisCall = AggregatedPropertyType.newAggregatedProperty();
 		serviceCall.put(API_SERVER_ONLY_KEY_SERVICE, clientService);
 		serviceCall.put(API_KEY_NAME, clientService.getScriptingName());
 		serviceCall.put(API_KEY_CALL, functionName);
@@ -739,7 +811,21 @@ public class BaseWindow implements IWindow
 		}
 
 		serviceCall.put(API_KEY_ARGS, arguments);
+		return serviceCall;
+	}
+
+	private PropertyDescription createTypesOfServiceCall(PropertyDescription argumentTypes)
+	{
+		PropertyDescription typesOfThisCall = AggregatedPropertyType.newAggregatedProperty();
 		if (argumentTypes != null) typesOfThisCall.putProperty(API_KEY_ARGS, argumentTypes);
+		return typesOfThisCall;
+	}
+
+	private void addServiceCall(IClientService clientService, String functionName, Object[] arguments, PropertyDescription argumentTypes)
+	{
+		Map<String, Object> serviceCall = createServiceCall(clientService, functionName, arguments, argumentTypes);
+		PropertyDescription typesOfThisCall = createTypesOfServiceCall(argumentTypes);
+
 		serviceCalls.add(serviceCall);
 		serviceCallTypes.putProperty(String.valueOf(serviceCalls.size() - 1), typesOfThisCall);
 	}
@@ -831,75 +917,109 @@ public class BaseWindow implements IWindow
 		final PropertyDescription argumentTypes, final Map<String, Object> callContributions)
 	{
 		// {"call":{"form":"product","bean":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}}
-		boolean delayedCall = isDelayedApiCall(receiver, apiFunction);
+		boolean delayedCall = isDelayedApiCall(apiFunction);
 
-		if (delayedCall || isAsyncApiCall(receiver, apiFunction))
+		if (delayedCall || isAsyncApiCall(apiFunction))
 		{
-			Map<String, Object> call = getApiCallObject(receiver, apiFunction, arguments, argumentTypes, callContributions);
-			addDelayedOrAsyncCall(apiFunction, call, receiver, delayedCall);
+			Map<String, Object> call = getApiCallObjectForComponent(receiver, apiFunction, arguments, argumentTypes, callContributions);
+			addDelayedOrAsyncComponentCall(apiFunction, call, receiver, delayedCall);
+		}
+		else if (isAsyncNowApiCall(apiFunction))
+		{
+			try
+			{
+				sendOnlyThisMessageInternal(new IToJSONWriter<IBrowserConverterContext>()
+				{
+					@Override
+					public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
+						DataConversion clientDataConversions) throws JSONException
+					{
+						w.object();
+
+						Map<String, Object> call = getApiCallObjectForComponent(receiver, apiFunction, arguments, argumentTypes, callContributions);
+						PropertyDescription callTypes = (PropertyDescription)call.remove(API_SERVER_ONLY_KEY_ARG_TYPES);
+						w.key(API_KEY_CALL).object();
+						clientDataConversions.pushNode(API_KEY_CALL);
+						JSONUtils.writeData(FullValueToJSONConverter.INSTANCE, w, call, callTypes, clientDataConversions,
+							new BrowserConverterContext(receiver, PushToServerEnum.allow));
+						clientDataConversions.popNode();
+						w.endObject();
+
+						w.endObject();
+						return true;
+					}
+				}, FullValueToJSONConverter.INSTANCE);
+			}
+			catch (IOException e)
+			{
+				log.warn("IOException occurred when trying to call async-now api call '" + apiFunction + "'. Arguments: " +
+					(arguments == null ? null : Arrays.asList(arguments)) + ". On component " + receiver, e);
+			}
 			return null;
 		}
-		try
+		else
 		{
-			Object ret = sendSyncMessage(new IToJSONWriter<IBrowserConverterContext>()
+			try
 			{
-				@Override
-				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
-					DataConversion clientDataConversions) throws JSONException
+				Object ret = sendSyncMessage(new IToJSONWriter<IBrowserConverterContext>()
 				{
-					JSONUtils.addKeyIfPresent(w, keyInParent);
-					w.object();
+					@Override
+					public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
+						DataConversion clientDataConversions) throws JSONException
+					{
+						JSONUtils.addKeyIfPresent(w, keyInParent);
+						w.object();
 
-					clientDataConversions.pushNode("forms");
-					writeAllComponentsChanges(w, "forms", converter, clientDataConversions); // converter here is ChangesToJSONConverter.INSTANCE (see below arg to 'sendSyncMessage')
-					clientDataConversions.popNode();
-					Map<String, Object> call = getApiCallObject(receiver, apiFunction, arguments, argumentTypes, callContributions);
-					PropertyDescription callTypes = (PropertyDescription)call.remove(API_SERVER_ONLY_KEY_ARG_TYPES);
-					w.key(API_KEY_CALL).object();
-					clientDataConversions.pushNode(API_KEY_CALL);
-					JSONUtils.writeData(FullValueToJSONConverter.INSTANCE, w, call, callTypes, clientDataConversions,
-						new BrowserConverterContext(receiver, PushToServerEnum.allow));
-					clientDataConversions.popNode();
-					w.endObject();
+						clientDataConversions.pushNode("forms");
+						writeAllComponentsChanges(w, "forms", converter, clientDataConversions); // converter here is ChangesToJSONConverter.INSTANCE (see below arg to 'sendSyncMessage')
+						clientDataConversions.popNode();
+						Map<String, Object> call = getApiCallObjectForComponent(receiver, apiFunction, arguments, argumentTypes, callContributions);
+						PropertyDescription callTypes = (PropertyDescription)call.remove(API_SERVER_ONLY_KEY_ARG_TYPES);
+						w.key(API_KEY_CALL).object();
+						clientDataConversions.pushNode(API_KEY_CALL);
+						JSONUtils.writeData(FullValueToJSONConverter.INSTANCE, w, call, callTypes, clientDataConversions,
+							new BrowserConverterContext(receiver, PushToServerEnum.allow));
+						clientDataConversions.popNode();
+						w.endObject();
 
-					w.endObject();
-					return true;
-				}
-			}, ChangesToJSONConverter.INSTANCE, apiFunction.getBlockEventProcessing());
+						w.endObject();
+						return true;
+					}
+				}, ChangesToJSONConverter.INSTANCE, apiFunction.getBlockEventProcessing());
 
-			if (apiFunction.getReturnType() != null)
-			{
-				try
+				if (apiFunction.getReturnType() != null)
 				{
-					return JSONUtils.fromJSON(null, ret, apiFunction.getReturnType(), new BrowserConverterContext(receiver, PushToServerEnum.allow), null);
-				}
-				catch (Exception e)
-				{
-					log.error("Cannot parse api call return value JSON for: " + ret + " for api call: " + apiFunction, e);
+					try
+					{
+						return JSONUtils.fromJSON(null, ret, apiFunction.getReturnType(), new BrowserConverterContext(receiver, PushToServerEnum.allow), null);
+					}
+					catch (Exception e)
+					{
+						log.error("Cannot parse api call return value JSON for: " + ret + " for api call: " + apiFunction, e);
+					}
 				}
 			}
-		}
-		catch (IOException e)
-		{
-			log.warn("IOException occurred", e);
-		}
-		catch (CancellationException e)
-		{
-			throw new RuntimeException(
-				"Cancelled while invoking API: " + apiFunction + ". Arguments: " + (arguments == null ? null : Arrays.asList(arguments)) + ". On: " + receiver,
-				e);
-		}
-		catch (TimeoutException e)
-		{
-			throw new RuntimeException(
-				"Timed out while invoking API: " + apiFunction + ". Arguments: " + (arguments == null ? null : Arrays.asList(arguments)) + ". On: " + receiver,
-				e);
+			catch (IOException e)
+			{
+				log.warn("IOException occurred when trying to call sync api call '" + apiFunction + "'. Arguments: " +
+					(arguments == null ? null : Arrays.asList(arguments)) + ". On component " + receiver, e);
+			}
+			catch (CancellationException e)
+			{
+				throw new RuntimeException("Cancelled while invoking API: " + apiFunction + ". Arguments: " +
+					(arguments == null ? null : Arrays.asList(arguments)) + ". On: " + receiver, e);
+			}
+			catch (TimeoutException e)
+			{
+				throw new RuntimeException("Timed out while invoking API: " + apiFunction + ". Arguments: " +
+					(arguments == null ? null : Arrays.asList(arguments)) + ". On: " + receiver, e);
+			}
 		}
 
 		return null;
 	}
 
-	private Map<String, Object> getApiCallObject(final WebComponent receiver, final WebObjectFunctionDefinition apiFunction, final Object[] arguments,
+	private Map<String, Object> getApiCallObjectForComponent(final WebComponent receiver, final WebObjectFunctionDefinition apiFunction, final Object[] arguments,
 		final PropertyDescription argumentTypes, final Map<String, Object> callContributions)
 	{
 		Map<String, Object> call = new HashMap<>();
@@ -922,7 +1042,8 @@ public class BaseWindow implements IWindow
 		return call;
 	}
 
-	protected void addDelayedOrAsyncCall(final WebObjectFunctionDefinition apiFunction, Map<String, Object> call, WebComponent component, boolean isDelayedCall)
+	protected void addDelayedOrAsyncComponentCall(final WebObjectFunctionDefinition apiFunction, Map<String, Object> call, WebComponent component,
+		boolean isDelayedCall)
 	{
 		if (isDelayedCall)
 		{
@@ -935,7 +1056,7 @@ public class BaseWindow implements IWindow
 		if (apiFunction.shouldDiscardPreviouslyQueuedSimilarCalls())
 		{
 			// for example requestFocus uses that - so that only the last .requestFocus() actually executes (if the form is loaded)
-			Iterator<Map<String, Object>> it = delayedOrAsyncApiCalls.iterator();
+			Iterator<Map<String, Object>> it = delayedOrAsyncComponentApiCalls.iterator();
 			while (it.hasNext())
 			{
 				Map<String, Object> delayedOrAsyncCall = it.next();
@@ -945,15 +1066,15 @@ public class BaseWindow implements IWindow
 				}
 			}
 		}
-		delayedOrAsyncApiCalls.add(call);
+		delayedOrAsyncComponentApiCalls.add(call);
 	}
 
 	protected boolean hasPendingDelayedCalls(Container formContainer)
 	{
 		boolean hasPendingDelayedCalls = false;
-		if (delayedOrAsyncApiCalls.size() > 0)
+		if (delayedOrAsyncComponentApiCalls.size() > 0)
 		{
-			Iterator<Map<String, Object>> it = delayedOrAsyncApiCalls.iterator();
+			Iterator<Map<String, Object>> it = delayedOrAsyncComponentApiCalls.iterator();
 			while (it.hasNext())
 			{
 				Map<String, Object> delayedCall = it.next();
@@ -973,13 +1094,19 @@ public class BaseWindow implements IWindow
 		return true;
 	}
 
-	protected boolean isDelayedApiCall(WebComponent receiver, WebObjectFunctionDefinition apiFunction)
+	protected static boolean isDelayedApiCall(WebObjectFunctionDefinition apiFunction)
 	{
 		return apiFunction.getReturnType() == null && apiFunction.shouldDelayUntilFormLoads();
 	}
 
-	protected boolean isAsyncApiCall(WebComponent receiver, WebObjectFunctionDefinition apiFunction)
+	protected static boolean isAsyncApiCall(WebObjectFunctionDefinition apiFunction)
 	{
 		return apiFunction.getReturnType() == null && apiFunction.isAsync();
 	}
+
+	protected static boolean isAsyncNowApiCall(WebObjectFunctionDefinition apiFunction)
+	{
+		return apiFunction.getReturnType() == null && apiFunction.isAsyncNow();
+	}
+
 }

@@ -37,42 +37,32 @@ public interface IClientService
 
 	/**
 	 * Execute a service call asynchronously. It will be called on the current window.
-	 * @param serviceName
-	 * @param functionName
-	 * @param arguments
 	 */
 	public void executeAsyncServiceCall(String functionName, Object[] arguments);
 
 	/**
+	 * Execute a (client/browser) async-now method; such methods are to be executed right away but do not wait for a return value.
+	 * The async-now call does not send any component/service pending changes - or call other pending async/delayed api to client; it just calls the method.
+	 */
+	public void executeAsyncNowServiceCall(String functionName, Object[] arguments);
+
+	/**
 	 * Execute a service call synchronously.. It will be called on the current window.
-	 * @param serviceName
-	 * @param functionName
-	 * @param arguments
-	 * @return remote result
-	 * @throws IOException
 	 */
 	public Object executeServiceCall(String functionName, Object[] arguments) throws IOException;
 
 	/**
 	 * Called when a property on the client is changed, json conversion should be done.
-	 *
-	 * @param property
-	 * @param value
 	 */
 	public void putBrowserProperty(String propertyName, Object propertyValue) throws JSONException;
 
 	/**
 	 * put a model value, will be send to the client.
-	 *
-	 * @param property
-	 * @param value
-	 * @param sourceOfValue
 	 */
 	public boolean setProperty(String propertyName, Object propertyValue);
 
 	/**
 	 * get a model value
-	 * @param property
 	 * @return the value for this property in the model
 	 */
 	public Object getProperty(String property);

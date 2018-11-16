@@ -472,6 +472,10 @@ public class WebObjectSpecification extends PropertyDescription
 				{
 					def.setAsync(jsonDef.getBoolean("async"));
 				}
+				else if ("async-now".equals(key))
+				{
+					def.setAsyncNow(jsonDef.getBoolean("async-now"));
+				}
 				else if ("globalExclusive".equals(key) || "discardPreviouslyQueuedSimilarCalls".equals(key)) // first one is deprecated but still usable
 				{
 					def.setDiscardPreviouslyQueuedSimilarCalls(jsonDef.getBoolean(key));

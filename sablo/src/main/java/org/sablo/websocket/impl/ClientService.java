@@ -84,7 +84,7 @@ public class ClientService extends BaseWebObject implements IClientService
 					w.object().key("services").object().key(getScriptingName()).object();
 					clientDataConversions.pushNode("services").pushNode(getScriptingName());
 
-					// converter is always ChangesToJSONConverter here; so if some property changed completely, use the FullValueToJSONConverter
+					// converter is always ChangesToJSONConverter here and will get passed one; so if some property changed completely, use the FullValueToJSONConverter given as separate arg.
 					writeProperties(converter, FullValueToJSONConverter.INSTANCE, w, serviceChanges, clientDataConversions);
 
 					clientDataConversions.popNode().popNode();
@@ -122,6 +122,11 @@ public class ClientService extends BaseWebObject implements IClientService
 	public void executeAsyncServiceCall(String functionName, Object[] arguments)
 	{
 		CurrentWindow.get().executeAsyncServiceCall(this, functionName, arguments, getParameterTypes(functionName));
+	}
+
+	public void executeAsyncNowServiceCall(String functionName, Object[] arguments)
+	{
+		CurrentWindow.get().executeAsyncNowServiceCall(this, functionName, arguments, getParameterTypes(functionName));
 	}
 
 	protected PropertyDescription getParameterTypes(String functionName)

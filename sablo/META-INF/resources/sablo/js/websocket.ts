@@ -579,7 +579,20 @@ webSocketModule.factory('$webSocket',
 		var queryString = getQueryString();
 		if (queryString)
 		{
-			new_uri += queryString.replace(queryString.substring(queryString.indexOf($websocketConstants.CLEAR_SESSION_PARAM)-1,queryString.indexOf($websocketConstants.CLEAR_SESSION_PARAM)+$websocketConstants.CLEAR_SESSION_PARAM.length+5),"");
+			var index = queryString.indexOf($websocketConstants.CLEAR_SESSION_PARAM);
+			if (index >= 0) 
+			{
+				var params_arr = queryString.split("&");
+				for (var i = params_arr.length - 1; i >= 0; i -= 1)
+				{
+					if (params_arr[i].indexOf($websocketConstants.CLEAR_SESSION_PARAM) == 0)
+					{
+						params_arr.splice(i, 1);
+					}
+				} 
+				queryString = params_arr.join("&");
+			}
+			new_uri += queryString;
 		}
 		else
 		{

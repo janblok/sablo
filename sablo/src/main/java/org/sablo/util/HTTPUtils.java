@@ -110,7 +110,7 @@ public class HTTPUtils
 	 * @return
 	 * @throws ServletException
 	 */
-	public static String generateQueryString(Map<String, String[]> parameterMap) throws ServletException
+	public static String generateQueryString(Map<String, String[]> parameterMap, String encoding) throws ServletException
 	{
 		StringBuilder queryString = new StringBuilder();
 		for (Entry<String, String[]> parameter : parameterMap.entrySet())
@@ -124,7 +124,7 @@ public class HTTPUtils
 
 				try
 				{
-					queryString.append(URLEncoder.encode(parameter.getKey(), "UTF-8")).append('=').append(URLEncoder.encode(value, "UTF-8"));
+					queryString.append(URLEncoder.encode(parameter.getKey(), encoding)).append('=').append(URLEncoder.encode(value, encoding));
 				}
 				catch (UnsupportedEncodingException e)
 				{

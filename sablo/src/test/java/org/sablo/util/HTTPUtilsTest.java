@@ -37,7 +37,7 @@ public class HTTPUtilsTest
 	@Test
 	public void generateQueryString_emptyMap() throws Exception
 	{
-		assertEquals("", generateQueryString(Collections.<String, String[]> emptyMap()));
+		assertEquals("", generateQueryString(Collections.<String, String[]> emptyMap(), "ISO-8859-1"));
 	}
 
 	@Test
@@ -46,7 +46,7 @@ public class HTTPUtilsTest
 		Map<String, String[]> parameterMap = new HashMap<>();
 		parameterMap.put("foo", new String[] { "bar" });
 
-		assertQueryString("foo=bar", generateQueryString(parameterMap));
+		assertQueryString("foo=bar", generateQueryString(parameterMap, "ISO-8859-1"));
 	}
 
 	@Test
@@ -55,7 +55,7 @@ public class HTTPUtilsTest
 		Map<String, String[]> parameterMap = new HashMap<>();
 		parameterMap.put("foo", new String[] { "bar", "abc" });
 
-		assertQueryString("foo=bar&foo=abc", generateQueryString(parameterMap));
+		assertQueryString("foo=bar&foo=abc", generateQueryString(parameterMap, "ISO-8859-1"));
 	}
 
 	@Test
@@ -65,7 +65,7 @@ public class HTTPUtilsTest
 		parameterMap.put("foo", new String[] { "bar" });
 		parameterMap.put("emp", new String[] { "doe" });
 
-		assertQueryString("foo=bar&emp=doe", generateQueryString(parameterMap));
+		assertQueryString("foo=bar&emp=doe", generateQueryString(parameterMap, "ISO-8859-1"));
 	}
 
 	@Test
@@ -74,7 +74,7 @@ public class HTTPUtilsTest
 		Map<String, String[]> parameterMap = new HashMap<>();
 		parameterMap.put("foo", new String[] { "bar doe" });
 
-		assertQueryString("foo=bar+doe", generateQueryString(parameterMap));
+		assertQueryString("foo=bar+doe", generateQueryString(parameterMap, "ISO-8859-1"));
 	}
 
 	@Test
@@ -83,7 +83,7 @@ public class HTTPUtilsTest
 		Map<String, String[]> parameterMap = new HashMap<>();
 		parameterMap.put("foo bar", new String[] { "doe" });
 
-		assertQueryString("foo+bar=doe", generateQueryString(parameterMap));
+		assertQueryString("foo+bar=doe", generateQueryString(parameterMap, "ISO-8859-1"));
 	}
 
 	// assert that query strings are the same regardless of the ordering

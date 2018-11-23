@@ -735,8 +735,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		}
 	}
 }).filter('trustAsHtml', ['$sce', function($sce: angular.ISCEService) {
-	return function(input: string, trustAsHtml: boolean) {
-		if (input && (!angular.isDefined(trustAsHtml) || trustAsHtml)) {
+	return function(input: string, trustAsHtml?: boolean) {
+		if (input && trustAsHtml) {
 			return $sce.trustAsHtml('' + input);
 		}
 		return input;

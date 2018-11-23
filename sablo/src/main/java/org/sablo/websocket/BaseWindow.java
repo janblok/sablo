@@ -713,6 +713,7 @@ public class BaseWindow implements IWindow
 					w.array();
 
 					Map<String, Object> serviceCall = createServiceCall(clientService, functionName, arguments, argumentTypes);
+					serviceCall.remove(API_SERVER_ONLY_KEY_SERVICE);
 					PropertyDescription typesOfThisCall = createTypesOfServiceCall(argumentTypes);
 
 					if (clientDataConversions != null) clientDataConversions.pushNode(String.valueOf(0));
@@ -1019,8 +1020,8 @@ public class BaseWindow implements IWindow
 		return null;
 	}
 
-	private Map<String, Object> getApiCallObjectForComponent(final WebComponent receiver, final WebObjectFunctionDefinition apiFunction, final Object[] arguments,
-		final PropertyDescription argumentTypes, final Map<String, Object> callContributions)
+	private Map<String, Object> getApiCallObjectForComponent(final WebComponent receiver, final WebObjectFunctionDefinition apiFunction,
+		final Object[] arguments, final PropertyDescription argumentTypes, final Map<String, Object> callContributions)
 	{
 		Map<String, Object> call = new HashMap<>();
 		PropertyDescription callTypes = AggregatedPropertyType.newAggregatedProperty();

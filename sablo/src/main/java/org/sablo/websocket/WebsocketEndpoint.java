@@ -198,7 +198,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 			}
 			session = null;
 		}
-		window = null;
+		unbindWindow();
 	}
 
 	public void onClose(final CloseReason closeReason)
@@ -248,11 +248,16 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 
 	private void unbindWindow()
 	{
-		if (window != null)
+		IWindow currentWindow;
+		synchronized (this)
+		{
+			currentWindow = window;
+			window = null;
+		}
+		if (currentWindow != null)
 		{
 			if (messageLogger != null) messageLogger.endPointClosed();
-			window.setEndpoint(null);
-			window = null;
+			currentWindow.setEndpoint(null);
 		}
 	}
 

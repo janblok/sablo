@@ -746,8 +746,8 @@ public class BaseWindow implements IWindow
 		{
 			if (!retry)
 			{
-				throw new RuntimeException("Cancelled while executing service call " + clientService.getName() + "." + functionName + "(...). Arguments: " +
-					(arguments == null ? null : Arrays.asList(arguments)), e);
+				throw new CancellationException("Cancelled while executing service call " + clientService.getName() + "." + functionName +
+					"(...). Arguments: " + (arguments == null ? null : Arrays.asList(arguments)));
 			}
 		}
 		catch (TimeoutException e)

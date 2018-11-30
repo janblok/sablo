@@ -198,7 +198,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 			}
 			session = null;
 		}
-		window = null;
+		unbindWindow();
 	}
 
 	public void onClose(final CloseReason closeReason)
@@ -248,11 +248,16 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 
 	private void unbindWindow()
 	{
-		if (window != null)
+		IWindow currentWindow;
+		synchronized (this)
+		{
+			currentWindow = window;
+			window = null;
+		}
+		if (currentWindow != null)
 		{
 			if (messageLogger != null) messageLogger.endPointClosed();
-			window.setEndpoint(null);
-			window = null;
+			currentWindow.setEndpoint(null);
 		}
 	}
 
@@ -540,10 +545,10 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		}
 		else if (ret.size() != 1)
 		{
-			// TODO if size is 0 it could be that a destroy on event dispatcher (client got closed while waiting for this reply)
-			// cancelled this suspend and did not throw a cancellation exception because it detected exit situation - what
-			// should we do then? should we still throw the below or should we make it that suspend above generates a
-			// cancellation exception in that case anyway? I guess we can't just return null and allow this thread to continue right? see also SVY-13035
+			if (ret.size() == 0 && session == null && window == null)
+			{
+				throw new CancellationException("Websocket session was closed while waiting for client response");
+			}
 			throw new RuntimeException("Unexpected: Incorrect return value (" + ret.size() +
 				" - not even null/undefined) from client for message (could be due to a close/exit cancelling all pending sync req. to client). Content: " +
 				ret);

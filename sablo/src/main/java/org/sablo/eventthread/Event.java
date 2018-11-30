@@ -16,6 +16,8 @@
 
 package org.sablo.eventthread;
 
+import java.util.concurrent.CancellationException;
+
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.IWebsocketSession;
 import org.sablo.websocket.IWindow;
@@ -99,6 +101,11 @@ public class Event
 					{
 						runnable.run();
 					}
+				}
+				catch (CancellationException ex)
+				{
+					log.info("Execution cancelled", ex);
+					exception = ex;
 				}
 				catch (Exception e)
 				{

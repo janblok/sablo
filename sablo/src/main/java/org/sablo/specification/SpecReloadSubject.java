@@ -86,7 +86,9 @@ public class SpecReloadSubject
 			if (listenerEntry.getKey() == null // global listeners
 				|| specNames == null || specNames.contains(listenerEntry.getKey()))
 			{
-				for (ISpecReloadListener l : listenerEntry.getValue())
+				List<ISpecReloadListener> lst = listenerEntry.getValue();
+				ISpecReloadListener[] array = lst.toArray(new ISpecReloadListener[lst.size()]);
+				for (ISpecReloadListener l : array)
 				{
 					l.webObjectSpecificationReloaded();
 				}

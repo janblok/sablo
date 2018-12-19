@@ -20,11 +20,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -57,9 +57,9 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 
 	private static final Logger log = LoggerFactory.getLogger(BaseWebsocketSession.class.getCanonicalName());
 
-	private final Map<String, IServerService> serverServices = new HashMap<>();
-	private final Map<String, IClientService> servicesByName = new HashMap<>();
-	private final Map<String, IClientService> servicesByScriptingName = new HashMap<>();
+	private final Map<String, IServerService> serverServices = new ConcurrentHashMap<>();
+	private final Map<String, IClientService> servicesByName = new ConcurrentHashMap<>();
+	private final Map<String, IClientService> servicesByScriptingName = new ConcurrentHashMap<>();
 	private final List<ObjectReference<IWindow>> windows = new CopyOnWriteArrayList<>();
 
 	private final String uuid;

@@ -1369,7 +1369,7 @@ webSocketModule.factory('$webSocket',
 	};
 });
 
-angular.module("webSocketModule").factory("$sabloTestability", ["$window",function($window) {
+angular.module("webSocketModule").factory("$sabloTestability", ["$window","$log",function($window, $log) {
 	var blockEventLoop = 0;
 	var deferredEvents;
 	var deferredLength = 0;
@@ -1399,7 +1399,8 @@ angular.module("webSocketModule").factory("$sabloTestability", ["$window",functi
 			}
 		},
 		decreaseEventLoop: function() {
-			deferredLength--;
+			if (deferredLength > 0) deferredLength--;
+			else $log.warn("decrease event loop called without an increase")
 		},
 		block: function(block) {
 			if (block) blockEventLoop++;

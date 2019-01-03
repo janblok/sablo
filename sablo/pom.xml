@@ -21,7 +21,7 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<jenkins.javascript_tests.reportsDirectory>target/protractor-reports</jenkins.javascript_tests.reportsDirectory>
-		<servoy-repo.url> http://download.eclipse.org/eclipse/updates/4.8/</servoy-repo.url>
+		<servoy-repo.url>http://download.eclipse.org/eclipse/updates/4.10/</servoy-repo.url>
 		<servoy-shiplibs.url>http://developer.servoy.com/p2_repository/ship_plugins84/</servoy-shiplibs.url>
 	</properties>
 
@@ -165,22 +165,12 @@
 								<environment>
 									<os>win32</os>
 									<ws>win32</ws>
-									<arch>x86</arch>
-								</environment>
-								<environment>
-									<os>win32</os>
-									<ws>win32</ws>
 									<arch>x86_64</arch>
 								</environment>
 								<environment>
 									<os>macosx</os>
 									<ws>cocoa</ws>
 									<arch>x86_64</arch>
-								</environment>
-								<environment>
-									<os>linux</os>
-									<ws>gtk</ws>
-									<arch>x86</arch>
 								</environment>
 								<environment>
 									<os>linux</os>

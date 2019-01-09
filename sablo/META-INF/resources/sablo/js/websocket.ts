@@ -1274,6 +1274,7 @@ webSocketModule.factory('$webSocket',
 	var showCounter = 0;
 	var timeoutHidePromise = null;
 	var timeoutShowPromise = null;
+	var isDefaultShowing = false;
 	return {
 		showLoading: function() {
 			showCounter++;
@@ -1285,7 +1286,10 @@ webSocketModule.factory('$webSocket',
 					timeoutShowPromise = $timeout(function(){
 						timeoutShowPromise = null;
 						if (custom) custom.showLoading();
-						else $($window.document.body).addClass("sablowaitcursor");
+						else {
+							$($window.document.body).addClass("sablowaitcursor");
+							isDefaultShowing = true;
+						}
 					},400)
 				}
 			}
@@ -1301,13 +1305,19 @@ webSocketModule.factory('$webSocket',
 					}
 					else {
 						if (custom) custom.hideLoading()
-						else $($window.document.body).removeClass("sablowaitcursor");
+						else {
+							$($window.document.body).removeClass("sablowaitcursor");
+							isDefaultShowing = false;
+						}
 					}
 				},50);
 			}
 		},
 		isShowing: function() {
 			return showCounter > 0;
+		},
+		isDefaultShowing: function() {
+			return isDefaultShowing;
 		}
 	};
 }).factory("$sabloDeferHelper", function($timeout, $log, $sabloTestability, $q) {
@@ -1369,7 +1379,7 @@ webSocketModule.factory('$webSocket',
 	};
 });
 
-angular.module("webSocketModule").factory("$sabloTestability", ["$window",function($window) {
+angular.module("webSocketModule").factory("$sabloTestability", ["$window","$log",function($window, $log) {
 	var blockEventLoop = 0;
 	var deferredEvents;
 	var deferredLength = 0;
@@ -1399,7 +1409,8 @@ angular.module("webSocketModule").factory("$sabloTestability", ["$window",functi
 			}
 		},
 		decreaseEventLoop: function() {
-			deferredLength--;
+			if (deferredLength > 0) deferredLength--;
+			else $log.warn("decrease event loop called without an increase")
 		},
 		block: function(block) {
 			if (block) blockEventLoop++;

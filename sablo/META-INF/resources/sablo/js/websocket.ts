@@ -1274,6 +1274,7 @@ webSocketModule.factory('$webSocket',
 	var showCounter = 0;
 	var timeoutHidePromise = null;
 	var timeoutShowPromise = null;
+	var isDefaultShowing = false;
 	return {
 		showLoading: function() {
 			showCounter++;
@@ -1285,7 +1286,10 @@ webSocketModule.factory('$webSocket',
 					timeoutShowPromise = $timeout(function(){
 						timeoutShowPromise = null;
 						if (custom) custom.showLoading();
-						else $($window.document.body).addClass("sablowaitcursor");
+						else {
+							$($window.document.body).addClass("sablowaitcursor");
+							isDefaultShowing = true;
+						}
 					},400)
 				}
 			}
@@ -1301,13 +1305,19 @@ webSocketModule.factory('$webSocket',
 					}
 					else {
 						if (custom) custom.hideLoading()
-						else $($window.document.body).removeClass("sablowaitcursor");
+						else {
+							$($window.document.body).removeClass("sablowaitcursor");
+							isDefaultShowing = false;
+						}
 					}
 				},50);
 			}
 		},
 		isShowing: function() {
 			return showCounter > 0;
+		},
+		isDefaultShowing: function() {
+			return isDefaultShowing;
 		}
 	};
 }).factory("$sabloDeferHelper", function($timeout, $log, $sabloTestability, $q) {

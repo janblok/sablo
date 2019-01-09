@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import javax.websocket.CloseReason;
@@ -216,6 +217,19 @@ public class WebsocketSessionManager
 		closeAllSessions();
 		pingEndpointsThread.interrupt();
 		expiredThreadPool.shutdownNow();
+		long time = System.currentTimeMillis();
+		try
+		{
+			if (!expiredThreadPool.awaitTermination(30, TimeUnit.SECONDS))
+			{
+				log.warn("After 30 seconds the expired session thread pool still did not finish");
+			}
+		}
+		catch (InterruptedException e)
+		{
+			log.warn("Waiting for the expired session thread pool to terminate", e);
+		}
+		log.warn("Expired threadpool waiting for :  " + (System.currentTimeMillis() - time));
 	}
 
 	private static void closeSessions(boolean checkForWindowActivity)

@@ -131,28 +131,32 @@ public class BaseWindow implements IWindow
 	@Override
 	public void setEndpoint(IWebsocketEndpoint endpoint)
 	{
-		synchronized (this)
+		if (endpoint == null)
 		{
-			if (endpoint == null)
+			// endpoint was closed, only clear if this was the last one
+			synchronized (this)
 			{
-				// endpoint was closed, only clear if this was the last one
 				if (--endpointRefcount == 0)
 				{
 					this.endpoint = null;
 				}
 			}
-			else
+		}
+		else
+		{
+			IWebsocketEndpoint current = getEndpoint();
+			if (current != null)
 			{
-				if (this.endpoint != null)
+				try
 				{
-					try
-					{
-						this.endpoint.sendText("p");
-					}
-					catch (IOException e)
-					{
-					}
+					current.sendText("p");
 				}
+				catch (IOException e)
+				{
+				}
+			}
+			synchronized (this)
+			{
 				endpointRefcount++;
 				this.endpoint = endpoint;
 			}

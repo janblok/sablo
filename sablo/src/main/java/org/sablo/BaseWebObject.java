@@ -93,21 +93,13 @@ public abstract class BaseWebObject implements IWebObjectContext
 	protected final Map<String, Object> defaultPropertiesUnwrapped = new HashMap<>();
 
 	/**
-	 * Keeps track of properties that have changed content.
-	 */
-	private final Set<String> propertiesWithChangedContent = new HashSet<>(3);
-
-	/**
-	 * Keeps track of properties that have changed by reference (a different (!=) value was assigned to them).
-	 */
-	private final Set<String> propertiesChangedByRef = new HashSet<>(3);
-
-	/**
 	 * the event handlers
 	 */
 	private final ConcurrentMap<String, IEventHandler> eventHandlers = new ConcurrentHashMap<String, IEventHandler>();
 
+	private final Changes changes;
 	private PropertyChangeSupport propertyChangeSupport;
+	private IDirtyPropertyListener dirtyPropertyListener;
 
 	protected final String name;
 
@@ -128,6 +120,8 @@ public abstract class BaseWebObject implements IWebObjectContext
 
 		this.name = name;
 		this.specification = specification;
+		changes = new Changes();
+
 		if (specification == null) throw new IllegalStateException("Cannot work without specification");
 	}
 
@@ -147,6 +141,166 @@ public abstract class BaseWebObject implements IWebObjectContext
 	public WebObjectSpecification getSpecification()
 	{
 		return specification;
+	}
+
+	/**
+	 * @param dirtyPropertyListener set the listeners that is called when {@link WebFormComponent#flagPropertyAsDirty(String) is called
+	 */
+	public void setDirtyPropertyListener(IDirtyPropertyListener dirtyPropertyListener)
+	{
+		this.dirtyPropertyListener = dirtyPropertyListener;
+	}
+
+	public class Changes
+	{
+		/**
+		 * Keeps track of properties that have changed content.
+		 */
+		private final Set<String> propertiesWithChangedContent = new HashSet<>(3);
+
+		/**
+		 * Keeps track of properties that have changed by reference (a different (!=) value was assigned to them).
+		 */
+		private final Set<String> propertiesChangedByRef = new HashSet<>(3);
+
+		private boolean shouldNotReceiveChanges = false;
+
+		private void setShouldNotReceiveChanges(boolean shouldNotReceiveChanges)
+		{
+			this.shouldNotReceiveChanges = shouldNotReceiveChanges;
+		}
+
+		private void clearChanges()
+		{
+			propertiesChangedByRef.clear();
+			propertiesWithChangedContent.clear();
+		}
+
+		public boolean clearChangedStatusForProperty(String key)
+		{
+			boolean somethingHappened = propertiesChangedByRef.remove(key); // whether or not we will add or remove it from a changes map (if it is already there or can't be removed, it will be false)
+			// remove it from any of the 2 changes map (it can't be in both)
+			somethingHappened = propertiesWithChangedContent.remove(key) || somethingHappened;
+
+			if (somethingHappened && dirtyPropertyListener != null) dirtyPropertyListener.propertyFlaggedAsDirty(key, false, false);
+
+			return somethingHappened;
+		}
+
+		private void checkIfChangeCameInWhenItShouldnt()
+		{
+			if (shouldNotReceiveChanges)
+			{
+				if (log.isDebugEnabled()) log.debug(
+					"A new change was registered while previous changes are being handled; probably one property's toJSON ends up marking another property as dirty. This should be avoided. See associated stack trace", //$NON-NLS-1$
+					new RuntimeException("Stack trace")); //$NON-NLS-1$
+			}
+		}
+
+		private boolean markElementContentsUpdated(String key)
+		{
+			checkIfChangeCameInWhenItShouldnt(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
+
+			boolean somethingHappened = false;
+			if (!changes.propertiesWithChangedContent.contains(key) && !changes.propertiesChangedByRef.contains(key))
+			{
+				somethingHappened = changes.propertiesWithChangedContent.add(key);
+			} // else don't add it in the changes map as it's already in the ref. changed map; it will be fully sent to client
+
+			if (somethingHappened && dirtyPropertyListener != null) dirtyPropertyListener.propertyFlaggedAsDirty(key, true, true);
+			return somethingHappened;
+		}
+
+		public boolean markElementChangedByRef(String key)
+		{
+			checkIfChangeCameInWhenItShouldnt(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
+
+			boolean somethingHappened = changes.propertiesChangedByRef.add(key); // whether or not we will add it to a changes map (if it is already there or can't be removed, it will be false)
+			if (somethingHappened) changes.propertiesWithChangedContent.remove(key); // we just added it to be sent fully; remove it from contents changed so that it will not be sent twice
+
+			if (somethingHappened && dirtyPropertyListener != null) dirtyPropertyListener.propertyFlaggedAsDirty(key, true, false);
+
+			return somethingHappened;
+		}
+
+		public boolean isChanged()
+		{
+			for (String propertyName : propertiesWithChangedContent)
+			{
+				if (isVisible(propertyName) || isVisibilityProperty(propertyName))
+				{
+					return true;
+				}
+			}
+			for (String propertyName : propertiesChangedByRef)
+			{
+				if (isVisible(propertyName) || isVisibilityProperty(propertyName))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		/**
+		 * Get the changes of this component, clear changes. It does not write them to JSON just returns the java content + prop. types + change types.
+		 * When the component is not visible, only the visibility-properties are returned and cleared from the changes.
+		 */
+		public TypedDataWithChangeInfo getAndClearChanges()
+		{
+			if (propertiesChangedByRef.isEmpty() && propertiesWithChangedContent.isEmpty())
+			{
+				return EMPTY_PROPERTIES_WITH_CHANGE_INFO;
+			}
+
+			Map<String, Object> changesMap = null;
+			PropertyDescription changeTypes = null;
+			Set<String> propertiesWithContentUpdateOnly = null;
+
+			// add all changes to an array to iterate on all
+			int idxStartChangedByRef = propertiesWithChangedContent.size();
+			ArrayList<String> allChangedPropertyNames = new ArrayList<String>(idxStartChangedByRef + propertiesChangedByRef.size());
+			allChangedPropertyNames.addAll(propertiesWithChangedContent);
+			allChangedPropertyNames.addAll(propertiesChangedByRef);
+
+			for (int i = 0; i < allChangedPropertyNames.size(); i++)
+			{
+				String propertyName = allChangedPropertyNames.get(i);
+				if (isVisible(propertyName) || isVisibilityProperty(propertyName))
+				{
+					clearChangedStatusForProperty(propertyName);
+					if (changesMap == null)
+					{
+						changesMap = new HashMap<>();
+					}
+					changesMap.put(propertyName, properties.get(propertyName));
+					PropertyDescription t = specification.getProperty(propertyName);
+					if (t != null)
+					{
+						if (changeTypes == null)
+						{
+							changeTypes = AggregatedPropertyType.newAggregatedProperty();
+						}
+						changeTypes.putProperty(propertyName, t);
+					}
+					if (i < idxStartChangedByRef)
+					{
+						// this is a property with content updates only
+						if (propertiesWithContentUpdateOnly == null) propertiesWithContentUpdateOnly = new HashSet<>();
+						propertiesWithContentUpdateOnly.add(propertyName);
+					}
+				}
+			}
+
+			if (changesMap == null)
+			{
+				return EMPTY_PROPERTIES_WITH_CHANGE_INFO;
+			}
+
+			return new TypedDataWithChangeInfo(changesMap, changeTypes, propertiesWithContentUpdateOnly);
+		}
+
 	}
 
 	/**
@@ -378,85 +532,6 @@ public abstract class BaseWebObject implements IWebObjectContext
 		return object;
 	}
 
-	public boolean hasChanges()
-	{
-		for (String propertyName : propertiesWithChangedContent)
-		{
-			if (isVisible(propertyName) || isVisibilityProperty(propertyName))
-			{
-				return true;
-			}
-		}
-		for (String propertyName : propertiesChangedByRef)
-		{
-			if (isVisible(propertyName) || isVisibilityProperty(propertyName))
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Get the changes of this component, clear changes.
-	 * When the component is not visible, only the visibility-properties are returned and cleared from the changes.
-	 *
-	 */
-	public TypedDataWithChangeInfo getAndClearChanges()
-	{
-		if (propertiesChangedByRef.isEmpty() && propertiesWithChangedContent.isEmpty())
-		{
-			return EMPTY_PROPERTIES_WITH_CHANGE_INFO;
-		}
-
-		Map<String, Object> changes = null;
-		PropertyDescription changeTypes = null;
-		Set<String> propertiesWithContentUpdateOnly = null;
-
-		// add all changes to an array to iterate on all
-		int idxStartChangedByRef = propertiesWithChangedContent.size();
-		ArrayList<String> allChangedPropertyNames = new ArrayList<String>(idxStartChangedByRef + propertiesChangedByRef.size());
-		allChangedPropertyNames.addAll(propertiesWithChangedContent);
-		allChangedPropertyNames.addAll(propertiesChangedByRef);
-
-		for (int i = 0; i < allChangedPropertyNames.size(); i++)
-		{
-			String propertyName = allChangedPropertyNames.get(i);
-			if (isVisible(propertyName) || isVisibilityProperty(propertyName))
-			{
-				clearChangedStatusForProperty(propertyName);
-				if (changes == null)
-				{
-					changes = new HashMap<>();
-				}
-				changes.put(propertyName, properties.get(propertyName));
-				PropertyDescription t = specification.getProperty(propertyName);
-				if (t != null)
-				{
-					if (changeTypes == null)
-					{
-						changeTypes = AggregatedPropertyType.newAggregatedProperty();
-					}
-					changeTypes.putProperty(propertyName, t);
-				}
-				if (i < idxStartChangedByRef)
-				{
-					// this is a property with content updates only
-					if (propertiesWithContentUpdateOnly == null) propertiesWithContentUpdateOnly = new HashSet<>();
-					propertiesWithContentUpdateOnly.add(propertyName);
-				}
-			}
-		}
-
-		if (changes == null)
-		{
-			return EMPTY_PROPERTIES_WITH_CHANGE_INFO;
-		}
-
-		return new TypedDataWithChangeInfo(changes, changeTypes, propertiesWithContentUpdateOnly);
-	}
-
 	/**
 	 * For testing only.
 	 *
@@ -482,15 +557,6 @@ public abstract class BaseWebObject implements IWebObjectContext
 		}
 
 		return new TypedData<Map<String, Object>>(Collections.unmodifiableMap(properties), propertyTypes.hasChildProperties() ? propertyTypes : null);
-	}
-
-	/**
-	 * Don't call this method unless all changes are already sent to client!
-	 */
-	public void clearChanges()
-	{
-		propertiesChangedByRef.clear();
-		propertiesWithChangedContent.clear();
 	}
 
 	/**
@@ -831,30 +897,39 @@ public abstract class BaseWebObject implements IWebObjectContext
 
 	public boolean markPropertyAsChangedByRef(String key)
 	{
-		boolean somethingHappened = propertiesChangedByRef.add(key); // whether or not we will add it to a changes map (if it is already there or can't be removed, it will be false)
-		if (somethingHappened) propertiesWithChangedContent.remove(key); // we just added it to be sent fully; remove it from contents changed so that it will not be sent twice
+		return changes.markElementChangedByRef(key);
+	}
 
-		return somethingHappened;
+	protected boolean markPropertyContentsUpdated(String key)
+	{
+		return changes.markElementContentsUpdated(key);
 	}
 
 	public boolean clearChangedStatusForProperty(String key)
 	{
-		boolean somethingHappened = propertiesChangedByRef.remove(key); // whether or not we will add or remove it from a changes map (if it is already there or can't be removed, it will be false)
-		// remove it from any of the 2 changes map (it can't be in both)
-		somethingHappened = propertiesWithChangedContent.remove(key) || somethingHappened;
-
-		return somethingHappened;
+		return changes.clearChangedStatusForProperty(key);
 	}
 
-	public boolean markPropertyContentsUpdated(String key)
+	public boolean hasChanges()
 	{
-		boolean somethingHappened = false;
-		if (!propertiesWithChangedContent.contains(key) && !propertiesChangedByRef.contains(key))
-		{
-			somethingHappened = propertiesWithChangedContent.add(key);
-		} // else don't add it in the changes map as it's already in the ref. changed map; it will be fully sent to client
+		return changes.isChanged();
+	}
 
-		return somethingHappened;
+	/**
+	 * Get the changes of this component, clear changes. It does not write them to JSON just returns the java content + prop. types + change types.
+	 * When the component is not visible, only the visibility-properties are returned and cleared from the changes.
+	 */
+	public TypedDataWithChangeInfo getAndClearChanges()
+	{
+		return changes.getAndClearChanges();
+	}
+
+	/**
+	 * Don't call this method unless all changes are already sent to client!
+	 */
+	public void clearChanges()
+	{
+		changes.clearChanges();
 	}
 
 	protected boolean writeComponentProperties(JSONWriter w, IToJSONConverter<IBrowserConverterContext> converter, String nodeName,
@@ -991,11 +1066,11 @@ public abstract class BaseWebObject implements IWebObjectContext
 		propertyChangeSupport = null;
 	}
 
-	public boolean writeOwnComponentChanges(JSONWriter w, String keyInParent, String nodeName, IToJSONConverter<IBrowserConverterContext> converter,
+	public boolean writeOwnChanges(JSONWriter w, String keyInParent, String nodeName, IToJSONConverter<IBrowserConverterContext> converter,
 		DataConversion clientDataConversions) throws JSONException
 	{
-		TypedDataWithChangeInfo changes = getAndClearChanges();
-		if (changes.content.isEmpty())
+		TypedDataWithChangeInfo changesToWrite = changes.getAndClearChanges();
+		if (changesToWrite.content.isEmpty())
 		{
 			return false;
 		}
@@ -1008,7 +1083,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 		w.key(nodeName).object();
 		clientDataConversions.pushNode(nodeName);
 		// converter here is always ChangesToJSONConverter except for some unit tests
-		writeProperties(converter, FullValueToJSONConverter.INSTANCE, w, changes, clientDataConversions);
+		writeProperties(converter, FullValueToJSONConverter.INSTANCE, w, changesToWrite, clientDataConversions);
 		clientDataConversions.popNode();
 		w.endObject();
 
@@ -1022,6 +1097,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 		IToJSONConverter<IBrowserConverterContext> converterForSendingFullValue, JSONWriter w, TypedData<Map<String, Object>> propertiesToWrite,
 		DataConversion clientDataConversions) throws IllegalArgumentException, JSONException
 	{
+		changes.setShouldNotReceiveChanges(true);
 		TypedDataWithChangeInfo propertiesToWriteWithChangeInfo = (propertiesToWrite instanceof TypedDataWithChangeInfo)
 			? (TypedDataWithChangeInfo)propertiesToWrite : null;
 
@@ -1048,6 +1124,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 
 			clientDataConversions.popNode();
 		}
+		changes.setShouldNotReceiveChanges(false);
 	}
 
 	public boolean isEnabled()

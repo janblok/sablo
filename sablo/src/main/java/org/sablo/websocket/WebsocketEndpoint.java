@@ -529,7 +529,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 	 * @throws TimeoutException see {@link IEventDispatcher#suspend(Object, int, long)} for more details.
 	 * @throws CancellationException see {@link IEventDispatcher#suspend(Object, int, long)} for more details.
 	 */
-	public Object waitResponse(Integer messageId, String text, boolean blockEventProcessing) throws IOException, CancellationException, TimeoutException
+	public Object waitResponse(Integer messageId, boolean blockEventProcessing) throws IOException, CancellationException, TimeoutException
 	{
 		List<Object> ret = new ArrayList<>(2); // size is 0 now; 1st element will be return value (should always be set by callback even if it's null); second is only set when an error happened client-side
 		pendingMessages.put(messageId, ret);

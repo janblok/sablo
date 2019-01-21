@@ -87,7 +87,7 @@ public interface IWebsocketEndpoint
 	 * @throws TimeoutException see {@link IEventDispatcher#suspend(Object, int, long)} for more details.
 	 * @throws CancellationException see {@link IEventDispatcher#suspend(Object, int, long)} for more details.
 	 */
-	Object waitResponse(Integer messageId, String text, boolean blockEventProcessing) throws IOException, CancellationException, TimeoutException;
+	Object waitResponse(Integer messageId, boolean blockEventProcessing) throws IOException, CancellationException, TimeoutException;
 
 
 }

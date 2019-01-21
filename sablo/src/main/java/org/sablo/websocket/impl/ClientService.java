@@ -18,6 +18,7 @@ package org.sablo.websocket.impl;
 import java.io.IOException;
 
 import org.json.JSONException;
+import org.json.JSONStringer;
 import org.json.JSONWriter;
 import org.sablo.BaseWebObject;
 import org.sablo.specification.PropertyDescription;
@@ -94,6 +95,13 @@ public class ClientService extends BaseWebObject implements IClientService
 				}
 
 				return false;
+			}
+
+			@Override
+			public boolean checkForAndWriteAnyUnexpectedRemainingChanges(JSONStringer w, String keyInParent,
+				IToJSONConverter<IBrowserConverterContext> converter, DataConversion clientDataConversions)
+			{
+				return writeJSONContent(w, keyInParent, converter, clientDataConversions);
 			}
 		}, apiFunction != null ? apiFunction.getBlockEventProcessing() : true);
 

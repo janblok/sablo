@@ -211,7 +211,8 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 											returnValueAdjustedIncommingValueForKey);
 										previousChangeAwareMap.putInWrappedBaseList(key, newWrappedEl, false);
 
-										if (returnValueAdjustedIncommingValueForKey.value.booleanValue()) previousChangeAwareMap.markElementChangedByRef(key); // if for example type is INTEGER and we got 3.3 from client it will probably be converted to 3 and it needs to be resent to client
+										if (returnValueAdjustedIncommingValueForKey.value.booleanValue())
+											previousChangeAwareMap.getChangeSetter().markElementChangedByRef(key); // if for example type is INTEGER and we got 3.3 from client it will probably be converted to 3 and it needs to be resent to client
 									}
 									else
 									{
@@ -227,7 +228,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 										"Cannot set property '" + key + "' of custom JSON Object as it's type is undefined. Update JSON: " + newJSONValue);
 								}
 							}
-							if (someUpdateAccessDenied) previousChangeAwareMap.markAllChanged();
+							if (someUpdateAccessDenied) previousChangeAwareMap.getChangeSetter().markAllChanged();
 						}
 						return previousChangeAwareMap;
 					}
@@ -238,7 +239,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 							log.error("Property (" + pd +
 								") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full custom object value serverside. Denying and attempting to send back full value! Update JSON: " +
 								newJSONValue);
-							if (previousChangeAwareMap != null) previousChangeAwareMap.markAllChanged();
+							if (previousChangeAwareMap != null) previousChangeAwareMap.getChangeSetter().markAllChanged();
 							return previousChangeAwareMap;
 						}
 
@@ -272,7 +273,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 				log.error("Property (" + pd +
 					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full custom object value serverside to null. Denying and attempting to send back full value! Update JSON: " +
 					newJSONValue);
-				if (previousChangeAwareMap != null) previousChangeAwareMap.markAllChanged();
+				if (previousChangeAwareMap != null) previousChangeAwareMap.getChangeSetter().markAllChanged();
 				return previousChangeAwareMap;
 			}
 
@@ -287,14 +288,14 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 				log.error("Property (" + pd +
 					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full custom object value serverside (uoc). Denying and attempting to send back full value! Update JSON: " +
 					newJSONValue);
-				if (previousChangeAwareMap != null) previousChangeAwareMap.markAllChanged();
+				if (previousChangeAwareMap != null) previousChangeAwareMap.getChangeSetter().markAllChanged();
 				return previousChangeAwareMap;
 			}
 
 			// this can happen if the property was undefined before (so not even aware of type client side) and it was assigned a complete object value client side;
 			// in this case we must update server value and send a request back to client containing the type and letting it know that it must start watching the new value (for granular updates)
 			ChangeAwareMap<ET, WT> newChangeAwareMap = fullValueReplaceFromBrowser(previousChangeAwareMap, pd, dataConverterContext, (JSONObject)newJSONValue);
-			newChangeAwareMap.markMustSendTypeToClient();
+			newChangeAwareMap.getChangeSetter().markMustSendTypeToClient();
 			return newChangeAwareMap;
 		}
 		else
@@ -362,7 +363,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 			getCustomJSONTypeDefinition());
 
 		for (String key : adjustedNewValueKeys)
-			retVal.markElementChangedByRef(key);
+			retVal.getChangeSetter().markElementChangedByRef(key);
 
 		return retVal;
 	}
@@ -388,10 +389,11 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		if (changeAwareMap != null)
 		{
 			if (conversionMarkers != null) conversionMarkers.convert(CustomJSONObjectType.TYPE_NAME); // so that the client knows it must use the custom client side JS for what JSON it gets
+			ChangeAwareMap<ET, WT>.Changes changes = changeAwareMap.getChangesImmutableAndPrepareForReset();
 
 			Map<String, WT> wrappedBaseMap = changeAwareMap.getWrappedBaseMapForReadOnly();
 			writer.object();
-			if (changeAwareMap.mustSendAll() || fullValue)
+			if (changes.mustSendAll() || fullValue)
 			{
 				// send all (currently we don't support granular updates for remove but we could in the future)
 				DataConversion objConversionMarkers = new DataConversion();
@@ -421,15 +423,15 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 			}
 			else
 			{
-				Set<String> keysWithUpdates = changeAwareMap.getKeysWithUpdates();
-				Set<String> keysChangedByRef = changeAwareMap.getKeysChangedByRef();
+				Set<String> keysWithUpdates = changes.getKeysWithUpdates();
+				Set<String> keysChangedByRef = changes.getKeysChangedByRef();
 
 				if (keysWithUpdates.size() > 0 || keysChangedByRef.size() > 0)
 				{
 
 					// else write changed indexes / granular update:
 					writer.key(CONTENT_VERSION).value(changeAwareMap.getListContentVersion());
-					if (changeAwareMap.mustSendTypeToClient())
+					if (changes.mustSendTypeToClient())
 					{
 						// updates + mustSendTypeToClient can happen if child elements are also similar - and need to instrument their values client-side when set by reference/completely from browser
 						writer.key(INITIALIZE).value(true);
@@ -453,7 +455,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 						writer.endObject();
 					}
 				}
-				else if (changeAwareMap.mustSendTypeToClient())
+				else if (changes.mustSendTypeToClient())
 				{
 					writer.key(CONTENT_VERSION).value(changeAwareMap.getListContentVersion());
 					writer.key(INITIALIZE).value(true);
@@ -465,7 +467,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 			}
 
 			writer.endObject();
-			changeAwareMap.clearChanges();
+			changes.doneHandling();
 		}
 		else
 		{

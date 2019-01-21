@@ -58,16 +58,11 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	protected IChangeListener changeMonitor;
 	protected IWebObjectContext webObjectContext;
 
-	protected Set<String> keysWithUpdates = new HashSet<String>();
-	protected Set<String> keysChangedByRef = new HashSet<String>();
-	protected boolean allChanged;
-
-	protected boolean mustSendTypeToClient;
-
 	protected EntrySet entrySet;
 
 	private CustomObjectContext<ET, WT> componentOrServiceExtension;
 	private PropertyDescription customObjectPD;
+	private ChangeAwareMap<ET, WT>.Changes changes;
 
 	public ChangeAwareMap(Map<String, ET> baseMap, CustomObjectContext<ET, WT> componentOrServiceExtension, PropertyDescription customObjectPD)
 	{
@@ -81,6 +76,8 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 
 		this.baseMap = baseMap;
 		this.version = initialVersion;
+
+		this.changes = new Changes();
 
 		if (customObjectContext != null) customObjectContext.setPropertyValues(this);
 	}
@@ -97,34 +94,156 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	}
 
 	/**
-	 * You should not change the contents of the returned Set.
+	 * Gets the current changes (in immutable mode). PLEASE MAKE SURE TO call {@link Changes#doneHandling()} once you are done handling the changes and will not longer use the returned reference.<br/><br/>
+	 * The idea is that if change aware map receives new updates while the changes are in immutable mode (so before doneHandling is called which means someone is still reading/iterating on them in toJSON probably),
+	 * the changes object used by the map will switch to another reference to keep what this method returns immutable; but in order to not recreate changes all the time, once {@link Changes#doneHandling()} will
+	 * be called, changes object will exit "immutable mode" and will be cleared/prepared for reuse.
+	 *
+	 * @return the current changes.
 	 */
-	public Set<String> getKeysWithUpdates()
+	public ChangeAwareMap<ET, WT>.Changes getChangesImmutableAndPrepareForReset()
 	{
-		return keysWithUpdates;
+		// mark 'changes' as immutable until doneHandling() will get called on it
+		// if getChangesImmutableAndPrepareForReset is called twice without Changes.doneHandling() getting called on reference
+		// returned the first time before the second call (so changes is already in immutable mode) then the "changes" ref will get switched to a new blank reference in call below
+		changes.startImmutableMode();
+		return changes;
 	}
 
-	public Set<String> getKeysChangedByRef()
+	public IChangeSetter getChangeSetter()
 	{
-		return keysChangedByRef;
+		return changes;
 	}
 
-	public boolean mustSendTypeToClient()
+	/**
+	 * DO NOT CALL THIS METHOD when code is running inside a toJSON (writing server-to-client property changes/values). Use {@link #getChangesImmutableAndPrepareForReset()} instead there.</br>
+	 * This methods just gives a way to check changes in tests or whenever it is helpful to see what changed outside of a toJSON (so current running stack should not be in a toJSON).<br/><br/>
+	 *
+	 * It is likely that this only needs to be called from unit tests...
+	 *
+	 * @deprecated deprecated just to make you read the javadoc and avoid using this method where you should not
+	 */
+	@Deprecated
+	public ChangeAwareMap<ET, WT>.Changes getChanges()
 	{
-		return mustSendTypeToClient;
+		return changes;
 	}
 
-	public boolean mustSendAll()
+	public static interface IChangeSetter
 	{
-		return allChanged;
+		public void markMustSendTypeToClient();
+
+		public void markElementChangedByRef(String key);
+
+		public void markAllChanged();
 	}
 
-	public void clearChanges()
+	public class Changes implements IChangeSetter
 	{
-		allChanged = false;
-		mustSendTypeToClient = false;
-		keysWithUpdates.clear();
-		keysChangedByRef.clear();
+		private final Set<String> keysWithUpdates = new HashSet<String>();
+		private final Set<String> keysChangedByRef = new HashSet<String>();
+		private boolean allChanged;
+		private boolean mustSendTypeToClient;
+
+		private boolean immutableMode = false;
+
+		private void startImmutableMode()
+		{
+			if (immutableMode) changes = new Changes(); // should never happen that it is already immutable if doneHandling() is used properly
+			changes.immutableMode = true;
+		}
+
+		public void doneHandling()
+		{
+			immutableMode = false;
+			clearChanges();
+		}
+
+		private void clearChanges()
+		{
+			allChanged = false;
+			mustSendTypeToClient = false;
+			keysWithUpdates.clear();
+			keysChangedByRef.clear();
+		}
+
+		public Set<String> getKeysWithUpdates()
+		{
+			return keysWithUpdates;
+		}
+
+		public Set<String> getKeysChangedByRef()
+		{
+			return keysChangedByRef;
+		}
+
+		public boolean mustSendTypeToClient()
+		{
+			return mustSendTypeToClient;
+		}
+
+		public boolean mustSendAll()
+		{
+			return allChanged;
+		}
+
+		private void changeInstanceIfCurrentlyImmutable()
+		{
+			if (immutableMode)
+			{
+				if (CustomJSONPropertyType.log.isDebugEnabled()) CustomJSONPropertyType.log.debug(
+					"A new change was registered while previous changes are being handled; probably one property's toJSON ends up marking another property as dirty. This should be avoided. See associated stack trace", //$NON-NLS-1$
+					new RuntimeException("Stack trace")); //$NON-NLS-1$
+				changes = new Changes();
+			}
+		}
+
+		public void markMustSendTypeToClient()
+		{
+			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
+
+			boolean oldMustSendTypeToClient = changes.mustSendTypeToClient;
+			changes.mustSendTypeToClient = true;
+			if (changeMonitor != null && changes.keysWithUpdates.size() == 0 && changes.keysChangedByRef.size() == 0 && !changes.allChanged &&
+				!oldMustSendTypeToClient) changeMonitor.valueChanged();
+		}
+
+		private void markElementContentsUpdated(String key)
+		{
+			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
+
+			// add it only if it is not already changed by ref - in which case it will be sent wholly anyway
+			if (changeMonitor != null && !changes.keysChangedByRef.contains(key) && changes.keysWithUpdates.add(key) && changes.keysChangedByRef.size() == 0 &&
+				!changes.allChanged && !changes.mustSendTypeToClient) changeMonitor.valueChanged();
+		}
+
+		public void markElementChangedByRef(String key)
+		{
+			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
+
+			if (changes.keysChangedByRef.add(key))
+			{
+				if (changeMonitor != null && changes.keysWithUpdates.size() == 0 && !changes.allChanged && !changes.mustSendTypeToClient)
+					changeMonitor.valueChanged();
+				else changes.keysWithUpdates.remove(key); // if it was in 'keysWithUpdates' already it did change content previously but now it changed completely by ref; don't send it twice to client in changes
+			}
+		}
+
+		public void markAllChanged()
+		{
+			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
+
+			boolean alreadyCh = changes.allChanged;
+			changes.allChanged = true;
+			if (changeMonitor != null && !alreadyCh && changes.keysWithUpdates.size() == 0 && changes.keysChangedByRef.size() == 0 &&
+				!changes.mustSendTypeToClient) changeMonitor.valueChanged();
+		}
+
+		public boolean isChanged()
+		{
+			return (allChanged || mustSendTypeToClient || keysWithUpdates.size() > 0 || keysChangedByRef.size() > 0);
+		}
+
 	}
 
 	/**
@@ -168,7 +287,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 			if (componentOrServiceExtension != null) componentOrServiceExtension.triggerPropertyChange(key, tmp, value);
 			attachToBaseObjectIfNeeded(key, value);
 
-			if (markChanged) markElementChangedByRef(key);
+			if (markChanged) changes.markElementChangedByRef(key);
 		}
 
 		return tmp;
@@ -189,37 +308,6 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		return version;
 	}
 
-	protected void markMustSendTypeToClient()
-	{
-		boolean oldMustSendTypeToClient = mustSendTypeToClient;
-		mustSendTypeToClient = true;
-		if (keysWithUpdates.size() == 0 && keysChangedByRef.size() == 0 && !allChanged && !oldMustSendTypeToClient && changeMonitor != null)
-			changeMonitor.valueChanged();
-	}
-
-	protected void markElementContentsUpdated(String key)
-	{
-		// add it only if it is not already changed by ref - in which case it will be sent wholly anyway
-		if (!keysChangedByRef.contains(key) && keysWithUpdates.add(key) && keysChangedByRef.size() == 0 && !allChanged && !mustSendTypeToClient &&
-			changeMonitor != null) changeMonitor.valueChanged();
-	}
-
-	protected void markElementChangedByRef(String key)
-	{
-		if (keysChangedByRef.add(key))
-		{
-			if (keysWithUpdates.size() == 0 && !allChanged && !mustSendTypeToClient && changeMonitor != null) changeMonitor.valueChanged();
-			else keysWithUpdates.remove(key); // if it was in 'keysWithUpdates' already it did change content previously but now it changed completely by ref; don't send it twice to client in changes
-		}
-	}
-
-	public void markAllChanged()
-	{
-		boolean alreadyCh = allChanged;
-		allChanged = true;
-		if (!alreadyCh && keysWithUpdates.size() == 0 && keysChangedByRef.size() == 0 && !mustSendTypeToClient && changeMonitor != null)
-			changeMonitor.valueChanged();
-	}
 
 	protected void attachToBaseObjectIfNeeded(String key, WT el)
 	{
@@ -239,12 +327,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 			attachToBaseObject(key, wrappedBaseList.get(key));
 		}
 
-		if (isChanged()) changeMntr.valueChanged();
-	}
-
-	protected boolean isChanged()
-	{
-		return (allChanged || mustSendTypeToClient || keysWithUpdates.size() > 0 || keysChangedByRef.size() > 0);
+		if (changes.isChanged()) changeMntr.valueChanged();
 	}
 
 	// called whenever a new element was added or inserted into the array
@@ -273,7 +356,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		@Override
 		public void valueChanged()
 		{
-			markElementContentsUpdated(attachedToKey);
+			changes.markElementContentsUpdated(attachedToKey);
 		}
 
 	}
@@ -326,7 +409,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		{
 			detachIfNeeded(key, oldWrappedVal);
 			attachToBaseObjectIfNeeded(key, newWrappedValue);
-			markElementChangedByRef(key);
+			changes.markElementChangedByRef(key);
 		}
 		return tmp;
 	}
@@ -366,7 +449,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 				{
 					WT oldWrappedValue = getWrappedBaseMap().get(currentEl.getKey());
 					baseIterator.remove();
-					markAllChanged();
+					changes.markAllChanged();
 					detachIfNeeded(currentEl.getKey(), oldWrappedValue);
 				}
 
@@ -380,301 +463,6 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		}
 
 	}
-
-//	@Override
-//	public int size()
-//	{
-//		return baseList.size();
-//	}
-//
-//	@Override
-//	public boolean isEmpty()
-//	{
-//		return baseList.isEmpty();
-//	}
-//
-//	@Override
-//	public boolean contains(Object o)
-//	{
-//		return baseList.contains(o);
-//	}
-//
-//	@Override
-//	public Iterator<ET> iterator()
-//	{
-//		final Iterator<ET> it = baseList.iterator();
-//		return new Iterator<ET>()
-//		{
-//
-//			int i = -1;
-//
-//			@Override
-//			public boolean hasNext()
-//			{
-//				return it.hasNext();
-//			}
-//
-//			@Override
-//			public ET next()
-//			{
-//				i++;
-//				return it.next();
-//			}
-//
-//			@Override
-//			public void remove()
-//			{
-//				it.remove();
-//				detachIfNeeded(i, getWrappedBaseList().get(i), true);
-//				i--;
-//				markAllChanged();
-//			}
-//		};
-//	}
-//
-//	@Override
-//	public Object[] toArray()
-//	{
-//		return baseList.toArray();
-//	}
-//
-//	@Override
-//	public <T> T[] toArray(T[] a)
-//	{
-//		return baseList.toArray(a);
-//	}
-//
-//	@Override
-//	public boolean add(ET e)
-//	{
-//		boolean tmp = baseList.add(e);
-//		attachToBaseObjectIfNeeded(baseList.size() - 1, getWrappedBaseList().get(baseList.size() - 1), false);
-//		markAllChanged();
-//		return tmp;
-//	}
-//
-//	@Override
-//	public boolean remove(Object o)
-//	{
-//		int idx = baseList.indexOf(o);
-//		if (idx >= 0)
-//		{
-//			WT oldWrappedValue = getWrappedBaseList().get(idx);
-//			baseList.remove(idx);
-//			detachIfNeeded(idx, oldWrappedValue, true);
-//
-//			markAllChanged();
-//			return true;
-//		}
-//		return false;
-//	}
-//
-//	@Override
-//	public boolean containsAll(Collection< ? > c)
-//	{
-//		return baseList.containsAll(c);
-//	}
-//
-//	@Override
-//	public boolean addAll(Collection< ? extends ET> c)
-//	{
-//		if (c.size() > 0)
-//		{
-//			for (ET el : c)
-//				add(el);
-//			return true;
-//		}
-//		return false;
-//	}
-//
-//	@Override
-//	public boolean addAll(int index, Collection< ? extends ET> c)
-//	{
-//		if (c.size() > 0)
-//		{
-//			int j = index;
-//			for (ET el : c)
-//				add(j++, el);
-//			return true;
-//		}
-//		return false;
-//	}
-//
-//	@Override
-//	public boolean removeAll(Collection< ? > c)
-//	{
-//		boolean changed = false;
-//		for (Object o : c)
-//			changed = changed || remove(o);
-//
-//		return changed;
-//	}
-//
-//	@Override
-//	public boolean retainAll(Collection< ? > c)
-//	{
-//		int i;
-//		boolean changed = false;
-//		for (i = baseList.size() - 1; i >= 0; i--)
-//		{
-//			if (!c.contains(get(i)))
-//			{
-//				remove(i);
-//				changed = true;
-//			}
-//		}
-//		return changed;
-//	}
-//
-//	@Override
-//	public void clear()
-//	{
-//		int size = baseList.size();
-//		for (int i = size; i >= 0; i--)
-//			remove(i);
-//		if (size > 0) markAllChanged();
-//	}
-//
-//	@Override
-//	public ET get(int index)
-//	{
-//		return baseList.get(index);
-//	}
-//
-//	@Override
-//	public ET set(int index, ET element)
-//	{
-//		WT oldWV = getWrappedBaseList().get(index);
-//		ET tmp = baseList.set(index, element);
-//		detachIfNeeded(index, oldWV, false);
-//		attachToBaseObjectIfNeeded(index, getWrappedBaseList().get(index), false);
-//		markElementChanged(index);
-//		return tmp;
-//	}
-//
-//	@Override
-//	public void add(int index, ET element)
-//	{
-//		baseList.add(index, element);
-//		attachToBaseObjectIfNeeded(index, getWrappedBaseList().get(index), true);
-//		markAllChanged();
-//	}
-//
-//	@Override
-//	public ET remove(int index)
-//	{
-//		WT oldWV = getWrappedBaseList().get(index);
-//		ET tmp = baseList.remove(index);
-//		detachIfNeeded(index, oldWV, true);
-//		markAllChanged();
-//		return tmp;
-//	}
-//
-//	@Override
-//	public int indexOf(Object o)
-//	{
-//		return baseList.indexOf(o);
-//	}
-//
-//	@Override
-//	public int lastIndexOf(Object o)
-//	{
-//		return baseList.lastIndexOf(o);
-//	}
-//
-//	@Override
-//	public ListIterator<ET> listIterator()
-//	{
-//		return new ChangeAwareListIterator<ET>(baseList.listIterator());
-//	}
-//
-//	@Override
-//	public ListIterator<ET> listIterator(int index)
-//	{
-//		return new ChangeAwareListIterator<ET>(baseList.listIterator(index));
-//	}
-//
-//	@Override
-//	public List<ET> subList(int fromIndex, int toIndex)
-//	{
-//		return baseList.subList(fromIndex, toIndex);
-//	}
-//
-//	protected class ChangeAwareListIterator<ET> implements ListIterator<ET>
-//	{
-//
-//		protected final ListIterator<ET> it;
-//
-//		public ChangeAwareListIterator(ListIterator<ET> it)
-//		{
-//			this.it = it;
-//		}
-//
-//		@Override
-//		public boolean hasNext()
-//		{
-//			return it.hasNext();
-//		}
-//
-//		@Override
-//		public ET next()
-//		{
-//			return it.next();
-//		}
-//
-//		@Override
-//		public boolean hasPrevious()
-//		{
-//			return it.hasPrevious();
-//		}
-//
-//		@Override
-//		public ET previous()
-//		{
-//			return it.previous();
-//		}
-//
-//		@Override
-//		public int nextIndex()
-//		{
-//			return it.nextIndex();
-//		}
-//
-//		@Override
-//		public int previousIndex()
-//		{
-//			return it.previousIndex();
-//		}
-//
-//		@Override
-//		public void remove()
-//		{
-//			int i = it.previousIndex() + 1;
-//			it.remove();
-//			detachIfNeeded(i, getWrappedBaseList().get(i), true);
-//			markAllChanged();
-//		}
-//
-//		@Override
-//		public void set(ET e)
-//		{
-//			int i = it.previousIndex() + 1;
-//			WT oldWV = getWrappedBaseList().get(i);
-//			it.set(e);
-//			detachIfNeeded(i, oldWV, false);
-//			attachToBaseObjectIfNeeded(i, getWrappedBaseList().get(i), false);
-//			markElementChanged(i);
-//		}
-//
-//		@Override
-//		public void add(ET e)
-//		{
-//			int i = it.nextIndex();
-//			it.add(e);
-//			attachToBaseObjectIfNeeded(i, getWrappedBaseList().get(i), true);
-//			markAllChanged();
-//		}
-//	}
 
 	/**
 	 * If client sends updates for a version that was already changed on server, we might need to give the client the server's value again - to keep
@@ -691,7 +479,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		if (clientUpdateVersion >= lastResetDueToOutOfSyncVersion)
 		{
 			lastResetDueToOutOfSyncVersion = version + 1; // remember that we already corrected these differences for any previous version; so don't try to correct it again for previous versions in the future if updates still come for those
-			markAllChanged();
+			changes.markAllChanged();
 		}
 	}
 

@@ -134,7 +134,7 @@ public class JSONUtils
 		throws JSONException
 	{
 		JSONWriter writer = new JSONStringer().object();
-		if (component.writeOwnComponentChanges(writer, "comp", component.getName(), converter, dataConversion)) writer.endObject();
+		if (component.writeOwnChanges(writer, "comp", component.getName(), converter, dataConversion)) writer.endObject();
 		return writer.endObject().toString();
 	}
 

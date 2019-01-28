@@ -121,7 +121,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		{
 			final IWindow win = window;
 
-			wsSession.init();
+			wsSession.init(session.getRequestParameterMap());
 
 			// send initial setup to client in separate thread in order to release current connection
 			wsSession.getEventDispatcher().addEvent(new Runnable()

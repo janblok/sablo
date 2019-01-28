@@ -1138,13 +1138,10 @@ public class BaseWindow implements IWindow
 	protected void addDelayedOrAsyncComponentCall(final WebObjectFunctionDefinition apiFunction, Map<String, Object> call, WebComponent component,
 		boolean isDelayedCall)
 	{
-		if (isDelayedCall)
-		{
-			// just keep the needed information about this delayed call in there (not to be sent to client necessarily, but to be able to check if the form is available on client or not)
-			call.put(API_SERVER_ONLY_KEY_COMPONENT, component);
-			call.put(API_SERVER_ONLY_KEY_FORM_CONTAINER, getFormContainer(component));
-			call.put(API_KEY_DELAY_UNTIL_FORM_LOADS, Boolean.valueOf(isDelayedCall));
-		}
+		// just keep the needed information about this delayed call in there (not to be sent to client necessarily, but to be able to check if the form is available on client or not)
+		call.put(API_SERVER_ONLY_KEY_COMPONENT, component);
+		call.put(API_SERVER_ONLY_KEY_FORM_CONTAINER, getFormContainer(component));
+		call.put(API_KEY_DELAY_UNTIL_FORM_LOADS, Boolean.valueOf(isDelayedCall));
 
 		if (apiFunction.shouldDiscardPreviouslyQueuedSimilarCalls())
 		{

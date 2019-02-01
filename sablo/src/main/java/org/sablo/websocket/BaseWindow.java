@@ -466,7 +466,7 @@ public class BaseWindow implements IWindow
 	 * Sends a message to the client/browser just like {@link #sendAsyncMessage(IToJSONWriter, IToJSONConverter)} does.
 	 * But afterwards it waits for a response and return value from the client.
 	 *
-	 * @param blockEventProcessing if true then the event processing will be blocked until we get the expected resonse from the browser/client (or until a timeout expires).
+	 * @param blockEventProcessing if true then the event processing will be blocked until we get the expected response from the browser/client (or until a timeout expires).
 	 * @return the value the client gave back.
 	 * @throws CancellationException if cancelled for some reason while waiting for response
 	 * @throws TimeoutException if it timed out while waiting for a response value. This can happen if blockEventProcessing == true.

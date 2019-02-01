@@ -38,7 +38,7 @@ public interface IWebsocketSession
 	 *
 	 * @throws Exception
 	 */
-	public abstract void init() throws Exception;
+	public abstract void init(Map<String, List<String>> requestParams) throws Exception;
 
 	/**
 	 * Returns the event dispatcher, that should be a separate thread that processes all the events.

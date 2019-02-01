@@ -55,44 +55,47 @@ public class ListTest
 		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
 		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
 
-		assertEquals(4, lst.addedIndexes.size());
+		ChangeAwareList<ChangeAwareMap<String, Object>, Object>.Changes ch = lst.getChangesImmutableAndPrepareForReset();
+		assertEquals(4, ch.getAddedIndexes().size());
 		assertTrue(changed[0]);
 
-		lst.clearChanges();
+		ch.doneHandling();
 		changed[0] = false;
 
-		assertEquals(0, lst.getIndexesChangedByRef().size());
-		assertEquals(0, lst.getIndexesWithContentUpdates().size());
+		assertEquals(0, ch.getIndexesChangedByRef().size());
+		assertEquals(0, ch.getIndexesWithContentUpdates().size());
 		lst.get(0).put("test", "test");
-		assertEquals(0, lst.getIndexesChangedByRef().size());
-		assertEquals(1, lst.getIndexesWithContentUpdates().size());
+		ch = lst.getChangesImmutableAndPrepareForReset();
+		assertEquals(0, ch.getIndexesChangedByRef().size());
+		assertEquals(1, ch.getIndexesWithContentUpdates().size());
 
-		assertEquals(new Integer(0), lst.getIndexesWithContentUpdates().toArray()[0]);
+		assertEquals(new Integer(0), ch.getIndexesWithContentUpdates().toArray()[0]);
 
-		lst.clearChanges();
+		ch.doneHandling();
 
 		lst.set(0, lst.get(1));
 		lst.set(1, lst.get(2));
 		lst.remove(2);
 		lst.get(1).put("test1", "test123");
 
-		assertEquals(2, lst.getIndexesChangedByRef().size());
-		assertEquals(0, lst.getIndexesWithContentUpdates().size());
-		assertEquals(new Integer(0), lst.getIndexesChangedByRef().toArray()[0]);
-		assertEquals(new Integer(1), lst.getIndexesChangedByRef().toArray()[1]);
+		ch = lst.getChangesImmutableAndPrepareForReset();
+		assertEquals(2, ch.getIndexesChangedByRef().size());
+		assertEquals(0, ch.getIndexesWithContentUpdates().size());
+		assertEquals(new Integer(0), ch.getIndexesChangedByRef().toArray()[0]);
+		assertEquals(new Integer(1), ch.getIndexesChangedByRef().toArray()[1]);
 
-		assertEquals(1, lst.removedIndexes.size());
-		assertEquals(new Integer(2), lst.removedIndexes.toArray()[0]);
-		assertTrue(lst.mustSendAll());
+		assertEquals(1, ch.getRemovedIndexes().size());
+		assertEquals(new Integer(2), ch.getRemovedIndexes().toArray()[0]);
+		assertTrue(ch.mustSendAll());
 
-		lst.clearChanges();
-		lst.get(1).clearChanges();
+		ch.doneHandling();
+		lst.get(1).getChangesImmutableAndPrepareForReset().doneHandling();
 
 		lst.get(1).put("test1", "test1");
-		assertEquals(1, lst.getIndexesWithContentUpdates().size());
-		assertEquals(0, lst.getIndexesChangedByRef().size());
+		assertEquals(1, ch.getIndexesWithContentUpdates().size());
+		assertEquals(0, ch.getIndexesChangedByRef().size());
 
-		assertEquals(new Integer(1), lst.getIndexesWithContentUpdates().toArray()[0]);
+		assertEquals(new Integer(1), ch.getIndexesWithContentUpdates().toArray()[0]);
 
 		assertEquals(3, lst.changeHandlers.size());
 	}
@@ -118,44 +121,47 @@ public class ListTest
 		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
 		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
 
-		assertEquals(4, lst.addedIndexes.size());
+		ChangeAwareList<ChangeAwareMap<String, Object>, Object>.Changes ch = lst.getChangesImmutableAndPrepareForReset();
+		assertEquals(4, ch.getAddedIndexes().size());
 		assertTrue(changed[0]);
 
-		lst.clearChanges();
+		ch.doneHandling();
 		changed[0] = false;
 
-		assertEquals(0, lst.getIndexesChangedByRef().size());
-		assertEquals(0, lst.getIndexesWithContentUpdates().size());
+		assertEquals(0, ch.getIndexesChangedByRef().size());
+		assertEquals(0, ch.getIndexesWithContentUpdates().size());
 		lst.get(0).put("test", "test");
-		assertEquals(0, lst.getIndexesChangedByRef().size());
-		assertEquals(1, lst.getIndexesWithContentUpdates().size());
+		ch = lst.getChangesImmutableAndPrepareForReset();
+		assertEquals(0, ch.getIndexesChangedByRef().size());
+		assertEquals(1, ch.getIndexesWithContentUpdates().size());
 
-		assertEquals(new Integer(0), lst.getIndexesWithContentUpdates().toArray()[0]);
+		assertEquals(new Integer(0), ch.getIndexesWithContentUpdates().toArray()[0]);
 
-		lst.clearChanges();
+		ch.doneHandling();
 
 		lst.set(1, lst.get(2));
 		lst.set(2, lst.get(3));
 		lst.remove(2);
 		lst.get(1).put("test1", "test123");
 
-		assertEquals(2, lst.getIndexesChangedByRef().size());
-		assertEquals(0, lst.getIndexesWithContentUpdates().size());
-		assertEquals(new Integer(1), lst.getIndexesChangedByRef().toArray()[0]);
-		assertEquals(new Integer(2), lst.getIndexesChangedByRef().toArray()[1]);
+		ch = lst.getChangesImmutableAndPrepareForReset();
+		assertEquals(2, ch.getIndexesChangedByRef().size());
+		assertEquals(0, ch.getIndexesWithContentUpdates().size());
+		assertEquals(new Integer(1), ch.getIndexesChangedByRef().toArray()[0]);
+		assertEquals(new Integer(2), ch.getIndexesChangedByRef().toArray()[1]);
 
-		assertEquals(1, lst.removedIndexes.size());
-		assertEquals(new Integer(2), lst.removedIndexes.toArray()[0]);
-		assertTrue(lst.mustSendAll());
+		assertEquals(1, ch.getRemovedIndexes().size());
+		assertEquals(new Integer(2), ch.getRemovedIndexes().toArray()[0]);
+		assertTrue(ch.mustSendAll());
 
-		lst.clearChanges();
-		lst.get(1).clearChanges();
+		ch.doneHandling();
+		lst.get(1).getChangesImmutableAndPrepareForReset().doneHandling();
 
 		lst.get(1).put("test1", "test1");
-		assertEquals(1, lst.getIndexesWithContentUpdates().size());
-		assertEquals(0, lst.getIndexesChangedByRef().size());
+		assertEquals(1, ch.getIndexesWithContentUpdates().size());
+		assertEquals(0, ch.getIndexesChangedByRef().size());
 
-		assertEquals(new Integer(1), lst.getIndexesWithContentUpdates().toArray()[0]);
+		assertEquals(new Integer(1), ch.getIndexesWithContentUpdates().toArray()[0]);
 
 		assertEquals(3, lst.changeHandlers.size());
 	}
@@ -182,44 +188,47 @@ public class ListTest
 		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
 		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
 
-		assertEquals(5, lst.addedIndexes.size());
+		ChangeAwareList<ChangeAwareMap<String, Object>, Object>.Changes ch = lst.getChangesImmutableAndPrepareForReset();
+		assertEquals(5, ch.getAddedIndexes().size());
 		assertTrue(changed[0]);
 
-		lst.clearChanges();
+		ch.doneHandling();
 		changed[0] = false;
 
-		assertEquals(0, lst.getIndexesChangedByRef().size());
-		assertEquals(0, lst.getIndexesWithContentUpdates().size());
+		assertEquals(0, ch.getIndexesChangedByRef().size());
+		assertEquals(0, ch.getIndexesWithContentUpdates().size());
 		lst.get(0).put("test", "test");
-		assertEquals(0, lst.getIndexesChangedByRef().size());
-		assertEquals(1, lst.getIndexesWithContentUpdates().size());
+		ch = lst.getChangesImmutableAndPrepareForReset();
+		assertEquals(0, ch.getIndexesChangedByRef().size());
+		assertEquals(1, ch.getIndexesWithContentUpdates().size());
 
-		assertEquals(new Integer(0), lst.getIndexesWithContentUpdates().toArray()[0]);
+		assertEquals(new Integer(0), ch.getIndexesWithContentUpdates().toArray()[0]);
 
-		lst.clearChanges();
+		ch.doneHandling();
 
 		lst.set(1, lst.get(2));
 		lst.set(2, lst.get(3));
 		lst.remove(2);
 		lst.get(1).put("test1", "test123");
+		ch = lst.getChangesImmutableAndPrepareForReset();
 
-		assertEquals(2, lst.getIndexesChangedByRef().size());
-		assertEquals(0, lst.getIndexesWithContentUpdates().size());
-		assertEquals(new Integer(1), lst.getIndexesChangedByRef().toArray()[0]);
-		assertEquals(new Integer(2), lst.getIndexesChangedByRef().toArray()[1]);
+		assertEquals(2, ch.getIndexesChangedByRef().size());
+		assertEquals(0, ch.getIndexesWithContentUpdates().size());
+		assertEquals(new Integer(1), ch.getIndexesChangedByRef().toArray()[0]);
+		assertEquals(new Integer(2), ch.getIndexesChangedByRef().toArray()[1]);
 
-		assertEquals(1, lst.removedIndexes.size());
-		assertEquals(new Integer(2), lst.removedIndexes.toArray()[0]);
-		assertTrue(lst.mustSendAll());
+		assertEquals(1, ch.getRemovedIndexes().size());
+		assertEquals(new Integer(2), ch.getRemovedIndexes().toArray()[0]);
+		assertTrue(ch.mustSendAll());
 
-		lst.clearChanges();
-		lst.get(1).clearChanges();
+		ch.doneHandling();
+		lst.get(1).getChangesImmutableAndPrepareForReset().doneHandling();
 
 		lst.get(1).put("test1", "test1");
-		assertEquals(1, lst.getIndexesWithContentUpdates().size());
-		assertEquals(0, lst.getIndexesChangedByRef().size());
+		assertEquals(1, ch.getIndexesWithContentUpdates().size());
+		assertEquals(0, ch.getIndexesChangedByRef().size());
 
-		assertEquals(new Integer(1), lst.getIndexesWithContentUpdates().toArray()[0]);
+		assertEquals(new Integer(1), ch.getIndexesWithContentUpdates().toArray()[0]);
 
 		assertEquals(4, lst.changeHandlers.size());
 	}
@@ -258,19 +267,21 @@ public class ListTest
 
 		changed[0] = false;
 
-		lst.clearChanges();
+		ChangeAwareList<ChangeAwareMap<String, Object>, Object>.Changes ch = lst.getChangesImmutableAndPrepareForReset();
+		ch.doneHandling();
 
 		lst.remove(1);
 
 		assertTrue(changed[0]);
 
-		lst.clearChanges();
+		ch = lst.getChangesImmutableAndPrepareForReset();
+		ch.doneHandling();
 
 		lst.get(1).put("test1", "test1");
 
-		assertEquals(1, lst.getIndexesWithContentUpdates().size());
-		assertEquals(0, lst.getIndexesChangedByRef().size());
-		assertEquals(new Integer(1), lst.getIndexesWithContentUpdates().toArray()[0]);
+		assertEquals(1, ch.getIndexesWithContentUpdates().size());
+		assertEquals(0, ch.getIndexesChangedByRef().size());
+		assertEquals(new Integer(1), ch.getIndexesWithContentUpdates().toArray()[0]);
 
 	}
 

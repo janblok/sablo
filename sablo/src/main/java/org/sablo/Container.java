@@ -55,6 +55,7 @@ public abstract class Container extends WebComponent
 	protected void markAsChanged()
 	{
 		changed = true;
+		if (parent != null) parent.markAsChanged();
 	}
 
 	public boolean isChanged()
@@ -105,19 +106,18 @@ public abstract class Container extends WebComponent
 		clearComponents();
 	}
 
-	public boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
+	public void writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
 		DataConversion clientDataConversions) throws JSONException
 	{
 		// converter here is always ChangesToJSONConverter except for some unit tests
-		boolean contentHasBeenWritten = this.writeOwnComponentChanges(w, keyInParent, "", converter, clientDataConversions);
+		changed = false; // do this first just in case one of the writeOwnChanges below triggers another change to set the flag again (which should not happen normally but it will get logged as a warning by code in BaseWebObject if it does)
+		boolean contentHasBeenWritten = this.writeOwnChanges(w, keyInParent, "", converter, clientDataConversions);
 		for (WebComponent wc : getComponents())
 		{
-			contentHasBeenWritten = wc.writeOwnComponentChanges(w, contentHasBeenWritten ? null : keyInParent, wc.getName(), converter,
-				clientDataConversions) || contentHasBeenWritten;
+			contentHasBeenWritten = wc.writeOwnChanges(w, contentHasBeenWritten ? null : keyInParent, wc.getName(), converter, clientDataConversions) ||
+				contentHasBeenWritten;
 		}
 		if (contentHasBeenWritten) w.endObject();
-		changed = false;
-		return contentHasBeenWritten;
 	}
 
 	public boolean writeAllComponentsProperties(JSONWriter w, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException

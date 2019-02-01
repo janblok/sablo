@@ -503,9 +503,10 @@ public class CustomArrayAndCustomObjectTypeTest
 		typesArray.set(2, typesArray.get(3));
 		typesArray.set(3, typesArray.get(4));
 		typesArray.remove(4);
+		ChangeAwareList<Object, Object>.Changes ch = typesArray.getChangesImmutableAndPrepareForReset();
 
-		assertTrue(typesArray.mustSendAll()); // it has both change and remove actions so it currently doesn't support sending granular updates for this situation
-		typesArray.clearChanges();
+		assertTrue(ch.mustSendAll()); // it has both change and remove actions so it currently doesn't support sending granular updates for this situation
+		ch.doneHandling();
 
 		assertEquals(0, testMap2.attachCalls);
 		assertEquals(1, testMap2.detachCalls);
@@ -518,13 +519,13 @@ public class CustomArrayAndCustomObjectTypeTest
 
 		// ok, now if we alter what used to be at idx 4 (it is now at idx 3) see that the CAL reports correctly that idx 3 has changed
 		testMap4.put("text", "I changed");
-		assertTrue(!typesArray.mustSendAll());
-		assertEquals(0, typesArray.getIndexesChangedByRef().size());
-		assertEquals(0, typesArray.getRemovedIndexes().size());
-		assertTrue(!typesArray.mustSendTypeToClient());
+		assertTrue(!ch.mustSendAll());
+		assertEquals(0, ch.getIndexesChangedByRef().size());
+		assertEquals(0, ch.getRemovedIndexes().size());
+		assertTrue(!ch.mustSendTypeToClient());
 
-		assertEquals(1, typesArray.getIndexesWithContentUpdates().size());
-		assertTrue(typesArray.getIndexesWithContentUpdates().contains(Integer.valueOf(3)));
+		assertEquals(1, ch.getIndexesWithContentUpdates().size());
+		assertTrue(ch.getIndexesWithContentUpdates().contains(Integer.valueOf(3)));
 	}
 
 	private class TestChangeAwareMap<ET, WT> extends ChangeAwareMap<ET, WT>

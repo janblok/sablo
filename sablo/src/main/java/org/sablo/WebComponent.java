@@ -73,7 +73,7 @@ public class WebComponent extends BaseWebObject
 	}
 
 	@Override
-	public boolean markPropertyContentsUpdated(String key)
+	protected boolean markPropertyContentsUpdated(String key)
 	{
 		boolean modified = super.markPropertyContentsUpdated(key);
 		if (modified && parent != null) parent.markAsChanged();

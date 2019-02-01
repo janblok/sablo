@@ -76,6 +76,11 @@ public class BaseWindow implements IWindow
 	private static final String API_KEY_FORM_NAME = "form"; //$NON-NLS-1$
 	private static final String API_PRE_DATA_SERVICE_CALL = "pre_data_service_call"; //$NON-NLS-1$
 
+	// this system property is not publicly documented as normally toJSON should never generate new changes; it is there just in case a temporary increase is needed
+	// until some unexpected property behavior can be corrected (warnings will be logged anyway if such a situation is detected)
+	private static final int MAX_ALLOWED_TO_JSON_GENERATING_UNEXPECTED_CHANGE_ITERATIONS = Integer.parseInt(
+		System.getProperty("sablo.conversions.to.client.matjguci", "5"));
+
 	private static final Logger log = LoggerFactory.getLogger(BaseWindow.class.getCanonicalName());
 
 	private volatile IWebsocketEndpoint endpoint;
@@ -256,7 +261,6 @@ public class BaseWindow implements IWindow
 						JSONUtils.addKeyIfPresent(w, keyInParent);
 						w.object().key("services").object();
 						clientDataConversions.pushNode("services");
-
 						for (IClientService service : services)
 						{
 							String serviceName = service.getScriptingName();
@@ -280,6 +284,23 @@ public class BaseWindow implements IWindow
 						return true;
 					}
 					return false;
+				}
+
+				@Override
+				public boolean checkForAndWriteAnyUnexpectedRemainingChanges(JSONStringer w, String keyInParent,
+					IToJSONConverter<IBrowserConverterContext> converter, DataConversion clientDataConversions)
+				{
+					JSONUtils.addKeyIfPresent(w, keyInParent);
+					w.object();
+
+					clientDataConversions.pushNode("services");
+					boolean changesFound = writeAllServicesChanges(w, "services", clientDataConversions);
+					clientDataConversions.popNode();
+
+					w.endObject();
+
+					return changesFound;
+
 				}
 			}, FullValueToJSONConverter.INSTANCE);
 		}
@@ -388,7 +409,7 @@ public class BaseWindow implements IWindow
 	protected void sendAsyncMessage(final Map<String, ? > data, final PropertyDescription dataTypes, IToJSONConverter<IBrowserConverterContext> converter)
 		throws IOException
 	{
-		sendAsyncMessage((data == null || data.size() == 0) ? null : new IToJSONWriter<IBrowserConverterContext>()
+		sendAsyncMessage((data == null || data.size() == 0) ? null : new SimpleToJSONWriter<IBrowserConverterContext>()
 		{
 			@Override
 			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converterParam,
@@ -423,7 +444,7 @@ public class BaseWindow implements IWindow
 	protected Object sendSyncMessage(final Map<String, ? > data, final PropertyDescription dataTypes, IToJSONConverter<IBrowserConverterContext> converter,
 		boolean blockEventProcessing, final ClientService service) throws IOException, CancellationException, TimeoutException
 	{
-		return sendSyncMessage((data == null || data.size() == 0) ? null : new IToJSONWriter<IBrowserConverterContext>()
+		return sendSyncMessage((data == null || data.size() == 0) ? null : new SimpleToJSONWriter<IBrowserConverterContext>()
 		{
 			@Override
 			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converterParam,
@@ -445,7 +466,7 @@ public class BaseWindow implements IWindow
 	 * Sends a message to the client/browser just like {@link #sendAsyncMessage(IToJSONWriter, IToJSONConverter)} does.
 	 * But afterwards it waits for a response and return value from the client.
 	 *
-	 * @param blockEventProcessing if true then the event processing will be blocked until we get the expected resonse from the browser/client (or until a timeout expires).
+	 * @param blockEventProcessing if true then the event processing will be blocked until we get the expected response from the browser/client (or until a timeout expires).
 	 * @return the value the client gave back.
 	 * @throws CancellationException if cancelled for some reason while waiting for response
 	 * @throws TimeoutException if it timed out while waiting for a response value. This can happen if blockEventProcessing == true.
@@ -454,15 +475,14 @@ public class BaseWindow implements IWindow
 		boolean blockEventProcessing) throws IOException, CancellationException, TimeoutException
 	{
 		Integer messageId = new Integer(nextMessageId.incrementAndGet());
-		String sentText = sendMessageInternal(dataWriter, converter, messageId);
-		if (sentText != null)
+		if (sendMessageInternal(dataWriter, converter, messageId))
 		{
 			IWebsocketEndpoint ep = getEndpoint();
 			if (ep == null)
 			{
 				throw new IOException("Endpoint was closed when trying to wait for a sync message"); //$NON-NLS-1$
 			}
-			return ep.waitResponse(messageId, sentText, blockEventProcessing);
+			return ep.waitResponse(messageId, blockEventProcessing);
 
 		}
 		return null;
@@ -483,12 +503,12 @@ public class BaseWindow implements IWindow
 	}
 
 	/**
-	 * Returns the text that it really sent...
+	 * @return true if it really did send something through the websocket; can return false if nothing was written (no changes anyware, not even in given dataWriter)
 	 */
-	protected String sendMessageInternal(IToJSONWriter<IBrowserConverterContext> dataWriter, IToJSONConverter<IBrowserConverterContext> converter,
+	protected boolean sendMessageInternal(IToJSONWriter<IBrowserConverterContext> dataWriter, IToJSONConverter<IBrowserConverterContext> converter,
 		Integer smsgidOptional) throws IOException
 	{
-		if (dataWriter == null && serviceCalls.size() == 0 && delayedOrAsyncComponentApiCalls.size() == 0) return null;
+		if (dataWriter == null && serviceCalls.size() == 0 && delayedOrAsyncComponentApiCalls.size() == 0) return false;
 
 		if (getEndpoint() == null)
 		{
@@ -508,6 +528,7 @@ public class BaseWindow implements IWindow
 				hasContentToSend = dataWriter.writeJSONContent(w, "msg", converter, clientDataConversions) || hasContentToSend;
 				clientDataConversions.popNode();
 			}
+
 			if (serviceCalls.size() > 0)
 			{
 				hasContentToSend = true;
@@ -573,7 +594,6 @@ public class BaseWindow implements IWindow
 					w.endArray();
 				}
 			}
-			String text = null;
 
 			if (hasContentToSend)
 			{
@@ -584,17 +604,59 @@ public class BaseWindow implements IWindow
 				JSONUtils.writeClientConversions(w, clientDataConversions);
 				w.endObject();
 
-				text = w.toString();
-				sendMessageText(text);
+				sendMessageText(w.toString());
 				serviceCalls.clear();
 			}
 
-			return text;
+			hasContentToSend = checkForAndSendAnyUnexpectedRemainingChangesOfDataWriter(dataWriter, converter) || hasContentToSend;
+
+			return hasContentToSend;
 		}
 		catch (JSONException e)
 		{
 			throw new IOException(e);
 		}
+	}
+
+	private boolean checkForAndSendAnyUnexpectedRemainingChangesOfDataWriter(IToJSONWriter<IBrowserConverterContext> dataWriter,
+		IToJSONConverter<IBrowserConverterContext> converter) throws IOException
+	{
+		JSONStringer w;
+		DataConversion clientDataConversions;
+
+		boolean hasContentToSend = false;
+		if (dataWriter != null)
+		{
+			// code inside this if should normally not send/do anything (checkForAndWriteAnyUnexpectedRemainingChanges will normally return false)
+			int i = MAX_ALLOWED_TO_JSON_GENERATING_UNEXPECTED_CHANGE_ITERATIONS;
+			boolean keepGoing = true;
+			while (keepGoing && i-- > 0)
+			{
+				w = new DebugFriendlyJSONStringer();
+				clientDataConversions = new DataConversion();
+
+				w.object();
+				clientDataConversions.pushNode("msg");
+				keepGoing = dataWriter.checkForAndWriteAnyUnexpectedRemainingChanges(w, "msg", converter, clientDataConversions);
+				clientDataConversions.popNode();
+				if (keepGoing) // it did write stuff to JSON
+				{
+					if (i == MAX_ALLOWED_TO_JSON_GENERATING_UNEXPECTED_CHANGE_ITERATIONS - 1) log.debug(
+						"A new change was registered on window while previous changes were being written; probably one property's toJSON ends up marking another property (in any form and any component in the same window) as dirty. This should be avoided. If you see this message without a stacktrace that explains it further it means that the properties that interact unexpectedly could be from different components/services.");
+					// we do log above the warning but BaseWebObject, custom obj and array types also have code that will print stac traces as well when the unexpected interaction happens between child properties
+					// if that does not appear in log and you can't debug, you could enable full websocket logging to see what exactly the messages being sent to client were (could help make an idea which properties from which base objects interact with other)
+
+					hasContentToSend = true;
+					JSONUtils.writeClientConversions(w, clientDataConversions);
+					w.endObject();
+
+					sendMessageText(w.toString());
+				}
+			}
+			if (keepGoing) log.error("The maximum number (" + MAX_ALLOWED_TO_JSON_GENERATING_UNEXPECTED_CHANGE_ITERATIONS +
+				") of allowed iterations for toJSON generating new changes in already written properties was exceeded! Some changes will not be sent (at least until next event is handled)... Enabling debug logging on org.sablo.websocket.BaseWindow, org.sablo.specification.property.CustomJSONPropertyType and org.sablo.BaseWebObject could provide more information...");
+		}
+		return hasContentToSend;
 	}
 
 	/**
@@ -658,8 +720,6 @@ public class BaseWindow implements IWindow
 
 	public void sendChanges() throws IOException
 	{
-		// TODO this should not send to the currently active end-point, but to each of all end-points their own changes...
-		// so that any change from 1 end-point request ends up in all the needed/affected end points (depending on where the form is).
 		sendAsyncMessage(new IToJSONWriter<IBrowserConverterContext>()
 		{
 			@Override
@@ -680,6 +740,13 @@ public class BaseWindow implements IWindow
 				w.endObject();
 
 				return changesFound;
+			}
+
+			@Override
+			public boolean checkForAndWriteAnyUnexpectedRemainingChanges(JSONStringer w, String keyInParent,
+				IToJSONConverter<IBrowserConverterContext> converter, DataConversion clientDataConversions)
+			{
+				return writeJSONContent(w, keyInParent, converter, clientDataConversions);
 			}
 		}, ChangesToJSONConverter.INSTANCE);
 	}
@@ -705,7 +772,7 @@ public class BaseWindow implements IWindow
 	{
 		try
 		{
-			sendOnlyThisMessageInternal(new IToJSONWriter<IBrowserConverterContext>()
+			sendOnlyThisMessageInternal(new SimpleToJSONWriter<IBrowserConverterContext>()
 			{
 				@Override
 				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
@@ -933,7 +1000,7 @@ public class BaseWindow implements IWindow
 		{
 			try
 			{
-				sendOnlyThisMessageInternal(new IToJSONWriter<IBrowserConverterContext>()
+				sendOnlyThisMessageInternal(new SimpleToJSONWriter<IBrowserConverterContext>()
 				{
 					@Override
 					public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
@@ -972,12 +1039,8 @@ public class BaseWindow implements IWindow
 					public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
 						DataConversion clientDataConversions) throws JSONException
 					{
-						JSONUtils.addKeyIfPresent(w, keyInParent);
-						w.object();
+						writeComponentChanges(w, keyInParent, converter, clientDataConversions);
 
-						clientDataConversions.pushNode("forms");
-						writeAllComponentsChanges(w, "forms", converter, clientDataConversions); // converter here is ChangesToJSONConverter.INSTANCE (see below arg to 'sendSyncMessage')
-						clientDataConversions.popNode();
 						Map<String, Object> call = getApiCallObjectForComponent(receiver, apiFunction, arguments, argumentTypes, callContributions);
 						PropertyDescription callTypes = (PropertyDescription)call.remove(API_SERVER_ONLY_KEY_ARG_TYPES);
 						w.key(API_KEY_CALL).object();
@@ -990,6 +1053,31 @@ public class BaseWindow implements IWindow
 						w.endObject();
 						return true;
 					}
+
+					@Override
+					public boolean checkForAndWriteAnyUnexpectedRemainingChanges(JSONStringer w, String keyInParent,
+						IToJSONConverter<IBrowserConverterContext> converter, DataConversion clientDataConversions)
+					{
+						boolean changesFound = writeComponentChanges(w, keyInParent, converter, clientDataConversions);
+
+						w.endObject();
+						return changesFound;
+					}
+
+					private boolean writeComponentChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
+						DataConversion clientDataConversions)
+					{
+						JSONUtils.addKeyIfPresent(w, keyInParent);
+						w.object();
+
+						clientDataConversions.pushNode("forms");
+						boolean changesFound = writeAllComponentsChanges(w, "forms", converter, clientDataConversions); // converter here is ChangesToJSONConverter.INSTANCE (see below arg to 'sendSyncMessage')
+						clientDataConversions.popNode();
+
+						// caller is responsible for calling w.endObject();
+						return changesFound;
+					}
+
 				}, ChangesToJSONConverter.INSTANCE, apiFunction.getBlockEventProcessing());
 
 				if (apiFunction.getReturnType() != null)
@@ -1050,13 +1138,10 @@ public class BaseWindow implements IWindow
 	protected void addDelayedOrAsyncComponentCall(final WebObjectFunctionDefinition apiFunction, Map<String, Object> call, WebComponent component,
 		boolean isDelayedCall)
 	{
-		if (isDelayedCall)
-		{
-			// just keep the needed information about this delayed call in there (not to be sent to client necessarily, but to be able to check if the form is available on client or not)
-			call.put(API_SERVER_ONLY_KEY_COMPONENT, component);
-			call.put(API_SERVER_ONLY_KEY_FORM_CONTAINER, getFormContainer(component));
-			call.put(API_KEY_DELAY_UNTIL_FORM_LOADS, Boolean.valueOf(isDelayedCall));
-		}
+		// just keep the needed information about this delayed call in there (not to be sent to client necessarily, but to be able to check if the form is available on client or not)
+		call.put(API_SERVER_ONLY_KEY_COMPONENT, component);
+		call.put(API_SERVER_ONLY_KEY_FORM_CONTAINER, getFormContainer(component));
+		call.put(API_KEY_DELAY_UNTIL_FORM_LOADS, Boolean.valueOf(isDelayedCall));
 
 		if (apiFunction.shouldDiscardPreviouslyQueuedSimilarCalls())
 		{

@@ -17,7 +17,9 @@
 package org.sablo.websocket;
 
 import org.json.JSONException;
+import org.json.JSONStringer;
 import org.json.JSONWriter;
+import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
@@ -34,5 +36,23 @@ public interface IToJSONWriter<ContextT>
 	 * @param keyInParent a key (can be null in which case it should be ignored) that must be appended to 'w' initially if this method call writes content to it. If the method returns false, nothing should be written to the writer...
 	 */
 	boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<ContextT> converter, DataConversion clientDataConversions) throws JSONException;
+
+	/**
+	 * This method is called after {@link #writeJSONContent(JSONWriter, String, IToJSONConverter, DataConversion)} above to check if this to-json-writer still
+	 * would like to write changes. Most of the times this would just do noting. It is useful though for situations where code in {@link #writeJSONContent(JSONWriter, String, IToJSONConverter, DataConversion)}
+	 * ends up generating more content/changes that need to be written.<br/><br/>
+	 *
+	 * For example when this writer writes component or service changes to json, normally we already have written changes in {@link #writeJSONContent(JSONWriter, String, IToJSONConverter, DataConversion)} called before
+	 * so there should be none anymore; if we still have changes after that it means that the toJSON of some property triggered new changes somewhere
+	 * and we want to write those again as well.
+	 * @param clientDataConversions see {@link #writeJSONContent(JSONWriter, String, IToJSONConverter, DataConversion)}
+	 * @param converter see {@link #writeJSONContent(JSONWriter, String, IToJSONConverter, DataConversion)}
+	 * @param keyInParent see {@link #writeJSONContent(JSONWriter, String, IToJSONConverter, DataConversion)}
+	 * @param w see {@link #writeJSONContent(JSONWriter, String, IToJSONConverter, DataConversion)}
+	 *
+	 * @return true if there were unexpected changes (and they were written); false if nothing more needed to be written.
+	 */
+	boolean checkForAndWriteAnyUnexpectedRemainingChanges(JSONStringer w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
+		DataConversion clientDataConversions);
 
 }

@@ -53,14 +53,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	protected IChangeListener changeMonitor;
 	protected IWebObjectContext webObjectContext;
 
-	protected Set<Integer> indexesWithContentUpdates = new HashSet<Integer>();
-	protected Set<Integer> indexesChangedByRef = new HashSet<Integer>();
-	protected List<Integer> removedIndexes = new ArrayList<Integer>();
-	protected List<Integer> addedIndexes = new ArrayList<Integer>();
-	protected boolean allChanged;
-
-	protected boolean mustSendTypeToClient;
-
+	private ChangeAwareList<ET, WT>.Changes changes;
 
 	public ChangeAwareList(List<ET> baseList)
 	{
@@ -71,6 +64,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	{
 		this.baseList = baseList;
 		this.version = initialVersion;
+		changes = new Changes();
 
 		if (baseList instanceof IAttachAware) ((IAttachAware<WT>)baseList).setAttachHandler(new IAttachHandler<WT>()
 		{
@@ -109,42 +103,191 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	}
 
 	/**
-	 * You should not change the contents of the returned Set.
+	 * Gets the current changes (in immutable mode). PLEASE MAKE SURE TO call {@link Changes#doneHandling()} once you are done handling the changes and will not longer use the returned reference.<br/><br/>
+	 * The idea is that if change aware list receives new updates while the changes are in immutable mode (so before doneHandling is called which means someone is still reading/iterating on them in toJSON probably),
+	 * the changes object used by the map will switch to another reference to keep what this method returns immutable; but in order to not recreate changes all the time, once {@link Changes#doneHandling()} will
+	 * be called, changes object will exit "immutable mode" and will be cleared/prepared for reuse.
+	 *
+	 * @return the current changes.
 	 */
-	public Set<Integer> getIndexesChangedByRef()
+	public ChangeAwareList<ET, WT>.Changes getChangesImmutableAndPrepareForReset()
 	{
-		return indexesChangedByRef;
+		// mark 'changes' as immutable until doneHandling() will get called on it
+		// if getChangesImmutableAndPrepareForReset is called twice without Changes.doneHandling() getting called on reference
+		// returned the first time before the second call (so changes is already in immutable mode) then the "changes" ref will get switched to a new blank reference in call below
+		changes.startImmutableMode();
+		return changes;
+	}
+
+	public IChangeSetter getChangeSetter()
+	{
+		return changes;
 	}
 
 	/**
-	 * You should not change the contents of the returned Set.
+	 * DO NOT CALL THIS METHOD when code is running inside a toJSON (writing server-to-client property changes/values). Use {@link #getChangesImmutableAndPrepareForReset()} instead there.</br>
+	 * This methods just gives a way to check changes in tests or whenever it is helpful to see what changed outside of a toJSON (so current running stack should not be in a toJSON).<br/><br/>
+	 *
+	 * It is likely that this only needs to be called from unit tests...
+	 *
+	 * @deprecated deprecated just to make you read the javadoc and avoid using this method where you should not
 	 */
-	public Set<Integer> getIndexesWithContentUpdates()
+	@Deprecated
+	public ChangeAwareList<ET, WT>.Changes getChanges()
 	{
-		return indexesWithContentUpdates;
+		return changes;
 	}
 
-	public boolean mustSendTypeToClient()
+	public static interface IChangeSetter
 	{
-		return mustSendTypeToClient;
+		void markElementChangedByRef(int i);
+
+		void markAllChanged();
+
+		void markMustSendTypeToClient();
 	}
 
-	public boolean mustSendAll()
+	public class Changes implements IChangeSetter
 	{
-		int totalChanges = addedIndexes.size() + removedIndexes.size() + indexesWithContentUpdates.size() + indexesChangedByRef.size();
-		//we should send all if allChanged is true or if we have more types of changes
-		return allChanged || !(totalChanges == indexesWithContentUpdates.size() + indexesChangedByRef.size() || totalChanges == addedIndexes.size() ||
-			totalChanges == removedIndexes.size());
-	}
 
-	public void clearChanges()
-	{
-		allChanged = false;
-		mustSendTypeToClient = false;
-		indexesWithContentUpdates.clear();
-		indexesChangedByRef.clear();
-		removedIndexes.clear();
-		addedIndexes.clear();
+		private final Set<Integer> indexesWithContentUpdates = new HashSet<Integer>();
+		private final Set<Integer> indexesChangedByRef = new HashSet<Integer>();
+		private final List<Integer> removedIndexes = new ArrayList<Integer>();
+		private final List<Integer> addedIndexes = new ArrayList<Integer>();
+		private boolean allChanged;
+		private boolean mustSendTypeToClient;
+
+		private boolean immutableMode = false;
+
+		private void startImmutableMode()
+		{
+			if (immutableMode) changes = new Changes(); // should never happen that it is already immutable if doneHandling() is used properly
+			changes.immutableMode = true;
+		}
+
+		public void doneHandling()
+		{
+			immutableMode = false;
+			clearChanges();
+		}
+
+		public Set<Integer> getIndexesChangedByRef()
+		{
+			return indexesChangedByRef;
+		}
+
+		public Set<Integer> getIndexesWithContentUpdates()
+		{
+			return indexesWithContentUpdates;
+		}
+
+		public boolean mustSendTypeToClient()
+		{
+			return mustSendTypeToClient;
+		}
+
+		public boolean mustSendAll()
+		{
+			int totalChanges = addedIndexes.size() + removedIndexes.size() + indexesWithContentUpdates.size() + indexesChangedByRef.size();
+			//we should send all if allChanged is true or if we have more types of changes
+			return allChanged || !(totalChanges == indexesWithContentUpdates.size() + indexesChangedByRef.size() || totalChanges == addedIndexes.size() ||
+				totalChanges == removedIndexes.size());
+		}
+
+		private void changeInstanceIfCurrentlyImmutable()
+		{
+			if (immutableMode)
+			{
+				if (CustomJSONPropertyType.log.isDebugEnabled()) CustomJSONPropertyType.log.debug(
+					"A new change was registered while previous changes are being handled; probably one property's toJSON ends up marking another property as dirty. This should be avoided. See associated stack trace", //$NON-NLS-1$
+					new RuntimeException("Stack trace")); //$NON-NLS-1$
+				changes = new Changes();
+			}
+		}
+
+		public List<Integer> getRemovedIndexes()
+		{
+			return removedIndexes;
+		}
+
+		public List<Integer> getAddedIndexes()
+		{
+			return addedIndexes;
+		}
+
+		private void clearChanges()
+		{
+			allChanged = false;
+			mustSendTypeToClient = false;
+			indexesWithContentUpdates.clear();
+			indexesChangedByRef.clear();
+			removedIndexes.clear();
+			addedIndexes.clear();
+		}
+
+		public void markMustSendTypeToClient()
+		{
+			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
+
+			boolean oldMustSendTypeToClient = changes.mustSendTypeToClient;
+			changes.mustSendTypeToClient = true;
+			if (changes.indexesChangedByRef.size() == 0 && changes.indexesWithContentUpdates.size() == 0 && !changes.allChanged && !oldMustSendTypeToClient &&
+				changes.addedIndexes.size() == 0 && changes.removedIndexes.size() == 0 && changeMonitor != null) changeMonitor.valueChanged();
+		}
+
+		protected void markElementContentsUpdated(int i)
+		{
+			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
+
+			if (!changes.addedIndexes.contains(Integer.valueOf(i)) && !changes.indexesChangedByRef.contains(Integer.valueOf(i)) &&
+				changes.indexesWithContentUpdates.add(Integer.valueOf(i)) && !changes.allChanged && !changes.mustSendTypeToClient && changeMonitor != null)
+				changeMonitor.valueChanged();
+		}
+
+		public void markElementChangedByRef(int i)
+		{
+			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
+
+			if (!changes.addedIndexes.contains(Integer.valueOf(i)) && changes.indexesChangedByRef.add(Integer.valueOf(i)))
+			{
+				// so it was now added to 'indexesChangedByRef'
+				if (!changes.allChanged && !changes.indexesWithContentUpdates.contains(Integer.valueOf(i)) && !changes.mustSendTypeToClient &&
+					changeMonitor != null) changeMonitor.valueChanged();
+				else changes.indexesWithContentUpdates.remove(Integer.valueOf(i)); // remove it from 'indexesWithContentUpdates' if present - as that element will be sent fully now
+			}
+		}
+
+		private void markElementRemoved(int i)
+		{
+			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
+
+			if (changes.removedIndexes.add(Integer.valueOf(i)) && !changes.allChanged && !changes.mustSendTypeToClient && changeMonitor != null)
+				changeMonitor.valueChanged();
+		}
+
+		private void markElementAdded(int i)
+		{
+			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
+
+			if (changes.addedIndexes.add(Integer.valueOf(i)) && !changes.allChanged && !changes.mustSendTypeToClient && changeMonitor != null)
+				changeMonitor.valueChanged();
+		}
+
+		public void markAllChanged()
+		{
+			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
+
+			boolean alreadyCh = changes.allChanged;
+			changes.allChanged = true;
+			if (!alreadyCh && changes.indexesWithContentUpdates.size() == 0 && changes.indexesChangedByRef.size() == 0 && !changes.mustSendTypeToClient &&
+				changeMonitor != null) changeMonitor.valueChanged();
+		}
+
+		protected boolean isChanged()
+		{
+			return (allChanged || mustSendTypeToClient || indexesChangedByRef.size() > 0 || indexesWithContentUpdates.size() > 0 || removedIndexes.size() > 0);
+		}
+
 	}
 
 	/**
@@ -187,7 +330,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		{
 			detachIfNeeded(index, tmp, false);
 			attachToBaseObjectIfNeeded(index, value, false);
-			if (markChanged) markElementChangedByRef(index);
+			if (markChanged) changes.markElementChangedByRef(index);
 		}
 
 		return tmp;
@@ -206,49 +349,6 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	protected int getListContentVersion()
 	{
 		return version;
-	}
-
-	protected void markMustSendTypeToClient()
-	{
-		boolean oldMustSendTypeToClient = mustSendTypeToClient;
-		mustSendTypeToClient = true;
-		if (indexesChangedByRef.size() == 0 && indexesWithContentUpdates.size() == 0 && !allChanged && !oldMustSendTypeToClient && addedIndexes.size() == 0 &&
-			removedIndexes.size() == 0 && changeMonitor != null) changeMonitor.valueChanged();
-	}
-
-	protected void markElementContentsUpdated(int i)
-	{
-		if (!addedIndexes.contains(Integer.valueOf(i)) && !indexesChangedByRef.contains(Integer.valueOf(i)) &&
-			indexesWithContentUpdates.add(Integer.valueOf(i)) && !allChanged && !mustSendTypeToClient && changeMonitor != null) changeMonitor.valueChanged();
-	}
-
-	protected void markElementChangedByRef(int i)
-	{
-		if (!addedIndexes.contains(Integer.valueOf(i)) && indexesChangedByRef.add(Integer.valueOf(i)))
-		{
-			// so it was now added to 'indexesChangedByRef'
-			if (!allChanged && !indexesWithContentUpdates.contains(Integer.valueOf(i)) && !mustSendTypeToClient && changeMonitor != null)
-				changeMonitor.valueChanged();
-			else indexesWithContentUpdates.remove(Integer.valueOf(i)); // remove it from 'indexesWithContentUpdates' if present - as that element will be sent fully now
-		}
-	}
-
-	private void markElementRemoved(int i)
-	{
-		if (removedIndexes.add(Integer.valueOf(i)) && !allChanged && !mustSendTypeToClient && changeMonitor != null) changeMonitor.valueChanged();
-	}
-
-	private void markElementAdded(int i)
-	{
-		if (addedIndexes.add(Integer.valueOf(i)) && !allChanged && !mustSendTypeToClient && changeMonitor != null) changeMonitor.valueChanged();
-	}
-
-	public void markAllChanged()
-	{
-		boolean alreadyCh = allChanged;
-		allChanged = true;
-		if (!alreadyCh && indexesWithContentUpdates.size() == 0 && indexesChangedByRef.size() == 0 && !mustSendTypeToClient && changeMonitor != null)
-			changeMonitor.valueChanged();
 	}
 
 	protected void attachToBaseObjectIfNeeded(int i, WT el, boolean insert)
@@ -270,12 +370,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			i++;
 		}
 
-		if (isChanged()) changeMonitor.valueChanged();
-	}
-
-	protected boolean isChanged()
-	{
-		return (allChanged || mustSendTypeToClient || indexesChangedByRef.size() > 0 || indexesWithContentUpdates.size() > 0 || removedIndexes.size() > 0);
+		if (changes.isChanged()) changeMonitor.valueChanged();
 	}
 
 	// called whenever a new element was added or inserted into the array
@@ -346,7 +441,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		@Override
 		public void valueChanged()
 		{
-			markElementContentsUpdated(attachedToIdx);
+			changes.markElementContentsUpdated(attachedToIdx);
 		}
 
 		@Override
@@ -477,7 +572,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			{
 				it.remove();
 				detachIfNeeded(i, getWrappedBaseList().get(i), true);
-				markElementRemoved(i);
+				changes.markElementRemoved(i);
 				i--;
 			}
 		};
@@ -500,7 +595,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	{
 		boolean tmp = baseList.add(e);
 		attachToBaseObjectIfNeeded(baseList.size() - 1, getWrappedBaseList().get(baseList.size() - 1), false);
-		markElementAdded(baseList.size() - 1);
+		changes.markElementAdded(baseList.size() - 1);
 		return tmp;
 	}
 
@@ -513,7 +608,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			WT oldWrappedValue = getWrappedBaseList().get(idx);
 			baseList.remove(idx);
 			detachIfNeeded(idx, oldWrappedValue, true);
-			markElementRemoved(idx);
+			changes.markElementRemoved(idx);
 			return true;
 		}
 		return false;
@@ -582,7 +677,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		int size = baseList.size();
 		for (int i = size - 1; i >= 0; i--)
 			remove(i);
-		if (size > 0) markAllChanged();
+		if (size > 0) changes.markAllChanged();
 	}
 
 	@Override
@@ -602,7 +697,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		{
 			detachIfNeeded(index, oldWV, false);
 			attachToBaseObjectIfNeeded(index, newWV, false);
-			markElementChangedByRef(index);
+			changes.markElementChangedByRef(index);
 		}
 		return tmp;
 	}
@@ -612,7 +707,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	{
 		baseList.add(index, element);
 		attachToBaseObjectIfNeeded(index, getWrappedBaseList().get(index), true);
-		markElementAdded(index);
+		changes.markElementAdded(index);
 	}
 
 	@Override
@@ -621,7 +716,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		WT oldWV = getWrappedBaseList().get(index);
 		ET tmp = baseList.remove(index);
 		detachIfNeeded(index, oldWV, true);
-		markElementRemoved(index);
+		changes.markElementRemoved(index);
 		return tmp;
 	}
 
@@ -707,7 +802,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			int i = it.previousIndex() + 1;
 			it.remove();
 			detachIfNeeded(i, getWrappedBaseList().get(i), true);
-			markElementRemoved(i);
+			changes.markElementRemoved(i);
 		}
 
 		@Override
@@ -722,7 +817,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			{
 				detachIfNeeded(i, oldWV, false);
 				attachToBaseObjectIfNeeded(i, newWV, false);
-				markElementChangedByRef(i);
+				changes.markElementChangedByRef(i);
 			}
 		}
 
@@ -732,7 +827,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			int i = it.nextIndex();
 			it.add(e);
 			attachToBaseObjectIfNeeded(i, getWrappedBaseList().get(i), true);
-			markElementAdded(i);
+			changes.markElementAdded(i);
 		}
 	}
 
@@ -751,7 +846,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		if (clientUpdateVersion >= lastResetDueToOutOfSyncVersion)
 		{
 			lastResetDueToOutOfSyncVersion = version + 1; // remember that we already corrected these differences for any previous version; so don't try to correct it again for previous versions in the future if updates still come for those
-			markAllChanged();
+			changes.markAllChanged();
 		}
 	}
 
@@ -759,16 +854,6 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	public String toString()
 	{
 		return "#CAL# " + getBaseList().toString();
-	}
-
-	public List<Integer> getRemovedIndexes()
-	{
-		return removedIndexes;
-	}
-
-	public List<Integer> getAddedIndexes()
-	{
-		return addedIndexes;
 	}
 
 }

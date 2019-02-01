@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -195,7 +194,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 											dataConverterContext, returnValueAdjustedIncommingValueForIndex);
 										previousChangeAwareList.setInWrappedBaseList(idx, newWrappedEl, false);
 										if (returnValueAdjustedIncommingValueForIndex.value.booleanValue())
-											previousChangeAwareList.markElementChangedByRef(idx);
+											previousChangeAwareList.getChangeSetter().markElementChangedByRef(idx);
 									}
 									else
 									{
@@ -209,7 +208,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 								log.error("Property (" + pd +
 									") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to update array element values serverside. Denying and attempting to send back full value! Update JSON: " +
 									newJSONValue);
-								if (previousChangeAwareList != null) previousChangeAwareList.markAllChanged();
+								if (previousChangeAwareList != null) previousChangeAwareList.getChangeSetter().markAllChanged();
 								return previousChangeAwareList;
 							}
 						}
@@ -222,7 +221,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 							log.error("Property (" + pd +
 								") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full array value serverside. Denying and attempting to send back full value! Update JSON: " +
 								newJSONValue);
-							if (previousChangeAwareList != null) previousChangeAwareList.markAllChanged();
+							if (previousChangeAwareList != null) previousChangeAwareList.getChangeSetter().markAllChanged();
 							return previousChangeAwareList;
 						}
 
@@ -256,7 +255,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 				log.error("Property (" + pd +
 					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the array value serverside to null. Denying and attempting to send back full value! Update JSON: " +
 					newJSONValue);
-				previousChangeAwareList.markAllChanged();
+				previousChangeAwareList.getChangeSetter().markAllChanged();
 				return previousChangeAwareList;
 			}
 			return null;
@@ -268,7 +267,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 				log.error("Property (" + pd +
 					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full array value serverside (uoc). Denying and attempting to send back full value! Update JSON: " +
 					newJSONValue);
-				if (previousChangeAwareList != null) previousChangeAwareList.markAllChanged();
+				if (previousChangeAwareList != null) previousChangeAwareList.getChangeSetter().markAllChanged();
 				return previousChangeAwareList;
 			}
 
@@ -276,7 +275,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 			// in this case we must update server value and send a request back to client containing the type and letting it know that it must start watching the new value (for granular updates)
 			ChangeAwareList<ET, WT> newChangeAwareList = fullValueReplaceFromBrowser(previousChangeAwareList, pd, dataConverterContext,
 				(JSONArray)newJSONValue);
-			newChangeAwareList.markMustSendTypeToClient();
+			newChangeAwareList.getChangeSetter().markMustSendTypeToClient();
 			return newChangeAwareList;
 		}
 		else
@@ -332,7 +331,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 
 
 		for (Integer idx : adjustedNewValueIndexes)
-			retVal.markElementChangedByRef(idx.intValue());
+			retVal.getChangeSetter().markElementChangedByRef(idx.intValue());
 
 		return retVal;
 	}
@@ -359,15 +358,12 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 		{
 			if (conversionMarkers != null) conversionMarkers.convert(CustomJSONArrayType.TYPE_NAME); // so that the client knows it must use the custom client side JS for what JSON it gets
 
-			Set<Integer> indexesWithChangedContent = changeAwareList.getIndexesWithContentUpdates();
-			Set<Integer> indexesChangedByRed = changeAwareList.getIndexesChangedByRef();
-			List<Integer> removed = changeAwareList.getRemovedIndexes();
-			List<Integer> added = changeAwareList.getAddedIndexes();
+			ChangeAwareList<ET, WT>.Changes changes = changeAwareList.getChangesImmutableAndPrepareForReset();
 
 			List<WT> wrappedBaseListReadOnly = changeAwareList.getWrappedBaseListForReadOnly();
 			writer.object();
 
-			if (changeAwareList.mustSendAll() || fullValue)
+			if (changes.mustSendAll() || fullValue)
 			{
 				// send all (currently we don't support granular updates for add/remove but we could in the future)
 				DataConversion arrayConversionMarkers = new DataConversion();
@@ -396,39 +392,40 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 					writer.endObject();
 				}
 			}
-			else if (indexesWithChangedContent.size() > 0 || indexesChangedByRed.size() > 0 || removed.size() > 0 || added.size() > 0)
+			else if (changes.getIndexesWithContentUpdates().size() > 0 || changes.getIndexesChangedByRef().size() > 0 ||
+				changes.getRemovedIndexes().size() > 0 || changes.getAddedIndexes().size() > 0)
 			{
 				// else write changed indexes / granular update:
 				writer.key(CONTENT_VERSION).value(changeAwareList.getListContentVersion());
-				if (changeAwareList.mustSendTypeToClient())
+				if (changes.mustSendTypeToClient())
 				{
 					// updates + mustSendTypeToClient can happen if child elements are also similar - and need to instrument their values client-side when set by reference/completely from browser
 					writer.key(INITIALIZE).value(true);
 				}
 
-				if (removed.size() > 0)
+				if (changes.getRemovedIndexes().size() > 0)
 				{
 					writer.key(CHANGE_TYPE_REMOVES).array();
-					for (Integer idx : removed)
+					for (Integer idx : changes.getRemovedIndexes())
 					{
 						writer.value(idx);
 					}
 					writer.endArray();
 				}
-				if (added.size() > 0)
+				if (changes.getAddedIndexes().size() > 0)
 				{
-					writeValues(writer, dataConverterContext, added, wrappedBaseListReadOnly, CHANGE_TYPE_ADDITIONS);
+					writeValues(writer, dataConverterContext, changes.getAddedIndexes(), wrappedBaseListReadOnly, CHANGE_TYPE_ADDITIONS);
 				}
-				if (indexesChangedByRed.size() > 0)
+				if (changes.getIndexesChangedByRef().size() > 0)
 				{
-					writeValues(writer, dataConverterContext, indexesChangedByRed, wrappedBaseListReadOnly, CHANGE_TYPE_BY_REF);
+					writeValues(writer, dataConverterContext, changes.getIndexesChangedByRef(), wrappedBaseListReadOnly, CHANGE_TYPE_BY_REF);
 				}
-				if (indexesWithChangedContent.size() > 0)
+				if (changes.getIndexesWithContentUpdates().size() > 0)
 				{
-					writeValues(writer, dataConverterContext, indexesWithChangedContent, wrappedBaseListReadOnly, CHANGE_TYPE_UPDATES);
+					writeValues(writer, dataConverterContext, changes.getIndexesWithContentUpdates(), wrappedBaseListReadOnly, CHANGE_TYPE_UPDATES);
 				}
 			}
-			else if (changeAwareList.mustSendTypeToClient())
+			else if (changes.mustSendTypeToClient())
 			{
 				writer.key(CONTENT_VERSION).value(changeAwareList.getListContentVersion());
 				writer.key(INITIALIZE).value(true);
@@ -438,7 +435,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 				writer.key(NO_OP).value(true);
 			}
 			writer.endObject();
-			changeAwareList.clearChanges();
+			changes.doneHandling();
 		}
 		else
 		{

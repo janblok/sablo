@@ -79,7 +79,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	}
 
 	@Override
-	public void init() throws Exception
+	public void init(Map<String, List<String>> requestParams) throws Exception
 	{
 	}
 

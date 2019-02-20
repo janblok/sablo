@@ -90,7 +90,7 @@ public class IndexPageEnhancer
 				}
 				else
 				{
-					value = '"' + Matcher.quoteReplacement(TextUtils.escapeForDoubleQuotedJavascript(entry.getValue().toString())) + '"';
+					value = Matcher.quoteReplacement(TextUtils.escapeForDoubleQuotedJavascript(entry.getValue().toString()));
 				}
 
 				index_file = index_file.replaceAll(VAR_START + entry.getKey() + VAR_END, value);

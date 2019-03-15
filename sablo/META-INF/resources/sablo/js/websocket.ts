@@ -186,13 +186,9 @@ webSocketModule.factory('$webSocket',
 	};
 
 	var handleMessage = function(message) {
-		let obj
-		let responseValue
+		var obj
+		var responseValue
 		functionsToExecuteAfterIncommingMessageWasHandled = [];
-
-		const scopesToDigest = new window.CustomHashSet(function(s) {
-			return s.$id; // hash them by angular scope id to avoid calling digest on the same scope twice
-		});
 
 		try {
 			if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Received message from server: " + JSON.stringify(message, function(key, value) {
@@ -268,15 +264,30 @@ webSocketModule.factory('$webSocket',
 				$sabloLoadingIndicator.hideLoading();
 			}
 
+			function optimizeAndCallFormScopeDigest(scopesToDigest) {
+				for (var scopeId in scopesToDigest) {
+					var s = scopesToDigest[scopeId];
+					var p = s.$parent;
+					while (p && !scopesToDigest[p.$id]) p = p.$parent;
+					if (!p) { // if no parent form scope is going to do digest
+						if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will call digest for scope: " + (s && s.formname ? s.formname : scopeId));
+						s.$digest();
+					} else if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will NOT call digest for scope: " + (s && s.formname ? s.formname : scopeId) + " because a parent form scope " + (p.formname ? p.formname : p.$id) + " is in the list...");
+				}
+			}
+
 			// message
 			if (obj.msg) {
-			
+				var scopesToDigest = new window.CustomHashSet(function(s) {
+					return s.$id; // hash them by angular scope id to avoid calling digest on the same scope twice
+				});
 				for (var handler in onMessageObjectHandlers) {
 					var ret = onMessageObjectHandlers[handler](obj.msg, obj[$sabloConverters.TYPES_KEY] ? obj[$sabloConverters.TYPES_KEY].msg : undefined, scopesToDigest)
 					if (ret) responseValue = ret;
 					
 					if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Checking if any form scope changes need to be digested (obj.msg).");
 				}
+				optimizeAndCallFormScopeDigest(scopesToDigest);
 			}
 
 			if (obj.msg && obj.msg.services) {
@@ -302,6 +313,9 @@ webSocketModule.factory('$webSocket',
 			// delayed calls
 			if (obj.calls)
 			{
+				var scopesToDigest = new window.CustomHashSet(function(s) {
+					return s.$id; // hash them by angular scope id to avoid calling digest on the same scope twice
+				});
 				for(var i = 0;i < obj.calls.length;i++) 
 				{
 					for (var handler in onMessageObjectHandlers) {
@@ -310,6 +324,7 @@ webSocketModule.factory('$webSocket',
 					
 					if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Checking if any (obj.calls) form scopes changes need to be digested (obj.calls).");
 				}
+				optimizeAndCallFormScopeDigest(scopesToDigest);
 			}	
 			if (obj && obj.smsgid) {
 				if (isPromiseLike(responseValue)) {
@@ -379,16 +394,6 @@ webSocketModule.factory('$webSocket',
 				}
 			}
 			functionsToExecuteAfterIncommingMessageWasHandled = undefined;
-			for (var scopeId in scopesToDigest) {
-				var s = scopesToDigest[scopeId];
-				var p = s.$parent;
-				while (p && !scopesToDigest[p.$id]) p = p.$parent;
-				if (!p) { // if no parent form scope is going to do digest
-					if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will call digest for scope: " + (s && s.formname ? s.formname : scopeId));
-					s.$digest();
-				} else if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will NOT call digest for scope: " + (s && s.formname ? s.formname : scopeId) + " because a parent form scope " + (p.formname ? p.formname : p.$id) + " is in the list...");
-			}
-
 			if (err) throw err;
 		}
 	}

@@ -185,7 +185,7 @@ webSocketModule.factory('$webSocket',
 		return decodeURIComponent((new RegExp('[&]?\\b' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(getQueryString())||[,""])[1].replace(/\+/g, '%20'))||null
 	};
 	
-	let optimizeAndCallFormScopeDigest = function(scopesToDigest: ScopeSet) {
+	let optimizeAndCallFormScopeDigest = function(scopesToDigest: ScopeSet, digestAsync?: boolean) {
 		let scopesArray = scopesToDigest.getItems();
 		for (let idx in scopesArray) {
 			let s = scopesArray[idx];
@@ -194,9 +194,17 @@ webSocketModule.factory('$webSocket',
 			while (p && !scopesToDigest.hasItem(p)) p = p.$parent;
 			if (!p) { // if no parent form scope is going to do digest
 				if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will call digest for scope: " + (s && s["formname"] ? s["formname"] : scopeId));
-				setIMHDTScopeHintInternal(s);
-				s.$digest();
-				setIMHDTScopeHintInternal(undefined);
+
+                if (digestAsync) {
+                    if ($log.debugLevel === $log.SPAM)
+                        $log.debug("sbl * digestAsync == true ?! Will call $evalAsync for scope: " + (s && s["formname"] ? s["formname"] : scopeId));
+                    // should normally never happen - but for example unit tests could do this
+                	s.$evalAsync(function() { /* just to trigger a digest on that scope */ });
+                } else {
+                	setIMHDTScopeHintInternal(s);
+                	s.$digest();
+                	setIMHDTScopeHintInternal(undefined);
+                }
 			} else if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will NOT call digest for scope: " + (s && s["formname"] ? s["formname"] : scopeId) + " because a parent form scope " + (p["formname"] ? p["formname"] : p.$id) + " is in the list...");
 		}
 	}
@@ -290,7 +298,7 @@ webSocketModule.factory('$webSocket',
 					
 					if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Checking if any form scope changes need to be digested (obj.msg).");
 				}
-				optimizeAndCallFormScopeDigest(scopesToDigest);
+				optimizeAndCallFormScopeDigest(scopesToDigest); // as we are currently not inside a digest cycle, digest the affected scopes
 			}
 
 			if (obj.msg && obj.msg.services) {
@@ -325,7 +333,7 @@ webSocketModule.factory('$webSocket',
 					
 					if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Checking if any (obj.calls) form scopes changes need to be digested (obj.calls).");
 				}
-				optimizeAndCallFormScopeDigest(scopesToDigest);
+				optimizeAndCallFormScopeDigest(scopesToDigest); // as we are currently not inside a digest cycle, digest the affected scopes
 			}	
 			if (obj && obj.smsgid) {
 				if (isPromiseLike(responseValue)) {
@@ -390,23 +398,25 @@ webSocketModule.factory('$webSocket',
 			let err;
 			let scopesToDigest = new ScopeSet();
 
-			for (let i = 0; i < functionsToExecuteAfterIncommingMessageWasHandled.length; i++) {
+			let toExecuteAfterIncommingMessageWasHandled = functionsToExecuteAfterIncommingMessageWasHandled;
+			functionsToExecuteAfterIncommingMessageWasHandled = undefined; // clear this before calling just in the unlikely case that some handlers want to add more such tasks (and we don't want to loose those but rather execute them right away)
+			
+			for (let i = 0; i < toExecuteAfterIncommingMessageWasHandled.length; i++) {
 				try {
-					let touchedScopes = functionsToExecuteAfterIncommingMessageWasHandled[i].task();
+					let touchedScopes = toExecuteAfterIncommingMessageWasHandled[i].task();
 					if (touchedScopes) {
 						touchedScopes.forEach((value) => {scopesToDigest.putItem(value)});
-					} else if (functionsToExecuteAfterIncommingMessageWasHandled[i].scopeHint) {
-						scopesToDigest.putItem(functionsToExecuteAfterIncommingMessageWasHandled[i].scopeHint);
+					} else if (toExecuteAfterIncommingMessageWasHandled[i].scopeHint) {
+						scopesToDigest.putItem(toExecuteAfterIncommingMessageWasHandled[i].scopeHint);
 					}
 				} catch (e) {
-					$log.error("Error (follows below) in executing PostIncommingMessageHandlingTask: " + functionsToExecuteAfterIncommingMessageWasHandled[i]);
+					$log.error("Error (follows below) in executing PostIncommingMessageHandlingTask: " + toExecuteAfterIncommingMessageWasHandled[i]);
 					$log.error(e);
 					err = e;
 				}
 			}
-			functionsToExecuteAfterIncommingMessageWasHandled = undefined;
 			
-			optimizeAndCallFormScopeDigest(scopesToDigest);
+			optimizeAndCallFormScopeDigest(scopesToDigest); // as we are currently not inside a digest cycle, digest the affected scopes
 			
 			if (err) throw err;
 		}
@@ -432,10 +442,17 @@ webSocketModule.factory('$webSocket',
 	let addIncomingMessageHandlingDoneTask = function(func: () => Array<angular.IScope>) {
 		if (functionsToExecuteAfterIncommingMessageWasHandled) functionsToExecuteAfterIncommingMessageWasHandled.push({scopeHint: currentIMHDTScopeHint, task: func});
 		else {
+            // should normally not happen (as this is meant to be called by code running while a server message is being handled) - but for example unit tests could do this
 			// will not addPostIncommingMessageHandlingTask while not handling an incoming message; the task can execute right away then (maybe it was called due to a change detected in a watch instead of property listener)
-			let touchedScopes = func();
-			if (touchedScopes) optimizeAndCallFormScopeDigest(new ScopeSet(touchedScopes));
-			else if (currentIMHDTScopeHint) optimizeAndCallFormScopeDigest(new ScopeSet([currentIMHDTScopeHint]));
+            let touchedScopes = func();
+            let scopesSet = null;
+            if (touchedScopes)
+            	scopesSet = new ScopeSet(touchedScopes);
+            else if (currentIMHDTScopeHint)
+            	scopesSet = new ScopeSet([currentIMHDTScopeHint]);
+
+			// here we don't know where it's called from (might already be in a digest cycle so in order to avoid an exception trying to call digest again, better use $scope.evalAsync(), so async = true)
+            if (scopesSet) optimizeAndCallFormScopeDigest(scopesSet, true);
 		}
 	}
 

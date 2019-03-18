@@ -145,7 +145,7 @@ webSocketModule.factory('$webSocket',
 
 	var nextMessageId = 1;
 	
-	var functionsToExecuteAfterIncommingMessageWasHandled = undefined;
+	let functionsToExecuteAfterIncommingMessageWasHandled: Array<{scopeHint: angular.IScope, task: () => Array<angular.IScope>}> = undefined;
 
 	var getNextMessageId = function() {
 		return nextMessageId++;
@@ -184,6 +184,22 @@ webSocketModule.factory('$webSocket',
 	var getURLParameter = function getURLParameter(name) {
 		return decodeURIComponent((new RegExp('[&]?\\b' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(getQueryString())||[,""])[1].replace(/\+/g, '%20'))||null
 	};
+	
+	let optimizeAndCallFormScopeDigest = function(scopesToDigest: ScopeSet) {
+		let scopesArray = scopesToDigest.getItems();
+		for (let idx in scopesArray) {
+			let s = scopesArray[idx];
+			let scopeId = s.$id;
+			let p = s.$parent;
+			while (p && !scopesToDigest.hasItem(p)) p = p.$parent;
+			if (!p) { // if no parent form scope is going to do digest
+				if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will call digest for scope: " + (s && s["formname"] ? s["formname"] : scopeId));
+				setIMHDTScopeHintInternal(s);
+				s.$digest();
+				setIMHDTScopeHintInternal(undefined);
+			} else if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will NOT call digest for scope: " + (s && s["formname"] ? s["formname"] : scopeId) + " because a parent form scope " + (p["formname"] ? p["formname"] : p.$id) + " is in the list...");
+		}
+	}
 
 	var handleMessage = function(message) {
 		var obj
@@ -264,25 +280,11 @@ webSocketModule.factory('$webSocket',
 				$sabloLoadingIndicator.hideLoading();
 			}
 
-			function optimizeAndCallFormScopeDigest(scopesToDigest) {
-				for (var scopeId in scopesToDigest) {
-					var s = scopesToDigest[scopeId];
-					var p = s.$parent;
-					while (p && !scopesToDigest[p.$id]) p = p.$parent;
-					if (!p) { // if no parent form scope is going to do digest
-						if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will call digest for scope: " + (s && s.formname ? s.formname : scopeId));
-						s.$digest();
-					} else if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will NOT call digest for scope: " + (s && s.formname ? s.formname : scopeId) + " because a parent form scope " + (p.formname ? p.formname : p.$id) + " is in the list...");
-				}
-			}
-
 			// message
 			if (obj.msg) {
-				var scopesToDigest = new window.CustomHashSet(function(s) {
-					return s.$id; // hash them by angular scope id to avoid calling digest on the same scope twice
-				});
-				for (var handler in onMessageObjectHandlers) {
-					var ret = onMessageObjectHandlers[handler](obj.msg, obj[$sabloConverters.TYPES_KEY] ? obj[$sabloConverters.TYPES_KEY].msg : undefined, scopesToDigest)
+				let scopesToDigest = new ScopeSet();
+				for (let handler in onMessageObjectHandlers) {
+					let ret = onMessageObjectHandlers[handler](obj.msg, obj[$sabloConverters.TYPES_KEY] ? obj[$sabloConverters.TYPES_KEY].msg : undefined, scopesToDigest)
 					if (ret) responseValue = ret;
 					
 					if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Checking if any form scope changes need to be digested (obj.msg).");
@@ -313,10 +315,8 @@ webSocketModule.factory('$webSocket',
 			// delayed calls
 			if (obj.calls)
 			{
-				var scopesToDigest = new window.CustomHashSet(function(s) {
-					return s.$id; // hash them by angular scope id to avoid calling digest on the same scope twice
-				});
-				for(var i = 0;i < obj.calls.length;i++) 
+				let scopesToDigest = new ScopeSet();
+				for(let i = 0;i < obj.calls.length;i++) 
 				{
 					for (var handler in onMessageObjectHandlers) {
 						onMessageObjectHandlers[handler](obj.calls[i], (obj[$sabloConverters.TYPES_KEY] && obj[$sabloConverters.TYPES_KEY].calls) ? obj[$sabloConverters.TYPES_KEY].calls[i] : undefined, scopesToDigest);
@@ -383,10 +383,17 @@ webSocketModule.factory('$webSocket',
 				sendMessageObject(response);
 			}
 		} finally {
-			var err;
-			for (var i = 0; i < functionsToExecuteAfterIncommingMessageWasHandled.length; i++) {
+			let err;
+			let scopesToDigest = new ScopeSet();
+
+			for (let i = 0; i < functionsToExecuteAfterIncommingMessageWasHandled.length; i++) {
 				try {
-					functionsToExecuteAfterIncommingMessageWasHandled[i]();
+					let touchedScopes = functionsToExecuteAfterIncommingMessageWasHandled[i].task();
+					if (touchedScopes) {
+						touchedScopes.forEach((value) => {scopesToDigest.putItem(value)});
+					} else if (functionsToExecuteAfterIncommingMessageWasHandled[i].scopeHint) {
+						scopesToDigest.putItem(functionsToExecuteAfterIncommingMessageWasHandled[i].scopeHint);
+					}
 				} catch (e) {
 					$log.error("Error (follows below) in executing PostIncommingMessageHandlingTask: " + functionsToExecuteAfterIncommingMessageWasHandled[i]);
 					$log.error(e);
@@ -394,16 +401,41 @@ webSocketModule.factory('$webSocket',
 				}
 			}
 			functionsToExecuteAfterIncommingMessageWasHandled = undefined;
+			
+			optimizeAndCallFormScopeDigest(scopesToDigest);
+			
 			if (err) throw err;
 		}
 	}
 	
-	var addIncomingMessageHandlingDoneTask = function(func) {
-		if (functionsToExecuteAfterIncommingMessageWasHandled) functionsToExecuteAfterIncommingMessageWasHandled.push(func);
-		else func(); // will not addPostIncommingMessageHandlingTask while not handling an incoming message; the task can execute right away then (maybe it was called due to a change detected in a watch instead of property listener)
+	let currentIMHDTScopeHint: angular.IScope;
+	
+	/**
+	 * For internal use. Only used in order to implement backwards compatibility with addIncomingMessageHandlingDoneTask tasks that do not return the touched/modified scopes.
+	 * In that case we try to guess those scopes via this method that should be called whenever we know code executing on a specific scope might call addIncomingMessageHandlingDoneTask(...).
+	 */
+	let setIMHDTScopeHintInternal = function(scope: angular.IScope) {
+		currentIMHDTScopeHint = scope;
 	}
 
-	var sendMessageObject = function(obj) {
+	/**
+	 * Wait for all incoming changes to be applied to properties first (if a message from server is currently being processed) before executing given function
+	 * 
+	 * @param func will be called once the incoming message from server has been processed; can return an array of angular scopes that were touched/changed by this function; those scopes will be
+	 * digested after all "incomingMessageHandlingDoneTask"s are executed. If the function returns nothing then sablo tries to detect situations when the task is added while some property value change
+	 * from server is being processed and to digest the appropriate scope afterwards...
+	 */
+	let addIncomingMessageHandlingDoneTask = function(func: () => Array<angular.IScope>) {
+		if (functionsToExecuteAfterIncommingMessageWasHandled) functionsToExecuteAfterIncommingMessageWasHandled.push({scopeHint: currentIMHDTScopeHint, task: func});
+		else {
+			// will not addPostIncommingMessageHandlingTask while not handling an incoming message; the task can execute right away then (maybe it was called due to a change detected in a watch instead of property listener)
+			let touchedScopes = func();
+			if (touchedScopes) optimizeAndCallFormScopeDigest(new ScopeSet(touchedScopes));
+			else if (currentIMHDTScopeHint) optimizeAndCallFormScopeDigest(new ScopeSet([currentIMHDTScopeHint]));
+		}
+	}
+
+	let sendMessageObject = function(obj) {
 		if ($sabloUtils.getCurrentEventLevelForServer()) {
 			obj.prio = $sabloUtils.getCurrentEventLevelForServer();
 		}
@@ -702,6 +734,8 @@ webSocketModule.factory('$webSocket',
 		isConnected: isConnected,
 
 		isReconnecting: isReconnecting,
+		
+		setIMHDTScopeHintInternal: setIMHDTScopeHintInternal,
 		
 		addIncomingMessageHandlingDoneTask: addIncomingMessageHandlingDoneTask,
 		
@@ -1002,24 +1036,6 @@ webSocketModule.factory('$webSocket',
 
 	};
 }).factory("$sabloUtils", function($log, $sabloConverters:sablo.ISabloConverters,$swingModifiers) {
-	// define a global custom 'hash set' based on a configurable hash function received in constructor
-	window.CustomHashSet = function(hashCodeFunc) {
-		Object.defineProperty(this, "hashCode", {
-			configurable: true,
-			enumerable: false,
-			writable: true,
-			value: hashCodeFunc
-		});
-	};
-	Object.defineProperty(window.CustomHashSet.prototype, "putItem", {
-		configurable: true,
-		enumerable: false,
-		writable: true,
-		value: function(e) {
-			this[this.hashCode(e)] = e; // hash them by angular scope id to avoid calling digest on the same scope twice
-		}
-	});
-	
 	var getCombinedPropertyNames = function(now,prev) {
 		var fulllist = {}
 		if (prev) {
@@ -1428,3 +1444,41 @@ angular.module("webSocketModule").factory("$sabloTestability", ["$window","$log"
 	}
 }]);
 
+interface HashCodeFunc<T> {
+    (T: any): number;
+}
+
+/** A custom 'hash set' based on a configurable hash function received in constructor for now it can only do putItem, hasItem and getItems */
+class CustomHashSet<T> {
+	private items: { [index: number]: T; } = {};
+	
+	constructor(private hashCodeFunc: HashCodeFunc<T>) {}
+	
+	public putItem(item: T) : void {
+		this.items[this.hashCodeFunc(item)] = item;
+	}
+	
+	public hasItem(item: T) : boolean {
+		return !!this.items[this.hashCodeFunc(item)];
+	}
+	
+	public getItems() : Array<T> {
+		let allItems: Array<T> = [];
+		for (let k in this.items) allItems.push(this.items[k]);
+		
+		return allItems;
+	}
+}
+
+/** A CustomHashSet that uses as hashCode for angular scopes their $id. */
+class ScopeSet extends CustomHashSet<angular.IScope> {
+	
+	constructor(initialScopes?: Array<angular.IScope>) {
+		super(function(s : angular.IScope) {
+			return s.$id; // hash them by angular scope id to avoid calling digest on the same scope twice
+		});
+		
+		if (initialScopes) initialScopes.forEach((value) => { this.putItem(value) });
+	}
+	
+}

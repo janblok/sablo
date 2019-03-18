@@ -354,10 +354,10 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 				if (conversionInfo && conversionInfo.call) msg.call = $sabloConverters.convertFromServerToClient(msg.call, conversionInfo.call, undefined, undefined, undefined);
 
 				if (msg.sessionid) {
-					webStorage.session.add("sessionid", msg.sessionid);
+					webStorage.session.set("sessionid", msg.sessionid);
 				}
 				if (msg.windowid) {
-					webStorage.session.add("windowid", msg.windowid);
+					webStorage.session.set("windowid", msg.windowid);
 				}
 				if (msg.sessionid || msg.windowid) {
 					// update the arguments on the reconnection websocket.

@@ -15,32 +15,67 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 
 	var oldLog = $window.console.log;
 	$window.console.log =  function(msg) {
-		oldLog.apply($window.console, arguments);
-		callService('consoleLogger', 'info', { message: msg }, true)
+		try
+		{
+			oldLog.apply($window.console, arguments);
+			callService('consoleLogger', 'info', { message: msg }, true)
+		}
+		catch(e)
+		{
+			//ignore for now
+		}
 	}
 	
 	var oldError = $window.console.error;
 	$window.console.error =  function(msg) {
-		oldError.apply($window.console, arguments);
-		callService('consoleLogger', 'error', { message: msg }, true)
+		try
+		{
+			oldError.apply($window.console, arguments);
+			callService('consoleLogger', 'error', { message: msg }, true)
+		}
+		catch(e)
+		{
+			//ignore for now
+		}
 	}
 	
 	var oldWarn = $window.console.warn;
 	$window.console.warn =  function(msg) {
-		oldWarn.apply($window.console, arguments);
-		callService('consoleLogger', 'warn', { message: msg }, true)
+		try
+		{
+			oldWarn.apply($window.console, arguments);
+			callService('consoleLogger', 'warn', { message: msg }, true)
+		}
+		catch(e)
+		{
+			//ignore for now
+		}
 	}
 	
 	var oldInfo = $window.console.info;
 	$window.console.info =  function(msg) {
-		oldInfo.apply($window.console, arguments);
-		callService('consoleLogger', 'info', { message: msg }, true)
+		try
+		{
+			oldInfo.apply($window.console, arguments);
+			callService('consoleLogger', 'info', { message: msg }, true)
+		}
+		catch(e)
+		{
+			//ignore for now
+		}
 	}
 	
 	var oldDebug = $window.console.debug;
 	$window.console.debug =  function(msg) {
-		oldDebug.apply($window.console, arguments);
-		callService('consoleLogger', 'debug', { message: msg }, true)
+		try
+		{
+			oldDebug.apply($window.console, arguments);
+			callService('consoleLogger', 'debug', { message: msg }, true)
+		}
+		catch(e)
+		{
+			//ignore for now
+		}
 	}
 	
 	$window.onerror = function(message, source, lineno, colno, error) {
@@ -319,10 +354,10 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 				if (conversionInfo && conversionInfo.call) msg.call = $sabloConverters.convertFromServerToClient(msg.call, conversionInfo.call, undefined, undefined, undefined);
 
 				if (msg.sessionid) {
-					webStorage.session.add("sessionid", msg.sessionid);
+					webStorage.session.set("sessionid", msg.sessionid);
 				}
 				if (msg.windowid) {
-					webStorage.session.add("windowid", msg.windowid);
+					webStorage.session.set("windowid", msg.windowid);
 				}
 				if (msg.sessionid || msg.windowid) {
 					// update the arguments on the reconnection websocket.

@@ -284,24 +284,23 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		return async ? promise : waitForServiceCallbacks(promise, [100, 200, 500, 1000, 3000, 5000])
 	}
 
-	var getSessionId = function() {
-		var sessionId = webStorage.session.get('sessionid')
-		if (sessionId) {
-			return sessionId;
+	var getClientnr = function() {
+		var clientnr = webStorage.session.get('clientnr')
+		if (clientnr) {
+			return clientnr;
 		}
-		return $webSocket.getURLParameter('sessionid');
+		return $webSocket.getURLParameter('clientnr');
 	}
-
 	var getWindowName = function() {
 		return $webSocket.getURLParameter('windowname');
 	}
 
-	var getWindowId = function() {
-		return webStorage.session.get('windowid');
+	var getWindowNr = function() {
+		return webStorage.session.get('windownr');
 	}
 
 	var getWindowUrl = function(windowname: string) {
-		return "index.html?windowname=" + encodeURIComponent(windowname) + "&sessionid=" + getSessionId();
+		return "index.html?windowname=" + encodeURIComponent(windowname) + "&clientnr=" + getClientnr();
 	}
 
 	var formResolver = null;
@@ -329,9 +328,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 				websocketUri: websocketUri
 			};
 		   if($webSocket.getURLParameter($websocketConstants.CLEAR_SESSION_PARAM) == 'true'){
-	            this.clearSabloSession();
+	            this.clearSabloInfo();
 	       }
-			wsSession = $webSocket.connect(wsSessionArgs.context, [getSessionId(), getWindowName(), getWindowId()], wsSessionArgs.queryArgs, wsSessionArgs.websocketUri);
+			wsSession = $webSocket.connect(wsSessionArgs.context, [getClientnr(), getWindowName(), getWindowNr()], wsSessionArgs.queryArgs, wsSessionArgs.websocketUri);
 
 			wsSession.onMessageObject(function(msg, conversionInfo, scopesToDigest) {
 				// data got back from the server
@@ -352,18 +351,19 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 				}
 
 				if (conversionInfo && conversionInfo.call) msg.call = $sabloConverters.convertFromServerToClient(msg.call, conversionInfo.call, undefined, undefined, undefined);
-
-				if (msg.sessionid) {
-					webStorage.session.set("sessionid", msg.sessionid);
+				
+				
+				if (msg.clientnr) {
+					webStorage.session.set("clientnr", msg.clientnr);
 				}
-				if (msg.windowid) {
-					webStorage.session.set("windowid", msg.windowid);
+				if (msg.windownr) {
+					webStorage.session.set("windownr", msg.windownr);
 				}
-				if (msg.sessionid || msg.windowid) {
+				if (msg.clientnr || msg.windownr) {
 					// update the arguments on the reconnection websocket.
-					$webSocket.setConnectionPathArguments([getSessionId(), getWindowName(), getWindowId()]);
+					$webSocket.setConnectionPathArguments([getClientnr(), getWindowName(), getWindowNr()]);
 				}
-
+				
 				if (msg.call) {
 					// {"call":{"form":"product","element":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}, // optionally "viewIndex":1 
 					// "{ svy_types : {product: {datatextfield1: {0: "Date"}}} }
@@ -517,9 +517,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 			formResolver = contributedFormResolver;
 		},
 
-		getSessionId: getSessionId,
+		getClientnr: getClientnr,
 		getWindowName: getWindowName,
-		getWindowId: getWindowId,
+		getWindowNr: getWindowNr,
 		getWindowUrl: getWindowUrl,
 
 		// used by custom property component[] to implement nested component logic
@@ -551,9 +551,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 			delete formStatesConversionInfo[formName];
 		},
 		
-		clearSabloSession:function (){
-	        webStorage.session.remove('windowid');
-			webStorage.session.remove('sessionid');
+		clearSabloInfo:function (){
+	        webStorage.session.remove('windownr');
+	        webStorage.session.remove('clientnr');
 		},
 
 		initFormState: function(formName, beanDatas, formProperties, formScope, resolve) {

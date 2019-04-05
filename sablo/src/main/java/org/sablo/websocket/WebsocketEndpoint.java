@@ -27,6 +27,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.servlet.http.HttpSession;
 import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCodes;
 import javax.websocket.Session;
@@ -103,17 +104,26 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		return session;
 	}
 
-	public void start(Session newSession, String sessionid, String winname, final String winid) throws Exception
+	public void start(Session newSession, String clntnr, String winname, String winnr) throws Exception
 	{
 		this.session = newSession;
 
-		String uuid = "null".equalsIgnoreCase(sessionid) ? null : sessionid;
-		String windowId = "null".equalsIgnoreCase(winid) ? null : winid;
+		int clientnr = "null".equalsIgnoreCase(clntnr) ? -1 : Integer.parseInt(clntnr);
+		int windowNr = "null".equalsIgnoreCase(winnr) ? -1 : Integer.parseInt(winnr);
 		String windowName = "null".equalsIgnoreCase(winname) ? null : winname;
 
-		final IWebsocketSession wsSession = WebsocketSessionManager.getOrCreateSession(endpointType, uuid, true);
+		HttpSession httpSession = getHttpSession(newSession);
+		if (httpSession == null)
+		{
+			// this can happen when the server is restarted and the client reconnects the websocket
+			log.warn("Cannot find httpsession for websocket session, server restarted? clientnr=" + clntnr + ", windowNr=" + windowNr + ", windowName=" +
+				windowName);
+			cancelSession(CLOSE_REASON_CLIENT_OUT_OF_SYNC);
+			return;
+		}
+		IWebsocketSession wsSession = WebsocketSessionManager.getOrCreateSession(endpointType, httpSession, clientnr, true);
 
-		CurrentWindow.set(window = wsSession.getOrCreateWindow(windowId, windowName));
+		CurrentWindow.set(window = wsSession.getOrCreateWindow(windowNr, windowName));
 
 		messageLogger = wsSession.getMessageLogger(window);
 
@@ -155,6 +165,11 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 
 		WebsocketSessionManager.closeInactiveSessions();
 	}
+
+	/**
+	 * @param session
+	 */
+	protected abstract HttpSession getHttpSession(Session session);
 
 	/**
 	 *  Called after from start(), called after the init of the session object.
@@ -396,6 +411,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 								{
 									try
 									{
+										getWindow().sendChanges();
 										if (error == null)
 										{
 											Object resultObject = result;
@@ -405,12 +421,10 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 												resultObject = ((TypedData< ? >)result).content;
 												objectType = ((TypedData< ? >)result).contentType;
 											}
-											getWindow().sendChanges();
 											sendResponse(msgId, resultObject, objectType, true);
 										}
 										else
 										{
-											getWindow().sendChanges();
 											sendResponse(msgId, error, null, false);
 										}
 									}

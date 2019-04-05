@@ -295,7 +295,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		return $webSocket.getURLParameter('windowname');
 	}
 
-	var getWindowNr = function() {
+	var getWindownr = function() {
 		return webStorage.session.get('windownr');
 	}
 
@@ -330,7 +330,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		   if($webSocket.getURLParameter($websocketConstants.CLEAR_SESSION_PARAM) == 'true'){
 	            this.clearSabloInfo();
 	       }
-			wsSession = $webSocket.connect(wsSessionArgs.context, [getClientnr(), getWindowName(), getWindowNr()], wsSessionArgs.queryArgs, wsSessionArgs.websocketUri);
+			wsSession = $webSocket.connect(wsSessionArgs.context, [getClientnr(), getWindowName(), getWindownr()], wsSessionArgs.queryArgs, wsSessionArgs.websocketUri);
 
 			wsSession.onMessageObject(function(msg, conversionInfo, scopesToDigest) {
 				// data got back from the server
@@ -361,7 +361,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 				}
 				if (msg.clientnr || msg.windownr) {
 					// update the arguments on the reconnection websocket.
-					$webSocket.setConnectionPathArguments([getClientnr(), getWindowName(), getWindowNr()]);
+					$webSocket.setConnectionPathArguments([getClientnr(), getWindowName(), getWindownr()]);
 				}
 				
 				if (msg.call) {
@@ -519,7 +519,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 
 		getClientnr: getClientnr,
 		getWindowName: getWindowName,
-		getWindowNr: getWindowNr,
+		getWindownr: getWindownr,
 		getWindowUrl: getWindowUrl,
 
 		// used by custom property component[] to implement nested component logic

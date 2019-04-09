@@ -22,15 +22,16 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
+import javax.servlet.http.HttpSession;
 import javax.websocket.CloseReason;
 
 import org.slf4j.Logger;
@@ -43,6 +44,9 @@ import org.slf4j.LoggerFactory;
 public class WebsocketSessionManager
 {
 	private static final Logger log = LoggerFactory.getLogger(WebsocketSessionManager.class.getCanonicalName());
+
+	private static final String HTTP_SESSION_COUNTER = "httpSessionCounter";
+	private static final String LAST_CLIENT_NUMBER = "lastClientNumber";
 
 	private final static Map<String, IWebsocketSessionFactory> websocketSessionFactories = new HashMap<>();
 
@@ -108,18 +112,18 @@ public class WebsocketSessionManager
 		pingEndpointsThread.start();
 	}
 
-	//maps form uuid to session
-	private final static ConcurrentMap<String, IWebsocketSession> wsSessions = new ConcurrentHashMap<>();
+	//maps form WebsocketSessionKey to session
+	private final static ConcurrentMap<WebsocketSessionKey, IWebsocketSession> wsSessions = new ConcurrentHashMap<>();
 
 	private final static ReentrantLock closingLock = new ReentrantLock();
 	private final static ReentrantLock creatingLock = new ReentrantLock();
 
 	public static void addSession(IWebsocketSession wsSession)
 	{
-		wsSessions.put(wsSession.getUuid(), wsSession);
+		wsSessions.put(wsSession.getSessionKey(), wsSession);
 	}
 
-	public static void removeSession(String uuid)
+	public static void removeSession(WebsocketSessionKey sessionKey)
 	{
 		// if there is a current window, first send all pending changes
 		if (CurrentWindow.exists() && CurrentWindow.get().hasEndpoint())
@@ -137,18 +141,18 @@ public class WebsocketSessionManager
 				log.error("Error sending changes when session is removed", e);
 			}
 		}
-		IWebsocketSession websocketSession = wsSessions.remove(uuid);
+		IWebsocketSession websocketSession = wsSessions.remove(sessionKey);
 		if (websocketSession != null)
 		{
 			websocketSession.dispose();
 		}
 	}
 
-	public static IWebsocketSession getSession(String endpointType, String prevUuid)
+	public static IWebsocketSession getSession(String endpointType, HttpSession httpSession, int clientnr)
 	{
 		try
 		{
-			return getOrCreateSession(endpointType, prevUuid, false);
+			return getOrCreateSession(endpointType, httpSession, clientnr, false);
 		}
 		catch (Exception e)
 		{
@@ -161,35 +165,53 @@ public class WebsocketSessionManager
 	 * This method only throws an exception if the creation of the client fails (so the create boolean is true)
 	 *
 	 * @param endpointType
-	 * @param prevUuid
+	 * @param httpSessionid
+	 * @param clientnr
 	 * @param create
 	 * @return
 	 * @throws Exception
 	 */
-	static IWebsocketSession getOrCreateSession(String endpointType, String prevUuid, boolean create) throws Exception
+	static IWebsocketSession getOrCreateSession(String endpointType, HttpSession httpSession, int clientnr, boolean create) throws Exception
 	{
-		String uuid = prevUuid;
 		IWebsocketSession wsSession = null;
 		if (create) creatingLock.lock();
 		try
 		{
-			if (uuid != null && uuid.length() > 0)
-			{
-				wsSession = wsSessions.get(uuid);
-			}
-			else
-			{
-				uuid = UUID.randomUUID().toString();
-			}
+			WebsocketSessionKey key = getSessionKey(httpSession, clientnr);
+			wsSession = wsSessions.get(key);
 			if (wsSession == null || !wsSession.isValid())
 			{
 				wsSession = null;
 				if (create && websocketSessionFactories.containsKey(endpointType))
 				{
-					wsSession = websocketSessionFactories.get(endpointType).createSession(uuid);
+					// a new session, make sure it will not clash with an existing clientnr within the same httpsession
+					if (clientnr != -1)
+					{
+						key = getSessionKey(httpSession, -1);
+					}
+
+					wsSession = websocketSessionFactories.get(endpointType).createSession(key);
 					if (wsSession != null)
 					{
-						wsSessions.put(uuid, wsSession);
+						AtomicInteger sessionCounter = getCounter(httpSession, HTTP_SESSION_COUNTER);
+						sessionCounter.incrementAndGet();
+
+						wsSessions.put(key, wsSession);
+						wsSession.addDisposehandler(() -> {
+							// invalidate http session when last session is disposed
+							try
+							{
+								AtomicInteger counter = getCounter(httpSession, HTTP_SESSION_COUNTER);
+								if (counter.decrementAndGet() == 0)
+								{
+									httpSession.invalidate();
+								}
+							}
+							catch (Exception ignore)
+							{
+								// http session can already be invalid..
+							}
+						});
 					}
 				}
 			}
@@ -199,6 +221,32 @@ public class WebsocketSessionManager
 			if (create) creatingLock.unlock();
 		}
 		return wsSession;
+	}
+
+	private static WebsocketSessionKey getSessionKey(HttpSession httpSession, int prevClientnr)
+	{
+		int clientnr;
+		if (prevClientnr == -1)
+		{
+			// new client, generate new number
+			clientnr = getCounter(httpSession, LAST_CLIENT_NUMBER).incrementAndGet();
+		}
+		else
+		{
+			clientnr = prevClientnr;
+		}
+		return new WebsocketSessionKey(httpSession.getId(), clientnr);
+	}
+
+	private static synchronized AtomicInteger getCounter(HttpSession httpSession, String attribute)
+	{
+		AtomicInteger counter = (AtomicInteger)httpSession.getAttribute(attribute);
+		if (counter == null)
+		{
+			counter = new AtomicInteger();
+			httpSession.setAttribute(attribute, counter);
+		}
+		return counter;
 	}
 
 	public static void closeInactiveSessions()
@@ -279,7 +327,7 @@ public class WebsocketSessionManager
 						}
 						catch (Exception e)
 						{
-							log.error("Error expiring session " + session.getUuid(), e);
+							log.error("Error expiring session " + session.getSessionKey(), e);
 						}
 
 						try
@@ -288,7 +336,7 @@ public class WebsocketSessionManager
 						}
 						catch (Exception e)
 						{
-							log.error("Error disposing expired session " + session.getUuid(), e);
+							log.error("Error disposing expired session " + session.getSessionKey(), e);
 						}
 					}
 				}

@@ -31,6 +31,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.sablo.services.template.ModifiablePropertiesGenerator;
 import org.sablo.specification.WebComponentSpecProvider;
@@ -96,6 +97,11 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 	{
 		HttpServletRequest request = (HttpServletRequest)servletRequest;
 
+		// make sure a session is created. when a sablo client is created, that one should set the timeout to 0
+		HttpSession httpSession = request.getSession();
+		// the session should be picked up in a websocket request very soon, set timeout low so it won't stay in case of robots
+		httpSession.setMaxInactiveInterval(60);
+
 		String uri = request.getRequestURI();
 		if (uri.endsWith("spec/" + ModifiablePropertiesGenerator.PUSH_TO_SERVER_BINDINGS_LIST + ".js"))
 		{
@@ -104,6 +110,8 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 
 			HTTPUtils.setNoCacheHeaders((HttpServletResponse)servletResponse);
 
+			((HttpServletResponse)servletResponse).setContentType("text/javascript");
+			((HttpServletResponse)servletResponse).setCharacterEncoding("UTF-8");
 			PrintWriter w = servletResponse.getWriter();
 			ModifiablePropertiesGenerator.start(w);
 			ModifiablePropertiesGenerator.appendAll(w, WebComponentSpecProvider.getSpecProviderState().getAllWebComponentSpecifications(), "components");

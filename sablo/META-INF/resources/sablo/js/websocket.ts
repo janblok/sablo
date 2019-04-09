@@ -621,7 +621,8 @@ webSocketModule.factory('$webSocket',
 			}
 		}
 
-		new_uri += "?";
+		// connectnr is only used in this call
+		new_uri += "?connectNr="+Math.floor((Math.random() * 10000000000000))+"&";
 
 		for (let a in queryArgs)
 		{
@@ -633,6 +634,7 @@ webSocketModule.factory('$webSocket',
 		if (lastServerMessageNumber != null) {
 			new_uri += "lastServerMessageNumber="+lastServerMessageNumber+"&";
 		}
+		
 
 		let queryString = getQueryString();
 		if (queryString)

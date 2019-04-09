@@ -44,9 +44,6 @@ import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 public class WebsocketSessionWindows implements IWindow
 {
 
-	// private static final Logger log = LoggerFactory.getLogger(WebsocketSessionWindows.class.getCanonicalName());
-
-
 	private final IWebsocketSession session;
 
 	/**

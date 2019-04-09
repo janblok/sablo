@@ -27,7 +27,6 @@ import java.util.concurrent.Callable;
  */
 public class CurrentWindow
 {
-//	public static final Logger log = LoggerFactory.getLogger(CurrentWindow.class.getCanonicalName());
 
 	private static ThreadLocal<IWindow> currentWindow = new ThreadLocal<>();
 

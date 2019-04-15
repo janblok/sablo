@@ -291,6 +291,12 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		}
 		return $webSocket.getURLParameter('clientnr');
 	}
+	
+    var getSessionId = function() {
+   	 console.log("depricated api usage, use getClientNr()")
+   	 return getClientnr();
+   	}
+   	
 	var getWindowName = function() {
 		return $webSocket.getURLParameter('windowname');
 	}
@@ -518,6 +524,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		},
 
 		getClientnr: getClientnr,
+		getSessionId: getSessionId,
 		getWindowName: getWindowName,
 		getWindownr: getWindownr,
 		getWindowUrl: getWindowUrl,

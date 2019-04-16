@@ -17,6 +17,7 @@
 package org.sablo.specification.property.types;
 
 import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.PropertyDescriptionBuilder;
 
 /**
  * Property type that is only used to aggregate other property types through a {@link PropertyDescription}'s child properties - at runtime.
@@ -28,16 +29,9 @@ public class AggregatedPropertyType extends DefaultPropertyType<Object>
 
 	public static final AggregatedPropertyType INSTANCE = new AggregatedPropertyType();
 
-	public static PropertyDescription newAggregatedProperty()
+	public static PropertyDescriptionBuilder newAggregatedPropertyBuilder()
 	{
-		return new PropertyDescription("", AggregatedPropertyType.INSTANCE)
-		{
-			@Override
-			public String toString()
-			{
-				return super.toString(true);
-			}
-		};
+		return new PropertyDescriptionBuilder("", AggregatedPropertyType.INSTANCE);
 	}
 
 	private AggregatedPropertyType()

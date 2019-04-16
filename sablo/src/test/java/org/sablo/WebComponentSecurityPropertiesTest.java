@@ -21,6 +21,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.json.JSONArray;
@@ -826,9 +828,13 @@ public class WebComponentSecurityPropertiesTest
 		WebComponentSpecProvider.init(
 			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
 
-		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null);
-		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
-		formSpec.putProperty("prot", new PropertyDescription("prot", ProtectedPropertyType.INSTANCE, ProtectedConfig.DEFAULTBLOCKING_TRUE));
+		Map<String, PropertyDescription> properties = new HashMap<String, PropertyDescription>();
+		properties.put("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
+		properties.put("prot", new PropertyDescription("prot", ProtectedPropertyType.INSTANCE, ProtectedConfig.DEFAULTBLOCKING_TRUE));
+
+		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null, null,
+			properties);
+
 
 		Container form = new Container("form", formSpec)
 		{
@@ -924,10 +930,14 @@ public class WebComponentSecurityPropertiesTest
 
 		JSONObject tags = new JSONObject();
 		tags.put(WebObjectSpecification.ALLOW_ACCESS, new JSONArray(new Object[] { "visible", "enabled" }));
-		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null);
-		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE, null, null, null, false, null, null, tags, false));
-		formSpec.putProperty("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
-		formSpec.putProperty("enabled", new PropertyDescription("enabled", EnabledPropertyType.INSTANCE));
+		Map<String, PropertyDescription> properties = new HashMap<String, PropertyDescription>();
+		properties.put("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE, null, null, null, null, false, null, null, tags, false));
+		properties.put("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
+		properties.put("enabled", new PropertyDescription("enabled", EnabledPropertyType.INSTANCE));
+
+		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null, null,
+			properties);
+
 
 		Container form = new Container("form", formSpec)
 		{

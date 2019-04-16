@@ -37,6 +37,7 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 
 	private static volatile WebComponentSpecProvider instance;
 	private static final SpecReloadSubject specReloadSubject = new SpecReloadSubject();
+	private IDefaultComponentPropertiesProvider defaultComponentPropertiesProvider;
 
 	public static WebComponentSpecProvider getInstance()
 	{
@@ -127,4 +128,19 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 		super(reader);
 	}
 
+	/**
+	 * @param defaultComponentPropertiesProvider the defaultComponentPropertiesProvider to set
+	 */
+	public void setDefaultComponentPropertiesProvider(IDefaultComponentPropertiesProvider defaultComponentPropertiesProvider)
+	{
+		this.defaultComponentPropertiesProvider = defaultComponentPropertiesProvider;
+	}
+
+	/**
+	 * @return the defaultComponentPropertiesProvider
+	 */
+	public IDefaultComponentPropertiesProvider getDefaultComponentPropertiesProvider()
+	{
+		return defaultComponentPropertiesProvider;
+	}
 }

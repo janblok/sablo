@@ -103,7 +103,7 @@ public class WebObjectSpecification extends PropertyDescription
 	private final String icon;
 	private final String packageName;
 
-	private final Map<String, IPropertyType< ? >> foundTypes;
+	private Map<String, IPropertyType< ? >> foundTypes;
 
 	/**
 	 * Different then name only for services, not components/layouts.
@@ -126,25 +126,13 @@ public class WebObjectSpecification extends PropertyDescription
 	public WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
 		String definition, JSONArray libs)
 	{
-		super(name, null);
-		this.scriptingName = scriptifyNameIfNeeded(name, packageType);
-		this.packageName = packageName;
-		this.displayName = displayName;
-		this.categoryName = categoryName;
-		this.icon = icon;
-		this.preview = preview;
-		this.definition = definition;
-		this.libraries = libs != null ? libs : new JSONArray();
-		this.foundTypes = new HashMap<>();
+		this(name, packageName, packageType, displayName, categoryName, icon, preview, definition, libs, null, null);
 	}
 
-	/**
-	 * @param packageType one of {@link IPackageReader#WEB_SERVICE}, {@link IPackageReader#WEB_COMPONENT} and {@link IPackageReader#WEB_LAYOUT}.
-	 */
 	public WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
-		String definition, JSONArray libs, Object configObject)
+		String definition, JSONArray libs, Object configObject, Map<String, PropertyDescription> properties)
 	{
-		super(name, null, configObject);
+		super(name, null, configObject, properties, null, null, false, null, null, null, false);
 		this.scriptingName = scriptifyNameIfNeeded(name, packageType);
 		this.packageName = packageName;
 		this.displayName = displayName;
@@ -290,7 +278,7 @@ public class WebObjectSpecification extends PropertyDescription
 		return libraries;
 	}
 
-	private ParsedProperty parsePropertyString(final String propertyString)
+	private static ParsedProperty parsePropertyString(final String propertyString, Map<String, IPropertyType< ? >> foundTypes, String specName)
 	{
 		String property = propertyString.replaceAll("\\s", "");
 		boolean isArray = false;
@@ -306,7 +294,7 @@ public class WebObjectSpecification extends PropertyDescription
 			property = property.substring(0, property.length() - 3);
 		}
 		// first check the local ones.
-		IPropertyType< ? > t = foundTypes.get(property);
+		IPropertyType< ? > t = foundTypes != null ? foundTypes.get(property) : null;
 		try
 		{
 			if (t == null) t = TypesRegistry.getType(property);
@@ -316,7 +304,7 @@ public class WebObjectSpecification extends PropertyDescription
 			t = ObjectPropertyType.INSTANCE;
 			if (!"${dataproviderType}".equals(property))
 			{
-				String message = "Unknown type name '" + property + "' encountered while parsing spec " + this.getName();
+				String message = "Unknown type name '" + property + "' encountered while parsing spec " + specName;
 				log.warn(message);
 				System.err.println(message);
 			}
@@ -334,9 +322,7 @@ public class WebObjectSpecification extends PropertyDescription
 
 	public static Map<String, IPropertyType< ? >> getTypes(JSONObject typesContainer) throws JSONException
 	{
-		WebObjectSpecification spec = new WebObjectSpecification("", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null);
-		spec.parseTypes(typesContainer);
-		return spec.foundTypes;
+		return WebObjectSpecification.parseTypes(typesContainer);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -344,10 +330,20 @@ public class WebObjectSpecification extends PropertyDescription
 	{
 		JSONObject json = new JSONObject(specfileContent);
 
+		// first types, can be used in properties
+		Map<String, IPropertyType< ? >> types = WebObjectSpecification.parseTypes(json);
+
+		// properties
+		Map<String, PropertyDescription> properties = WebObjectSpecification.parseProperties("model", json, types, json.getString("name"));
+
+		if (WebComponentSpecProvider.getInstance().getDefaultComponentPropertiesProvider() != null)
+		{
+			properties.putAll(WebComponentSpecProvider.getInstance().getDefaultComponentPropertiesProvider().getDefaultComponentProperties());
+		}
 		WebObjectSpecification spec = new WebObjectSpecification(json.getString("name"), packageName, reader != null ? reader.getPackageType() : null,
 			json.optString("displayName", null), json.optString("categoryName", null), json.optString("icon", null), json.optString("preview", null),
-			json.getString("definition"), json.optJSONArray("libraries"));
-
+			json.getString("definition"), json.optJSONArray("libraries"), null, properties);
+		spec.foundTypes = types;
 		if (json.has("serverscript"))
 		{
 			try
@@ -359,12 +355,6 @@ public class WebObjectSpecification extends PropertyDescription
 				log.error("Error getting serverscript", e);
 			}
 		}
-		// first types, can be used in properties
-		spec.parseTypes(json);
-
-		// properties
-		spec.putAll(spec.parseProperties("model", json));
-
 		//handlers
 		if (json.has("handlers"))
 		{
@@ -430,17 +420,18 @@ public class WebObjectSpecification extends PropertyDescription
 							paramJSON.put((String)param.get("name"), param.get("type"));
 							JSONObject parseJSON = new JSONObject();
 							parseJSON.put("", paramJSON);
-							PropertyDescription propertyDescription = spec.parseProperties("", parseJSON).get(param.get("name"));
+							PropertyDescription propertyDescription = WebObjectSpecification.parseProperties("", parseJSON, spec.foundTypes,
+								spec.getName()).get(param.get("name"));
 							propertyType = propertyDescription.getType();
 							config = propertyDescription.getConfig();
 						}
 						else
 						{
-							ParsedProperty pp = spec.parsePropertyString(param.getString("type"));
+							ParsedProperty pp = WebObjectSpecification.parsePropertyString(param.getString("type"), spec.foundTypes, spec.getName());
 							propertyType = resolveArrayType(pp);
 							config = propertyType.parseConfig(null);
 						}
-						def.addParameter(new PropertyDescription((String)param.get("name"), propertyType, config, null, null, false, null, null, null,
+						def.addParameter(new PropertyDescription((String)param.get("name"), propertyType, config, null, null, null, false, null, null, null,
 							Boolean.TRUE.equals(param.opt("optional"))));
 					}
 				}
@@ -449,13 +440,13 @@ public class WebObjectSpecification extends PropertyDescription
 					if (jsonDef.get("returns") instanceof JSONObject)
 					{
 						JSONObject returnType = jsonDef.getJSONObject("returns");
-						ParsedProperty pp = spec.parsePropertyString(returnType.getString("type"));
+						ParsedProperty pp = WebObjectSpecification.parsePropertyString(returnType.getString("type"), spec.foundTypes, spec.getName());
 						PropertyDescription desc = new PropertyDescription("return", resolveArrayType(pp));
 						def.setReturnType(desc);
 					}
 					else
 					{
-						ParsedProperty pp = spec.parsePropertyString(jsonDef.getString("returns"));
+						ParsedProperty pp = WebObjectSpecification.parsePropertyString(jsonDef.getString("returns"), spec.foundTypes, spec.getName());
 						PropertyDescription desc = new PropertyDescription("return", resolveArrayType(pp));
 						def.setReturnType(desc);
 					}
@@ -523,8 +514,9 @@ public class WebObjectSpecification extends PropertyDescription
 	 *
 	 * @throws JSONException
 	 */
-	void parseTypes(JSONObject json) throws JSONException
+	static Map<String, IPropertyType< ? >> parseTypes(JSONObject json) throws JSONException
 	{
+		Map<String, IPropertyType< ? >> foundTypes = new HashMap<>();
 		String specName = json.optString("name", null);
 		if (json.has(TYPES_KEY))
 		{
@@ -545,16 +537,10 @@ public class WebObjectSpecification extends PropertyDescription
 				String typeName = types.next();
 				ICustomType< ? > type = (ICustomType< ? >)foundTypes.get(typeName);
 				JSONObject typeJSON = jsonObject.getJSONObject(typeName);
-				if (typeJSON.has("model"))
-				{
-					// TODO will we really use anything else but model (like api/handlers)? Cause if not, we can just drop the need for "model"
-					type.getCustomJSONTypeDefinition().putAll(parseProperties("model", typeJSON));
-				}
-				else
-				{
-					// allow custom types to be defined even without the "model" clutter
-					type.getCustomJSONTypeDefinition().putAll(parseProperties(typeName, jsonObject));
-				}
+				PropertyDescription pd = new PropertyDescriptionBuilder(specName != null ? (specName + "." + typeName) : typeName, type).putAll(
+					typeJSON.has("model") ? parseProperties("model", typeJSON, foundTypes, specName)
+						: parseProperties(typeName, jsonObject, foundTypes, specName)).create();
+				type.setCustomJSONDefinition(pd);
 				// TODO this is currently never true? See 5 lines above this, types are always just PropertyDescription?
 				// is this really supported? or should we add it just to the properties? But how are these handlers then added and used
 //				if (type instanceof WebObjectSpecification)
@@ -576,9 +562,10 @@ public class WebObjectSpecification extends PropertyDescription
 //				}
 			}
 		}
+		return foundTypes;
 	}
 
-	private class StandardTypeConfigSettings
+	private static class StandardTypeConfigSettings
 	{
 		public final Object defaultValue;
 		public final Object initialValue;
@@ -605,7 +592,8 @@ public class WebObjectSpecification extends PropertyDescription
 
 	}
 
-	protected Map<String, PropertyDescription> parseProperties(String propKey, JSONObject json) throws JSONException
+	protected static Map<String, PropertyDescription> parseProperties(String propKey, JSONObject json, Map<String, IPropertyType< ? >> foundTypes,
+		String specName) throws JSONException
 	{
 		Map<String, PropertyDescription> pds = new HashMap<>();
 		if (json.has(propKey))
@@ -622,12 +610,12 @@ public class WebObjectSpecification extends PropertyDescription
 				StandardTypeConfigSettings standardConfigurationSettings = null;
 				if (value instanceof String)
 				{
-					pp = parsePropertyString((String)value);
+					pp = parsePropertyString((String)value, foundTypes, specName);
 					standardConfigurationSettings = new StandardTypeConfigSettings();
 				}
 				else if (value instanceof JSONObject && ((JSONObject)value).has("type"))
 				{
-					pp = parsePropertyString(((JSONObject)value).getString("type"));
+					pp = parsePropertyString(((JSONObject)value).getString("type"), foundTypes, specName);
 					configObject = ((JSONObject)value);
 					standardConfigurationSettings = parseStandardConfigurationSettings(configObject);
 				}
@@ -659,7 +647,7 @@ public class WebObjectSpecification extends PropertyDescription
 								null, null);
 						}
 
-						PropertyDescription elementDescription = new PropertyDescription(ARRAY_ELEMENT_PD_NAME, type, type.parseConfig(elementConfig),
+						PropertyDescription elementDescription = new PropertyDescription(ARRAY_ELEMENT_PD_NAME, type, type.parseConfig(elementConfig), null,
 							elementStandardConfigurationSettings.defaultValue, elementStandardConfigurationSettings.initialValue,
 							elementStandardConfigurationSettings.hasDefault, elementStandardConfigurationSettings.values,
 							elementStandardConfigurationSettings.pushToServer, elementStandardConfigurationSettings.tags, false);
@@ -674,7 +662,7 @@ public class WebObjectSpecification extends PropertyDescription
 					}
 
 					pds.put(key,
-						new PropertyDescription(key, type, type.parseConfig(configObject), standardConfigurationSettings.defaultValue,
+						new PropertyDescription(key, type, type.parseConfig(configObject), null, standardConfigurationSettings.defaultValue,
 							standardConfigurationSettings.initialValue, standardConfigurationSettings.hasDefault, standardConfigurationSettings.values,
 							standardConfigurationSettings.pushToServer, standardConfigurationSettings.tags, false));
 				}
@@ -683,7 +671,7 @@ public class WebObjectSpecification extends PropertyDescription
 		return pds;
 	}
 
-	private StandardTypeConfigSettings parseStandardConfigurationSettings(JSONObject configObject)
+	private static StandardTypeConfigSettings parseStandardConfigurationSettings(JSONObject configObject)
 	{
 		Object defaultValue = null;
 		Object initialValue = null;

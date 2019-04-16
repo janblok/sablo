@@ -19,6 +19,7 @@ package org.sablo.specification;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -81,36 +82,36 @@ public class WebLayoutSpecification extends WebObjectSpecification
 		{
 			jsonConfig = reader.readTextFile(json.getString("definition"), Charset.forName("UTF8"));
 		}
-		WebLayoutSpecification spec = new WebLayoutSpecification(json.getString("name"), packageName, json.optString("displayName", null),
-			json.optString("categoryName", null), json.optString("icon", null), json.optString("preview", null), json.getString("definition"), jsonConfig,
-			topContainer, children, excludes, json.optString("designStyleClass"), json.optString("layout", null));
-
 		// properties
-		spec.putAll(spec.parseProperties("model", json));
-
-		if (json.has("attributes"))
-		{
-			String attributes = reader.readTextFile(json.getString("attributes"), Charset.forName("UTF8"));
-			spec.putAllAttributes(spec.parseProperties("attributes", new JSONObject(attributes)));
-		}
+		Map<String, PropertyDescription> properties = new HashMap<String, PropertyDescription>();
+		properties.putAll(WebObjectSpecification.parseProperties("model", json, null, json.getString("name")));
 
 		if (json.has("tagType"))
 		{
-			if (spec.getProperty("tagType") != null)
+			if (properties.get("tagType") != null)
 			{
-				PropertyDescription pd = spec.getProperty("tagType");
-				spec.putProperty("tagType", new PropertyDescription("tagType", pd.getType(), pd.getConfig(), json.get("tagType"), null, true, pd.getValues(),
-					pd.getPushToServer(), null, pd.isOptional()));
+				PropertyDescription pd = properties.get("tagType");
+				properties.put("tagType", new PropertyDescription("tagType", pd.getType(), pd.getConfig(), null, json.get("tagType"), null, true,
+					pd.getValues(), pd.getPushToServer(), null, pd.isOptional()));
 			}
 			else
 			{
 				JSONObject tags = new JSONObject();
 				tags.put("scope", "private");
-				spec.putProperty("tagType",
-					new PropertyDescription("tagType", StringPropertyType.INSTANCE, null, json.get("tagType"), null, true, null, null, tags, false));
+				properties.put("tagType",
+					new PropertyDescription("tagType", StringPropertyType.INSTANCE, null, null, json.get("tagType"), null, true, null, null, tags, false));
 			}
 		}
 
+		WebLayoutSpecification spec = new WebLayoutSpecification(json.getString("name"), packageName, json.optString("displayName", null),
+			json.optString("categoryName", null), json.optString("icon", null), json.optString("preview", null), json.getString("definition"), jsonConfig,
+			topContainer, children, excludes, json.optString("designStyleClass"), json.optString("layout", null), properties);
+
+		if (json.has("attributes"))
+		{
+			String attributes = reader.readTextFile(json.getString("attributes"), Charset.forName("UTF8"));
+			spec.putAllAttributes(WebObjectSpecification.parseProperties("attributes", new JSONObject(attributes), null, spec.getName()));
+		}
 		return spec;
 	}
 
@@ -133,9 +134,10 @@ public class WebLayoutSpecification extends WebObjectSpecification
 	private final List<String> excludedChildren;
 
 	public WebLayoutSpecification(String name, String packageName, String displayName, String categoryName, String icon, String preview, String definition,
-		Object configObject, boolean topContainer, List<String> allowedChildren, List<String> excludedChildren, String designStyleClass, String layout)
+		Object configObject, boolean topContainer, List<String> allowedChildren, List<String> excludedChildren, String designStyleClass, String layout,
+		Map<String, PropertyDescription> properties)
 	{
-		super(name, packageName, IPackageReader.WEB_LAYOUT, displayName, categoryName, icon, preview, definition, null, configObject);
+		super(name, packageName, IPackageReader.WEB_LAYOUT, displayName, categoryName, icon, preview, definition, null, configObject, properties);
 		this.topContainer = topContainer;
 		this.allowedChildren = allowedChildren;
 		this.excludedChildren = excludedChildren;

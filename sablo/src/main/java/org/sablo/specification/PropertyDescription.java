@@ -56,31 +56,31 @@ public class PropertyDescription
 	private final JSONObject tags;
 
 	//case of nested type
-	// TODO: make properties final and remove put* calls so PropertyDescription is immutable
-	private Map<String, PropertyDescription> properties = null;
+	private final Map<String, PropertyDescription> properties;
 	private final boolean hasDefault;
 
 
 	public PropertyDescription(String name, IPropertyType< ? > type)
 	{
-		this(name, type, null, null, null, false, null, null, null, false);
+		this(name, type, null, null, null, null, false, null, null, null, false);
 	}
 
 	public PropertyDescription(String name, IPropertyType< ? > type, PushToServerEnum pushToServer)
 	{
-		this(name, type, null, null, null, false, null, pushToServer, null, false);
+		this(name, type, null, null, null, null, false, null, pushToServer, null, false);
 	}
 
 	public PropertyDescription(String name, IPropertyType< ? > type, Object config)
 	{
-		this(name, type, config, null, null, false, null, null, null, false);
+		this(name, type, config, null, null, null, false, null, null, null, false);
 	}
 
-	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Object defaultValue, Object initialValue, boolean hasDefault,
-		List<Object> values, PushToServerEnum pushToServer, JSONObject tags, boolean optional)
+	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Map<String, PropertyDescription> properties, Object defaultValue,
+		Object initialValue, boolean hasDefault, List<Object> values, PushToServerEnum pushToServer, JSONObject tags, boolean optional)
 	{
 		this.name = name;
 		this.hasDefault = hasDefault;
+		this.properties = properties;
 		if (type instanceof IYieldingType)
 		{
 			YieldDescriptionArguments params = new YieldDescriptionArguments(config, defaultValue, initialValue, values, pushToServer, tags, optional);
@@ -298,14 +298,6 @@ public class PropertyDescription
 		return optional;
 	}
 
-	public PropertyDescription putProperty(String propname, PropertyDescription proptype)
-	{
-		if (properties == null) properties = new HashMap<>();
-		if (proptype == null) properties.remove(propname);
-		else properties.put(propname, proptype);
-		return this;
-	}
-
 	public List<PropertyDescription> getPropertyPath(String propname)
 	{
 		ArrayList<PropertyDescription> propertyPath = new ArrayList<PropertyDescription>();
@@ -393,7 +385,6 @@ public class PropertyDescription
 		return propertyPath.get(propertyPath.size() - 1);
 	}
 
-	// TODO: move to constructor so PropertyDescription is immutable
 	public Map<String, PropertyDescription> getProperties()
 	{
 		if (properties != null) return Collections.unmodifiableMap(properties);
@@ -417,12 +408,6 @@ public class PropertyDescription
 		}
 		return retVal;
 	}
-
-	public void putAll(Map<String, PropertyDescription> map)
-	{
-		properties = new HashMap<>(map);
-	}
-
 
 	@Override
 	public String toString()

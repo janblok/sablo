@@ -19,6 +19,7 @@ package org.sablo.services.client;
 import java.io.IOException;
 
 import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.PropertyDescriptionBuilder;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.specification.property.types.BooleanPropertyType;
 import org.sablo.specification.property.types.IntPropertyType;
@@ -60,10 +61,11 @@ public class SabloService
 		PropertyDescription pd = null;
 		if (argumentPD != null)
 		{
-			pd = AggregatedPropertyType.newAggregatedProperty();
-			pd.putProperty("0", new PropertyDescription("defid", IntPropertyType.INSTANCE));
-			pd.putProperty("1", argumentPD);
-			pd.putProperty("2", new PropertyDescription("success", BooleanPropertyType.INSTANCE));
+			PropertyDescriptionBuilder pdBuilder = AggregatedPropertyType.newAggregatedPropertyBuilder();
+			pdBuilder.putProperty("0", new PropertyDescription("defid", IntPropertyType.INSTANCE));
+			pdBuilder.putProperty("1", argumentPD);
+			pdBuilder.putProperty("2", new PropertyDescription("success", BooleanPropertyType.INSTANCE));
+			pd = pdBuilder.create();
 		}
 		CurrentWindow.get().executeAsyncServiceCall(clientService, "resolveDeferedEvent",
 			new Object[] { Integer.valueOf(defid), argument, Boolean.valueOf(success) }, pd);

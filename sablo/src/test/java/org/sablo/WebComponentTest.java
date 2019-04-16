@@ -39,6 +39,7 @@ import org.junit.Test;
 import org.sablo.services.server.FormServiceHandler;
 import org.sablo.specification.Package.IPackageReader;
 import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.PropertyDescriptionBuilder;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
@@ -323,8 +324,10 @@ public class WebComponentTest
 		TypedData<Map<String, Object>> properties = component.getProperties();
 		data.put("msg", properties.content);
 
-		PropertyDescription messageTypes = AggregatedPropertyType.newAggregatedProperty();
-		messageTypes.putProperty("msg", properties.contentType);
+		PropertyDescriptionBuilder messageTypesBuilder = AggregatedPropertyType.newAggregatedPropertyBuilder();
+		messageTypesBuilder.putProperty("msg", properties.contentType);
+
+		PropertyDescription messageTypes = messageTypesBuilder.create();
 
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
 		assertEquals(new JSONObject(
@@ -355,9 +358,12 @@ public class WebComponentTest
 	@Test
 	public void setColorPropertyWithOldValue()
 	{
-		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null);
-		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
-		formSpec.putProperty("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
+		Map<String, PropertyDescription> properties = new HashMap<>();
+		properties.put("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
+		properties.put("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
+
+		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null, null,
+			properties);
 
 		final Container form = new Container("form", formSpec)
 		{
@@ -424,9 +430,12 @@ public class WebComponentTest
 	@Test
 	public void setIntPropertyWithOldValue()
 	{
-		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null);
-		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
-		formSpec.putProperty("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
+		Map<String, PropertyDescription> properties = new HashMap<>();
+		properties.put("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
+		properties.put("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
+
+		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null, null,
+			properties);
 
 		final Container form = new Container("form", formSpec)
 		{

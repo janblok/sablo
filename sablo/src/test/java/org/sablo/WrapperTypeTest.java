@@ -179,7 +179,8 @@ public class WrapperTypeTest
 		TypedData<Map<String, Object>> properties = component.getProperties();
 		data.put("msg", properties.content);
 
-		String msg = JSONUtils.writeDataWithConversions(data, AggregatedPropertyType.newAggregatedProperty().putProperty("msg", properties.contentType), null);
+		String msg = JSONUtils.writeDataWithConversions(data,
+			AggregatedPropertyType.newAggregatedPropertyBuilder().putProperty("msg", properties.contentType).create(), null);
 		assertEquals(new JSONObject("{\"msg\":{\"somepropp\":{\"string\":\"test\",\"counter\":1},\"name\":\"test\"}}").toString(),
 			new JSONObject(msg).toString());
 

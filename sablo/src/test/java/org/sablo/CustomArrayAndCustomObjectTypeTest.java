@@ -32,6 +32,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.sablo.specification.Package.IPackageReader;
 import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.PropertyDescriptionBuilder;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.sablo.specification.property.BrowserConverterContext;
@@ -113,9 +114,10 @@ public class CustomArrayAndCustomObjectTypeTest
 		TypedData<Map<String, Object>> properties = component.getProperties();
 		data.put("msg", properties.content);
 
-		PropertyDescription messageTypes = AggregatedPropertyType.newAggregatedProperty();
-		messageTypes.putProperty("msg", properties.contentType);
+		PropertyDescriptionBuilder messageTypesBuilder = AggregatedPropertyType.newAggregatedPropertyBuilder();
+		messageTypesBuilder.putProperty("msg", properties.contentType);
 
+		PropertyDescription messageTypes = messageTypesBuilder.create();
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
 		assertEquals(new JSONObject(
 			"{\"msg\":{\"typesReject\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}").toString(),
@@ -191,9 +193,10 @@ public class CustomArrayAndCustomObjectTypeTest
 		TypedData<Map<String, Object>> properties = component.getProperties();
 		data.put("msg", properties.content);
 
-		PropertyDescription messageTypes = AggregatedPropertyType.newAggregatedProperty();
-		messageTypes.putProperty("msg", properties.contentType);
+		PropertyDescriptionBuilder messageTypesBuilder = AggregatedPropertyType.newAggregatedPropertyBuilder();
+		messageTypesBuilder.putProperty("msg", properties.contentType);
 
+		PropertyDescription messageTypes = messageTypesBuilder.create();
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
 		assertEquals(new JSONObject(
 			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
@@ -257,8 +260,10 @@ public class CustomArrayAndCustomObjectTypeTest
 		TypedData<Map<String, Object>> properties = component.getProperties();
 		data.put("msg", properties.content);
 
-		PropertyDescription messageTypes = AggregatedPropertyType.newAggregatedProperty();
-		messageTypes.putProperty("msg", properties.contentType);
+		PropertyDescriptionBuilder messageTypesBuilder = AggregatedPropertyType.newAggregatedPropertyBuilder();
+		messageTypesBuilder.putProperty("msg", properties.contentType);
+
+		PropertyDescription messageTypes = messageTypesBuilder.create();
 
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
 		assertEquals(new JSONObject(
@@ -309,8 +314,10 @@ public class CustomArrayAndCustomObjectTypeTest
 		TypedData<Map<String, Object>> properties = component.getProperties();
 		data.put("msg", properties.content);
 
-		PropertyDescription messageTypes = AggregatedPropertyType.newAggregatedProperty();
-		messageTypes.putProperty("msg", properties.contentType);
+		PropertyDescriptionBuilder messageTypesBuilder = AggregatedPropertyType.newAggregatedPropertyBuilder();
+		messageTypesBuilder.putProperty("msg", properties.contentType);
+
+		PropertyDescription messageTypes = messageTypesBuilder.create();
 
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
 		assertEquals(

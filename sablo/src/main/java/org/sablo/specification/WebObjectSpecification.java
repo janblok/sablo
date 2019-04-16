@@ -336,7 +336,7 @@ public class WebObjectSpecification extends PropertyDescription
 		// properties
 		Map<String, PropertyDescription> properties = WebObjectSpecification.parseProperties("model", json, types, json.getString("name"));
 
-		if (WebComponentSpecProvider.getInstance().getDefaultComponentPropertiesProvider() != null)
+		if (WebComponentSpecProvider.getInstance() != null && WebComponentSpecProvider.getInstance().getDefaultComponentPropertiesProvider() != null)
 		{
 			properties.putAll(WebComponentSpecProvider.getInstance().getDefaultComponentPropertiesProvider().getDefaultComponentProperties());
 		}

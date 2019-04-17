@@ -80,7 +80,7 @@ public class WebComponentTest
 
 		HashMap<String, String> components = new HashMap<>();
 		components.put("mycomponent.spec", comp);
-		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(manifest, components) });
+		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(manifest, components) }, null);
 	}
 
 	@AfterClass

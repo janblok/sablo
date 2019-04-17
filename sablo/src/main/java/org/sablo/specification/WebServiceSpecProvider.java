@@ -57,7 +57,7 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 
 	public static synchronized void init(IPackageReader[] locations)
 	{
-		instance = new WebServiceSpecProvider(new WebSpecReader(locations, IPackageReader.WEB_SERVICE, specReloadSubject));
+		instance = new WebServiceSpecProvider(new WebSpecReader(locations, IPackageReader.WEB_SERVICE, specReloadSubject, null));
 	}
 
 	public static void disposeInstance()
@@ -93,7 +93,7 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 						}
 
 						instance = new WebServiceSpecProvider(
-							new WebSpecReader(readers.toArray(new IPackageReader[readers.size()]), IPackageReader.WEB_SERVICE, specReloadSubject));
+							new WebSpecReader(readers.toArray(new IPackageReader[readers.size()]), IPackageReader.WEB_SERVICE, specReloadSubject, null));
 					}
 					catch (Exception e)
 					{

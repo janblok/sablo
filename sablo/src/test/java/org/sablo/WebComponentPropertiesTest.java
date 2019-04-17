@@ -29,8 +29,8 @@ import java.util.Map;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.Package.IPackageReader;
+import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 
@@ -71,7 +71,7 @@ public class WebComponentPropertiesTest
 		Map<String, String> components = new HashMap<>();
 		components.put("testcomponent.spec", testcomponentspec);
 
-		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(manifest, components) });
+		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(manifest, components) }, null);
 	}
 
 	@AfterClass

@@ -326,7 +326,8 @@ public class WebObjectSpecification extends PropertyDescription
 	}
 
 	@SuppressWarnings("unchecked")
-	public static WebObjectSpecification parseSpec(String specfileContent, String packageName, IPackageReader reader) throws JSONException
+	public static WebObjectSpecification parseSpec(String specfileContent, String packageName, IPackageReader reader,
+		IDefaultComponentPropertiesProvider defaultComponentPropertiesProvider) throws JSONException
 	{
 		JSONObject json = new JSONObject(specfileContent);
 
@@ -336,9 +337,9 @@ public class WebObjectSpecification extends PropertyDescription
 		// properties
 		Map<String, PropertyDescription> properties = WebObjectSpecification.parseProperties("model", json, types, json.getString("name"));
 
-		if (WebComponentSpecProvider.getInstance() != null && WebComponentSpecProvider.getInstance().getDefaultComponentPropertiesProvider() != null)
+		if (defaultComponentPropertiesProvider != null)
 		{
-			properties.putAll(WebComponentSpecProvider.getInstance().getDefaultComponentPropertiesProvider().getDefaultComponentProperties());
+			properties.putAll(defaultComponentPropertiesProvider.getDefaultComponentProperties());
 		}
 		WebObjectSpecification spec = new WebObjectSpecification(json.getString("name"), packageName, reader != null ? reader.getPackageType() : null,
 			json.optString("displayName", null), json.optString("categoryName", null), json.optString("icon", null), json.optString("preview", null),

@@ -55,7 +55,7 @@ public class SpecTest
 	{
 		when(packageReaderMock.getPackageType()).thenReturn(IPackageReader.WEB_COMPONENT);
 		String property = "{name:'sample-testMe',definition:'/test.js'}";
-		WebObjectSpecification spec = WebObjectSpecification.parseSpec(property, "sample", packageReaderMock);
+		WebObjectSpecification spec = WebObjectSpecification.parseSpec(property, "sample", packageReaderMock, null);
 		Assert.assertEquals("sample-testMe", spec.getName());
 		Assert.assertEquals("sample-testMe", spec.getScriptingName());
 		Assert.assertEquals("sample-testMe", spec.getDisplayName());
@@ -63,7 +63,7 @@ public class SpecTest
 
 		when(packageReaderMock.getPackageType()).thenReturn(IPackageReader.WEB_SERVICE);
 		property = "{name:'sample-testMe',definition:'/test.js'}";
-		spec = WebObjectSpecification.parseSpec(property, "sample", packageReaderMock);
+		spec = WebObjectSpecification.parseSpec(property, "sample", packageReaderMock, null);
 		Assert.assertEquals("sample-testMe", spec.getName());
 		Assert.assertEquals("sampleTestMe", spec.getScriptingName());
 		Assert.assertEquals("sample-testMe", spec.getDisplayName());
@@ -71,7 +71,7 @@ public class SpecTest
 
 		when(packageReaderMock.getPackageType()).thenReturn(IPackageReader.WEB_COMPONENT);
 		property = "{name:'sample-testMe',definition:'/test.js'}";
-		spec = WebObjectSpecification.parseSpec(property, "sample", packageReaderMock);
+		spec = WebObjectSpecification.parseSpec(property, "sample", packageReaderMock, null);
 		Assert.assertEquals("sample-testMe", spec.getName());
 		Assert.assertEquals("sample-testMe", spec.getScriptingName());
 		Assert.assertEquals("sample-testMe", spec.getDisplayName());
@@ -79,7 +79,7 @@ public class SpecTest
 
 		when(packageReaderMock.getPackageType()).thenReturn(IPackageReader.WEB_COMPONENT);
 		property = "{name:'sample-TestMe',definition:'/test.js'}";
-		spec = WebObjectSpecification.parseSpec(property, "sample", packageReaderMock);
+		spec = WebObjectSpecification.parseSpec(property, "sample", packageReaderMock, null);
 		Assert.assertEquals("sample-TestMe", spec.getName());
 		Assert.assertEquals("sample-TestMe", spec.getScriptingName());
 		Assert.assertEquals("sample-TestMe", spec.getDisplayName());
@@ -87,7 +87,7 @@ public class SpecTest
 
 		when(packageReaderMock.getPackageType()).thenReturn(IPackageReader.WEB_SERVICE);
 		property = "{name:'sample-testMe',definition:'/test.js'}";
-		spec = WebObjectSpecification.parseSpec(property, "sample", packageReaderMock);
+		spec = WebObjectSpecification.parseSpec(property, "sample", packageReaderMock, null);
 		Assert.assertEquals("sample-testMe", spec.getName());
 		Assert.assertEquals("sampleTestMe", spec.getScriptingName());
 		Assert.assertEquals("sample-testMe", spec.getDisplayName());
@@ -95,7 +95,7 @@ public class SpecTest
 
 		when(packageReaderMock.getPackageType()).thenReturn(IPackageReader.WEB_SERVICE);
 		property = "{name:'sample-TestMe',definition:'/test.js'}";
-		spec = WebObjectSpecification.parseSpec(property, "sample", packageReaderMock);
+		spec = WebObjectSpecification.parseSpec(property, "sample", packageReaderMock, null);
 		Assert.assertEquals("sample-TestMe", spec.getName());
 		Assert.assertEquals("sampleTestMe", spec.getScriptingName());
 		Assert.assertEquals("sample-TestMe", spec.getDisplayName());
@@ -103,7 +103,7 @@ public class SpecTest
 
 		when(packageReaderMock.getPackageType()).thenReturn(IPackageReader.WEB_SERVICE);
 		property = "{name:'sample-t',definition:'/test.js'}";
-		spec = WebObjectSpecification.parseSpec(property, "sample", packageReaderMock);
+		spec = WebObjectSpecification.parseSpec(property, "sample", packageReaderMock, null);
 		Assert.assertEquals("sample-t", spec.getName());
 		Assert.assertEquals("sampleT", spec.getScriptingName());
 		Assert.assertEquals("sample-t", spec.getDisplayName());
@@ -111,7 +111,7 @@ public class SpecTest
 
 		when(packageReaderMock.getPackageType()).thenReturn(IPackageReader.WEB_SERVICE);
 		property = "{name:'sample-Ti-Ra-no',definition:'/test.js'}";
-		spec = WebObjectSpecification.parseSpec(property, "sample", packageReaderMock);
+		spec = WebObjectSpecification.parseSpec(property, "sample", packageReaderMock, null);
 		Assert.assertEquals("sample-Ti-Ra-no", spec.getName());
 		Assert.assertEquals("sampleTiRaNo", spec.getScriptingName());
 		Assert.assertEquals("sample-Ti-Ra-no", spec.getDisplayName());

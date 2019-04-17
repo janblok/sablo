@@ -335,12 +335,13 @@ public class WebObjectSpecification extends PropertyDescription
 		Map<String, IPropertyType< ? >> types = WebObjectSpecification.parseTypes(json);
 
 		// properties
-		Map<String, PropertyDescription> properties = WebObjectSpecification.parseProperties("model", json, types, json.getString("name"));
-
+		Map<String, PropertyDescription> properties = new HashMap<>();
 		if (defaultComponentPropertiesProvider != null)
 		{
 			properties.putAll(defaultComponentPropertiesProvider.getDefaultComponentProperties());
 		}
+		properties.putAll(WebObjectSpecification.parseProperties("model", json, types, json.getString("name")));
+
 		WebObjectSpecification spec = new WebObjectSpecification(json.getString("name"), packageName, reader != null ? reader.getPackageType() : null,
 			json.optString("displayName", null), json.optString("categoryName", null), json.optString("icon", null), json.optString("preview", null),
 			json.getString("definition"), json.optJSONArray("libraries"), null, properties);

@@ -833,7 +833,7 @@ public class WebComponentSecurityPropertiesTest
 		properties.put("prot", new PropertyDescription("prot", ProtectedPropertyType.INSTANCE, ProtectedConfig.DEFAULTBLOCKING_TRUE));
 
 		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null, null,
-			properties);
+			properties, false);
 
 
 		Container form = new Container("form", formSpec)
@@ -931,12 +931,12 @@ public class WebComponentSecurityPropertiesTest
 		JSONObject tags = new JSONObject();
 		tags.put(WebObjectSpecification.ALLOW_ACCESS, new JSONArray(new Object[] { "visible", "enabled" }));
 		Map<String, PropertyDescription> properties = new HashMap<String, PropertyDescription>();
-		properties.put("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE, null, null, null, null, false, null, null, tags, false));
+		properties.put("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE, null, null, null, null, false, null, null, tags, false, false));
 		properties.put("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
 		properties.put("enabled", new PropertyDescription("enabled", EnabledPropertyType.INSTANCE));
 
 		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null, null,
-			properties);
+			properties, false);
 
 
 		Container form = new Container("form", formSpec)

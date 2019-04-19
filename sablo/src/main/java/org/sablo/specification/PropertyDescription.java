@@ -54,6 +54,7 @@ public class PropertyDescription
 	private final List<Object> values;
 	private final PushToServerEnum pushToServer;
 	private final JSONObject tags;
+	private boolean deprecated = false;
 
 	//case of nested type
 	private final Map<String, PropertyDescription> properties;
@@ -62,28 +63,29 @@ public class PropertyDescription
 
 	public PropertyDescription(String name, IPropertyType< ? > type)
 	{
-		this(name, type, null, null, null, null, false, null, null, null, false);
+		this(name, type, null, null, null, null, false, null, null, null, false, false);
 	}
 
 	public PropertyDescription(String name, IPropertyType< ? > type, PushToServerEnum pushToServer)
 	{
-		this(name, type, null, null, null, null, false, null, pushToServer, null, false);
+		this(name, type, null, null, null, null, false, null, pushToServer, null, false, false);
 	}
 
 	public PropertyDescription(String name, IPropertyType< ? > type, Object config)
 	{
-		this(name, type, config, null, null, null, false, null, null, null, false);
+		this(name, type, config, null, null, null, false, null, null, null, false, false);
 	}
 
 	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Map<String, PropertyDescription> properties, Object defaultValue,
-		Object initialValue, boolean hasDefault, List<Object> values, PushToServerEnum pushToServer, JSONObject tags, boolean optional)
+		Object initialValue, boolean hasDefault, List<Object> values, PushToServerEnum pushToServer, JSONObject tags, boolean optional, boolean deprecated)
 	{
 		this.name = name;
 		this.hasDefault = hasDefault;
 		this.properties = properties;
 		if (type instanceof IYieldingType)
 		{
-			YieldDescriptionArguments params = new YieldDescriptionArguments(config, defaultValue, initialValue, values, pushToServer, tags, optional);
+			YieldDescriptionArguments params = new YieldDescriptionArguments(config, defaultValue, initialValue, values, pushToServer, tags, optional,
+				deprecated);
 			this.type = ((IYieldingType< ? , ? >)type).yieldToOtherIfNeeded(name, params);
 
 			if (this.type != type)
@@ -96,6 +98,7 @@ public class PropertyDescription
 				this.pushToServer = params.pushToServer;
 				this.tags = params.tags;
 				this.optional = params.optional;
+				this.deprecated = params.deprecated;
 			}
 			else
 			{
@@ -107,6 +110,7 @@ public class PropertyDescription
 				this.pushToServer = pushToServer;
 				this.tags = tags;
 				this.optional = optional;
+				this.deprecated = deprecated;
 			}
 		}
 		else
@@ -120,6 +124,7 @@ public class PropertyDescription
 			this.pushToServer = pushToServer;
 			this.tags = tags;
 			this.optional = optional;
+			this.deprecated = deprecated;
 		}
 	}
 
@@ -460,4 +465,8 @@ public class PropertyDescription
 		return false;
 	}
 
+	public boolean isDeprecated()
+	{
+		return deprecated;
+	}
 }

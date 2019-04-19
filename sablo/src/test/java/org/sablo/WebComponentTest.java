@@ -363,7 +363,7 @@ public class WebComponentTest
 		properties.put("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
 
 		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null, null,
-			properties);
+			properties, false);
 
 		final Container form = new Container("form", formSpec)
 		{
@@ -435,7 +435,7 @@ public class WebComponentTest
 		properties.put("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
 
 		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null, null,
-			properties);
+			properties, false);
 
 		final Container form = new Container("form", formSpec)
 		{

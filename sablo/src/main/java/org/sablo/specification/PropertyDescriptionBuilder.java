@@ -41,6 +41,7 @@ public class PropertyDescriptionBuilder
 	private JSONObject tags;
 	private final Map<String, PropertyDescription> properties = new HashMap<>();
 	private boolean hasDefault;
+	private boolean deprecated;
 
 	/**
 	 *
@@ -65,6 +66,7 @@ public class PropertyDescriptionBuilder
 
 	public PropertyDescription create()
 	{
-		return new PropertyDescription(name, type, config, properties, defaultValue, initialValue, hasDefault, values, pushToServer, tags, optional);
+		return new PropertyDescription(name, type, config, properties, defaultValue, initialValue, hasDefault, values, pushToServer, tags, optional,
+			properties.containsKey("deprecated") ? ((Boolean)properties.get("deprecated").getConfig()).booleanValue() : deprecated);
 	}
 }

@@ -36,6 +36,7 @@ import org.sablo.specification.property.CustomPropertyTypeResolver;
 import org.sablo.specification.property.CustomVariableArgsType;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
+import org.sablo.specification.property.types.BooleanPropertyType;
 import org.sablo.specification.property.types.FunctionPropertyType;
 import org.sablo.specification.property.types.ObjectPropertyType;
 import org.sablo.specification.property.types.TypesRegistry;
@@ -126,13 +127,13 @@ public class WebObjectSpecification extends PropertyDescription
 	public WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
 		String definition, JSONArray libs)
 	{
-		this(name, packageName, packageType, displayName, categoryName, icon, preview, definition, libs, null, null);
+		this(name, packageName, packageType, displayName, categoryName, icon, preview, definition, libs, null, null, false);
 	}
 
 	public WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
-		String definition, JSONArray libs, Object configObject, Map<String, PropertyDescription> properties)
+		String definition, JSONArray libs, Object configObject, Map<String, PropertyDescription> properties, boolean deprecated)
 	{
-		super(name, null, configObject, properties, null, null, false, null, null, null, false);
+		super(name, null, configObject, properties, null, null, false, null, null, null, false, deprecated);
 		this.scriptingName = scriptifyNameIfNeeded(name, packageType);
 		this.packageName = packageName;
 		this.displayName = displayName;
@@ -344,7 +345,7 @@ public class WebObjectSpecification extends PropertyDescription
 
 		WebObjectSpecification spec = new WebObjectSpecification(json.getString("name"), packageName, reader != null ? reader.getPackageType() : null,
 			json.optString("displayName", null), json.optString("categoryName", null), json.optString("icon", null), json.optString("preview", null),
-			json.getString("definition"), json.optJSONArray("libraries"), null, properties);
+			json.getString("definition"), json.optJSONArray("libraries"), null, properties, json.optBoolean("deprecated"));
 		spec.foundTypes = types;
 		if (json.has("serverscript"))
 		{
@@ -434,7 +435,7 @@ public class WebObjectSpecification extends PropertyDescription
 							config = propertyType.parseConfig(null);
 						}
 						def.addParameter(new PropertyDescription((String)param.get("name"), propertyType, config, null, null, null, false, null, null, null,
-							Boolean.TRUE.equals(param.opt("optional"))));
+							Boolean.TRUE.equals(param.opt("optional")), false));
 					}
 				}
 				else if ("returns".equals(key))
@@ -484,6 +485,10 @@ public class WebObjectSpecification extends PropertyDescription
 				else if ("private".equals(key))
 				{
 					def.setPrivate(jsonDef.getBoolean("private"));
+				}
+				else if ("deprecated".equals(key))
+				{
+					def.setDeprecated(jsonDef.getBoolean(key));
 				}
 				else
 				{
@@ -575,9 +580,10 @@ public class WebObjectSpecification extends PropertyDescription
 		public final PushToServerEnum pushToServer;
 		public final JSONObject tags;
 		public final List<Object> values;
+		private final boolean deprecated;
 
 		public StandardTypeConfigSettings(Object defaultValue, Object initialValue, boolean hasDefault, PushToServerEnum pushToServer, JSONObject tags,
-			List<Object> values)
+			List<Object> values, boolean deprecated)
 		{
 			this.defaultValue = defaultValue;
 			this.initialValue = initialValue;
@@ -585,11 +591,12 @@ public class WebObjectSpecification extends PropertyDescription
 			this.pushToServer = pushToServer;
 			this.tags = tags;
 			this.values = values;
+			this.deprecated = deprecated;
 		}
 
 		public StandardTypeConfigSettings()
 		{
-			this(null, null, false, PushToServerEnum.reject, null, null);
+			this(null, null, false, PushToServerEnum.reject, null, null, false);
 		}
 
 	}
@@ -625,6 +632,10 @@ public class WebObjectSpecification extends PropertyDescription
 				{
 					pds.put(key, new PropertyDescription(key, TypesRegistry.getType(FunctionPropertyType.TYPE_NAME), value));
 				}
+				else if (value instanceof Boolean && "deprecated".equals(key))
+				{
+					pds.put(key, new PropertyDescription(key, TypesRegistry.getType(BooleanPropertyType.TYPE_NAME), value));
+				}
 
 				if (pp != null && pp.type != null /* && standardConfigurationSettings != null -- is implied by pp != null -- */)
 				{
@@ -646,13 +657,13 @@ public class WebObjectSpecification extends PropertyDescription
 							elementConfig = new JSONObject();
 							// for the standard configuration settings in this case - inherit them where it's possible from array (currently that is only pushToServer to make it easier to declare arrays with pushToServer); TODO should we just use defaults always here?
 							elementStandardConfigurationSettings = new StandardTypeConfigSettings(null, null, false, standardConfigurationSettings.pushToServer,
-								null, null);
+								null, null, false);
 						}
 
 						PropertyDescription elementDescription = new PropertyDescription(ARRAY_ELEMENT_PD_NAME, type, type.parseConfig(elementConfig), null,
 							elementStandardConfigurationSettings.defaultValue, elementStandardConfigurationSettings.initialValue,
 							elementStandardConfigurationSettings.hasDefault, elementStandardConfigurationSettings.values,
-							elementStandardConfigurationSettings.pushToServer, elementStandardConfigurationSettings.tags, false);
+							elementStandardConfigurationSettings.pushToServer, elementStandardConfigurationSettings.tags, false, false);
 						if (pp.array)
 						{
 							type = TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, elementDescription);
@@ -666,7 +677,7 @@ public class WebObjectSpecification extends PropertyDescription
 					pds.put(key,
 						new PropertyDescription(key, type, type.parseConfig(configObject), null, standardConfigurationSettings.defaultValue,
 							standardConfigurationSettings.initialValue, standardConfigurationSettings.hasDefault, standardConfigurationSettings.values,
-							standardConfigurationSettings.pushToServer, standardConfigurationSettings.tags, false));
+							standardConfigurationSettings.pushToServer, standardConfigurationSettings.tags, false, standardConfigurationSettings.deprecated));
 				}
 			}
 		}
@@ -681,6 +692,7 @@ public class WebObjectSpecification extends PropertyDescription
 		PushToServerEnum pushToServer = PushToServerEnum.reject;
 		JSONObject tags = null;
 		List<Object> values = null;
+		boolean deprecated = configObject.optBoolean("deprecated");
 
 		defaultValue = configObject.opt("default");
 		initialValue = configObject.opt("initialValue");
@@ -699,7 +711,7 @@ public class WebObjectSpecification extends PropertyDescription
 			}
 		}
 
-		return new StandardTypeConfigSettings(defaultValue, initialValue, hasDefault, pushToServer, tags, values);
+		return new StandardTypeConfigSettings(defaultValue, initialValue, hasDefault, pushToServer, tags, values, deprecated);
 	}
 
 	@Override

@@ -113,6 +113,7 @@ public class WebLayoutSpecification extends WebObjectSpecification
 			String attributes = reader.readTextFile(json.getString("attributes"), Charset.forName("UTF8"));
 			spec.putAllAttributes(WebObjectSpecification.parseProperties("attributes", new JSONObject(attributes), null, spec.getName()));
 		}
+		spec.setReplacement(json.optString("replacement", null));
 		return spec;
 	}
 

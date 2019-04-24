@@ -121,6 +121,8 @@ public class WebObjectSpecification extends PropertyDescription
 
 	private boolean supportsGrouping;
 
+	private String replacement = null;
+
 	/**
 	 * @param packageType one of {@link IPackageReader#WEB_SERVICE}, {@link IPackageReader#WEB_COMPONENT} and {@link IPackageReader#WEB_LAYOUT}.
 	 */
@@ -393,6 +395,7 @@ public class WebObjectSpecification extends PropertyDescription
 			}
 		}
 		spec.setSupportGrouping(json.has("group") ? json.optBoolean("group", true) : true);
+		spec.setReplacement(json.optString("replacement", null));
 		return spec;
 	}
 
@@ -766,5 +769,21 @@ public class WebObjectSpecification extends PropertyDescription
 	public boolean supportGrouping()
 	{
 		return supportsGrouping;
+	}
+
+	public String getReplacement()
+	{
+		return replacement;
+	}
+
+	public void setReplacement(String replacement)
+	{
+		this.replacement = replacement;
+	}
+
+	@Override
+	public boolean isDeprecated()
+	{
+		return replacement != null || super.isDeprecated();
 	}
 }

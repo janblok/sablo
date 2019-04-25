@@ -54,7 +54,7 @@ public class PropertyDescription
 	private final List<Object> values;
 	private final PushToServerEnum pushToServer;
 	private final JSONObject tags;
-	private boolean deprecated = false;
+	private String deprecated = null;
 
 	//case of nested type
 	private final Map<String, PropertyDescription> properties;
@@ -63,21 +63,21 @@ public class PropertyDescription
 
 	public PropertyDescription(String name, IPropertyType< ? > type)
 	{
-		this(name, type, null, null, null, null, false, null, null, null, false, false);
+		this(name, type, null, null, null, null, false, null, null, null, false, null);
 	}
 
 	public PropertyDescription(String name, IPropertyType< ? > type, PushToServerEnum pushToServer)
 	{
-		this(name, type, null, null, null, null, false, null, pushToServer, null, false, false);
+		this(name, type, null, null, null, null, false, null, pushToServer, null, false, null);
 	}
 
 	public PropertyDescription(String name, IPropertyType< ? > type, Object config)
 	{
-		this(name, type, config, null, null, null, false, null, null, null, false, false);
+		this(name, type, config, null, null, null, false, null, null, null, false, null);
 	}
 
 	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Map<String, PropertyDescription> properties, Object defaultValue,
-		Object initialValue, boolean hasDefault, List<Object> values, PushToServerEnum pushToServer, JSONObject tags, boolean optional, boolean deprecated)
+		Object initialValue, boolean hasDefault, List<Object> values, PushToServerEnum pushToServer, JSONObject tags, boolean optional, String deprecated)
 	{
 		this.name = name;
 		this.hasDefault = hasDefault;
@@ -467,6 +467,20 @@ public class PropertyDescription
 
 	public boolean isDeprecated()
 	{
+		return deprecated != null && !"false".equalsIgnoreCase(deprecated.trim());
+	}
+
+	public String getDeprecated()
+	{
 		return deprecated;
+	}
+
+	public String getDeprecatedMessage()
+	{
+		if (deprecated != null && !"false".equalsIgnoreCase(deprecated.trim()) && !"true".equalsIgnoreCase(deprecated.trim()))
+		{
+			return deprecated;
+		}
+		return "";
 	}
 }

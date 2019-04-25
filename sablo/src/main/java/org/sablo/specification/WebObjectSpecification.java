@@ -129,11 +129,11 @@ public class WebObjectSpecification extends PropertyDescription
 	public WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
 		String definition, JSONArray libs)
 	{
-		this(name, packageName, packageType, displayName, categoryName, icon, preview, definition, libs, null, null, false);
+		this(name, packageName, packageType, displayName, categoryName, icon, preview, definition, libs, null, null, null);
 	}
 
 	public WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
-		String definition, JSONArray libs, Object configObject, Map<String, PropertyDescription> properties, boolean deprecated)
+		String definition, JSONArray libs, Object configObject, Map<String, PropertyDescription> properties, String deprecated)
 	{
 		super(name, null, configObject, properties, null, null, false, null, null, null, false, deprecated);
 		this.scriptingName = scriptifyNameIfNeeded(name, packageType);
@@ -347,7 +347,7 @@ public class WebObjectSpecification extends PropertyDescription
 
 		WebObjectSpecification spec = new WebObjectSpecification(json.getString("name"), packageName, reader != null ? reader.getPackageType() : null,
 			json.optString("displayName", null), json.optString("categoryName", null), json.optString("icon", null), json.optString("preview", null),
-			json.getString("definition"), json.optJSONArray("libraries"), null, properties, json.optBoolean("deprecated"));
+			json.getString("definition"), json.optJSONArray("libraries"), null, properties, json.optString("deprecated", null));
 		spec.foundTypes = types;
 		if (json.has("serverscript"))
 		{
@@ -438,7 +438,7 @@ public class WebObjectSpecification extends PropertyDescription
 							config = propertyType.parseConfig(null);
 						}
 						def.addParameter(new PropertyDescription((String)param.get("name"), propertyType, config, null, null, null, false, null, null, null,
-							Boolean.TRUE.equals(param.opt("optional")), false));
+							Boolean.TRUE.equals(param.opt("optional")), null));
 					}
 				}
 				else if ("returns".equals(key))
@@ -583,10 +583,10 @@ public class WebObjectSpecification extends PropertyDescription
 		public final PushToServerEnum pushToServer;
 		public final JSONObject tags;
 		public final List<Object> values;
-		private final boolean deprecated;
+		private final String deprecated;
 
 		public StandardTypeConfigSettings(Object defaultValue, Object initialValue, boolean hasDefault, PushToServerEnum pushToServer, JSONObject tags,
-			List<Object> values, boolean deprecated)
+			List<Object> values, String deprecated)
 		{
 			this.defaultValue = defaultValue;
 			this.initialValue = initialValue;
@@ -599,7 +599,7 @@ public class WebObjectSpecification extends PropertyDescription
 
 		public StandardTypeConfigSettings()
 		{
-			this(null, null, false, PushToServerEnum.reject, null, null, false);
+			this(null, null, false, PushToServerEnum.reject, null, null, null);
 		}
 
 	}
@@ -660,13 +660,13 @@ public class WebObjectSpecification extends PropertyDescription
 							elementConfig = new JSONObject();
 							// for the standard configuration settings in this case - inherit them where it's possible from array (currently that is only pushToServer to make it easier to declare arrays with pushToServer); TODO should we just use defaults always here?
 							elementStandardConfigurationSettings = new StandardTypeConfigSettings(null, null, false, standardConfigurationSettings.pushToServer,
-								null, null, false);
+								null, null, null);
 						}
 
 						PropertyDescription elementDescription = new PropertyDescription(ARRAY_ELEMENT_PD_NAME, type, type.parseConfig(elementConfig), null,
 							elementStandardConfigurationSettings.defaultValue, elementStandardConfigurationSettings.initialValue,
 							elementStandardConfigurationSettings.hasDefault, elementStandardConfigurationSettings.values,
-							elementStandardConfigurationSettings.pushToServer, elementStandardConfigurationSettings.tags, false, false);
+							elementStandardConfigurationSettings.pushToServer, elementStandardConfigurationSettings.tags, false, null);
 						if (pp.array)
 						{
 							type = TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, elementDescription);
@@ -695,7 +695,7 @@ public class WebObjectSpecification extends PropertyDescription
 		PushToServerEnum pushToServer = PushToServerEnum.reject;
 		JSONObject tags = null;
 		List<Object> values = null;
-		boolean deprecated = configObject.optBoolean("deprecated");
+		String deprecated = configObject.optString("deprecated", null);
 
 		defaultValue = configObject.opt("default");
 		initialValue = configObject.opt("initialValue");
@@ -784,6 +784,12 @@ public class WebObjectSpecification extends PropertyDescription
 	@Override
 	public boolean isDeprecated()
 	{
-		return replacement != null || super.isDeprecated();
+		return replacement != null && !"".equals("replacement") || super.isDeprecated();
+	}
+
+	@Override
+	public String getDeprecatedMessage()
+	{
+		return (replacement != null && !"".equals("replacement") ? " Use '" + replacement + "'. " : "") + super.getDeprecatedMessage();
 	}
 }

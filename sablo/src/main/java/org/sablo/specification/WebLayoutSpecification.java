@@ -92,21 +92,20 @@ public class WebLayoutSpecification extends WebObjectSpecification
 			{
 				PropertyDescription pd = properties.get("tagType");
 				properties.put("tagType", new PropertyDescription("tagType", pd.getType(), pd.getConfig(), null, json.get("tagType"), null, true,
-					pd.getValues(), pd.getPushToServer(), null, pd.isOptional(), pd.isDeprecated()));
+					pd.getValues(), pd.getPushToServer(), null, pd.isOptional(), pd.getDeprecated()));
 			}
 			else
 			{
 				JSONObject tags = new JSONObject();
 				tags.put("scope", "private");
 				properties.put("tagType", new PropertyDescription("tagType", StringPropertyType.INSTANCE, null, null, json.get("tagType"), null, true, null,
-					null, tags, false, false));
+					null, tags, false, null));
 			}
 		}
 
 		WebLayoutSpecification spec = new WebLayoutSpecification(json.getString("name"), packageName, json.optString("displayName", null),
 			json.optString("categoryName", null), json.optString("icon", null), json.optString("preview", null), json.getString("definition"), jsonConfig,
-			topContainer, children, excludes, json.optString("designStyleClass"), json.optString("layout", null), properties,
-			json.optBoolean("deprecated", false));
+			topContainer, children, excludes, json.optString("designStyleClass"), json.optString("layout", null), properties, json.optString("deprecated"));
 
 		if (json.has("attributes"))
 		{
@@ -137,7 +136,7 @@ public class WebLayoutSpecification extends WebObjectSpecification
 
 	public WebLayoutSpecification(String name, String packageName, String displayName, String categoryName, String icon, String preview, String definition,
 		Object configObject, boolean topContainer, List<String> allowedChildren, List<String> excludedChildren, String designStyleClass, String layout,
-		Map<String, PropertyDescription> properties, boolean deprecated)
+		Map<String, PropertyDescription> properties, String deprecated)
 	{
 		super(name, packageName, IPackageReader.WEB_LAYOUT, displayName, categoryName, icon, preview, definition, null, configObject, properties, deprecated);
 		this.topContainer = topContainer;

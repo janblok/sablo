@@ -368,6 +368,23 @@ public class JSONUtils
 	}
 
 	/**
+	 * @param value
+	 * @return
+	 */
+	private static String safeToString(Object value)
+	{
+		try
+		{
+			return String.valueOf(value);
+		}
+		catch (Exception e)
+		{
+			return "toString failed for instanceof " + value.getClass();
+		}
+	}
+
+
+	/**
 	 * Validates a String to be valid JSON content and normalizes it.
 	 * @param json the json content to check.
 	 * @return the given JSON normalized.
@@ -441,8 +458,8 @@ public class JSONUtils
 					}
 					catch (Exception ex)
 					{
-						log.error("Error while converting value: " + value + " of key: " + key + " to type: " + type + " current json: " + writer.toString(),
-							ex);
+						log.error("Error while converting value: " + safeToString(value) + " of key: " + key + " to type: " + type + " current json: " +
+							writer.toString(), ex);
 						return writer;
 					}
 				}
@@ -455,8 +472,8 @@ public class JSONUtils
 					}
 					catch (Exception ex)
 					{
-						log.error("Error while converting value: " + value + " of key: " + key + " to type: " + type + " current json: " + writer.toString(),
-							ex);
+						log.error("Error while converting value: " + safeToString(value) + " of key: " + key + " to type: " + type + " current json: " +
+							writer.toString(), ex);
 						return writer;
 					}
 				}
@@ -474,12 +491,13 @@ public class JSONUtils
 				// addKeyIfPresent(w, key);
 				// w = w.value(new JSONObject("{}"));
 				// write nothing here, neither key nor value as we know not how to do the conversion...
-				log.error("unsupported value type:" + valueType + " for value: " + value + " current json: " + writer.toString(),
-					new IllegalArgumentException("unsupported value type for value: " + value));
+				log.error("unsupported value type:" + valueType + " for value: " + safeToString(value) + " current json: " + writer.toString(),
+					new IllegalArgumentException("unsupported value type for value: " + safeToString(value)));
 			}
 
 			return writer;
 		}
+
 	}
 
 	public static class ChangesToJSONConverter extends FullValueToJSONConverter
@@ -503,7 +521,8 @@ public class JSONUtils
 					}
 					catch (Exception ex)
 					{
-						log.error("Error while writing changes for value: " + value + " to type: " + type + " current json: " + writer.toString(), ex);
+						log.error("Error while writing changes for value: " + safeToString(value) + " to type: " + type + " current json: " + writer.toString(),
+							ex);
 						return writer;
 					}
 				}

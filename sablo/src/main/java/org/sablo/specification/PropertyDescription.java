@@ -60,23 +60,8 @@ public class PropertyDescription
 	private final Map<String, PropertyDescription> properties;
 	private final boolean hasDefault;
 
-
-	public PropertyDescription(String name, IPropertyType< ? > type)
-	{
-		this(name, type, null, null, null, null, false, null, null, null, false, null);
-	}
-
-	public PropertyDescription(String name, IPropertyType< ? > type, PushToServerEnum pushToServer)
-	{
-		this(name, type, null, null, null, null, false, null, pushToServer, null, false, null);
-	}
-
-	public PropertyDescription(String name, IPropertyType< ? > type, Object config)
-	{
-		this(name, type, config, null, null, null, false, null, null, null, false, null);
-	}
-
-	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Map<String, PropertyDescription> properties, Object defaultValue,
+	// only call from builder or child classes
+	PropertyDescription(String name, IPropertyType< ? > type, Object config, Map<String, PropertyDescription> properties, Object defaultValue,
 		Object initialValue, boolean hasDefault, List<Object> values, PushToServerEnum pushToServer, JSONObject tags, boolean optional, String deprecated)
 	{
 		this.name = name;

@@ -283,7 +283,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 						{
 							changeTypes = AggregatedPropertyType.newAggregatedPropertyBuilder();
 						}
-						changeTypes.putProperty(propertyName, t);
+						changeTypes.withProperty(propertyName, t);
 					}
 					if (i < idxStartChangedByRef)
 					{
@@ -299,7 +299,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 				return EMPTY_PROPERTIES_WITH_CHANGE_INFO;
 			}
 
-			return new TypedDataWithChangeInfo(changesMap, changeTypes != null ? changeTypes.create() : null, propertiesWithContentUpdateOnly);
+			return new TypedDataWithChangeInfo(changesMap, changeTypes != null ? changeTypes.build() : null, propertiesWithContentUpdateOnly);
 		}
 
 	}
@@ -554,9 +554,9 @@ public abstract class BaseWebObject implements IWebObjectContext
 		for (Entry<String, Object> p : properties.entrySet())
 		{
 			PropertyDescription t = specification.getProperty(p.getKey());
-			if (t != null) propertyTypes.putProperty(p.getKey(), t);
+			if (t != null) propertyTypes.withProperty(p.getKey(), t);
 		}
-		PropertyDescription pd = propertyTypes.create();
+		PropertyDescription pd = propertyTypes.build();
 		return new TypedData<Map<String, Object>>(Collections.unmodifiableMap(properties), pd.hasChildProperties() ? pd : null);
 	}
 
@@ -1151,49 +1151,12 @@ public abstract class BaseWebObject implements IWebObjectContext
 		final List<PropertyDescription> types = apiFunc.getParameters();
 		if (types.size() > 0)
 		{
-			parameterTypes = new PropertyDescription("", AggregatedPropertyType.INSTANCE)
+			Map<String, PropertyDescription> propertiesList = new HashMap<String, PropertyDescription>();
+			for (int i = 0; i < types.size(); i++)
 			{
-				@Override
-				public Map<String, PropertyDescription> getProperties()
-				{
-					Map<String, PropertyDescription> map = new HashMap<String, PropertyDescription>();
-					for (int i = 0; i < types.size(); i++)
-					{
-						map.put(String.valueOf(i), types.get(i));
-					}
-					return map;
-				}
-
-				@Override
-				public PropertyDescription getProperty(String name)
-				{
-					try
-					{
-						int index = Integer.parseInt(name);
-						if (index < types.size())
-						{
-							return types.get(index);
-						}
-						return null;
-					}
-					catch (NumberFormatException e)
-					{
-						return super.getProperty(name);
-					}
-				}
-
-				@Override
-				public Collection<String> getAllPropertiesNames()
-				{
-					Set<String> s = new HashSet<String>();
-					for (int i = 0; i < types.size(); i++)
-					{
-						s.add(String.valueOf(i));
-					}
-					s.addAll(super.getAllPropertiesNames());
-					return s;
-				}
-			};
+				propertiesList.put(String.valueOf(i), types.get(i));
+			}
+			parameterTypes = new PropertyDescriptionBuilder().withType(AggregatedPropertyType.INSTANCE).withProperties(propertiesList).build();
 		}
 		return parameterTypes;
 	}

@@ -507,13 +507,13 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		PropertyDescriptionBuilder dataTypes = null;
 		if (objectType != null)
 		{
-			dataTypes = AggregatedPropertyType.newAggregatedPropertyBuilder().putProperty(key, objectType);
+			dataTypes = AggregatedPropertyType.newAggregatedPropertyBuilder().withProperty(key, objectType);
 		}
 
 		try
 		{
 			sendText(window.getNextMessageNumber(), JSONUtils.writeDataWithConversions(FullValueToJSONConverter.INSTANCE, data,
-				dataTypes != null ? dataTypes.create() : null, BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER));
+				dataTypes != null ? dataTypes.build() : null, BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER));
 		}
 		catch (JSONException e)
 		{

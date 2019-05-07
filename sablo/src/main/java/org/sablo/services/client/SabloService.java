@@ -62,10 +62,10 @@ public class SabloService
 		if (argumentPD != null)
 		{
 			PropertyDescriptionBuilder pdBuilder = AggregatedPropertyType.newAggregatedPropertyBuilder();
-			pdBuilder.putProperty("0", new PropertyDescription("defid", IntPropertyType.INSTANCE));
-			pdBuilder.putProperty("1", argumentPD);
-			pdBuilder.putProperty("2", new PropertyDescription("success", BooleanPropertyType.INSTANCE));
-			pd = pdBuilder.create();
+			pdBuilder.withProperty("0", new PropertyDescriptionBuilder().withName("defid").withType(IntPropertyType.INSTANCE).build());
+			pdBuilder.withProperty("1", argumentPD);
+			pdBuilder.withProperty("2", new PropertyDescriptionBuilder().withName("success").withType(BooleanPropertyType.INSTANCE).build());
+			pd = pdBuilder.build();
 		}
 		CurrentWindow.get().executeAsyncServiceCall(clientService, "resolveDeferedEvent",
 			new Object[] { Integer.valueOf(defid), argument, Boolean.valueOf(success) }, pd);

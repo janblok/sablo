@@ -91,21 +91,26 @@ public class WebLayoutSpecification extends WebObjectSpecification
 			if (properties.get("tagType") != null)
 			{
 				PropertyDescription pd = properties.get("tagType");
-				properties.put("tagType", new PropertyDescription("tagType", pd.getType(), pd.getConfig(), null, json.get("tagType"), null, true,
-					pd.getValues(), pd.getPushToServer(), null, pd.isOptional(), pd.getDeprecated()));
+				properties.put("tagType",
+					new PropertyDescriptionBuilder().withName("tagType").withType(pd.getType()).withConfig(pd.getConfig()).withDefaultValue(
+						json.get("tagType")).withHasDefault(true).withValues(pd.getValues()).withPushToServer(pd.getPushToServer()).withOptional(
+							pd.isOptional()).withDeprecated(pd.getDeprecated()).build());
 			}
 			else
 			{
 				JSONObject tags = new JSONObject();
 				tags.put("scope", "private");
-				properties.put("tagType", new PropertyDescription("tagType", StringPropertyType.INSTANCE, null, null, json.get("tagType"), null, true, null,
-					null, tags, false, null));
+				properties.put("tagType", new PropertyDescriptionBuilder().withName("tagType").withType(StringPropertyType.INSTANCE).withDefaultValue(
+					json.get("tagType")).withHasDefault(true).withTags(tags).build());
 			}
 		}
 
-		WebLayoutSpecification spec = new WebLayoutSpecification(json.getString("name"), packageName, json.optString("displayName", null),
-			json.optString("categoryName", null), json.optString("icon", null), json.optString("preview", null), json.getString("definition"), jsonConfig,
-			topContainer, children, excludes, json.optString("designStyleClass"), json.optString("layout", null), properties, json.optString("deprecated"));
+		WebLayoutSpecification spec = new WebLayoutSpecificationBuilder().withName(json.getString("name")).withPackageName(packageName).withDisplayName(
+			json.optString("displayName", null)).withCategoryName(json.optString("categoryName", null)).withIcon(json.optString("icon", null)).withPreview(
+				json.optString("preview", null)).withDefinition(json.getString("definition")).withConfig(jsonConfig).withTopContainer(
+					topContainer).withAllowedChildren(children).withExcludedChildren(excludes).withDesignStyleClass(
+						json.optString("designStyleClass")).withLayout(json.optString("layout", null)).withProperties(properties).withDeprecated(
+							json.optString("deprecated")).build();
 
 		if (json.has("attributes"))
 		{
@@ -134,7 +139,7 @@ public class WebLayoutSpecification extends WebObjectSpecification
 	private final String designStyleClass;
 	private final List<String> excludedChildren;
 
-	public WebLayoutSpecification(String name, String packageName, String displayName, String categoryName, String icon, String preview, String definition,
+	WebLayoutSpecification(String name, String packageName, String displayName, String categoryName, String icon, String preview, String definition,
 		Object configObject, boolean topContainer, List<String> allowedChildren, List<String> excludedChildren, String designStyleClass, String layout,
 		Map<String, PropertyDescription> properties, String deprecated)
 	{

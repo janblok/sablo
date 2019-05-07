@@ -246,12 +246,12 @@ public class BaseWindow implements IWindow
 			{
 				serviceData.put(service.getScriptingName(), sd.content);
 			}
-			if (sd.contentType != null) serviceDataTypes.putProperty(service.getScriptingName(), sd.contentType);
+			if (sd.contentType != null) serviceDataTypes.withProperty(service.getScriptingName(), sd.contentType);
 		}
 
 		if (serviceData.size() > 0)
 		{
-			final PropertyDescription serviceDataTypesPD = serviceDataTypes.create();
+			final PropertyDescription serviceDataTypesPD = serviceDataTypes.build();
 			// we send each service changes independently so that the IBrowserConverterContext instance is correct (it needs the property type of each service property to be correct)
 			sendAsyncMessage(new IToJSONWriter<IBrowserConverterContext>()
 			{
@@ -538,7 +538,7 @@ public class BaseWindow implements IWindow
 				hasContentToSend = true;
 				clientDataConversions.pushNode("services");
 				w.key("services");
-				PropertyDescription pd = serviceCallTypes.create();
+				PropertyDescription pd = serviceCallTypes.build();
 				w.array();
 				for (int i = 0; i < serviceCalls.size(); i++)
 				{
@@ -893,8 +893,8 @@ public class BaseWindow implements IWindow
 	private PropertyDescription createTypesOfServiceCall(PropertyDescription argumentTypes)
 	{
 		PropertyDescriptionBuilder typesOfThisCall = AggregatedPropertyType.newAggregatedPropertyBuilder();
-		if (argumentTypes != null) typesOfThisCall.putProperty(API_KEY_ARGS, argumentTypes);
-		return typesOfThisCall.create();
+		if (argumentTypes != null) typesOfThisCall.withProperty(API_KEY_ARGS, argumentTypes);
+		return typesOfThisCall.build();
 	}
 
 	private void addServiceCall(IClientService clientService, String functionName, Object[] arguments, PropertyDescription argumentTypes)
@@ -903,7 +903,7 @@ public class BaseWindow implements IWindow
 		PropertyDescription typesOfThisCall = createTypesOfServiceCall(argumentTypes);
 
 		serviceCalls.add(serviceCall);
-		serviceCallTypes.putProperty(String.valueOf(serviceCalls.size() - 1), typesOfThisCall);
+		serviceCallTypes.withProperty(String.valueOf(serviceCalls.size() - 1), typesOfThisCall);
 	}
 
 	@Override
@@ -1133,9 +1133,9 @@ public class BaseWindow implements IWindow
 		if (arguments != null && arguments.length > 0)
 		{
 			call.put(API_KEY_ARGS, arguments);
-			if (argumentTypes != null) callTypes.putProperty(API_KEY_ARGS, argumentTypes);
+			if (argumentTypes != null) callTypes.withProperty(API_KEY_ARGS, argumentTypes);
 		}
-		call.put(API_SERVER_ONLY_KEY_ARG_TYPES, callTypes.create());
+		call.put(API_SERVER_ONLY_KEY_ARG_TYPES, callTypes.build());
 		return call;
 	}
 

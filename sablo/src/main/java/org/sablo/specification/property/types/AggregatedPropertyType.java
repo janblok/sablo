@@ -31,7 +31,7 @@ public class AggregatedPropertyType extends DefaultPropertyType<Object>
 
 	public static PropertyDescriptionBuilder newAggregatedPropertyBuilder()
 	{
-		return new PropertyDescriptionBuilder("", AggregatedPropertyType.INSTANCE);
+		return new PropertyDescriptionBuilder().withType(AggregatedPropertyType.INSTANCE);
 	}
 
 	private AggregatedPropertyType()

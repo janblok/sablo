@@ -31,8 +31,10 @@ import org.junit.After;
 import org.junit.Test;
 import org.sablo.specification.Package.IPackageReader;
 import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.PropertyDescriptionBuilder;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebObjectSpecification;
+import org.sablo.specification.WebObjectSpecificationBuilder;
 import org.sablo.specification.property.types.DimensionPropertyType;
 import org.sablo.specification.property.types.EnabledPropertyType;
 import org.sablo.specification.property.types.ProtectedConfig;
@@ -829,12 +831,12 @@ public class WebComponentSecurityPropertiesTest
 			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) }, null);
 
 		Map<String, PropertyDescription> properties = new HashMap<String, PropertyDescription>();
-		properties.put("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
-		properties.put("prot", new PropertyDescription("prot", ProtectedPropertyType.INSTANCE, ProtectedConfig.DEFAULTBLOCKING_TRUE));
+		properties.put("size", new PropertyDescriptionBuilder().withName("size").withType(DimensionPropertyType.INSTANCE).build());
+		properties.put("prot", new PropertyDescriptionBuilder().withName("prot").withType(ProtectedPropertyType.INSTANCE).withConfig(
+			ProtectedConfig.DEFAULTBLOCKING_TRUE).build());
 
-		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null, null,
-			properties, null);
-
+		WebObjectSpecification formSpec = new WebObjectSpecificationBuilder().withName("form_spec").withPackageType(
+			IPackageReader.WEB_COMPONENT).withProperties(properties).build();
 
 		Container form = new Container("form", formSpec)
 		{
@@ -931,13 +933,12 @@ public class WebComponentSecurityPropertiesTest
 		JSONObject tags = new JSONObject();
 		tags.put(WebObjectSpecification.ALLOW_ACCESS, new JSONArray(new Object[] { "visible", "enabled" }));
 		Map<String, PropertyDescription> properties = new HashMap<String, PropertyDescription>();
-		properties.put("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE, null, null, null, null, false, null, null, tags, false, null));
-		properties.put("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
-		properties.put("enabled", new PropertyDescription("enabled", EnabledPropertyType.INSTANCE));
+		properties.put("size", new PropertyDescriptionBuilder().withName("size").withType(DimensionPropertyType.INSTANCE).withTags(tags).build());
+		properties.put("visible", new PropertyDescriptionBuilder().withName("visible").withType(VisiblePropertyType.INSTANCE).build());
+		properties.put("enabled", new PropertyDescriptionBuilder().withName("enabled").withConfig(EnabledPropertyType.INSTANCE).build());
 
-		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null, null,
-			properties, null);
-
+		WebObjectSpecification formSpec = new WebObjectSpecificationBuilder().withName("form_spec").withPackageType(
+			IPackageReader.WEB_COMPONENT).withProperties(properties).build();
 
 		Container form = new Container("form", formSpec)
 		{

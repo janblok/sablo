@@ -180,7 +180,7 @@ public class WrapperTypeTest
 		data.put("msg", properties.content);
 
 		String msg = JSONUtils.writeDataWithConversions(data,
-			AggregatedPropertyType.newAggregatedPropertyBuilder().putProperty("msg", properties.contentType).create(), null);
+			AggregatedPropertyType.newAggregatedPropertyBuilder().withProperty("msg", properties.contentType).build(), null);
 		assertEquals(new JSONObject("{\"msg\":{\"somepropp\":{\"string\":\"test\",\"counter\":1},\"name\":\"test\"}}").toString(),
 			new JSONObject(msg).toString());
 

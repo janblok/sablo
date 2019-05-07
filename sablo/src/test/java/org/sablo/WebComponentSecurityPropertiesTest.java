@@ -935,7 +935,7 @@ public class WebComponentSecurityPropertiesTest
 		Map<String, PropertyDescription> properties = new HashMap<String, PropertyDescription>();
 		properties.put("size", new PropertyDescriptionBuilder().withName("size").withType(DimensionPropertyType.INSTANCE).withTags(tags).build());
 		properties.put("visible", new PropertyDescriptionBuilder().withName("visible").withType(VisiblePropertyType.INSTANCE).build());
-		properties.put("enabled", new PropertyDescriptionBuilder().withName("enabled").withConfig(EnabledPropertyType.INSTANCE).build());
+		properties.put("enabled", new PropertyDescriptionBuilder().withName("enabled").withType(EnabledPropertyType.INSTANCE).build());
 
 		WebObjectSpecification formSpec = new WebObjectSpecificationBuilder().withName("form_spec").withPackageType(
 			IPackageReader.WEB_COMPONENT).withProperties(properties).build();

@@ -39,7 +39,7 @@ public class PropertyDescriptionBuilder
 	private List<Object> values;
 	private PushToServerEnum pushToServer;
 	private JSONObject tags;
-	protected final Map<String, PropertyDescription> properties = new HashMap<>();
+	protected Map<String, PropertyDescription> properties;
 	private boolean hasDefault;
 	protected String deprecated;
 
@@ -52,12 +52,20 @@ public class PropertyDescriptionBuilder
 
 	public PropertyDescriptionBuilder withProperty(String propertyName, PropertyDescription pd)
 	{
+		if (properties == null)
+		{
+			properties = new HashMap<>();
+		}
 		properties.put(propertyName, pd);
 		return this;
 	}
 
 	public PropertyDescriptionBuilder withProperties(Map<String, PropertyDescription> propertiesList)
 	{
+		if (properties == null)
+		{
+			properties = new HashMap<>();
+		}
 		properties.putAll(propertiesList);
 		return this;
 	}
@@ -131,6 +139,6 @@ public class PropertyDescriptionBuilder
 	public PropertyDescription build()
 	{
 		return new PropertyDescription(name, type, config, properties, defaultValue, initialValue, hasDefault, values, pushToServer, tags, optional,
-			properties.containsKey("deprecated") ? ((String)properties.get("deprecated").getConfig()) : deprecated);
+			properties != null && properties.containsKey("deprecated") ? ((String)properties.get("deprecated").getConfig()) : deprecated);
 	}
 }

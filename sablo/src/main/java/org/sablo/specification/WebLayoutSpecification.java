@@ -19,6 +19,7 @@ package org.sablo.specification;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -169,7 +170,7 @@ public class WebLayoutSpecification extends WebObjectSpecification
 	 */
 	public List<String> getAllowedChildren()
 	{
-		return allowedChildren;
+		return allowedChildren == null ? Collections.emptyList() : Collections.unmodifiableList(allowedChildren);
 	}
 
 	/**
@@ -177,7 +178,7 @@ public class WebLayoutSpecification extends WebObjectSpecification
 	 */
 	public List<String> getExcludedChildren()
 	{
-		return excludedChildren;
+		return excludedChildren == null ? Collections.emptyList() : Collections.unmodifiableList(excludedChildren);
 	}
 
 	/**

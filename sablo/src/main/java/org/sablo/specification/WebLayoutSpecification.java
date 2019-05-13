@@ -110,7 +110,7 @@ public class WebLayoutSpecification extends WebObjectSpecification
 				json.optString("preview", null)).withDefinition(json.getString("definition")).withConfig(jsonConfig).withTopContainer(
 					topContainer).withAllowedChildren(children).withExcludedChildren(excludes).withDesignStyleClass(
 						json.optString("designStyleClass")).withLayout(json.optString("layout", null)).withProperties(properties).withDeprecated(
-							json.optString("deprecated")).build();
+							json.optString("deprecated", null)).build();
 
 		if (json.has("attributes"))
 		{

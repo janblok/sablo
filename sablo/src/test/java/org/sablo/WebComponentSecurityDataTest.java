@@ -35,7 +35,7 @@ import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
 
 /**
  * Test invisible data, should not be sent to client.
- * 
+ *
  * @author rgansevles
  *
  */
@@ -74,9 +74,10 @@ public class WebComponentSecurityDataTest
 			"\n  ,\"aint\": \"int\"" + //
 			"\n  ,\"vis\": \"visible\"" + //
 			"\n}" + //
-			"\n}"; // 
+			"\n}"; //
 
-		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+		WebComponentSpecProvider.init(
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) }, null);
 
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 
@@ -136,9 +137,10 @@ public class WebComponentSecurityDataTest
 			"\n  ,\"aint\": \"int\"" + //
 			"\n  ,\"vis\": \"visible\"" + //
 			"\n}" + //
-			"\n}"; // 
+			"\n}"; //
 
-		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+		WebComponentSpecProvider.init(
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) }, null);
 
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 
@@ -162,7 +164,7 @@ public class WebComponentSecurityDataTest
 		assertEquals(Boolean.FALSE, propsForClient.get("vis"));
 		assertEquals(1, iteratorSize(propsForClient.keys()));
 
-		// no changes 
+		// no changes
 		assertFalse(testcomponent.hasChanges());
 		Map<String, Object> changes = testcomponent.getAndClearChanges().content;
 		assertEquals(0, changes.size());
@@ -203,9 +205,10 @@ public class WebComponentSecurityDataTest
 			"\n  ,\"aint\": \"int\"" + //
 			"\n  ,\"vis\": \"visible\"" + //
 			"\n}" + //
-			"\n}"; // 
+			"\n}"; //
 
-		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+		WebComponentSpecProvider.init(
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) }, null);
 
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 

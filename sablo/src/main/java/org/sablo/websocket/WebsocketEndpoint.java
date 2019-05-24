@@ -38,6 +38,7 @@ import org.sablo.IllegalChangeFromClientException;
 import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
 import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.PropertyDescriptionBuilder;
 import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.websocket.utils.JSONUtils;
@@ -503,17 +504,16 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		String key = success ? "ret" : "exception";
 		data.put(key, object);
 		data.put("cmsgid", msgId);
-		PropertyDescription dataTypes = null;
+		PropertyDescriptionBuilder dataTypes = null;
 		if (objectType != null)
 		{
-			dataTypes = AggregatedPropertyType.newAggregatedProperty();
-			dataTypes.putProperty(key, objectType);
+			dataTypes = AggregatedPropertyType.newAggregatedPropertyBuilder().withProperty(key, objectType);
 		}
 
 		try
 		{
-			sendText(window.getNextMessageNumber(), JSONUtils.writeDataWithConversions(FullValueToJSONConverter.INSTANCE, data, dataTypes,
-				BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER));
+			sendText(window.getNextMessageNumber(), JSONUtils.writeDataWithConversions(FullValueToJSONConverter.INSTANCE, data,
+				dataTypes != null ? dataTypes.build() : null, BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER));
 		}
 		catch (JSONException e)
 		{

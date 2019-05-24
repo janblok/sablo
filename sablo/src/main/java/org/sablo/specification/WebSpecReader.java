@@ -48,6 +48,7 @@ class WebSpecReader
 	private final Map<String, WebObjectSpecification> allWebObjectSpecifications = new HashMap<>();
 	private final Map<String, List<IPackageReader>> allPackages = new HashMap<>();
 	private final Set<String> packagesWithGloballyDefinedTypes = new HashSet<>(); // packageNames of packages that have globally defined types
+	private final IDefaultComponentPropertiesProvider defaultComponentPropertiesProvider;
 
 	private final List<IPackageReader> packageReaders;
 
@@ -60,11 +61,13 @@ class WebSpecReader
 	private SpecProviderState specProviderState;
 
 
-	WebSpecReader(IPackageReader[] packageReaders, String attributeName, SpecReloadSubject specReloadSubject)
+	WebSpecReader(IPackageReader[] packageReaders, String attributeName, SpecReloadSubject specReloadSubject,
+		IDefaultComponentPropertiesProvider defaultComponentPropertiesProvider)
 	{
 		this.packageReaders = new ArrayList<>(Arrays.asList(packageReaders));
 		this.attributeName = attributeName;
 		this.specReloadSubject = specReloadSubject;
+		this.defaultComponentPropertiesProvider = defaultComponentPropertiesProvider;
 		load();
 	}
 
@@ -331,7 +334,8 @@ class WebSpecReader
 			}
 		}
 		list.add(p.getReader());
-		PackageSpecification<WebObjectSpecification> webComponentPackageSpecification = p.getWebObjectDescriptions(attributeName);
+		PackageSpecification<WebObjectSpecification> webComponentPackageSpecification = p.getWebObjectDescriptions(attributeName,
+			defaultComponentPropertiesProvider);
 		if (!cachedDescriptions.containsKey(webComponentPackageSpecification.getPackageName()))
 		{
 			cachedDescriptions.put(webComponentPackageSpecification.getPackageName(), webComponentPackageSpecification);

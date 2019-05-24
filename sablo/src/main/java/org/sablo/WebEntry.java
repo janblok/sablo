@@ -81,9 +81,14 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 		// register the session factory at the manager
 		WebsocketSessionManager.setWebsocketSessionFactory(getEndpointType(), createSessionFactory());
 
-		WebComponentSpecProvider.init(fc.getServletContext(), getWebComponentBundleNames());
+		initWebComponentSpecs(fc);
 
 		WebServiceSpecProvider.init(fc.getServletContext(), getServiceBundleNames());
+	}
+
+	public void initWebComponentSpecs(FilterConfig fc)
+	{
+		WebComponentSpecProvider.init(fc.getServletContext(), getWebComponentBundleNames(), null);
 	}
 
 	/**

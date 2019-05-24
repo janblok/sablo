@@ -853,7 +853,15 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	@Override
 	public String toString()
 	{
-		return "#CAL# " + getBaseList().toString();
+		try
+		{
+			return "#CAL# " + getBaseList().toString();
+		}
+		catch (Exception e)
+		{
+			CustomJSONPropertyType.log.error("Error in toString of CAL", e);
+			return "CAL: Error in stringify the list of size: " + size();
+		}
 	}
 
 }

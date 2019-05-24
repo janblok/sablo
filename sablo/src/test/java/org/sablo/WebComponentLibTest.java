@@ -62,7 +62,7 @@ public class WebComponentLibTest
 
 		components.put("lib2.spec", comp);
 
-		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(manifest, components) });
+		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(manifest, components) }, null);
 
 		WebServiceSpecProvider.init(new IPackageReader[0]);
 	}

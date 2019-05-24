@@ -19,7 +19,7 @@ package org.sablo.specification.property;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.PropertyDescriptionBuilder;
 import org.sablo.specification.property.types.TypesRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,17 +76,16 @@ public class CustomPropertyTypeResolver
 			if (smartCustomType instanceof CustomJSONPropertyType< ? >)
 			{
 				propertyType = ((CustomJSONPropertyType< ? >)smartCustomType);
-				propertyType.setCustomJSONDefinition(new PropertyDescription(typeName, propertyType));
+				propertyType.setCustomJSONDefinition(new PropertyDescriptionBuilder().withName(typeName).withType(propertyType).build());
 			}
 			else if (smartCustomType == null)
 			{
 				propertyType = (CustomJSONObjectType)TypesRegistry.createNewType(CustomJSONObjectType.TYPE_NAME, typeName);
-				propertyType.setCustomJSONDefinition(new PropertyDescription(typeName, propertyType));
+				propertyType.setCustomJSONDefinition(new PropertyDescriptionBuilder().withName(typeName).withType(propertyType).build());
 			}
 			else
 			{
-				log.error("Type '" +
-					typeName +
+				log.error("Type '" + typeName +
 					"' is defined in a spec file, but also has a special java implementation that ignores the spec declaration. Is this a type naming conflict? Using spec declaration.");
 				return null;
 			}

@@ -25,6 +25,7 @@ import java.util.HashMap;
 import org.junit.Test;
 import org.sablo.IChangeListener;
 import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.PropertyDescriptionBuilder;
 import org.sablo.specification.property.types.TypesRegistry;
 
 /**
@@ -237,7 +238,7 @@ public class ListTest
 	{
 		CustomJSONObjectType dummyCustomObjectTypeForChildRelationInfo = (CustomJSONObjectType)TypesRegistry.createNewType(CustomJSONObjectType.TYPE_NAME,
 			"svy__dummyCustomObjectTypeForDeprecatedFMServiceChildRelationInfo");
-		PropertyDescription dummyPD = new PropertyDescription("", dummyCustomObjectTypeForChildRelationInfo);
+		PropertyDescription dummyPD = new PropertyDescriptionBuilder().withType(dummyCustomObjectTypeForChildRelationInfo).build();
 		dummyCustomObjectTypeForChildRelationInfo.setCustomJSONDefinition(dummyPD);
 		return dummyPD;
 	}

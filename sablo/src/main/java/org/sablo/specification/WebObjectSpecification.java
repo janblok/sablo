@@ -36,6 +36,7 @@ import org.sablo.specification.property.CustomPropertyTypeResolver;
 import org.sablo.specification.property.CustomVariableArgsType;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
+import org.sablo.specification.property.types.BooleanPropertyType;
 import org.sablo.specification.property.types.FunctionPropertyType;
 import org.sablo.specification.property.types.ObjectPropertyType;
 import org.sablo.specification.property.types.TypesRegistry;
@@ -103,7 +104,7 @@ public class WebObjectSpecification extends PropertyDescription
 	private final String icon;
 	private final String packageName;
 
-	private final Map<String, IPropertyType< ? >> foundTypes;
+	private Map<String, IPropertyType< ? >> foundTypes;
 
 	/**
 	 * Different then name only for services, not components/layouts.
@@ -120,31 +121,23 @@ public class WebObjectSpecification extends PropertyDescription
 
 	private boolean supportsGrouping;
 
-	/**
-	 * @param packageType one of {@link IPackageReader#WEB_SERVICE}, {@link IPackageReader#WEB_COMPONENT} and {@link IPackageReader#WEB_LAYOUT}.
-	 */
-	public WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
-		String definition, JSONArray libs)
-	{
-		super(name, null);
-		this.scriptingName = scriptifyNameIfNeeded(name, packageType);
-		this.packageName = packageName;
-		this.displayName = displayName;
-		this.categoryName = categoryName;
-		this.icon = icon;
-		this.preview = preview;
-		this.definition = definition;
-		this.libraries = libs != null ? libs : new JSONArray();
-		this.foundTypes = new HashMap<>();
-	}
+	private String replacement = null;
 
 	/**
 	 * @param packageType one of {@link IPackageReader#WEB_SERVICE}, {@link IPackageReader#WEB_COMPONENT} and {@link IPackageReader#WEB_LAYOUT}.
 	 */
-	public WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
-		String definition, JSONArray libs, Object configObject)
+
+	protected WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
+		String definition, JSONArray libs)
 	{
-		super(name, null, configObject);
+		this(name, packageName, packageType, displayName, categoryName, icon, preview, definition, libs, null, null, null);
+	}
+
+
+	WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
+		String definition, JSONArray libs, Object configObject, Map<String, PropertyDescription> properties, String deprecated)
+	{
+		super(name, null, configObject, properties, null, null, false, null, null, null, false, deprecated);
 		this.scriptingName = scriptifyNameIfNeeded(name, packageType);
 		this.packageName = packageName;
 		this.displayName = displayName;
@@ -290,7 +283,7 @@ public class WebObjectSpecification extends PropertyDescription
 		return libraries;
 	}
 
-	private ParsedProperty parsePropertyString(final String propertyString)
+	private static ParsedProperty parsePropertyString(final String propertyString, Map<String, IPropertyType< ? >> foundTypes, String specName)
 	{
 		String property = propertyString.replaceAll("\\s", "");
 		boolean isArray = false;
@@ -306,7 +299,7 @@ public class WebObjectSpecification extends PropertyDescription
 			property = property.substring(0, property.length() - 3);
 		}
 		// first check the local ones.
-		IPropertyType< ? > t = foundTypes.get(property);
+		IPropertyType< ? > t = foundTypes != null ? foundTypes.get(property) : null;
 		try
 		{
 			if (t == null) t = TypesRegistry.getType(property);
@@ -316,7 +309,7 @@ public class WebObjectSpecification extends PropertyDescription
 			t = ObjectPropertyType.INSTANCE;
 			if (!"${dataproviderType}".equals(property))
 			{
-				String message = "Unknown type name '" + property + "' encountered while parsing spec " + this.getName();
+				String message = "Unknown type name '" + property + "' encountered while parsing spec " + specName;
 				log.warn(message);
 				System.err.println(message);
 			}
@@ -334,20 +327,32 @@ public class WebObjectSpecification extends PropertyDescription
 
 	public static Map<String, IPropertyType< ? >> getTypes(JSONObject typesContainer) throws JSONException
 	{
-		WebObjectSpecification spec = new WebObjectSpecification("", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null);
-		spec.parseTypes(typesContainer);
-		return spec.foundTypes;
+		return WebObjectSpecification.parseTypes(typesContainer);
 	}
 
 	@SuppressWarnings("unchecked")
-	public static WebObjectSpecification parseSpec(String specfileContent, String packageName, IPackageReader reader) throws JSONException
+	public static WebObjectSpecification parseSpec(String specfileContent, String packageName, IPackageReader reader,
+		IDefaultComponentPropertiesProvider defaultComponentPropertiesProvider) throws JSONException
 	{
 		JSONObject json = new JSONObject(specfileContent);
 
-		WebObjectSpecification spec = new WebObjectSpecification(json.getString("name"), packageName, reader != null ? reader.getPackageType() : null,
-			json.optString("displayName", null), json.optString("categoryName", null), json.optString("icon", null), json.optString("preview", null),
-			json.getString("definition"), json.optJSONArray("libraries"));
+		// first types, can be used in properties
+		Map<String, IPropertyType< ? >> types = WebObjectSpecification.parseTypes(json);
 
+		// properties
+		Map<String, PropertyDescription> properties = new HashMap<>();
+		if (defaultComponentPropertiesProvider != null)
+		{
+			properties.putAll(defaultComponentPropertiesProvider.getDefaultComponentProperties());
+		}
+		properties.putAll(WebObjectSpecification.parseProperties("model", json, types, json.getString("name")));
+
+		WebObjectSpecification spec = new WebObjectSpecificationBuilder().withPackageName(packageName).withPackageType(
+			reader != null ? reader.getPackageType() : null).withDisplayName(json.optString("displayName", null)).withCategoryName(
+				json.optString("categoryName", null)).withIcon(json.optString("icon", null)).withPreview(json.optString("preview", null)).withDefinition(
+					json.getString("definition")).withLibraries(json.optJSONArray("libraries")).withProperties(properties).withName(
+						json.getString("name")).withDeprecated(json.optString("deprecated", null)).build();
+		spec.foundTypes = types;
 		if (json.has("serverscript"))
 		{
 			try
@@ -359,12 +364,6 @@ public class WebObjectSpecification extends PropertyDescription
 				log.error("Error getting serverscript", e);
 			}
 		}
-		// first types, can be used in properties
-		spec.parseTypes(json);
-
-		// properties
-		spec.putAll(spec.parseProperties("model", json));
-
 		//handlers
 		if (json.has("handlers"))
 		{
@@ -400,13 +399,15 @@ public class WebObjectSpecification extends PropertyDescription
 			}
 		}
 		spec.setSupportGrouping(json.has("group") ? json.optBoolean("group", true) : true);
+		spec.setReplacement(json.optString("replacement", null));
 		return spec;
 	}
 
 	private static WebObjectFunctionDefinition parseFunctionDefinition(WebObjectSpecification spec, JSONObject api, String func) throws JSONException
 	{
 		WebObjectFunctionDefinition def = new WebObjectFunctionDefinition(func);
-		def.setPropertyDescription(new PropertyDescription(func, TypesRegistry.getType(FunctionPropertyType.TYPE_NAME), api.get(func)));
+		def.setPropertyDescription(
+			new PropertyDescriptionBuilder().withName(func).withType(TypesRegistry.getType(FunctionPropertyType.TYPE_NAME)).withConfig(api.get(func)).build());
 		if (api.get(func) instanceof JSONObject)
 		{
 			JSONObject jsonDef = api.getJSONObject(func);
@@ -430,18 +431,20 @@ public class WebObjectSpecification extends PropertyDescription
 							paramJSON.put((String)param.get("name"), param.get("type"));
 							JSONObject parseJSON = new JSONObject();
 							parseJSON.put("", paramJSON);
-							PropertyDescription propertyDescription = spec.parseProperties("", parseJSON).get(param.get("name"));
+							PropertyDescription propertyDescription = WebObjectSpecification.parseProperties("", parseJSON, spec.foundTypes,
+								spec.getName()).get(param.get("name"));
 							propertyType = propertyDescription.getType();
 							config = propertyDescription.getConfig();
 						}
 						else
 						{
-							ParsedProperty pp = spec.parsePropertyString(param.getString("type"));
+							ParsedProperty pp = WebObjectSpecification.parsePropertyString(param.getString("type"), spec.foundTypes, spec.getName());
 							propertyType = resolveArrayType(pp);
 							config = propertyType.parseConfig(null);
 						}
-						def.addParameter(new PropertyDescription((String)param.get("name"), propertyType, config, null, null, false, null, null, null,
-							Boolean.TRUE.equals(param.opt("optional"))));
+						def.addParameter(
+							new PropertyDescriptionBuilder().withName((String)param.get("name")).withType(propertyType).withConfig(config).withOptional(
+								Boolean.TRUE.equals(param.opt("optional"))).build());
 					}
 				}
 				else if ("returns".equals(key))
@@ -449,14 +452,14 @@ public class WebObjectSpecification extends PropertyDescription
 					if (jsonDef.get("returns") instanceof JSONObject)
 					{
 						JSONObject returnType = jsonDef.getJSONObject("returns");
-						ParsedProperty pp = spec.parsePropertyString(returnType.getString("type"));
-						PropertyDescription desc = new PropertyDescription("return", resolveArrayType(pp));
+						ParsedProperty pp = WebObjectSpecification.parsePropertyString(returnType.getString("type"), spec.foundTypes, spec.getName());
+						PropertyDescription desc = new PropertyDescriptionBuilder().withName("return").withType(resolveArrayType(pp)).build();
 						def.setReturnType(desc);
 					}
 					else
 					{
-						ParsedProperty pp = spec.parsePropertyString(jsonDef.getString("returns"));
-						PropertyDescription desc = new PropertyDescription("return", resolveArrayType(pp));
+						ParsedProperty pp = WebObjectSpecification.parsePropertyString(jsonDef.getString("returns"), spec.foundTypes, spec.getName());
+						PropertyDescription desc = new PropertyDescriptionBuilder().withName("return").withType(resolveArrayType(pp)).build();
 						def.setReturnType(desc);
 					}
 				}
@@ -492,6 +495,10 @@ public class WebObjectSpecification extends PropertyDescription
 				{
 					def.setPrivate(jsonDef.getBoolean("private"));
 				}
+				else if ("deprecated".equals(key))
+				{
+					def.setDeprecated(jsonDef.getBoolean(key));
+				}
 				else
 				{
 					if (customConfiguration == null) customConfiguration = new JSONObject();
@@ -507,11 +514,13 @@ public class WebObjectSpecification extends PropertyDescription
 	{
 		if (pp.array)
 		{
-			return TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, new PropertyDescription(ARRAY_ELEMENT_PD_NAME, pp.type));
+			return TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME,
+				new PropertyDescriptionBuilder().withName(ARRAY_ELEMENT_PD_NAME).withType(pp.type).build());
 		}
 		if (pp.varArgs)
 		{
-			return TypesRegistry.createNewType(CustomVariableArgsType.TYPE_NAME, new PropertyDescription(ARRAY_ELEMENT_PD_NAME, pp.type));
+			return TypesRegistry.createNewType(CustomVariableArgsType.TYPE_NAME,
+				new PropertyDescriptionBuilder().withName(ARRAY_ELEMENT_PD_NAME).withType(pp.type).build());
 		}
 		return pp.type;
 	}
@@ -523,8 +532,9 @@ public class WebObjectSpecification extends PropertyDescription
 	 *
 	 * @throws JSONException
 	 */
-	void parseTypes(JSONObject json) throws JSONException
+	static Map<String, IPropertyType< ? >> parseTypes(JSONObject json) throws JSONException
 	{
+		Map<String, IPropertyType< ? >> foundTypes = new HashMap<>();
 		String specName = json.optString("name", null);
 		if (json.has(TYPES_KEY))
 		{
@@ -545,16 +555,11 @@ public class WebObjectSpecification extends PropertyDescription
 				String typeName = types.next();
 				ICustomType< ? > type = (ICustomType< ? >)foundTypes.get(typeName);
 				JSONObject typeJSON = jsonObject.getJSONObject(typeName);
-				if (typeJSON.has("model"))
-				{
-					// TODO will we really use anything else but model (like api/handlers)? Cause if not, we can just drop the need for "model"
-					type.getCustomJSONTypeDefinition().putAll(parseProperties("model", typeJSON));
-				}
-				else
-				{
-					// allow custom types to be defined even without the "model" clutter
-					type.getCustomJSONTypeDefinition().putAll(parseProperties(typeName, jsonObject));
-				}
+				PropertyDescription pd = new PropertyDescriptionBuilder().withName(specName != null ? (specName + "." + typeName) : typeName).withType(
+					type).withProperties(
+						typeJSON.has("model") ? parseProperties("model", typeJSON, foundTypes, specName)
+							: parseProperties(typeName, jsonObject, foundTypes, specName)).build();
+				type.setCustomJSONDefinition(pd);
 				// TODO this is currently never true? See 5 lines above this, types are always just PropertyDescription?
 				// is this really supported? or should we add it just to the properties? But how are these handlers then added and used
 //				if (type instanceof WebObjectSpecification)
@@ -576,9 +581,10 @@ public class WebObjectSpecification extends PropertyDescription
 //				}
 			}
 		}
+		return foundTypes;
 	}
 
-	private class StandardTypeConfigSettings
+	private static class StandardTypeConfigSettings
 	{
 		public final Object defaultValue;
 		public final Object initialValue;
@@ -586,9 +592,10 @@ public class WebObjectSpecification extends PropertyDescription
 		public final PushToServerEnum pushToServer;
 		public final JSONObject tags;
 		public final List<Object> values;
+		private final String deprecated;
 
 		public StandardTypeConfigSettings(Object defaultValue, Object initialValue, boolean hasDefault, PushToServerEnum pushToServer, JSONObject tags,
-			List<Object> values)
+			List<Object> values, String deprecated)
 		{
 			this.defaultValue = defaultValue;
 			this.initialValue = initialValue;
@@ -596,16 +603,18 @@ public class WebObjectSpecification extends PropertyDescription
 			this.pushToServer = pushToServer;
 			this.tags = tags;
 			this.values = values;
+			this.deprecated = deprecated;
 		}
 
 		public StandardTypeConfigSettings()
 		{
-			this(null, null, false, PushToServerEnum.reject, null, null);
+			this(null, null, false, PushToServerEnum.reject, null, null, null);
 		}
 
 	}
 
-	protected Map<String, PropertyDescription> parseProperties(String propKey, JSONObject json) throws JSONException
+	protected static Map<String, PropertyDescription> parseProperties(String propKey, JSONObject json, Map<String, IPropertyType< ? >> foundTypes,
+		String specName) throws JSONException
 	{
 		Map<String, PropertyDescription> pds = new HashMap<>();
 		if (json.has(propKey))
@@ -622,18 +631,24 @@ public class WebObjectSpecification extends PropertyDescription
 				StandardTypeConfigSettings standardConfigurationSettings = null;
 				if (value instanceof String)
 				{
-					pp = parsePropertyString((String)value);
+					pp = parsePropertyString((String)value, foundTypes, specName);
 					standardConfigurationSettings = new StandardTypeConfigSettings();
 				}
 				else if (value instanceof JSONObject && ((JSONObject)value).has("type"))
 				{
-					pp = parsePropertyString(((JSONObject)value).getString("type"));
+					pp = parsePropertyString(((JSONObject)value).getString("type"), foundTypes, specName);
 					configObject = ((JSONObject)value);
 					standardConfigurationSettings = parseStandardConfigurationSettings(configObject);
 				}
 				else if (value instanceof JSONObject && "handlers".equals(propKey))
 				{
-					pds.put(key, new PropertyDescription(key, TypesRegistry.getType(FunctionPropertyType.TYPE_NAME), value));
+					pds.put(key, new PropertyDescriptionBuilder().withName(key).withType(TypesRegistry.getType(FunctionPropertyType.TYPE_NAME)).withConfig(
+						value).build());
+				}
+				else if (value instanceof Boolean && "deprecated".equals(key))
+				{
+					pds.put(key, new PropertyDescriptionBuilder().withName(key).withType(TypesRegistry.getType(BooleanPropertyType.TYPE_NAME)).withConfig(
+						value).build());
 				}
 
 				if (pp != null && pp.type != null /* && standardConfigurationSettings != null -- is implied by pp != null -- */)
@@ -656,13 +671,14 @@ public class WebObjectSpecification extends PropertyDescription
 							elementConfig = new JSONObject();
 							// for the standard configuration settings in this case - inherit them where it's possible from array (currently that is only pushToServer to make it easier to declare arrays with pushToServer); TODO should we just use defaults always here?
 							elementStandardConfigurationSettings = new StandardTypeConfigSettings(null, null, false, standardConfigurationSettings.pushToServer,
-								null, null);
+								null, null, null);
 						}
 
-						PropertyDescription elementDescription = new PropertyDescription(ARRAY_ELEMENT_PD_NAME, type, type.parseConfig(elementConfig),
-							elementStandardConfigurationSettings.defaultValue, elementStandardConfigurationSettings.initialValue,
-							elementStandardConfigurationSettings.hasDefault, elementStandardConfigurationSettings.values,
-							elementStandardConfigurationSettings.pushToServer, elementStandardConfigurationSettings.tags, false);
+						PropertyDescription elementDescription = new PropertyDescriptionBuilder().withName(ARRAY_ELEMENT_PD_NAME).withType(type).withConfig(
+							type.parseConfig(elementConfig)).withDefaultValue(elementStandardConfigurationSettings.defaultValue).withInitialValue(
+								elementStandardConfigurationSettings.initialValue).withHasDefault(elementStandardConfigurationSettings.hasDefault).withValues(
+									elementStandardConfigurationSettings.values).withPushToServer(elementStandardConfigurationSettings.pushToServer).withTags(
+										elementStandardConfigurationSettings.tags).build();
 						if (pp.array)
 						{
 							type = TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, elementDescription);
@@ -674,16 +690,18 @@ public class WebObjectSpecification extends PropertyDescription
 					}
 
 					pds.put(key,
-						new PropertyDescription(key, type, type.parseConfig(configObject), standardConfigurationSettings.defaultValue,
-							standardConfigurationSettings.initialValue, standardConfigurationSettings.hasDefault, standardConfigurationSettings.values,
-							standardConfigurationSettings.pushToServer, standardConfigurationSettings.tags, false));
+						new PropertyDescriptionBuilder().withName(key).withType(type).withConfig(type.parseConfig(configObject)).withDefaultValue(
+							standardConfigurationSettings.defaultValue).withInitialValue(standardConfigurationSettings.initialValue).withHasDefault(
+								standardConfigurationSettings.hasDefault).withValues(standardConfigurationSettings.values).withPushToServer(
+									standardConfigurationSettings.pushToServer).withTags(standardConfigurationSettings.tags).withDeprecated(
+										standardConfigurationSettings.deprecated).build());
 				}
 			}
 		}
 		return pds;
 	}
 
-	private StandardTypeConfigSettings parseStandardConfigurationSettings(JSONObject configObject)
+	private static StandardTypeConfigSettings parseStandardConfigurationSettings(JSONObject configObject)
 	{
 		Object defaultValue = null;
 		Object initialValue = null;
@@ -691,6 +709,7 @@ public class WebObjectSpecification extends PropertyDescription
 		PushToServerEnum pushToServer = PushToServerEnum.reject;
 		JSONObject tags = null;
 		List<Object> values = null;
+		String deprecated = configObject.optString("deprecated", null);
 
 		defaultValue = configObject.opt("default");
 		initialValue = configObject.opt("initialValue");
@@ -709,7 +728,7 @@ public class WebObjectSpecification extends PropertyDescription
 			}
 		}
 
-		return new StandardTypeConfigSettings(defaultValue, initialValue, hasDefault, pushToServer, tags, values);
+		return new StandardTypeConfigSettings(defaultValue, initialValue, hasDefault, pushToServer, tags, values, deprecated);
 	}
 
 	@Override
@@ -764,5 +783,27 @@ public class WebObjectSpecification extends PropertyDescription
 	public boolean supportGrouping()
 	{
 		return supportsGrouping;
+	}
+
+	public String getReplacement()
+	{
+		return replacement;
+	}
+
+	public void setReplacement(String replacement)
+	{
+		this.replacement = replacement;
+	}
+
+	@Override
+	public boolean isDeprecated()
+	{
+		return replacement != null && !"".equals("replacement") || super.isDeprecated();
+	}
+
+	@Override
+	public String getDeprecatedMessage()
+	{
+		return (replacement != null && !"".equals("replacement") ? " Use '" + replacement + "'. " : "") + super.getDeprecatedMessage();
 	}
 }

@@ -21,6 +21,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.json.JSONArray;
@@ -29,8 +31,10 @@ import org.junit.After;
 import org.junit.Test;
 import org.sablo.specification.Package.IPackageReader;
 import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.PropertyDescriptionBuilder;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebObjectSpecification;
+import org.sablo.specification.WebObjectSpecificationBuilder;
 import org.sablo.specification.property.types.DimensionPropertyType;
 import org.sablo.specification.property.types.EnabledPropertyType;
 import org.sablo.specification.property.types.ProtectedConfig;
@@ -75,7 +79,7 @@ public class WebComponentSecurityPropertiesTest
 			"\n}"; //
 
 		WebComponentSpecProvider.init(
-			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) }, null);
 
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 		assertTrue(testcomponent.isVisible());
@@ -138,7 +142,7 @@ public class WebComponentSecurityPropertiesTest
 	private void doTestComponentVisibileWithDefaults(String testcomponentspec) throws Exception
 	{
 		WebComponentSpecProvider.init(
-			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) }, null);
 
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 
@@ -272,7 +276,7 @@ public class WebComponentSecurityPropertiesTest
 			"\n}"; //
 
 		WebComponentSpecProvider.init(
-			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) }, null);
 
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 
@@ -424,7 +428,7 @@ public class WebComponentSecurityPropertiesTest
 	private void doTestComponentProtectedPropertyDefaults(String testcomponentspec) throws Exception
 	{
 		WebComponentSpecProvider.init(
-			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) }, null);
 
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 
@@ -504,7 +508,7 @@ public class WebComponentSecurityPropertiesTest
 			"\n}"; //
 
 		WebComponentSpecProvider.init(
-			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) }, null);
 
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 
@@ -631,7 +635,7 @@ public class WebComponentSecurityPropertiesTest
 			"\n}"; //
 
 		WebComponentSpecProvider.init(
-			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) }, null);
 
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 
@@ -736,7 +740,7 @@ public class WebComponentSecurityPropertiesTest
 	private void doTestProtectedFunction(String testcomponentspec, boolean blockingOn) throws Exception
 	{
 		WebComponentSpecProvider.init(
-			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) }, null);
 
 		WebComponent testcomponent = new WebComponent("testcomponent", "test");
 
@@ -824,11 +828,15 @@ public class WebComponentSecurityPropertiesTest
 			"\n}"; //
 
 		WebComponentSpecProvider.init(
-			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) }, null);
 
-		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null);
-		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
-		formSpec.putProperty("prot", new PropertyDescription("prot", ProtectedPropertyType.INSTANCE, ProtectedConfig.DEFAULTBLOCKING_TRUE));
+		Map<String, PropertyDescription> properties = new HashMap<String, PropertyDescription>();
+		properties.put("size", new PropertyDescriptionBuilder().withName("size").withType(DimensionPropertyType.INSTANCE).build());
+		properties.put("prot", new PropertyDescriptionBuilder().withName("prot").withType(ProtectedPropertyType.INSTANCE).withConfig(
+			ProtectedConfig.DEFAULTBLOCKING_TRUE).build());
+
+		WebObjectSpecification formSpec = new WebObjectSpecificationBuilder().withName("form_spec").withPackageType(
+			IPackageReader.WEB_COMPONENT).withProperties(properties).build();
 
 		Container form = new Container("form", formSpec)
 		{
@@ -920,14 +928,17 @@ public class WebComponentSecurityPropertiesTest
 			"\n}"; //
 
 		WebComponentSpecProvider.init(
-			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) });
+			new IPackageReader[] { new InMemPackageReader(MANIFEST, Collections.singletonMap(TESTCOMPONENT_SPEC, testcomponentspec)) }, null);
 
 		JSONObject tags = new JSONObject();
 		tags.put(WebObjectSpecification.ALLOW_ACCESS, new JSONArray(new Object[] { "visible", "enabled" }));
-		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null);
-		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE, null, null, null, false, null, null, tags, false));
-		formSpec.putProperty("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
-		formSpec.putProperty("enabled", new PropertyDescription("enabled", EnabledPropertyType.INSTANCE));
+		Map<String, PropertyDescription> properties = new HashMap<String, PropertyDescription>();
+		properties.put("size", new PropertyDescriptionBuilder().withName("size").withType(DimensionPropertyType.INSTANCE).withTags(tags).build());
+		properties.put("visible", new PropertyDescriptionBuilder().withName("visible").withType(VisiblePropertyType.INSTANCE).build());
+		properties.put("enabled", new PropertyDescriptionBuilder().withName("enabled").withType(EnabledPropertyType.INSTANCE).build());
+
+		WebObjectSpecification formSpec = new WebObjectSpecificationBuilder().withName("form_spec").withPackageType(
+			IPackageReader.WEB_COMPONENT).withProperties(properties).build();
 
 		Container form = new Container("form", formSpec)
 		{

@@ -33,4 +33,5 @@ public interface ICustomType<T> extends IPropertyType<T>
 	 */
 	PropertyDescription getCustomJSONTypeDefinition();
 
+	void setCustomJSONDefinition(PropertyDescription definition);
 }

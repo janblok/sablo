@@ -39,9 +39,11 @@ import org.junit.Test;
 import org.sablo.services.server.FormServiceHandler;
 import org.sablo.specification.Package.IPackageReader;
 import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.PropertyDescriptionBuilder;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
+import org.sablo.specification.WebObjectSpecificationBuilder;
 import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.ChangeAwareList;
 import org.sablo.specification.property.types.AggregatedPropertyType;
@@ -79,7 +81,7 @@ public class WebComponentTest
 
 		HashMap<String, String> components = new HashMap<>();
 		components.put("mycomponent.spec", comp);
-		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(manifest, components) });
+		WebComponentSpecProvider.init(new IPackageReader[] { new InMemPackageReader(manifest, components) }, null);
 	}
 
 	@AfterClass
@@ -323,8 +325,10 @@ public class WebComponentTest
 		TypedData<Map<String, Object>> properties = component.getProperties();
 		data.put("msg", properties.content);
 
-		PropertyDescription messageTypes = AggregatedPropertyType.newAggregatedProperty();
-		messageTypes.putProperty("msg", properties.contentType);
+		PropertyDescriptionBuilder messageTypesBuilder = AggregatedPropertyType.newAggregatedPropertyBuilder();
+		messageTypesBuilder.withProperty("msg", properties.contentType);
+
+		PropertyDescription messageTypes = messageTypesBuilder.build();
 
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
 		assertEquals(new JSONObject(
@@ -355,9 +359,12 @@ public class WebComponentTest
 	@Test
 	public void setColorPropertyWithOldValue()
 	{
-		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null);
-		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
-		formSpec.putProperty("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
+		Map<String, PropertyDescription> properties = new HashMap<>();
+		properties.put("size", new PropertyDescriptionBuilder().withName("size").withType(DimensionPropertyType.INSTANCE).build());
+		properties.put("visible", new PropertyDescriptionBuilder().withName("visible").withType(VisiblePropertyType.INSTANCE).build());
+
+		WebObjectSpecification formSpec = new WebObjectSpecificationBuilder().withName("form_spec").withPackageType(
+			IPackageReader.WEB_COMPONENT).withProperties(properties).build();
 
 		final Container form = new Container("form", formSpec)
 		{
@@ -424,9 +431,12 @@ public class WebComponentTest
 	@Test
 	public void setIntPropertyWithOldValue()
 	{
-		WebObjectSpecification formSpec = new WebObjectSpecification("form_spec", "", IPackageReader.WEB_COMPONENT, "", null, null, null, "", null);
-		formSpec.putProperty("size", new PropertyDescription("size", DimensionPropertyType.INSTANCE));
-		formSpec.putProperty("visible", new PropertyDescription("visible", VisiblePropertyType.INSTANCE));
+		Map<String, PropertyDescription> properties = new HashMap<>();
+		properties.put("size", new PropertyDescriptionBuilder().withName("size").withType(DimensionPropertyType.INSTANCE).build());
+		properties.put("visible", new PropertyDescriptionBuilder().withName("visible").withType(VisiblePropertyType.INSTANCE).build());
+
+		WebObjectSpecification formSpec = new WebObjectSpecificationBuilder().withName("form_spec").withPackageType(
+			IPackageReader.WEB_COMPONENT).withProperties(properties).build();
 
 		final Container form = new Container("form", formSpec)
 		{

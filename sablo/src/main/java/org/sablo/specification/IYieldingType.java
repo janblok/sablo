@@ -57,7 +57,7 @@ public interface IYieldingType<T, YT> extends IPropertyType<T>
 	{
 
 		public YieldDescriptionArguments(Object config, Object defaultValue, Object initialValue, List<Object> values, PushToServerEnum pushToServer,
-			JSONObject tags, boolean optional)
+			JSONObject tags, boolean optional, String deprecated)
 		{
 			this.config = config;
 			this.defaultValue = defaultValue;
@@ -66,6 +66,7 @@ public interface IYieldingType<T, YT> extends IPropertyType<T>
 			this.pushToServer = pushToServer;
 			this.tags = tags;
 			this.optional = optional;
+			this.deprecated = deprecated;
 		}
 
 		public final Object defaultValue;
@@ -74,6 +75,7 @@ public interface IYieldingType<T, YT> extends IPropertyType<T>
 		public final PushToServerEnum pushToServer;
 		public final JSONObject tags;
 		public final boolean optional;
+		public final String deprecated;
 
 		private Object config;
 

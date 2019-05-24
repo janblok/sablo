@@ -184,7 +184,8 @@ public class Package
 		return globalTypesFound;
 	}
 
-	public PackageSpecification<WebObjectSpecification> getWebObjectDescriptions(String attributeName) throws IOException
+	public PackageSpecification<WebObjectSpecification> getWebObjectDescriptions(String attributeName,
+		IDefaultComponentPropertiesProvider defaultComponentPropertiesProvider) throws IOException
 	{
 		String packageName = reader.getPackageName();
 		String packageDisplayname = null;
@@ -201,7 +202,8 @@ public class Package
 					String specfileContent = reader.readTextFile(specpath, Charset.forName("UTF8")); // TODO: check encoding
 					if (specfileContent != null)
 					{
-						WebObjectSpecification parsed = WebObjectSpecification.parseSpec(specfileContent, reader.getPackageName(), reader);
+						WebObjectSpecification parsed = WebObjectSpecification.parseSpec(specfileContent, reader.getPackageName(), reader,
+							defaultComponentPropertiesProvider);
 						if (reader instanceof ISpecificationFilter && ((ISpecificationFilter)reader).filter(parsed)) continue;
 						parsed.setSpecURL(reader.getUrlForPath(specpath));
 						if (parsed.getDefinition() != null)

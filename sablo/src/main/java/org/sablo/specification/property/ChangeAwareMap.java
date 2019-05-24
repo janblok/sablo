@@ -486,7 +486,15 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	@Override
 	public String toString()
 	{
-		return "#CAM# " + getBaseMap().toString();
+		try
+		{
+			return "#CAM# " + getBaseMap().toString();
+		}
+		catch (Exception e)
+		{
+			CustomJSONPropertyType.log.error("Error in toString of CAM", e);
+			return "CAM: Error in stringify the map of size: " + size();
+		}
 	}
 
 	public CustomObjectContext<ET, WT> getOrCreateComponentOrServiceExtension()

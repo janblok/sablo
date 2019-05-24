@@ -54,36 +54,23 @@ public class PropertyDescription
 	private final List<Object> values;
 	private final PushToServerEnum pushToServer;
 	private final JSONObject tags;
+	private String deprecated = null;
 
 	//case of nested type
-	// TODO: make properties final and remove put* calls so PropertyDescription is immutable
-	private Map<String, PropertyDescription> properties = null;
+	private final Map<String, PropertyDescription> properties;
 	private final boolean hasDefault;
 
-
-	public PropertyDescription(String name, IPropertyType< ? > type)
-	{
-		this(name, type, null, null, null, false, null, null, null, false);
-	}
-
-	public PropertyDescription(String name, IPropertyType< ? > type, PushToServerEnum pushToServer)
-	{
-		this(name, type, null, null, null, false, null, pushToServer, null, false);
-	}
-
-	public PropertyDescription(String name, IPropertyType< ? > type, Object config)
-	{
-		this(name, type, config, null, null, false, null, null, null, false);
-	}
-
-	public PropertyDescription(String name, IPropertyType< ? > type, Object config, Object defaultValue, Object initialValue, boolean hasDefault,
-		List<Object> values, PushToServerEnum pushToServer, JSONObject tags, boolean optional)
+	// only call from builder or child classes
+	PropertyDescription(String name, IPropertyType< ? > type, Object config, Map<String, PropertyDescription> properties, Object defaultValue,
+		Object initialValue, boolean hasDefault, List<Object> values, PushToServerEnum pushToServer, JSONObject tags, boolean optional, String deprecated)
 	{
 		this.name = name;
 		this.hasDefault = hasDefault;
+		this.properties = properties;
 		if (type instanceof IYieldingType)
 		{
-			YieldDescriptionArguments params = new YieldDescriptionArguments(config, defaultValue, initialValue, values, pushToServer, tags, optional);
+			YieldDescriptionArguments params = new YieldDescriptionArguments(config, defaultValue, initialValue, values, pushToServer, tags, optional,
+				deprecated);
 			this.type = ((IYieldingType< ? , ? >)type).yieldToOtherIfNeeded(name, params);
 
 			if (this.type != type)
@@ -96,6 +83,7 @@ public class PropertyDescription
 				this.pushToServer = params.pushToServer;
 				this.tags = params.tags;
 				this.optional = params.optional;
+				this.deprecated = params.deprecated;
 			}
 			else
 			{
@@ -107,6 +95,7 @@ public class PropertyDescription
 				this.pushToServer = pushToServer;
 				this.tags = tags;
 				this.optional = optional;
+				this.deprecated = deprecated;
 			}
 		}
 		else
@@ -120,6 +109,7 @@ public class PropertyDescription
 			this.pushToServer = pushToServer;
 			this.tags = tags;
 			this.optional = optional;
+			this.deprecated = deprecated;
 		}
 	}
 
@@ -298,14 +288,6 @@ public class PropertyDescription
 		return optional;
 	}
 
-	public PropertyDescription putProperty(String propname, PropertyDescription proptype)
-	{
-		if (properties == null) properties = new HashMap<>();
-		if (proptype == null) properties.remove(propname);
-		else properties.put(propname, proptype);
-		return this;
-	}
-
 	public List<PropertyDescription> getPropertyPath(String propname)
 	{
 		ArrayList<PropertyDescription> propertyPath = new ArrayList<PropertyDescription>();
@@ -393,7 +375,6 @@ public class PropertyDescription
 		return propertyPath.get(propertyPath.size() - 1);
 	}
 
-	// TODO: move to constructor so PropertyDescription is immutable
 	public Map<String, PropertyDescription> getProperties()
 	{
 		if (properties != null) return Collections.unmodifiableMap(properties);
@@ -417,12 +398,6 @@ public class PropertyDescription
 		}
 		return retVal;
 	}
-
-	public void putAll(Map<String, PropertyDescription> map)
-	{
-		properties = new HashMap<>(map);
-	}
-
 
 	@Override
 	public String toString()
@@ -475,4 +450,22 @@ public class PropertyDescription
 		return false;
 	}
 
+	public boolean isDeprecated()
+	{
+		return deprecated != null && !"false".equalsIgnoreCase(deprecated.trim());
+	}
+
+	public String getDeprecated()
+	{
+		return deprecated;
+	}
+
+	public String getDeprecatedMessage()
+	{
+		if (deprecated != null && !"false".equalsIgnoreCase(deprecated.trim()) && !"true".equalsIgnoreCase(deprecated.trim()))
+		{
+			return deprecated;
+		}
+		return "";
+	}
 }

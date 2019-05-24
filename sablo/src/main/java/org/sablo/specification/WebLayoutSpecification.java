@@ -19,6 +19,8 @@ package org.sablo.specification;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -81,36 +83,42 @@ public class WebLayoutSpecification extends WebObjectSpecification
 		{
 			jsonConfig = reader.readTextFile(json.getString("definition"), Charset.forName("UTF8"));
 		}
-		WebLayoutSpecification spec = new WebLayoutSpecification(json.getString("name"), packageName, json.optString("displayName", null),
-			json.optString("categoryName", null), json.optString("icon", null), json.optString("preview", null), json.getString("definition"), jsonConfig,
-			topContainer, children, excludes, json.optString("designStyleClass"), json.optString("layout", null));
-
 		// properties
-		spec.putAll(spec.parseProperties("model", json));
-
-		if (json.has("attributes"))
-		{
-			String attributes = reader.readTextFile(json.getString("attributes"), Charset.forName("UTF8"));
-			spec.putAllAttributes(spec.parseProperties("attributes", new JSONObject(attributes)));
-		}
+		Map<String, PropertyDescription> properties = new HashMap<String, PropertyDescription>();
+		properties.putAll(WebObjectSpecification.parseProperties("model", json, null, json.getString("name")));
 
 		if (json.has("tagType"))
 		{
-			if (spec.getProperty("tagType") != null)
+			if (properties.get("tagType") != null)
 			{
-				PropertyDescription pd = spec.getProperty("tagType");
-				spec.putProperty("tagType", new PropertyDescription("tagType", pd.getType(), pd.getConfig(), json.get("tagType"), null, true, pd.getValues(),
-					pd.getPushToServer(), null, pd.isOptional()));
+				PropertyDescription pd = properties.get("tagType");
+				properties.put("tagType",
+					new PropertyDescriptionBuilder().withName("tagType").withType(pd.getType()).withConfig(pd.getConfig()).withDefaultValue(
+						json.get("tagType")).withHasDefault(true).withValues(pd.getValues()).withPushToServer(pd.getPushToServer()).withOptional(
+							pd.isOptional()).withDeprecated(pd.getDeprecated()).build());
 			}
 			else
 			{
 				JSONObject tags = new JSONObject();
 				tags.put("scope", "private");
-				spec.putProperty("tagType",
-					new PropertyDescription("tagType", StringPropertyType.INSTANCE, null, json.get("tagType"), null, true, null, null, tags, false));
+				properties.put("tagType", new PropertyDescriptionBuilder().withName("tagType").withType(StringPropertyType.INSTANCE).withDefaultValue(
+					json.get("tagType")).withHasDefault(true).withTags(tags).build());
 			}
 		}
 
+		WebLayoutSpecification spec = new WebLayoutSpecificationBuilder().withName(json.getString("name")).withPackageName(packageName).withDisplayName(
+			json.optString("displayName", null)).withCategoryName(json.optString("categoryName", null)).withIcon(json.optString("icon", null)).withPreview(
+				json.optString("preview", null)).withDefinition(json.getString("definition")).withConfig(jsonConfig).withTopContainer(
+					topContainer).withAllowedChildren(children).withExcludedChildren(excludes).withDesignStyleClass(
+						json.optString("designStyleClass")).withLayout(json.optString("layout", null)).withProperties(properties).withDeprecated(
+							json.optString("deprecated", null)).build();
+
+		if (json.has("attributes"))
+		{
+			String attributes = reader.readTextFile(json.getString("attributes"), Charset.forName("UTF8"));
+			spec.putAllAttributes(WebObjectSpecification.parseProperties("attributes", new JSONObject(attributes), null, spec.getName()));
+		}
+		spec.setReplacement(json.optString("replacement", null));
 		return spec;
 	}
 
@@ -132,10 +140,11 @@ public class WebLayoutSpecification extends WebObjectSpecification
 	private final String designStyleClass;
 	private final List<String> excludedChildren;
 
-	public WebLayoutSpecification(String name, String packageName, String displayName, String categoryName, String icon, String preview, String definition,
-		Object configObject, boolean topContainer, List<String> allowedChildren, List<String> excludedChildren, String designStyleClass, String layout)
+	WebLayoutSpecification(String name, String packageName, String displayName, String categoryName, String icon, String preview, String definition,
+		Object configObject, boolean topContainer, List<String> allowedChildren, List<String> excludedChildren, String designStyleClass, String layout,
+		Map<String, PropertyDescription> properties, String deprecated)
 	{
-		super(name, packageName, IPackageReader.WEB_LAYOUT, displayName, categoryName, icon, preview, definition, null, configObject);
+		super(name, packageName, IPackageReader.WEB_LAYOUT, displayName, categoryName, icon, preview, definition, null, configObject, properties, deprecated);
 		this.topContainer = topContainer;
 		this.allowedChildren = allowedChildren;
 		this.excludedChildren = excludedChildren;
@@ -161,7 +170,7 @@ public class WebLayoutSpecification extends WebObjectSpecification
 	 */
 	public List<String> getAllowedChildren()
 	{
-		return allowedChildren;
+		return allowedChildren == null ? Collections.emptyList() : Collections.unmodifiableList(allowedChildren);
 	}
 
 	/**
@@ -169,7 +178,7 @@ public class WebLayoutSpecification extends WebObjectSpecification
 	 */
 	public List<String> getExcludedChildren()
 	{
-		return excludedChildren;
+		return excludedChildren == null ? Collections.emptyList() : Collections.unmodifiableList(excludedChildren);
 	}
 
 	/**

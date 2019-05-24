@@ -40,6 +40,7 @@ import org.sablo.BaseWebObject;
 import org.sablo.Container;
 import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.PropertyDescriptionBuilder;
 import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.sablo.specification.property.BrowserConverterContext;
@@ -97,7 +98,7 @@ public class BaseWindow implements IWindow
 
 	private final List<Map<String, ? >> serviceCalls = new ArrayList<>();
 	private final List<Map<String, Object>> delayedOrAsyncComponentApiCalls = new ArrayList<>();
-	private final PropertyDescription serviceCallTypes = AggregatedPropertyType.newAggregatedProperty();
+	private final PropertyDescriptionBuilder serviceCallTypes = AggregatedPropertyType.newAggregatedPropertyBuilder();
 
 	private final WeakHashMap<Container, Object> usedContainers = new WeakHashMap<>(3); // set of used container in order to collect all changes
 
@@ -235,7 +236,7 @@ public class BaseWindow implements IWindow
 	{
 		// send all the service data to the browser.
 		final Map<String, Map<String, Object>> serviceData = new HashMap<>();
-		final PropertyDescription serviceDataTypes = AggregatedPropertyType.newAggregatedProperty();
+		final PropertyDescriptionBuilder serviceDataTypes = AggregatedPropertyType.newAggregatedPropertyBuilder();
 
 		final Collection<IClientService> services = getSession().getServices();
 		for (IClientService service : services)
@@ -245,11 +246,12 @@ public class BaseWindow implements IWindow
 			{
 				serviceData.put(service.getScriptingName(), sd.content);
 			}
-			if (sd.contentType != null) serviceDataTypes.putProperty(service.getScriptingName(), sd.contentType);
+			if (sd.contentType != null) serviceDataTypes.withProperty(service.getScriptingName(), sd.contentType);
 		}
 
 		if (serviceData.size() > 0)
 		{
+			final PropertyDescription serviceDataTypesPD = serviceDataTypes.build();
 			// we send each service changes independently so that the IBrowserConverterContext instance is correct (it needs the property type of each service property to be correct)
 			sendAsyncMessage(new IToJSONWriter<IBrowserConverterContext>()
 			{
@@ -274,7 +276,7 @@ public class BaseWindow implements IWindow
 								w.object();
 								// here converter is FullValueToJSONConverter; see below arg
 								service.writeProperties(converter, null, w,
-									new TypedData<Map<String, Object>>(dataForThisService, serviceDataTypes.getProperty(serviceName)), clientDataConversions);
+									new TypedData<Map<String, Object>>(dataForThisService, serviceDataTypesPD.getProperty(serviceName)), clientDataConversions);
 								w.endObject();
 								clientDataConversions.popNode();
 							}
@@ -536,14 +538,14 @@ public class BaseWindow implements IWindow
 				hasContentToSend = true;
 				clientDataConversions.pushNode("services");
 				w.key("services");
-
+				PropertyDescription pd = serviceCallTypes.build();
 				w.array();
 				for (int i = 0; i < serviceCalls.size(); i++)
 				{
 					if (clientDataConversions != null) clientDataConversions.pushNode(String.valueOf(i));
 					ClientService clientService = (ClientService)serviceCalls.get(i).remove(API_SERVER_ONLY_KEY_SERVICE);
-					FullValueToJSONConverter.INSTANCE.toJSONValue(w, null, serviceCalls.get(i), serviceCallTypes.getProperty(String.valueOf(i)),
-						clientDataConversions, new BrowserConverterContext(clientService, PushToServerEnum.allow));
+					FullValueToJSONConverter.INSTANCE.toJSONValue(w, null, serviceCalls.get(i), pd.getProperty(String.valueOf(i)), clientDataConversions,
+						new BrowserConverterContext(clientService, PushToServerEnum.allow));
 					if (clientDataConversions != null) clientDataConversions.popNode();
 				}
 				w.endArray();
@@ -890,9 +892,9 @@ public class BaseWindow implements IWindow
 
 	private PropertyDescription createTypesOfServiceCall(PropertyDescription argumentTypes)
 	{
-		PropertyDescription typesOfThisCall = AggregatedPropertyType.newAggregatedProperty();
-		if (argumentTypes != null) typesOfThisCall.putProperty(API_KEY_ARGS, argumentTypes);
-		return typesOfThisCall;
+		PropertyDescriptionBuilder typesOfThisCall = AggregatedPropertyType.newAggregatedPropertyBuilder();
+		if (argumentTypes != null) typesOfThisCall.withProperty(API_KEY_ARGS, argumentTypes);
+		return typesOfThisCall.build();
 	}
 
 	private void addServiceCall(IClientService clientService, String functionName, Object[] arguments, PropertyDescription argumentTypes)
@@ -901,7 +903,7 @@ public class BaseWindow implements IWindow
 		PropertyDescription typesOfThisCall = createTypesOfServiceCall(argumentTypes);
 
 		serviceCalls.add(serviceCall);
-		serviceCallTypes.putProperty(String.valueOf(serviceCalls.size() - 1), typesOfThisCall);
+		serviceCallTypes.withProperty(String.valueOf(serviceCalls.size() - 1), typesOfThisCall);
 	}
 
 	@Override
@@ -1118,7 +1120,7 @@ public class BaseWindow implements IWindow
 		final Object[] arguments, final PropertyDescription argumentTypes, final Map<String, Object> callContributions)
 	{
 		Map<String, Object> call = new HashMap<>();
-		PropertyDescription callTypes = AggregatedPropertyType.newAggregatedProperty();
+		PropertyDescriptionBuilder callTypes = AggregatedPropertyType.newAggregatedPropertyBuilder();
 		if (callContributions != null) call.putAll(callContributions);
 		Container topContainer = receiver.getParent();
 		while (topContainer != null && topContainer.getParent() != null)
@@ -1131,9 +1133,9 @@ public class BaseWindow implements IWindow
 		if (arguments != null && arguments.length > 0)
 		{
 			call.put(API_KEY_ARGS, arguments);
-			if (argumentTypes != null) callTypes.putProperty(API_KEY_ARGS, argumentTypes);
+			if (argumentTypes != null) callTypes.withProperty(API_KEY_ARGS, argumentTypes);
 		}
-		call.put(API_SERVER_ONLY_KEY_ARG_TYPES, callTypes);
+		call.put(API_SERVER_ONLY_KEY_ARG_TYPES, callTypes.build());
 		return call;
 	}
 

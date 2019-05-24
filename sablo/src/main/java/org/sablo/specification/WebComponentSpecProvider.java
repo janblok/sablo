@@ -53,12 +53,13 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 		return specReloadSubject;
 	}
 
-	public static synchronized void init(IPackageReader[] locations)
+	public static synchronized void init(IPackageReader[] locations, IDefaultComponentPropertiesProvider defaultComponentPropertiesProvider)
 	{
-		instance = new WebComponentSpecProvider(new WebSpecReader(locations, "Web-Component", specReloadSubject));
+		instance = new WebComponentSpecProvider(new WebSpecReader(locations, "Web-Component", specReloadSubject, defaultComponentPropertiesProvider));
 	}
 
-	public static WebComponentSpecProvider init(ServletContext servletContext, String[] webComponentBundleNames)
+	public static WebComponentSpecProvider init(ServletContext servletContext, String[] webComponentBundleNames,
+		IDefaultComponentPropertiesProvider defaultComponentPropertiesProvider)
 	{
 		if (instance == null)
 		{
@@ -85,8 +86,8 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 							}
 						}
 
-						instance = new WebComponentSpecProvider(
-							new WebSpecReader(readers.toArray(new IPackageReader[readers.size()]), "Web-Component", specReloadSubject));
+						instance = new WebComponentSpecProvider(new WebSpecReader(readers.toArray(new IPackageReader[readers.size()]), "Web-Component",
+							specReloadSubject, defaultComponentPropertiesProvider));
 					}
 					catch (Exception e)
 					{
@@ -126,5 +127,4 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 	{
 		super(reader);
 	}
-
 }

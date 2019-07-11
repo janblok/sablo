@@ -74,7 +74,7 @@ public class DoublePropertyType extends DefaultPropertyType<Double> implements I
 		IBrowserConverterContext dataConverterContext) throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
-		if (sabloValue != null && Double.isNaN(sabloValue.doubleValue())) writer.value(null);
+		if (sabloValue != null && (Double.isNaN(sabloValue.doubleValue()) || Double.isInfinite(sabloValue.doubleValue()))) writer.value(null);
 		else writer.value(sabloValue);
 		return writer;
 	}

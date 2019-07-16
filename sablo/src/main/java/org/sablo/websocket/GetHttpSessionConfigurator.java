@@ -16,6 +16,7 @@ import javax.websocket.server.ServerEndpointConfig.Configurator;
  */
 public class GetHttpSessionConfigurator extends Configurator
 {
+	public static final int NO_EXPIRE_TIMEOUT = -3;
 	/**
 	 * Connect nr parameter, used to link http call with http session to websocket session.
 	 */
@@ -48,7 +49,7 @@ public class GetHttpSessionConfigurator extends Configurator
 		HttpSession httpSession = SESSIONMAP.remove(connectNr.get(0));
 		if (httpSession != null)
 		{
-			httpSession.setMaxInactiveInterval(0); // make sure it never expires
+			httpSession.setMaxInactiveInterval(NO_EXPIRE_TIMEOUT); // make sure it never expires, set to minus 3 to see that it is more a value that we have set.
 		}
 
 		return httpSession;

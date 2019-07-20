@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
  */
 public class GetHttpSessionConfigurator extends Configurator
 {
-	private static final Logger log = LoggerFactory.getLogger(GetHttpSessionConfigurator.class.getCanonicalName());
+	private static Logger log; // log is initialized lazily, creating a logger before log4j is initialized gives errors.
 
 	public static final int NO_EXPIRE_TIMEOUT = -3;
 
@@ -43,6 +43,15 @@ public class GetHttpSessionConfigurator extends Configurator
 	 */
 	private static final String CONNECT_NR = "connectNr";
 	private static final Map<String, HttpSession> SESSIONMAP = new ConcurrentHashMap<>();
+
+	private static Logger getLogger()
+	{
+		if (log == null)
+		{
+			log = LoggerFactory.getLogger(GetHttpSessionConfigurator.class.getCanonicalName());
+		}
+		return log;
+	}
 
 	@Override
 	public void modifyHandshake(ServerEndpointConfig config, HandshakeRequest request, HandshakeResponse response)
@@ -84,7 +93,7 @@ public class GetHttpSessionConfigurator extends Configurator
 		if (hostToCheckAgainst == null)
 		{
 			// checking disabled
-			log.trace("checkOrigin: checking disabled");
+			getLogger().trace("checkOrigin: checking disabled");
 			return true;
 		}
 
@@ -95,7 +104,7 @@ public class GetHttpSessionConfigurator extends Configurator
 		}
 		catch (ParseException e)
 		{
-			log.warn("checkOrigin: Cannot parse origin header '" + originHeaderValue + "'");
+			getLogger().warn("checkOrigin: Cannot parse origin header '" + originHeaderValue + "'");
 			return false;
 		}
 
@@ -106,11 +115,11 @@ public class GetHttpSessionConfigurator extends Configurator
 
 		if (!originOk)
 		{
-			log.warn("checkOrigin: originHost '" + originHost + "' does not match hosts '" + hostToCheckAgainst + "'");
+			getLogger().warn("checkOrigin: originHost '" + originHost + "' does not match hosts '" + hostToCheckAgainst + "'");
 		}
-		else if (log.isTraceEnabled())
+		else if (getLogger().isTraceEnabled())
 		{
-			log.trace("checkOrigin: originHost '" + originHost + "' matches hosts '" + hostToCheckAgainst + "'");
+			getLogger().trace("checkOrigin: originHost '" + originHost + "' matches hosts '" + hostToCheckAgainst + "'");
 		}
 		return originOk;
 	}

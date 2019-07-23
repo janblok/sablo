@@ -109,11 +109,21 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 	{
 		this.session = newSession;
 
-		int clientnr = "null".equalsIgnoreCase(clntnr) ? -1 : Integer.parseInt(clntnr);
-		int windowNr = "null".equalsIgnoreCase(winnr) ? -1 : Integer.parseInt(winnr);
-		String windowName = "null".equalsIgnoreCase(winname) ? null : winname;
-
 		HttpSession httpSession = getHttpSession(newSession);
+		int clientnr = -1;
+		int windowNr = -1;
+		String windowName = null;
+		try
+		{
+			clientnr = "null".equalsIgnoreCase(clntnr) ? -1 : Integer.parseInt(clntnr); //$NON-NLS-1$
+			windowNr = "null".equalsIgnoreCase(winnr) ? -1 : Integer.parseInt(winnr); //$NON-NLS-1$
+			windowName = "null".equalsIgnoreCase(winname) ? null : winname; //$NON-NLS-1$
+		}
+		catch (Exception e)
+		{
+			// ignore, parse errors of clntnr, if this happening then old illegal clients are reconnection make sure we just cancel the session
+			httpSession = null;
+		}
 		if (httpSession == null)
 		{
 			// this can happen when the server is restarted and the client reconnects the websocket

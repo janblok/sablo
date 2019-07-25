@@ -41,7 +41,7 @@ public class GetHttpSessionConfigurator extends Configurator
 	/**
 	 * Connect nr parameter, used to link http call with http session to websocket session.
 	 */
-	private static final String CONNECT_NR = "connectNr";
+	static final String CONNECT_NR = "connectNr";
 	private static final Map<String, HttpSession> SESSIONMAP = new ConcurrentHashMap<>();
 
 	private static Logger getLogger()
@@ -64,9 +64,10 @@ public class GetHttpSessionConfigurator extends Configurator
 			{
 				throw new IllegalArgumentException("connectNr request parameter missing");
 			}
-
+			if (getLogger().isDebugEnabled()) getLogger().debug("HttpSession stored " + httpSession + " for connectNr: " + connectNr.get(0));
 			SESSIONMAP.put(connectNr.get(0), httpSession);
 		}
+		else if (getLogger().isDebugEnabled()) getLogger().debug("HttpSession not found for " + request.getParameterMap().get(CONNECT_NR));
 	}
 
 	public static HttpSession getHttpSession(Session session)
@@ -77,6 +78,7 @@ public class GetHttpSessionConfigurator extends Configurator
 			throw new IllegalArgumentException("connectNr session parameter missing");
 		}
 		HttpSession httpSession = SESSIONMAP.remove(connectNr.get(0));
+		if (getLogger().isDebugEnabled()) getLogger().debug("Get HttpSession " + httpSession + " for connectNr: " + connectNr.get(0));
 		if (httpSession != null)
 		{
 			httpSession.setMaxInactiveInterval(NO_EXPIRE_TIMEOUT); // make sure it never expires, set to minus 3 to see that it is more a value that we have set.

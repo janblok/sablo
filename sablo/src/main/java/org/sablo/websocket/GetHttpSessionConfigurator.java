@@ -25,7 +25,7 @@ public class GetHttpSessionConfigurator extends Configurator
 	/**
 	 * Connect nr parameter, used to link http call with http session to websocket session.
 	 */
-	private static final String CONNECT_NR = "connectNr";
+	static final String CONNECT_NR = "connectNr";
 	private static final Map<String, HttpSession> SESSIONMAP = new ConcurrentHashMap<>();
 
 	private static Logger getLogger()

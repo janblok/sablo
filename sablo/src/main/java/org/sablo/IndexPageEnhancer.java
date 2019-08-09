@@ -258,12 +258,12 @@ public class IndexPageEnhancer
 							int versionCheck = version.compareTo(storedVersion);
 							if (versionCheck < 0)
 							{
-								log.warn("same lib with lower version found: " + lib + " using lib: " + allLib);
+								if (!"-1".equals(version)) log.warn("same lib with lower version found: " + lib + " using lib: " + allLib);
 								continue;
 							}
 							else if (versionCheck > 0)
 							{
-								log.warn("same lib with lower version found: " + allLib + " using lib: " + lib);
+								if (!"-1".equals(storedVersion)) log.warn("same lib with lower version found: " + allLib + " using lib: " + lib);
 							}
 						}
 						else if (storedVersion != null)

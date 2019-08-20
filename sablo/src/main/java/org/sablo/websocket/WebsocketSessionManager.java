@@ -184,10 +184,19 @@ public class WebsocketSessionManager
 				wsSession = null;
 				if (create && websocketSessionFactories.containsKey(endpointType))
 				{
-					// a new session, make sure it will not clash with an existing clientnr within the same httpsession
-					if (clientnr != -1)
+					AtomicInteger lastNumber = getCounter(httpSession, LAST_CLIENT_NUMBER);
+					if (clientnr <= lastNumber.intValue())
 					{
+						// if the give clientnr is smaller then the number that is already given
+						// make sure that a new session key is generated to have a new number bigger then the last
 						key = getSessionKey(httpSession, -1);
+					}
+					else
+					{
+						// if it is the bigger then it was a restart, make sure we reuse that one and make the current counter the same to that value.
+						lastNumber.set(clientnr);
+						// the only thing that is not fixed if a reconnect with a "1" after restart does come later then a new request (-1) then the
+						// reconnect with a 1 will just take the same session.
 					}
 
 					wsSession = websocketSessionFactories.get(endpointType).createSession(key);

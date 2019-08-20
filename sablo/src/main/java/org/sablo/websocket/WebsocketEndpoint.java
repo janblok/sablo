@@ -134,6 +134,15 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 			cancelSession(CLOSE_REASON_CLIENT_OUT_OF_SYNC);
 			return;
 		}
+		// if the request contains a lastServerMessageNumber then test if there is an existing session:
+		if (session.getRequestParameterMap().containsKey("lastServerMessageNumber") &&
+			WebsocketSessionManager.getOrCreateSession(endpointType, httpSession, clientnr, false) == null)
+		{
+			// client is out of sync because the session was already gone but it does send a lastServerMessageNumber
+			// make sure we do a full refresh. This could be a server restart with multiply tabs open in the same browser.
+			cancelSession(CLOSE_REASON_CLIENT_OUT_OF_SYNC);
+			return;
+		}
 		IWebsocketSession wsSession = WebsocketSessionManager.getOrCreateSession(endpointType, httpSession, clientnr, true);
 
 		CurrentWindow.set(window = wsSession.getOrCreateWindow(windowNr, windowName));

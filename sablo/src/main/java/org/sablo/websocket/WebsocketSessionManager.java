@@ -264,7 +264,7 @@ public class WebsocketSessionManager
 		stop = true;
 		closeAllSessions();
 		pingEndpointsThread.interrupt();
-		expiredThreadPool.shutdownNow();
+		expiredThreadPool.shutdown();
 		long time = System.currentTimeMillis();
 		try
 		{

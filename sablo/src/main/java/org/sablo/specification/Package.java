@@ -935,7 +935,7 @@ public class Package
 		@Override
 		public void reportError(String specpath, Exception e)
 		{
-			log.error("Cannot parse spec file '" + specpath + "' from package 'WarReeader[ " + urlOfManifest + " ]'. ", e);
+			log.error("Cannot parse spec file '" + specpath + "' from package 'WarReader[ " + urlOfManifest + " ]'. ", e);
 		}
 
 		@Override

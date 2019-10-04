@@ -37,8 +37,11 @@ import org.sablo.services.template.ModifiablePropertiesGenerator;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebServiceSpecProvider;
 import org.sablo.util.HTTPUtils;
+import org.sablo.websocket.GetHttpSessionConfigurator;
 import org.sablo.websocket.IWebsocketSessionFactory;
 import org.sablo.websocket.WebsocketSessionManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Configuration class to define entry points and factories.
@@ -47,6 +50,16 @@ import org.sablo.websocket.WebsocketSessionManager;
  */
 public abstract class WebEntry implements Filter, IContributionFilter, IContributionEntryFilter
 {
+	private static Logger log; // log is initialized lazily, creating a logger before log4j is initialized gives errors.
+
+	private static Logger getLogger()
+	{
+		if (log == null)
+		{
+			log = LoggerFactory.getLogger(WebEntry.class.getCanonicalName());
+		}
+		return log;
+	}
 
 	private final String endpointType;
 
@@ -104,8 +117,14 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 
 		// make sure a session is created. when a sablo client is created, that one should set the timeout to 0
 		HttpSession httpSession = request.getSession();
+		if (getLogger().isDebugEnabled()) getLogger().debug("HttpSession created: " + httpSession);
 		// the session should be picked up in a websocket request very soon, set timeout low so it won't stay in case of robots
-		httpSession.setMaxInactiveInterval(60);
+		// if it is alreayd the time out the GetHttpSessionConfigurator would set then don't reset it to 60
+		if (httpSession.getMaxInactiveInterval() != GetHttpSessionConfigurator.NO_EXPIRE_TIMEOUT)
+		{
+			if (getLogger().isDebugEnabled()) getLogger().debug("Setting 60 seconds timeout on the HttpSession: " + httpSession);
+			httpSession.setMaxInactiveInterval(60);
+		}
 
 		String uri = request.getRequestURI();
 		if (uri.endsWith("spec/" + ModifiablePropertiesGenerator.PUSH_TO_SERVER_BINDINGS_LIST + ".js"))

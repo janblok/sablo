@@ -391,12 +391,6 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 							var pn;
 							for (pn in call.propertyPath) obj = obj[call.propertyPath[pn]];
 							funcThis = obj.api;
-
-							// if we have api functions for rows, get it for the selected one
-							if(call.api && !funcThis[call.api] &&
-								call.args && call.args.length > 0 && call.args[0].selectedIndex != undefined && funcThis[call.args[0].selectedIndex]) {
-								funcThis = funcThis[call.args[0].selectedIndex];
-							}
 						}
 						else {
 							funcThis = formState.api[call.bean];

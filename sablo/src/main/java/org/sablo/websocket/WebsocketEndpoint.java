@@ -109,16 +109,37 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 	{
 		this.session = newSession;
 
-		int clientnr = "null".equalsIgnoreCase(clntnr) ? -1 : Integer.parseInt(clntnr);
-		int windowNr = "null".equalsIgnoreCase(winnr) ? -1 : Integer.parseInt(winnr);
-		String windowName = "null".equalsIgnoreCase(winname) ? null : winname;
-
-		HttpSession httpSession = getHttpSession(newSession);
+		HttpSession httpSession = null;
+		int clientnr = -1;
+		int windowNr = -1;
+		String windowName = null;
+		try
+		{
+			clientnr = "null".equalsIgnoreCase(clntnr) ? -1 : Integer.parseInt(clntnr); //$NON-NLS-1$
+			windowNr = "null".equalsIgnoreCase(winnr) ? -1 : Integer.parseInt(winnr); //$NON-NLS-1$
+			windowName = "null".equalsIgnoreCase(winname) ? null : winname; //$NON-NLS-1$
+			httpSession = getHttpSession(newSession);
+		}
+		catch (Exception e)
+		{
+			// ignore, parse errors of clntnr or the connect_nr is not given, if this happening then old illegal clients are reconnection make sure we just cancel the session
+			httpSession = null;
+		}
 		if (httpSession == null)
 		{
+			List<String> connectNr = session.getRequestParameterMap().get(GetHttpSessionConfigurator.CONNECT_NR);
 			// this can happen when the server is restarted and the client reconnects the websocket
-			log.warn("Cannot find httpsession for websocket session, server restarted? clientnr=" + clntnr + ", windowNr=" + windowNr + ", windowName=" +
-				windowName);
+			log.warn("Cannot find httpsession for websocket session, server restarted? clientnr=" + clntnr + ", winnr=" + winnr + ", winname=" + winname +
+				", connectnr: " + connectNr);
+			cancelSession(CLOSE_REASON_CLIENT_OUT_OF_SYNC);
+			return;
+		}
+		// if the request contains a lastServerMessageNumber then test if there is an existing session:
+		if (session.getRequestParameterMap().containsKey("lastServerMessageNumber") &&
+			WebsocketSessionManager.getOrCreateSession(endpointType, httpSession, clientnr, false) == null)
+		{
+			// client is out of sync because the session was already gone but it does send a lastServerMessageNumber
+			// make sure we do a full refresh. This could be a server restart with multiply tabs open in the same browser.
 			cancelSession(CLOSE_REASON_CLIENT_OUT_OF_SYNC);
 			return;
 		}

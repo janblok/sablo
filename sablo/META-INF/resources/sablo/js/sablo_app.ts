@@ -186,23 +186,35 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		if (newConversionInfo) { // then means beanConversionInfo should also be defined - we assume that
 			// beanConversionInfo will be granularly updated in the loop below
 			// (to not drop other property conversion info when only one property is being applied granularly to the bean)
-			beanData = $sabloConverters.convertFromServerToClient(beanData, newConversionInfo, beanModel, componentScope, function(propertyName: string) { return beanModel ? beanModel[propertyName] : beanModel });
+			beanData = $sabloConverters.convertFromServerToClient(beanData, newConversionInfo, beanModel, componentScope, function(propertyName: string) { return beanModel ? beanModel[propertyName] : undefined });
 		}
 
+		// apply the new values and conversion info
 		for (var key in beanData) {
+			let oldModelValueForKey = beanModel[key];
+			beanModel[key] = beanData[key];
+
 			// remember conversion info for when it will be sent back to server - it might need special conversion as well
 			if (newConversionInfo && newConversionInfo[key]) {
-				// if the value changed and it wants to be in control of it's changes, or if the conversion info for this value changed (thus possibly preparing an old value for being change-aware without changing the value reference)
-				if ((beanModel[key] !== beanData[key] || beanConversionInfo[key] !== newConversionInfo[key])
-					&& beanData[key] && beanData[key][$sabloConverters.INTERNAL_IMPL] && beanData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
-					beanData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier(changeNotifierGenerator(key));
-				}
+				let oldConversionInfoForKey = beanConversionInfo[key];
 				beanConversionInfo[key] = newConversionInfo[key];
+				
+				// if the value changed and it wants to be in control of it's changes, or if the conversion info for this value changed (thus possibly preparing an old value for being change-aware without changing the value reference)
+				if ((oldModelValueForKey !== beanData[key] || oldConversionInfoForKey !== newConversionInfo[key])
+						&& beanData[key] && beanData[key][$sabloConverters.INTERNAL_IMPL] && beanData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
+					// setChangeNotifier can be called now after the new conversion info and value are set (changeNotifierGenerator(key) will probably use the values in model and that has to point to the new value if reference was changed)
+					// as setChangeNotifier on smart property types might end up calling the change notifier right away to announce it already has changes (because for example
+					// the convertFromServerToClient on that property type above might have triggered some listener to the component that uses it which then requested
+					// another thing from the property type and it then already has changes...) // TODO should we decouple this scenario? if we are still processing server to client changes when change notifier is called we could trigger the change notifier later/async for sending changes back to server...
+					let changeNotfier = changeNotifierGenerator(key);
+					beanData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier(changeNotfier);
+					
+					// we check for changes anyway in case a property type doesn't do it itself as described in the comment above
+					if (beanData[key][$sabloConverters.INTERNAL_IMPL].isChanged && beanData[key][$sabloConverters.INTERNAL_IMPL].isChanged()) changeNotfier();
+				}
 			} else if (beanConversionInfo && angular.isDefined(beanConversionInfo[key])) delete beanConversionInfo[key]; // this prop. no longer has conversion info!
-
-			// also make location and size available in model
-			beanModel[key] = beanData[key];
 		}
+		
 		// if the model had a change notifier call it now after everything is set.
 		var modelChangeFunction = beanModel[$sabloConstants.modelChangeNotifier];
 		if (modelChangeFunction) {

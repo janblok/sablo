@@ -8,13 +8,13 @@
 	<name>sablo-examples webapp</name>
 	<url>http://maven.apache.org</url>
 	<properties>
-		<sablo.version>0.0.1-SNAPSHOT</sablo.version>
+		<sablo.version>2019.12.0.3540_rc</sablo.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>org.sablo</groupId>
-			<artifactId>sablo-core</artifactId>
+			<artifactId>sablo</artifactId>
 			<version>${sablo.version}</version>
 		</dependency>
 		<dependency>
@@ -28,6 +28,22 @@
 			<artifactId>javax.websocket-api</artifactId>
 			<version>1.0</version>
 			<scope>provided</scope>
+		</dependency>
+				<dependency>
+			<groupId>javax.websocket</groupId>
+			<artifactId>javax.websocket-api</artifactId>
+			<version>1.0</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20160810</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>2.0.0-alpha1</version>
 		</dependency>
 	</dependencies>
 	<build>
@@ -55,7 +71,7 @@
 						<configuration>
 							<rules>
 								<requireJavaVersion>
-									<version>[1.7,1.8)</version>
+									<version>[1.7,1.8]</version>
 								</requireJavaVersion>
 							</rules>
 						</configuration>

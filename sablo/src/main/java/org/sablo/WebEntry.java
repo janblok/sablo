@@ -111,7 +111,8 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 	protected abstract IWebsocketSessionFactory createSessionFactory();
 
 	public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain, Collection<String> cssContributions,
-		Collection<String> jsContributions, Collection<String> extraMetaData, Map<String, Object> variableSubstitution) throws IOException, ServletException
+		Collection<String> jsContributions, Collection<String> extraMetaData, Map<String, Object> variableSubstitution, boolean setContentSecurityPolicy)
+		throws IOException, ServletException
 	{
 		HttpServletRequest request = (HttpServletRequest)servletRequest;
 
@@ -152,7 +153,8 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 			((HttpServletResponse)servletResponse).setContentType("text/html");
 			((HttpServletResponse)servletResponse).setCharacterEncoding("UTF-8");
 			PrintWriter w = servletResponse.getWriter();
-			IndexPageEnhancer.enhance(indexPageResource, cssContributions, jsContributions, extraMetaData, variableSubstitution, w, this, this);
+			IndexPageEnhancer.enhance(indexPageResource, cssContributions, jsContributions, extraMetaData, variableSubstitution, w, this, this,
+				setContentSecurityPolicy);
 			w.flush();
 			return;
 		}

@@ -147,6 +147,7 @@ public class IndexPageEnhancer
 			.filter(IndexPageEnhancer::isAbsoluteUrl) //
 			.forEach(url -> csp.append(' ').append(url));
 		csp.append("; img-src 'self' data:");
+		csp.append("; font-src 'self' data:");
 		csp.append(";\">");
 
 		return csp.toString();

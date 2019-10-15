@@ -13,6 +13,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		$webSocket.disconnect();
 	});
 
+	var oldError = $window.console.error;
 	var oldLog = $window.console.log;
 	$window.console.log =  function(msg) {
 		try
@@ -22,11 +23,10 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		}
 		catch(e)
 		{
-			//ignore for now
+			oldError.apply($window.console, [e]);
 		}
 	}
 	
-	var oldError = $window.console.error;
 	$window.console.error =  function(msg) {
 		try
 		{
@@ -35,7 +35,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		}
 		catch(e)
 		{
-			//ignore for now
+			oldError.apply($window.console, [e]);
 		}
 	}
 	
@@ -48,7 +48,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		}
 		catch(e)
 		{
-			//ignore for now
+			oldError.apply($window.console, [e]);
 		}
 	}
 	
@@ -61,7 +61,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		}
 		catch(e)
 		{
-			//ignore for now
+			oldError.apply($window.console, [e]);
 		}
 	}
 	
@@ -74,7 +74,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		}
 		catch(e)
 		{
-			//ignore for now
+			oldError.apply($window.console, [e]);
 		}
 	}
 	

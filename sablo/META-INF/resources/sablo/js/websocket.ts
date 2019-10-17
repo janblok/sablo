@@ -213,7 +213,7 @@ webSocketModule.factory('$webSocket',
 		let obj
 		let responseValue
 		functionsToExecuteAfterIncommingMessageWasHandled = [];
-		let hideIndicator = false;
+		let hideIndicatorCounter = 0;
 
 		try {
 			if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Received message from server: " + JSON.stringify(message, function(key, value) {
@@ -256,13 +256,6 @@ webSocketModule.factory('$webSocket',
 				}
 			}
 
-			// if the indicator is showing and this object wants a return message then hide the indicator until we send the response
-			let hideIndicator = obj && obj.smsgid && $sabloLoadingIndicator.isShowing();
-			// if a request to a service is being done then this could be a blocking 
-			if (hideIndicator) {
-				$sabloLoadingIndicator.hideLoading();
-			}
-			
 			// data got back from the server
 			if (obj.cmsgid) { // response to event
 				let deferredEvent = deferredEvents[obj.cmsgid];
@@ -321,6 +314,17 @@ webSocketModule.factory('$webSocket',
 				}
 			}
 
+			// if the indicator is showing and this object wants a return message then hide the indicator until we send the response
+			let hideIndicatorCounter = 0;
+			// if a request to a service is being done then this could be a blocking 
+			if (obj && obj.smsgid) 
+			{
+				while ($sabloLoadingIndicator.isShowing() ) {
+					hideIndicatorCounter++;
+					$sabloLoadingIndicator.hideLoading();
+				}
+			}
+			
 			// delayed calls
 			if (obj.calls)
 			{
@@ -357,9 +361,10 @@ webSocketModule.factory('$webSocket',
 					if (ret != undefined) {
 						response['ret'] = $sabloUtils.convertClientObject(ret);
 					}
-					if (hideIndicator) {
-						hideIndicator = false;
-						$sabloLoadingIndicator.showLoading();
+					if (hideIndicatorCounter) {
+						while ( hideIndicatorCounter-- > 0 ) {
+							$sabloLoadingIndicator.showLoading();
+						}
 					}
 					sendMessageObject(response);
 				}, function(reason) {
@@ -372,9 +377,10 @@ webSocketModule.factory('$webSocket',
 							smsgid : obj.smsgid,
 							err: "Error while executing ($q deferred) client side code. Please see browser console for more info. Error: " + reason
 					}
-					if (hideIndicator) {
-						hideIndicator = false;
-						$sabloLoadingIndicator.showLoading();
+					if (hideIndicatorCounter) {
+						while ( hideIndicatorCounter-- > 0 ) {
+							$sabloLoadingIndicator.showLoading();
+						}
 					}
 					sendMessageObject(response);
 				});
@@ -388,9 +394,10 @@ webSocketModule.factory('$webSocket',
 						smsgid : obj.smsgid,
 						err: "Error while executing client side code. Please see browser console for more info. Error: " + e
 				}
-				if (hideIndicator) {
-					hideIndicator = false;
-					$sabloLoadingIndicator.showLoading();
+				if (hideIndicatorCounter) {
+					while ( hideIndicatorCounter-- > 0 ) {
+						$sabloLoadingIndicator.showLoading();
+					}
 				}
 				sendMessageObject(response);
 			}

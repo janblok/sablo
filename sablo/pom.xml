@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<prerequisites>
@@ -66,8 +67,27 @@
 				<plugins>
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-toolchains-plugin</artifactId>
+						<version>3.0.0</version>
+						<executions>
+							<execution>
+								<goals>
+									<goal>toolchain</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<toolchains>
+								<jdk>
+									<id>JavaSE-1.8</id>
+								</jdk>
+							</toolchains>
+						</configuration>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-surefire-plugin</artifactId>
-						<version>2.20</version>
+						<version>3.0.0-M3</version>
 						<executions>
 							<execution>
 								<id>test</id>
@@ -87,7 +107,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-compiler-plugin</artifactId>
-						<version>3.6.2</version>
+						<version>3.8.1</version>
 						<executions>
 							<execution>
 								<id>compiletests</id>
@@ -111,8 +131,7 @@
 									<goal>install-node-and-npm</goal>
 								</goals>
 								<configuration>
-									<nodeVersion>v10.16.2</nodeVersion>
-									<npmVersion>6.9.0</npmVersion>
+									<nodeVersion>v10.16.3</nodeVersion>
 								</configuration>
 							</execution>
 
@@ -153,6 +172,16 @@
 						<artifactId>tycho-maven-plugin</artifactId>
 						<version>${tycho.version}</version>
 						<extensions>true</extensions>
+					</plugin>
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>tycho-compiler-plugin</artifactId>
+						<version>${tycho.version}</version>
+						<configuration>
+							<compilerArgument>-warn:none</compilerArgument>
+							<useProjectSettings>false</useProjectSettings>
+							<useJDK>BREE</useJDK>
+						</configuration>
 					</plugin>
 					<plugin>
 						<groupId>org.eclipse.tycho</groupId>
@@ -204,7 +233,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-jarsigner-plugin</artifactId>
-						<version>1.4</version>
+						<version>3.0.0</version>
 						<executions>
 							<execution>
 								<id>sign</id>
@@ -260,13 +289,13 @@
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-core</artifactId>
-			<version>1.10.19</version>
+			<version>3.1.0</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.json</groupId>
 			<artifactId>json</artifactId>
-			<version>20160810</version>
+			<version>20190722</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>

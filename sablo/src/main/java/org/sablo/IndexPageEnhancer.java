@@ -18,6 +18,8 @@ package org.sablo;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,6 +51,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("nls")
 public class IndexPageEnhancer
 {
+	private static final String CONTENT_SECURITY_POLICY = "<!-- content_security_policy -->";
 	/**
 	 * Token in html page after which we add component contributions. They have to be before the solution stylesheet.
 	 */
@@ -73,10 +76,10 @@ public class IndexPageEnhancer
 	 * @throws IOException
 	 */
 	public static void enhance(URL resource, Collection<String> cssContributions, Collection<String> jsContributions, Collection<String> extraMetaData,
-		Map<String, Object> variableSubstitution, Writer writer, IContributionFilter contributionFilter, IContributionEntryFilter contributionEntryFilter)
-		throws IOException
+		Map<String, Object> variableSubstitution, Writer writer, IContributionFilter contributionFilter, IContributionEntryFilter contributionEntryFilter,
+		boolean setContentSecurityPolicy) throws IOException
 	{
-		String index_file = IOUtils.toString(resource);
+		String index_file = IOUtils.toString(resource, "UTF-8");
 
 		//use real html parser here instead?
 		if (variableSubstitution != null)
@@ -96,9 +99,27 @@ public class IndexPageEnhancer
 				index_file = index_file.replaceAll(VAR_START + entry.getKey() + VAR_END, value);
 			}
 		}
-		int componentContributionsIndex = index_file.indexOf(COMPONENT_CONTRIBUTIONS);
+
+		Object[] allContributions = getAllContributions(null, contributionEntryFilter);
+		List<String> allCSSContributions = (List<String>)allContributions[0];
+		List<String> allJSContributions = (List<String>)allContributions[1];
 
 		StringBuilder sb = new StringBuilder(index_file);
+
+		if (setContentSecurityPolicy)
+		{
+			int contentSecurityPolicyIndex = index_file.indexOf(CONTENT_SECURITY_POLICY);
+			if (contentSecurityPolicyIndex < 0)
+			{
+				log.warn("Could not find marker for content security policy: " + CONTENT_SECURITY_POLICY + " for resource " + resource);
+			}
+			else
+			{
+				sb.insert(contentSecurityPolicyIndex + CONTENT_SECURITY_POLICY.length(), getContentSecurityPolicyTag(allCSSContributions, allJSContributions));
+			}
+		}
+
+		int componentContributionsIndex = sb.toString().indexOf(COMPONENT_CONTRIBUTIONS);
 		if (componentContributionsIndex < 0)
 		{
 			log.warn("Could not find marker for component contributions: " + COMPONENT_CONTRIBUTIONS + " for resource " + resource);
@@ -106,9 +127,42 @@ public class IndexPageEnhancer
 		else
 		{
 			sb.insert(componentContributionsIndex + COMPONENT_CONTRIBUTIONS.length(),
-				getAllContributions(cssContributions, jsContributions, extraMetaData, contributionFilter, contributionEntryFilter));
+				getAllContributions(cssContributions, jsContributions, extraMetaData, contributionFilter, allCSSContributions, allJSContributions));
 		}
 		writer.append(sb);
+	}
+
+	private static String getContentSecurityPolicyTag(List<String> allCSSContributions, List<String> allJSContributions)
+	{
+		StringBuilder csp = new StringBuilder("<meta http-equiv=\"Content-Security-Policy\" content=\"");
+		csp.append("default-src 'self'");
+		csp.append("; frame-src *");
+		csp.append("; script-src 'self' 'unsafe-eval'"); // can we get rid of unsafe-eval?
+//		csp.append("; script-src-elem 'self'"); // experimental, not supported by all modern browsers yet
+		allJSContributions.stream() //
+			.filter(IndexPageEnhancer::isAbsoluteUrl) //
+			.forEach(url -> csp.append(' ').append(url));
+		csp.append("; style-src 'self' 'unsafe-inline'");
+		allCSSContributions.stream() //
+			.filter(IndexPageEnhancer::isAbsoluteUrl) //
+			.forEach(url -> csp.append(' ').append(url));
+		csp.append("; img-src 'self' data:");
+		csp.append("; font-src 'self' data:");
+		csp.append(";\">");
+
+		return csp.toString();
+	}
+
+	private static boolean isAbsoluteUrl(String url)
+	{
+		try
+		{
+			return new URI(url).isAbsolute();
+		}
+		catch (URISyntaxException e)
+		{
+		}
+		return false;
 	}
 
 	public static Object[] getAllContributions(Boolean supportGrouping, IContributionEntryFilter ceFilter)
@@ -185,13 +239,8 @@ public class IndexPageEnhancer
 	 * @return headContributions
 	 */
 	static String getAllContributions(Collection<String> cssContributions, Collection<String> jsContributions, Collection<String> extraMetaData,
-		IContributionFilter contributionFilter, IContributionEntryFilter contributionEntryFilter)
+		IContributionFilter contributionFilter, List<String> allCSSContributions, List<String> allJSContributions)
 	{
-		Object[] all = getAllContributions(null, contributionEntryFilter);
-		ArrayList<String> allCSSContributions = (ArrayList<String>)all[0];
-		ArrayList<String> allJSContributions = (ArrayList<String>)all[1];
-
-
 		if (cssContributions != null)
 		{
 			allCSSContributions.addAll(cssContributions);

@@ -117,13 +117,22 @@ public class GetHttpSessionConfigurator extends Configurator
 
 		if (!originOk)
 		{
-			getLogger().warn("checkOrigin: originHost '" + originHost + "' does not match hosts '" + hostToCheckAgainst + "'");
+			getLogger().warn("checkOrigin: originHost '" + originHost + "' does not match hosts '" + getRealHost(hostToCheckAgainst) + "'");
 		}
 		else if (getLogger().isTraceEnabled())
 		{
-			getLogger().trace("checkOrigin: originHost '" + originHost + "' matches hosts '" + hostToCheckAgainst + "'");
+			getLogger().trace("checkOrigin: originHost '" + originHost + "' matches hosts '" + getRealHost(hostToCheckAgainst) + "'");
 		}
 		return originOk;
+	}
+
+	/**
+	 * @param hostToCheckAgainst
+	 * @return
+	 */
+	private String getRealHost(String hostToCheckAgainst)
+	{
+		return USE_HOST_HEADER.equalsIgnoreCase(hostToCheckAgainst) ? getHostFromCurrentHostHeader() : hostToCheckAgainst;
 	}
 
 	private static String getHostsToCheckAgainst()

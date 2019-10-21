@@ -17,6 +17,7 @@ package org.sablo;
 
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.List;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -74,19 +75,21 @@ public class WebComponentLibTest
 	}
 
 	@Test
-	public void testLibVersion() throws Exception
+	public void testLibVersion()
 	{
-		String allContributions = IndexPageEnhancer.getAllContributions(null, null, null, null, null);
-		Assert.assertTrue(allContributions.contains("lib1.js"));
-		Assert.assertTrue(allContributions.contains("lib2.js"));
-		Assert.assertTrue(allContributions.contains("url2.js"));
-		Assert.assertTrue(allContributions.contains("url2.css"));
-		Assert.assertFalse(allContributions.contains("url1.js"));
+		Object[] all = IndexPageEnhancer.getAllContributions(null, null);
+		List<String> allCSSContributions = (List<String>)all[0];
+		List<String> allJSContributions = (List<String>)all[1];
+		Assert.assertTrue(allJSContributions.contains("lib1.js"));
+		Assert.assertTrue(allJSContributions.contains("lib2.js"));
+		Assert.assertTrue(allJSContributions.contains("url2.js"));
+		Assert.assertTrue(allCSSContributions.contains("url2.css"));
+		Assert.assertFalse(allJSContributions.contains("url1.js"));
 
 		// the below test is invalid, as there is no guarantee on the order of the lib1 and lib2 loading order,
 		// they are loaded during the read of the manifest, but the manifest does not guarantee order of entries (it stores them as hashmap)
 		//Assert.assertTrue(allContributions.indexOf("b.js") < allContributions.indexOf("url2.js"));
 
-		Assert.assertTrue(allContributions.indexOf("url2.js") < allContributions.indexOf("a.js"));
+		Assert.assertTrue(allJSContributions.indexOf("url2.js") < allJSContributions.indexOf("a.js"));
 	}
 }

@@ -137,7 +137,7 @@ public class IndexPageEnhancer
 		StringBuilder csp = new StringBuilder("<meta http-equiv=\"Content-Security-Policy\" content=\"");
 		csp.append("default-src 'self'");
 		csp.append("; frame-src *");
-		csp.append("; script-src 'self' 'unsafe-eval'"); // can we get rid of unsafe-eval?
+		csp.append("; script-src 'self' 'unsafe-eval' 'unsafe-inline'"); // can we get rid of unsafe-eval?
 //		csp.append("; script-src-elem 'self'"); // experimental, not supported by all modern browsers yet
 		allJSContributions.stream() //
 			.filter(IndexPageEnhancer::isAbsoluteUrl) //

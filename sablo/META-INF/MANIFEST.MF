@@ -12,7 +12,6 @@ Export-Package: org.sablo,
  org.sablo.specification,
  org.sablo.specification.property,
  org.sablo.specification.property.types,
- org.sablo.startup,
  org.sablo.util,
  org.sablo.websocket,
  org.sablo.websocket.impl,
@@ -23,14 +22,13 @@ Require-Bundle: org.junit,
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ClassPath: .
 Bundle-Vendor: Servoy
-Bundle-Activator: org.sablo.startup.Activator
 Bundle-ActivationPolicy: lazy
 Import-Package: javax.servlet,
  javax.servlet.http,
  javax.websocket;version="1.1.0",
  javax.websocket.server;version="1.1.0",
- org.json,
- org.osgi.framework
+ org.json
+Automatic-Module-Name: sablo
 
 Name: /sablo/sabloService.spec
 Web-Service: True

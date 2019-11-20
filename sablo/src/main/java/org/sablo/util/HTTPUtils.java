@@ -18,8 +18,10 @@ package org.sablo.util;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Base64;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -33,9 +35,11 @@ import javax.servlet.http.HttpServletResponse;
 
 public class HTTPUtils
 {
-
 	public static final String IF_MODIFIED_SINCE = "If-Modified-Since"; //$NON-NLS-1$
 	public static final String LAST_MODIFIED = "Last-Modified"; //$NON-NLS-1$
+
+	private static final Random RANDOM = new Random(System.currentTimeMillis());
+	private static final String ATTRIBUTE_NONCE = "SABLO-NONCE"; //$NON-NLS-1$
 
 	/**
 	 * This method tries to make peace between different browsers, versions and browser bugs for no-caching response headers.<br>
@@ -135,5 +139,21 @@ public class HTTPUtils
 		return queryString.toString();
 	}
 
+	public static String getNonce(HttpServletRequest request)
+	{
+		String nonce = (String)request.getAttribute(ATTRIBUTE_NONCE);
+		if (nonce == null)
+		{
+			nonce = generateNonce();
+			request.setAttribute(ATTRIBUTE_NONCE, nonce);
+		}
+		return nonce;
+	}
 
+	private static String generateNonce()
+	{
+		byte[] bytes = new byte[8];
+		RANDOM.nextBytes(bytes);
+		return new String(Base64.getEncoder().encode(bytes));
+	}
 }

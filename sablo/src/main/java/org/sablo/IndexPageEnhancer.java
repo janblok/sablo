@@ -156,11 +156,12 @@ public class IndexPageEnhancer
 
 	public static Object[] getAllContributions(Boolean supportGrouping, IContributionEntryFilter ceFilter)
 	{
-		return getAllContributions(null, supportGrouping, ceFilter);
+		return getAllContributions(null, null, supportGrouping, ceFilter);
 	}
 
 	/**
 	 * Gets all JS and CSS contributions.
+	 * @param exportedPackages
 	 * @param set2
 	 * @param set
 	 * @param supportGrouping Boolean; if TRUE returns the contributions which support grouping,
@@ -169,7 +170,8 @@ public class IndexPageEnhancer
 	 * @return an object array which has as a first element the collection of css contributions, and as
 	 * the second element the collection of the js contributions.
 	 */
-	public static Object[] getAllContributions(Set<String> exportedWebObjects, Boolean supportGrouping, IContributionEntryFilter ceFilter)
+	public static Object[] getAllContributions(Set<String> exportedWebObjects, Set<String> exportedPackages, Boolean supportGrouping,
+		IContributionEntryFilter ceFilter)
 	{
 		ArrayList<String> allCSSContributions = new ArrayList<String>();
 		ArrayList<String> allJSContributions = new ArrayList<String>();
@@ -181,6 +183,7 @@ public class IndexPageEnhancer
 
 		for (PackageSpecification<WebObjectSpecification> packageDesc : webComponentPackagesDescriptions)
 		{
+			if (exportedPackages != null && !exportedPackages.contains(packageDesc.getPackageName())) continue;
 			if (packageDesc.getCssClientLibrary() != null)
 			{
 				mergeLibs(allLibraries, packageLibsToJSON(packageDesc.getCssClientLibrary(), "text/css"), supportGrouping);

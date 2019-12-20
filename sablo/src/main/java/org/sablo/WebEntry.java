@@ -33,6 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.sablo.security.ContentSecurityPolicyConfig;
 import org.sablo.services.template.ModifiablePropertiesGenerator;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebServiceSpecProvider;
@@ -111,8 +112,8 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 	protected abstract IWebsocketSessionFactory createSessionFactory();
 
 	public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain, Collection<String> cssContributions,
-		Collection<String> jsContributions, Collection<String> extraMetaData, Map<String, Object> variableSubstitution, boolean setContentSecurityPolicy)
-		throws IOException, ServletException
+		Collection<String> jsContributions, Collection<String> extraMetaData, Map<String, Object> variableSubstitution,
+		ContentSecurityPolicyConfig contentSecurityPolicyConfig) throws IOException, ServletException
 	{
 		HttpServletRequest request = (HttpServletRequest)servletRequest;
 		HttpServletResponse response = (HttpServletResponse)servletResponse;
@@ -154,8 +155,8 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 			response.setContentType("text/html");
 			response.setCharacterEncoding("UTF-8");
 			PrintWriter w = servletResponse.getWriter();
-			IndexPageEnhancer.enhance(indexPageResource, request, cssContributions, jsContributions, extraMetaData, variableSubstitution, w, this,
-				this, setContentSecurityPolicy);
+			IndexPageEnhancer.enhance(indexPageResource, request, cssContributions, jsContributions, extraMetaData, variableSubstitution, w, this, this,
+					contentSecurityPolicyConfig);
 			w.flush();
 			return;
 		}

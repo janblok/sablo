@@ -13,6 +13,7 @@ Export-Package: org.sablo,
  org.sablo.specification.property,
  org.sablo.specification.property.types,
  org.sablo.util,
+ org.sablo.security,
  org.sablo.websocket,
  org.sablo.websocket.impl,
  org.sablo.websocket.utils

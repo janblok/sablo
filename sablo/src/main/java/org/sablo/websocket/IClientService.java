@@ -22,7 +22,6 @@ import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.property.IBrowserConverterContext;
-import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
 /**
@@ -96,6 +95,6 @@ public interface IClientService
 	public WebObjectSpecification getSpecification();
 
 	void writeProperties(IToJSONConverter<IBrowserConverterContext> mainConverter, IToJSONConverter<IBrowserConverterContext> converterForSendingFullValue,
-		JSONWriter w, TypedData<Map<String, Object>> propertiesToWrite, DataConversion clientDataConversions) throws IllegalArgumentException, JSONException;
+		JSONWriter w, TypedData<Map<String, Object>> propertiesToWrite) throws IllegalArgumentException, JSONException;
 
 }

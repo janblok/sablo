@@ -28,7 +28,6 @@ import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.sablo.util.ValueReference;
-import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
@@ -39,8 +38,9 @@ import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
  * @author acostescu
  */
 @SuppressWarnings("nls")
-public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> implements IAdjustablePropertyType<Object>,
-	IWrapperType<Object, ChangeAwareList<ET, WT>>, ISupportsGranularUpdates<ChangeAwareList<ET, WT>>, IPushToServerSpecialType
+public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
+	implements IAdjustablePropertyType<Object>, IWrapperType<Object, ChangeAwareList<ET, WT>>, ISupportsGranularUpdates<ChangeAwareList<ET, WT>>,
+	IPushToServerSpecialType, IPropertyWithClientSideConversions<Object>
 {
 
 	public static final String TYPE_NAME = "JSON_arr";
@@ -337,27 +337,25 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, PropertyDescription pd, DataConversion conversionMarkers,
+	public JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, PropertyDescription pd,
 		IBrowserConverterContext dataConverterContext) throws JSONException
 	{
-		return toJSON(writer, key, changeAwareList, conversionMarkers, true, JSONUtils.FullValueToJSONConverter.INSTANCE, dataConverterContext);
+		return toJSON(writer, key, changeAwareList, true, JSONUtils.FullValueToJSONConverter.INSTANCE, dataConverterContext);
 	}
 
 	@Override
 	public JSONWriter changesToJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, PropertyDescription pd,
-		DataConversion conversionMarkers, IBrowserConverterContext dataConverterContext) throws JSONException
+		IBrowserConverterContext dataConverterContext) throws JSONException
 	{
-		return toJSON(writer, key, changeAwareList, conversionMarkers, false, JSONUtils.FullValueToJSONConverter.INSTANCE, dataConverterContext);
+		return toJSON(writer, key, changeAwareList, false, JSONUtils.FullValueToJSONConverter.INSTANCE, dataConverterContext);
 	}
 
-	protected JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, DataConversion conversionMarkers, boolean fullValue,
+	protected JSONWriter toJSON(JSONWriter writer, String key, ChangeAwareList<ET, WT> changeAwareList, boolean fullValue,
 		IToJSONConverter<IBrowserConverterContext> toJSONConverterForFullValue, IBrowserConverterContext dataConverterContext) throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
 		if (changeAwareList != null)
 		{
-			if (conversionMarkers != null) conversionMarkers.convert(CustomJSONArrayType.TYPE_NAME); // so that the client knows it must use the custom client side JS for what JSON it gets
-
 			ChangeAwareList<ET, WT>.Changes changes = changeAwareList.getChangesImmutableAndPrepareForReset();
 
 			List<WT> wrappedBaseListReadOnly = changeAwareList.getWrappedBaseListForReadOnly();
@@ -366,7 +364,6 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 			if (changes.mustSendAll() || fullValue)
 			{
 				// send all (currently we don't support granular updates for add/remove but we could in the future)
-				DataConversion arrayConversionMarkers = new DataConversion();
 				writer.key(CONTENT_VERSION).value(changeAwareList.increaseContentVersion());
 
 				PushToServerEnum pushToServer = BrowserConverterContext.getPushToServerValue(dataConverterContext);
@@ -378,19 +375,9 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 				writer.key(VALUE).array();
 				for (int i = 0; i < wrappedBaseListReadOnly.size(); i++)
 				{
-					arrayConversionMarkers.pushNode(String.valueOf(i));
-					toJSONConverterForFullValue.toJSONValue(writer, null, wrappedBaseListReadOnly.get(i), getCustomJSONTypeDefinition(), arrayConversionMarkers,
-						dataConverterContext);
-					arrayConversionMarkers.popNode();
+					toJSONConverterForFullValue.toJSONValue(writer, null, wrappedBaseListReadOnly.get(i), getCustomJSONTypeDefinition(), dataConverterContext);
 				}
 				writer.endArray();
-
-				if (arrayConversionMarkers.getConversions().size() > 0)
-				{
-					writer.key(JSONUtils.TYPES_KEY).object();
-					JSONUtils.writeConversions(writer, arrayConversionMarkers.getConversions());
-					writer.endObject();
-				}
 			}
 			else if (changes.getIndexesWithContentUpdates().size() > 0 || changes.getIndexesChangedByRef().size() > 0 ||
 				changes.getRemovedIndexes().size() > 0 || changes.getAddedIndexes().size() > 0)
@@ -439,7 +426,6 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 		}
 		else
 		{
-			if (conversionMarkers != null) conversionMarkers.convert(CustomJSONArrayType.TYPE_NAME); // so that the client knows it must use the custom client side JS for what JSON it gets
 			writer.value(JSONObject.NULL); // TODO how to handle null values which have no version info (special watches/complete array set from client)? if null is on server and something is set on client or the other way around?
 		}
 		return writer;
@@ -449,39 +435,48 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 		String changeType)
 	{
 		writer.key(changeType == CHANGE_TYPE_BY_REF ? CHANGE_TYPE_UPDATES : changeType).array(); // client doesn't care if it was a full or contents change - it only needs to know it was an update
-		DataConversion arrayConversionMarkers = new DataConversion();
 		int i = 0;
 		for (Integer idx : changes)
 		{
-			arrayConversionMarkers.pushNode(String.valueOf(i++));
 			writer.object().key(INDEX).value(idx);
-			arrayConversionMarkers.pushNode(VALUE);
 			if (changeType == CHANGE_TYPE_UPDATES)
 			{
 				JSONUtils.changesToBrowserJSONValue(writer, VALUE, wrappedBaseListReadOnly.get(idx.intValue()), getCustomJSONTypeDefinition(),
-					arrayConversionMarkers, dataConverterContext);
+					dataConverterContext);
 			}
 			else // this has to be CHANGE_TYPE_ADDITIONS or CHANGE_TYPE_BY_REF - both should sent full value of that element
 			{
 				JSONUtils.toBrowserJSONFullValue(writer, VALUE, wrappedBaseListReadOnly.get(idx.intValue()), getCustomJSONTypeDefinition(),
-					arrayConversionMarkers, dataConverterContext);
+					dataConverterContext);
 			}
-			arrayConversionMarkers.popNode();
 			writer.endObject();
-			arrayConversionMarkers.popNode();
 		}
 		writer.endArray();
-		if (arrayConversionMarkers.getConversions().size() > 0)
-		{
-			writer.key(JSONUtils.TYPES_KEY).object();
-			JSONUtils.writeConversions(writer, arrayConversionMarkers.getConversions());
-			writer.endObject();
-		}
 	}
 
 	@Override
 	public boolean shouldAlwaysAllowIncommingJSON()
 	{
+		return true;
+	}
+
+	@Override
+	public boolean writeClientSideTypeName(JSONWriter w, String keyToAddTo, PropertyDescription pd)
+	{
+		JSONUtils.addKeyIfPresent(w, keyToAddTo);
+
+		w.array().value(TYPE_NAME);
+		PropertyDescription elementPD = getCustomJSONTypeDefinition();
+		if (elementPD != null && elementPD.getType() instanceof IPropertyWithClientSideConversions< ? >)
+		{
+			boolean written = ((IPropertyWithClientSideConversions< ? >)elementPD.getType()).writeClientSideTypeName(w, null, elementPD);
+			if (!written) w.value(null); // value type doesn't need client side conversions...
+		}
+		else
+		{
+			w.value(null);
+		}
+		w.endArray();
 		return true;
 	}
 

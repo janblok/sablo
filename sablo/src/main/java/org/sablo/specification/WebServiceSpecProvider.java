@@ -17,6 +17,7 @@
 package org.sablo.specification;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.jar.Manifest;
 
@@ -24,6 +25,7 @@ import javax.servlet.ServletContext;
 
 import org.sablo.specification.Package.IPackageReader;
 import org.sablo.specification.Package.JarServletContextReader;
+import org.sablo.websocket.utils.JSONUtils.EmbeddableJSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +40,18 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 
 	private static volatile WebServiceSpecProvider instance;
 
-	private static SpecReloadSubject specReloadSubject = new SpecReloadSubject();
+	private EmbeddableJSONWriter[] clientSideTypesWithConversionsOnAllServices; // array with 1 item (so that we can make a difference if it's not yet cached (null) or if it is cached (array[1] that can contain either null if there is nothing to be sent or something))
+
+	private static SpecReloadSubject specReloadSubject = new SpecReloadSubject()
+	{
+		@Override
+		void fireWebObjectSpecificationReloaded(Collection<String> specNames)
+		{
+			if (instance != null) instance.clientSideTypesWithConversionsOnAllServices = null;
+			super.fireWebObjectSpecificationReloaded(specNames);
+		}
+	};
+
 
 	private WebServiceSpecProvider(WebSpecReader reader)
 	{
@@ -119,6 +132,38 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 		{
 			return instance.reader.getLastLoadTimestamp();
 		}
+	}
+
+	public EmbeddableJSONWriter getClientSideTypes()
+	{
+		if (clientSideTypesWithConversionsOnAllServices == null)
+		{
+			// find any types that have client-side conversions that are used by services
+			// and cache them
+
+			WebObjectSpecification[] allServices = getSpecProviderState().getAllWebObjectSpecifications();
+			boolean hasClientSideTypes = false;
+			EmbeddableJSONWriter toBeSent = new EmbeddableJSONWriter();
+			if (allServices != null && allServices.length > 0)
+			{
+				toBeSent.object(); // keys are spec names, values are objects so: { serviceNameFromSpec: { /* see comment from ClientSideTypeCache.getClientSideTypesFor() */ } , ... }
+				for (WebObjectSpecification serviceSpec : allServices)
+				{
+					EmbeddableJSONWriter clSideTypesForThisComponent = ClientSideTypeCache.buildClientSideTypesFor(serviceSpec);
+					if (clSideTypesForThisComponent != null)
+					{
+						// TODO is .getSpecification().getName() enough or should we also include .getSpecification().getPackageName() here?
+						toBeSent.key(serviceSpec.getName()).value(clSideTypesForThisComponent);
+						hasClientSideTypes = true;
+					}
+				}
+				toBeSent.endObject();
+			}
+
+			clientSideTypesWithConversionsOnAllServices = new EmbeddableJSONWriter[1]; // create the cache so that we don't re-search next time (that is why it's an array of 1 when cached val is there; the item in it could be null or not
+			if (hasClientSideTypes) clientSideTypesWithConversionsOnAllServices[0] = toBeSent;
+		}
+		return clientSideTypesWithConversionsOnAllServices[0];
 	}
 
 }

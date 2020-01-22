@@ -25,6 +25,7 @@ import org.sablo.specification.property.types.BooleanPropertyType;
 import org.sablo.specification.property.types.IntPropertyType;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.IClientService;
+import org.sablo.websocket.utils.JSONUtils.EmbeddableJSONWriter;
 
 /**
  * Class to access sablo builtin server-service methods.
@@ -43,9 +44,6 @@ public class SabloService
 		this.clientService = clientService;
 	}
 
-	/**
-	 * @param currentFormUrl
-	 */
 	public void setCurrentFormUrl(String currentFormUrl)
 	{
 		clientService.executeAsyncServiceCall("setCurrentFormUrl", new Object[] { currentFormUrl });
@@ -70,4 +68,15 @@ public class SabloService
 		CurrentWindow.get().executeAsyncServiceCall(clientService, "resolveDeferedEvent",
 			new Object[] { Integer.valueOf(defid), argument, Boolean.valueOf(success) }, pd);
 	}
+
+	public void addComponentClientSideConversionTypes(EmbeddableJSONWriter toBeSent)
+	{
+		clientService.executeAsyncServiceCall("addComponentClientSideConversionTypes", new Object[] { toBeSent });
+	}
+
+	public void setServiceClientSideConversionTypes(EmbeddableJSONWriter toBeSent)
+	{
+		clientService.executeAsyncServiceCall("setServiceClientSideConversionTypes", new Object[] { toBeSent });
+	}
+
 }

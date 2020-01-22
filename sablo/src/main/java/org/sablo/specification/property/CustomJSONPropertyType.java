@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Property types that are defined in JSON spec files.
+ *
  * @author acostescu
  */
 public abstract class CustomJSONPropertyType<T> extends DefaultPropertyType<T> implements ICustomType<T>

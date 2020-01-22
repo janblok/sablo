@@ -59,7 +59,6 @@ import org.sablo.specification.property.types.VisiblePropertyType;
 import org.sablo.util.ValueReference;
 import org.sablo.websocket.TypedData;
 import org.sablo.websocket.TypedDataWithChangeInfo;
-import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
@@ -123,7 +122,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 		this.specification = specification;
 		changes = new Changes();
 
-		if (specification == null) throw new IllegalStateException("Cannot work without specification");
+		if (specification == null) throw new IllegalStateException("Cannot work without a specification for: " + name);
 	}
 
 	/**
@@ -933,8 +932,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 		changes.clearChanges();
 	}
 
-	protected boolean writeComponentProperties(JSONWriter w, IToJSONConverter<IBrowserConverterContext> converter, String nodeName,
-		DataConversion clientDataConversions) throws JSONException
+	protected boolean writeComponentProperties(JSONWriter w, IToJSONConverter<IBrowserConverterContext> converter, String nodeName) throws JSONException
 	{
 		TypedData<Map<String, Object>> typedProperties = getProperties();
 		if (typedProperties.content.isEmpty())
@@ -943,7 +941,6 @@ public abstract class BaseWebObject implements IWebObjectContext
 		}
 
 		w.key(nodeName).object();
-		clientDataConversions.pushNode(nodeName);
 
 		// only write properties that are visible, always write visibility properties
 		Map<String, Object> data = new HashMap<>();
@@ -963,8 +960,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 		}
 
 		// here converter is always a full-value-to-json type (full value or initial value, so not changes); so don't give a second parameter as this should be used in any case (we don't want to send changes)
-		writeProperties(converter, null, w, new TypedData<Map<String, Object>>(data, typedProperties.contentType), clientDataConversions);
-		clientDataConversions.popNode();
+		writeProperties(converter, null, w, new TypedData<Map<String, Object>>(data, typedProperties.contentType));
 		w.endObject();
 
 		return true;
@@ -1067,8 +1063,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 		propertyChangeSupport = null;
 	}
 
-	public boolean writeOwnChanges(JSONWriter w, String keyInParent, String nodeName, IToJSONConverter<IBrowserConverterContext> converter,
-		DataConversion clientDataConversions) throws JSONException
+	public boolean writeOwnChanges(JSONWriter w, String keyInParent, String nodeName, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException
 	{
 		TypedDataWithChangeInfo changesToWrite = changes.getAndClearChanges();
 		if (changesToWrite.content.isEmpty())
@@ -1082,10 +1077,8 @@ public abstract class BaseWebObject implements IWebObjectContext
 		}
 
 		w.key(nodeName).object();
-		clientDataConversions.pushNode(nodeName);
 		// converter here is always ChangesToJSONConverter except for some unit tests
-		writeProperties(converter, FullValueToJSONConverter.INSTANCE, w, changesToWrite, clientDataConversions);
-		clientDataConversions.popNode();
+		writeProperties(converter, FullValueToJSONConverter.INSTANCE, w, changesToWrite);
 		w.endObject();
 
 		return true;
@@ -1095,8 +1088,8 @@ public abstract class BaseWebObject implements IWebObjectContext
 	 * @param converterForSendingFullValue can be null, if only the main converter should be used.
 	 */
 	public void writeProperties(IToJSONConverter<IBrowserConverterContext> mainConverter,
-		IToJSONConverter<IBrowserConverterContext> converterForSendingFullValue, JSONWriter w, TypedData<Map<String, Object>> propertiesToWrite,
-		DataConversion clientDataConversions) throws IllegalArgumentException, JSONException
+		IToJSONConverter<IBrowserConverterContext> converterForSendingFullValue, JSONWriter w, TypedData<Map<String, Object>> propertiesToWrite)
+		throws IllegalArgumentException, JSONException
 	{
 		changes.setShouldNotReceiveChanges(true);
 		TypedDataWithChangeInfo propertiesToWriteWithChangeInfo = (propertiesToWrite instanceof TypedDataWithChangeInfo)
@@ -1104,7 +1097,6 @@ public abstract class BaseWebObject implements IWebObjectContext
 
 		for (Entry<String, Object> entry : propertiesToWrite.content.entrySet())
 		{
-			clientDataConversions.pushNode(entry.getKey());
 			PropertyDescription pd = propertiesToWrite.contentType != null ? propertiesToWrite.contentType.getProperty(entry.getKey()) : null;
 
 			BrowserConverterContext context;
@@ -1115,15 +1107,14 @@ public abstract class BaseWebObject implements IWebObjectContext
 				propertiesToWriteWithChangeInfo.hasFullyChanged(entry.getKey()))
 			{
 				// the property val needs to be sent whole - use the right converter for that
-				converterForSendingFullValue.toJSONValue(w, entry.getKey(), entry.getValue(), pd, clientDataConversions, context);
+				converterForSendingFullValue.toJSONValue(w, entry.getKey(), entry.getValue(), pd, context);
 			}
 			else
 			{
 				// use 'main' converter (which can be a full value converter or only changes converter depending on caller wants)
-				mainConverter.toJSONValue(w, entry.getKey(), entry.getValue(), pd, clientDataConversions, context);
+				mainConverter.toJSONValue(w, entry.getKey(), entry.getValue(), pd, context);
 			}
 
-			clientDataConversions.popNode();
 		}
 		changes.setShouldNotReceiveChanges(false);
 	}

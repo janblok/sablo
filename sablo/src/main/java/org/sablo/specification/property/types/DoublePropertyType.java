@@ -21,7 +21,6 @@ import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IPropertyConverterForBrowser;
 import org.sablo.util.ValueReference;
-import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.PropertyUtils;
 import org.slf4j.Logger;
@@ -70,8 +69,8 @@ public class DoublePropertyType extends DefaultPropertyType<Double> implements I
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, Number sabloValue, PropertyDescription pd, DataConversion clientConversion,
-		IBrowserConverterContext dataConverterContext) throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Number sabloValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
+		throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
 		if (sabloValue != null && (Double.isNaN(sabloValue.doubleValue()) || Double.isInfinite(sabloValue.doubleValue()))) writer.value(null);

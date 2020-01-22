@@ -139,8 +139,8 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 			((HttpServletResponse)servletResponse).setCharacterEncoding("UTF-8");
 			PrintWriter w = servletResponse.getWriter();
 			ModifiablePropertiesGenerator.start(w);
-			ModifiablePropertiesGenerator.appendAll(w, WebComponentSpecProvider.getSpecProviderState().getAllWebComponentSpecifications(), "components");
-			ModifiablePropertiesGenerator.appendAll(w, WebServiceSpecProvider.getSpecProviderState().getAllWebComponentSpecifications(), "services");
+			ModifiablePropertiesGenerator.appendAll(w, WebComponentSpecProvider.getSpecProviderState().getAllWebObjectSpecifications(), "components");
+			ModifiablePropertiesGenerator.appendAll(w, WebServiceSpecProvider.getSpecProviderState().getAllWebObjectSpecifications(), "services");
 			ModifiablePropertiesGenerator.finish(w);
 			w.flush();
 

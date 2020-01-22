@@ -122,7 +122,7 @@ public class WebComponentTest
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 
-		String msg = JSONUtils.writeDataWithConversions(data, null, null);
+		String msg = JSONUtils.writeDataAsFullToJSON(data, null, null);
 		assertEquals(new JSONObject("{\"msg\":{\"name\":\"test\",\"size\":{\"width\":10,\"height\":10}}}").toString(), new JSONObject(msg).toString());
 
 		component.putBrowserProperty("size", new JSONObject("{\"width\":20,\"height\":20}"));
@@ -154,7 +154,7 @@ public class WebComponentTest
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 
-		String msg = JSONUtils.writeChangesWithConversions(data, null, null);
+		String msg = JSONUtils.writeChanges(data, null, null);
 		assertEquals("{\"msg\":{\"background\":\"#000000\",\"name\":\"test\"}}", msg);
 
 		component.putBrowserProperty("background", "#ff0000");
@@ -186,7 +186,7 @@ public class WebComponentTest
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 
-		String msg = JSONUtils.writeDataWithConversions(data, null, null);
+		String msg = JSONUtils.writeDataAsFullToJSON(data, null, null);
 		assertEquals(new JSONObject(
 			"{\"msg\":{\"font\":{\"fontWeight\":\"bold\",\"fontStyle\":\"normal\",\"fontSize\":\"12px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"},\"name\":\"test\"}}").toString(),
 			new JSONObject(msg).toString());
@@ -223,7 +223,7 @@ public class WebComponentTest
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 
-		String msg = JSONUtils.writeDataWithConversions(data, null, null);
+		String msg = JSONUtils.writeDataAsFullToJSON(data, null, null);
 		assertEquals(new JSONObject("{\"msg\":{\"location\":{\"x\":10,\"y\":10},\"name\":\"test\"}}").toString(), new JSONObject(msg).toString());
 
 		component.putBrowserProperty("location", new JSONObject("{\"x\":20,\"y\":20}"));
@@ -258,7 +258,7 @@ public class WebComponentTest
 		HashMap<String, Object> data = new HashMap<>();
 		data.put("msg", properties);
 
-		String msg = JSONUtils.writeDataWithConversions(data, null, null);
+		String msg = JSONUtils.writeDataAsFullToJSON(data, null, null);
 		assertEquals("{\"msg\":{\"atype\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"},\"name\":\"test\"}}", msg);
 
 		component.putBrowserProperty("atype",
@@ -330,14 +330,14 @@ public class WebComponentTest
 
 		PropertyDescription messageTypes = messageTypesBuilder.build();
 
-		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
+		String msg = JSONUtils.writeDataAsFullToJSON(data, messageTypes, allowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
+			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}]}}}").toString(),
 			new JSONObject(msg).toString());
 
-		msg = JSONUtils.writeDataWithConversions(data, messageTypes, shallowDataConverterContext);
+		msg = JSONUtils.writeDataAsFullToJSON(data, messageTypes, shallowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":3,\"w\":false,\"v\":[{\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}}},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
+			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":3,\"w\":false,\"v\":[{\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}]}}}").toString(),
 			new JSONObject(msg).toString());
 
 		component.putBrowserProperty("types",

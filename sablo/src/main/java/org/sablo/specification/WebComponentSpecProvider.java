@@ -37,6 +37,7 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 
 	private static volatile WebComponentSpecProvider instance;
 	private static final SpecReloadSubject specReloadSubject = new SpecReloadSubject();
+	private final ClientSideTypeCache clientSideTypeCache;
 
 	public static WebComponentSpecProvider getInstance()
 	{
@@ -120,11 +121,18 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 		synchronized (WebComponentSpecProvider.class)
 		{
 			instance.reader.load();
+			instance.clientSideTypeCache.clear();
 		}
+	}
+
+	public ClientSideTypeCache getClientSideTypeCache()
+	{
+		return clientSideTypeCache;
 	}
 
 	private WebComponentSpecProvider(WebSpecReader reader)
 	{
 		super(reader);
+		this.clientSideTypeCache = new ClientSideTypeCache();
 	}
 }

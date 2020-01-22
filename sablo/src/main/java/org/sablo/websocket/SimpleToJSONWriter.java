@@ -18,7 +18,6 @@ package org.sablo.websocket;
 
 import org.json.JSONStringer;
 import org.sablo.specification.property.IBrowserConverterContext;
-import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
 /**
@@ -31,8 +30,7 @@ public abstract class SimpleToJSONWriter<ContextT> implements IToJSONWriter<Cont
 {
 
 	@Override
-	public boolean checkForAndWriteAnyUnexpectedRemainingChanges(JSONStringer w, String string, IToJSONConverter<IBrowserConverterContext> converter,
-		DataConversion clientDataConversions)
+	public boolean checkForAndWriteAnyUnexpectedRemainingChanges(JSONStringer w, String string, IToJSONConverter<IBrowserConverterContext> converter)
 	{
 		return false;
 	}

@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.json.JSONObject;
 import org.sablo.IChangeListener;
@@ -60,7 +61,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 
 	private final Map<String, IServerService> serverServices = new ConcurrentHashMap<>();
 	private final Map<String, IClientService> servicesByName = new ConcurrentHashMap<>();
-	private final Map<String, IClientService> servicesByScriptingName = new ConcurrentHashMap<>();
+	private final Map<String, IClientService> servicesByScriptingName = new ConcurrentHashMap<>(); // TODO some/most services (mostly the ones that have to do with UI should be per window right? not per session...)
 	private final List<ObjectReference<IWindow>> windows = new CopyOnWriteArrayList<>();
 
 	private final WebsocketSessionKey sessionKey;
@@ -381,6 +382,12 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		}
 	}
 
+	protected void forAllWindows(Consumer<IWindow> action)
+	{
+		// getWindows() will return only the windows that have an attached end-point
+		getWindows().forEach(action);
+	}
+
 	@Override
 	public IClientService getClientService(String name)
 	{
@@ -425,7 +432,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 
 	protected IClientService createClientService(String name)
 	{
-		return new ClientService(name, WebServiceSpecProvider.getSpecProviderState().getWebComponentSpecification(name));
+		return new ClientService(name, WebServiceSpecProvider.getSpecProviderState().getWebObjectSpecification(name));
 	}
 
 	public void startHandlingEvent()

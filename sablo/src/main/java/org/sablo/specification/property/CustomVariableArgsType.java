@@ -22,7 +22,6 @@ import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.util.ValueReference;
-import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 
 /**
@@ -54,8 +53,8 @@ public class CustomVariableArgsType extends CustomJSONPropertyType<Object> imple
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, Object sabloValue, PropertyDescription pd, DataConversion clientConversion,
-		IBrowserConverterContext dataConverterContext) throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Object sabloValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
+		throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
 		writer.array();
@@ -64,13 +63,12 @@ public class CustomVariableArgsType extends CustomJSONPropertyType<Object> imple
 			for (int i = 0; i < ((List)sabloValue).size(); i++)
 			{
 				JSONUtils.FullValueToJSONConverter.INSTANCE.toJSONValue(writer, null, ((List)sabloValue).get(i), getCustomJSONTypeDefinition(),
-					clientConversion, dataConverterContext);
+					dataConverterContext);
 			}
 		}
 		else
 		{
-			JSONUtils.FullValueToJSONConverter.INSTANCE.toJSONValue(writer, null, sabloValue, getCustomJSONTypeDefinition(), clientConversion,
-				dataConverterContext);
+			JSONUtils.FullValueToJSONConverter.INSTANCE.toJSONValue(writer, null, sabloValue, getCustomJSONTypeDefinition(), dataConverterContext);
 		}
 		writer.endArray();
 		return writer;

@@ -31,7 +31,6 @@ import org.sablo.websocket.IToJSONWriter;
 import org.sablo.websocket.IWebsocketEndpoint;
 import org.sablo.websocket.IWebsocketSession;
 import org.sablo.websocket.IWindow;
-import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
 /**
@@ -135,7 +134,10 @@ public class WebsocketSessionWindows implements IWindow
 	@Override
 	public void unregisterContainer(Container container)
 	{
-		// ignore
+		for (IWindow window : session.getWindows())
+		{
+			window.unregisterContainer(container);
+		}
 	}
 
 	@Override
@@ -204,8 +206,7 @@ public class WebsocketSessionWindows implements IWindow
 	}
 
 	@Override
-	public boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
-		DataConversion clientDataConversions) throws JSONException
+	public boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException
 	{
 		return false;
 	}

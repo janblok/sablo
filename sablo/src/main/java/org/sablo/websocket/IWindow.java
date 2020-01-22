@@ -26,7 +26,6 @@ import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.property.IBrowserConverterContext;
-import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
 
@@ -155,8 +154,7 @@ public interface IWindow
 	 * Writes as JSON changes from all components of all registered Containers.
 	 * @param keyInParent a key (can be null in which case it should be ignored) that must be appended to 'w' initially if this method call writes content to it. If the method returns false, nothing should be written to the writer...
 	 */
-	boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
-		DataConversion clientDataConversions) throws JSONException;
+	boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException;
 
 	/**
 	 * Close the browser session.
@@ -175,25 +173,14 @@ public interface IWindow
 	public long getLastPingTime();
 
 
-	/**
-	 *
-	 */
 	void dispose();
 
 
-	/**
-	 *
-	 */
 	void sendChanges() throws IOException;
 
 
-	/**
-	 *
-	 */
 	void onOpen(Map<String, List<String>> requestParams);
 
-	/**
-	 * @return
-	 */
 	int getNextMessageNumber();
+
 }

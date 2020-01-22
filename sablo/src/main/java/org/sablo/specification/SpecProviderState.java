@@ -50,9 +50,9 @@ public class SpecProviderState
 		this.packageReaders = Collections.unmodifiableList(new ArrayList<>(packageReaders));
 	}
 
-	public synchronized WebObjectSpecification getWebComponentSpecification(String componentTypeName)
+	public synchronized WebObjectSpecification getWebObjectSpecification(String webObjectTypeName)
 	{
-		return allWebObjectSpecifications.get(componentTypeName);
+		return allWebObjectSpecifications.get(webObjectTypeName);
 	}
 
 	public synchronized Map<String, PackageSpecification<WebObjectSpecification>> getWebObjectSpecifications()
@@ -60,7 +60,7 @@ public class SpecProviderState
 		return cachedDescriptions;
 	}
 
-	public synchronized WebObjectSpecification[] getAllWebComponentSpecifications()
+	public synchronized WebObjectSpecification[] getAllWebObjectSpecifications()
 	{
 		return allWebObjectSpecifications.values().toArray(new WebObjectSpecification[allWebObjectSpecifications.size()]);
 	}
@@ -122,13 +122,12 @@ public class SpecProviderState
 	}
 
 	/**
-	 * Get a list of all components contained by provided package name
+	 * Get a list of all webObjects contained by provided package name
 	 */
-	public Collection<String> getComponentsInPackage(String packageName)
+	public Collection<String> getWebObjectsInPackage(String packageName)
 	{
 		PackageSpecification<WebObjectSpecification> pkg = getWebObjectSpecifications().get(packageName);
 		return pkg == null ? Collections.<String> emptyList() : pkg.getSpecifications().keySet();
-
 	}
 
 	/**

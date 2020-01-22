@@ -20,7 +20,6 @@ import org.json.JSONException;
 import org.json.JSONStringer;
 import org.json.JSONWriter;
 import org.sablo.specification.property.IBrowserConverterContext;
-import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
 /**
@@ -35,7 +34,7 @@ public interface IToJSONWriter<ContextT>
 	 * Writes as JSON changes from all components of all registered Containers.
 	 * @param keyInParent a key (can be null in which case it should be ignored) that must be appended to 'w' initially if this method call writes content to it. If the method returns false, nothing should be written to the writer...
 	 */
-	boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<ContextT> converter, DataConversion clientDataConversions) throws JSONException;
+	boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<ContextT> converter) throws JSONException;
 
 	/**
 	 * This method is called after {@link #writeJSONContent(JSONWriter, String, IToJSONConverter, DataConversion)} above to check if this to-json-writer still
@@ -52,7 +51,6 @@ public interface IToJSONWriter<ContextT>
 	 *
 	 * @return true if there were unexpected changes (and they were written); false if nothing more needed to be written.
 	 */
-	boolean checkForAndWriteAnyUnexpectedRemainingChanges(JSONStringer w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
-		DataConversion clientDataConversions);
+	boolean checkForAndWriteAnyUnexpectedRemainingChanges(JSONStringer w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter);
 
 }

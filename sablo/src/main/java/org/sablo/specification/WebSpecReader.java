@@ -227,6 +227,10 @@ class WebSpecReader
 
 	protected synchronized boolean readGloballyDefinedTypes(List<Package> packages)
 	{
+		// TODO THIS IS NOT CURRENTLY USED NOR MADE PUBLIC IN WIKI BUT IT IS READ IN CORRECTLY; STILL, GLOBAL TYPES WILL NOT CURRENTLY BE SENT TO CLIENT via
+		// org.sablo.websocket.ClientSideTypesState.handleFreshBrowserWindowConnected()
+		// If this becomes relevant again and clients want to be able to define global types we should send them to client as well via the method above (similar to how we send all types for services)
+
 		boolean globalTypesFound = false;
 		try
 		{

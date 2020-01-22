@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -49,7 +48,6 @@ import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.util.DebugFriendlyJSONStringer;
 import org.sablo.websocket.impl.ClientService;
-import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.JSONUtils.ChangesToJSONConverter;
 import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
@@ -90,7 +88,7 @@ public class BaseWindow implements IWindow
 	private volatile int endpointRefcount = 0;
 
 	private final IWebsocketSession session;
-	private final int nr;
+	private final int windowNr;
 	private final String name;
 
 	private final AtomicInteger nextMessageId = new AtomicInteger(0);
@@ -100,21 +98,32 @@ public class BaseWindow implements IWindow
 	private final List<Map<String, Object>> delayedOrAsyncComponentApiCalls = new ArrayList<>();
 	private final PropertyDescriptionBuilder serviceCallTypes = AggregatedPropertyType.newAggregatedPropertyBuilder();
 
-	private final WeakHashMap<Container, Object> usedContainers = new WeakHashMap<>(3); // set of used container in order to collect all changes
-
-	private String currentFormUrl;
+	private final ClientSideWindowState clientSideState = createClientSideWindowState();
 
 	public BaseWindow(IWebsocketSession session, int nr, String name)
 	{
 		this.session = session;
-		this.nr = nr;
+		this.windowNr = nr;
 		this.name = name;
+	}
+
+	/**
+	 * Gives the opportunity of creatin their own type of ClientSideWindowState to subclasses.
+	 */
+	protected ClientSideWindowState createClientSideWindowState()
+	{
+		return new ClientSideWindowState(this);
+	}
+
+	protected ClientSideWindowState getClientSideWindowState()
+	{
+		return clientSideState;
 	}
 
 	@Override
 	public int getNr()
 	{
-		return nr;
+		return windowNr;
 	}
 
 	@Override
@@ -207,6 +216,7 @@ public class BaseWindow implements IWindow
 			List<String> lastServerMessageNumberParameter = requestParams.get("lastServerMessageNumber");
 			if (lastServerMessageNumberParameter != null && lastServerMessageNumberParameter.size() == 1)
 			{
+				// so this is a RECONNECT because the client sent a lastServerMessageNumber; no need to send the services etc.
 				String clientLastMessageReceived = lastServerMessageNumberParameter.get(0);
 				if (!String.valueOf(lastSentMessage.get()).equals(clientLastMessageReceived))
 				{
@@ -214,27 +224,29 @@ public class BaseWindow implements IWindow
 					cancelSession(CLOSE_REASON_CLIENT_OUT_OF_SYNC);
 				}
 
-				// Client sent a lastServerMessageNumber, so this is a reconnect, no need to send the services etc.
+				clientSideState.handleBrowserReconnected();
 				return;
 			}
 		}
 
-		// window was connected to new endpoint
+		// this (server) window was connected to a fresh browser window (either new window of refreshed (F5) browser window)
+		// so we need to send anything that is needed in the browser for this window
 		try
 		{
-			sendServices();
+			sendUsedServicesCurrentState();
 			sendWindowNr();
-			sendCurrentFormUrl();
+			clientSideState.handleFreshBrowserWindowConnected();
 		}
 		catch (IOException e)
 		{
-			log.error("Error sending services/windownr to new endpoint", e);
+			log.error("Error sending services/windownr/current form/types to new endpoint (refresh or new browser tab)", e);
 		}
 	}
 
-	protected void sendServices() throws IOException
+	protected void sendUsedServicesCurrentState() throws IOException
 	{
-		// send all the service data to the browser.
+		// send all previously touched services' service data to the browser
+		// note: currently services are not instantiated in the session server side unless accessed - so they don't have initial/default model values for example
 		final Map<String, Map<String, Object>> serviceData = new HashMap<>();
 		final PropertyDescriptionBuilder serviceDataTypes = AggregatedPropertyType.newAggregatedPropertyBuilder();
 
@@ -257,33 +269,28 @@ public class BaseWindow implements IWindow
 			{
 
 				@Override
-				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
-					DataConversion clientDataConversions) throws JSONException
+				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException
 				{
 					if (serviceData != null && serviceData.size() > 0)
 					{
 						JSONUtils.addKeyIfPresent(w, keyInParent);
 						w.object().key("services").object();
-						clientDataConversions.pushNode("services");
 						for (IClientService service : services)
 						{
 							String serviceName = service.getScriptingName();
 							Map<String, Object> dataForThisService = serviceData.get(serviceName);
 							if (dataForThisService != null && dataForThisService.size() > 0)
 							{
-								clientDataConversions.pushNode(serviceName);
 								w.key(serviceName);
 								w.object();
 								// here converter is FullValueToJSONConverter; see below arg
 								service.writeProperties(converter, null, w,
-									new TypedData<Map<String, Object>>(dataForThisService, serviceDataTypesPD.getProperty(serviceName)), clientDataConversions);
+									new TypedData<Map<String, Object>>(dataForThisService, serviceDataTypesPD.getProperty(serviceName)));
 								w.endObject();
-								clientDataConversions.popNode();
 							}
 						}
 
 						w.endObject().endObject();
-						clientDataConversions.popNode();
 
 						return true;
 					}
@@ -292,14 +299,12 @@ public class BaseWindow implements IWindow
 
 				@Override
 				public boolean checkForAndWriteAnyUnexpectedRemainingChanges(JSONStringer w, String keyInParent,
-					IToJSONConverter<IBrowserConverterContext> converter, DataConversion clientDataConversions)
+					IToJSONConverter<IBrowserConverterContext> converter)
 				{
 					JSONUtils.addKeyIfPresent(w, keyInParent);
 					w.object();
 
-					clientDataConversions.pushNode("services");
-					boolean changesFound = writeAllServicesChanges(w, "services", clientDataConversions);
-					clientDataConversions.popNode();
+					boolean changesFound = writeAllServicesChanges(w, "services");
 
 					w.endObject();
 
@@ -312,14 +317,14 @@ public class BaseWindow implements IWindow
 
 	protected void sendWindowNr() throws IOException
 	{
-		if (nr == -1)
+		if (windowNr == -1)
 		{
 			throw new IllegalStateException("windowNr not set");
 		}
 
 		Map<String, String> msg = new HashMap<>();
 		msg.put("clientnr", String.valueOf(getSession().getSessionKey().getClientnr()));
-		msg.put("windownr", String.valueOf(nr));
+		msg.put("windownr", String.valueOf(windowNr));
 		sendAsyncMessage(msg, null, FullValueToJSONConverter.INSTANCE);
 	}
 
@@ -332,6 +337,7 @@ public class BaseWindow implements IWindow
 		{
 			ep.closeSession(new CloseReason(CloseReason.CloseCodes.GOING_AWAY, "Window disposed"));
 		}
+		clientSideState.dispose();
 	}
 
 	protected void onDispose()
@@ -348,7 +354,7 @@ public class BaseWindow implements IWindow
 	 */
 	public String getCurrentFormUrl()
 	{
-		return currentFormUrl;
+		return clientSideState.getCurrentFormUrl();
 	}
 
 	/**
@@ -356,16 +362,7 @@ public class BaseWindow implements IWindow
 	 */
 	public void setCurrentFormUrl(String currentFormUrl)
 	{
-		this.currentFormUrl = currentFormUrl;
-		sendCurrentFormUrl();
-	}
-
-	public void sendCurrentFormUrl()
-	{
-		if (currentFormUrl != null && getSession() != null)
-		{
-			getSession().getSabloService().setCurrentFormUrl(currentFormUrl);
-		}
+		clientSideState.setCurrentFormUrl(currentFormUrl);
 	}
 
 	@Override
@@ -391,13 +388,13 @@ public class BaseWindow implements IWindow
 	@Override
 	public void registerContainer(Container container)
 	{
-		usedContainers.put(container, new Object());
+		getClientSideWindowState().putUsedContainer(container);
 	}
 
 	@Override
 	public void unregisterContainer(Container container)
 	{
-		usedContainers.remove(container);
+		getClientSideWindowState().removeUsedContainer(container);
 	}
 
 	/**
@@ -416,13 +413,12 @@ public class BaseWindow implements IWindow
 		sendAsyncMessage((data == null || data.size() == 0) ? null : new SimpleToJSONWriter<IBrowserConverterContext>()
 		{
 			@Override
-			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converterParam,
-				DataConversion clientDataConversions) throws JSONException
+			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converterParam) throws JSONException
 			{
 				if (data != null && data.size() > 0)
 				{
 					JSONUtils.addKeyIfPresent(w, keyInParent);
-					converterParam.toJSONValue(w, null, data, dataTypes, clientDataConversions, BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER);
+					converterParam.toJSONValue(w, null, data, dataTypes, BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER);
 					return true;
 				}
 				return false;
@@ -451,13 +447,12 @@ public class BaseWindow implements IWindow
 		return sendSyncMessage((data == null || data.size() == 0) ? null : new SimpleToJSONWriter<IBrowserConverterContext>()
 		{
 			@Override
-			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converterParam,
-				DataConversion clientDataConversions) throws JSONException
+			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converterParam) throws JSONException
 			{
 				if (data != null && data.size() > 0)
 				{
 					JSONUtils.addKeyIfPresent(w, keyInParent);
-					converterParam.toJSONValue(w, null, data, dataTypes, clientDataConversions, new BrowserConverterContext(service, PushToServerEnum.allow));
+					converterParam.toJSONValue(w, null, data, dataTypes, new BrowserConverterContext(service, PushToServerEnum.allow));
 					return true;
 				}
 				return false;
@@ -524,37 +519,28 @@ public class BaseWindow implements IWindow
 			boolean hasContentToSend = false;
 			JSONStringer w = new DebugFriendlyJSONStringer();
 			w.object();
-			DataConversion clientDataConversions = new DataConversion();
 
 			if (dataWriter != null)
 			{
-				clientDataConversions.pushNode("msg");
-				hasContentToSend = dataWriter.writeJSONContent(w, "msg", converter, clientDataConversions) || hasContentToSend;
-				clientDataConversions.popNode();
+				hasContentToSend = dataWriter.writeJSONContent(w, "msg", converter) || hasContentToSend;
 			}
 
 			if (serviceCalls.size() > 0)
 			{
 				hasContentToSend = true;
-				clientDataConversions.pushNode("services");
 				w.key("services");
 				PropertyDescription pd = serviceCallTypes.build();
 				w.array();
 				for (int i = 0; i < serviceCalls.size(); i++)
 				{
-					if (clientDataConversions != null) clientDataConversions.pushNode(String.valueOf(i));
 					ClientService clientService = (ClientService)serviceCalls.get(i).remove(API_SERVER_ONLY_KEY_SERVICE);
-					FullValueToJSONConverter.INSTANCE.toJSONValue(w, null, serviceCalls.get(i), pd.getProperty(String.valueOf(i)), clientDataConversions,
+					FullValueToJSONConverter.INSTANCE.toJSONValue(w, null, serviceCalls.get(i), pd.getProperty(String.valueOf(i)),
 						new BrowserConverterContext(clientService, PushToServerEnum.allow));
-					if (clientDataConversions != null) clientDataConversions.popNode();
 				}
 				w.endArray();
-
-				clientDataConversions.popNode();
 			}
 			if (delayedOrAsyncComponentApiCalls.size() > 0)
 			{
-				clientDataConversions.pushNode("calls");
 				Iterator<Map<String, Object>> it = delayedOrAsyncComponentApiCalls.iterator();
 				boolean callObjectStarted = false;
 				int callIdx = 0;
@@ -582,17 +568,11 @@ public class BaseWindow implements IWindow
 						}
 						PropertyDescription callTypes = (PropertyDescription)delayedCall.remove(API_SERVER_ONLY_KEY_ARG_TYPES);
 						w.object().key(API_KEY_CALL).object();
-						clientDataConversions.pushNode(String.valueOf(callIdx));
-						clientDataConversions.pushNode(API_KEY_CALL);
-						JSONUtils.writeData(converter, w, delayedCall, callTypes, clientDataConversions,
-							new BrowserConverterContext(component, PushToServerEnum.allow));
-						clientDataConversions.popNode();
-						clientDataConversions.popNode();
+						JSONUtils.writeData(converter, w, delayedCall, callTypes, new BrowserConverterContext(component, PushToServerEnum.allow));
 						callIdx++;
 						w.endObject().endObject();
 					}
 				}
-				clientDataConversions.popNode();
 				if (callObjectStarted)
 				{
 					w.endArray();
@@ -605,7 +585,6 @@ public class BaseWindow implements IWindow
 				{
 					w.key("smsgid").value(smsgidOptional);
 				}
-				JSONUtils.writeClientConversions(w, clientDataConversions);
 				w.endObject();
 
 				sendMessageText(w.toString());
@@ -626,7 +605,6 @@ public class BaseWindow implements IWindow
 		IToJSONConverter<IBrowserConverterContext> converter) throws IOException
 	{
 		JSONStringer w;
-		DataConversion clientDataConversions;
 
 		boolean hasContentToSend = false;
 		if (dataWriter != null)
@@ -637,21 +615,17 @@ public class BaseWindow implements IWindow
 			while (keepGoing && i-- > 0)
 			{
 				w = new DebugFriendlyJSONStringer();
-				clientDataConversions = new DataConversion();
 
 				w.object();
-				clientDataConversions.pushNode("msg");
-				keepGoing = dataWriter.checkForAndWriteAnyUnexpectedRemainingChanges(w, "msg", converter, clientDataConversions);
-				clientDataConversions.popNode();
+				keepGoing = dataWriter.checkForAndWriteAnyUnexpectedRemainingChanges(w, "msg", converter);
 				if (keepGoing) // it did write stuff to JSON
 				{
 					if (i == MAX_ALLOWED_TO_JSON_GENERATING_UNEXPECTED_CHANGE_ITERATIONS - 1) log.debug(
 						"A new change was registered on window while previous changes were being written; probably one property's toJSON ends up marking another property (in any form and any component in the same window) as dirty. This should be avoided. If you see this message without a stacktrace that explains it further it means that the properties that interact unexpectedly could be from different components/services.");
-					// we do log above the warning but BaseWebObject, custom obj and array types also have code that will print stac traces as well when the unexpected interaction happens between child properties
+					// we do log above the warning but BaseWebObject, custom obj and array types also have code that will print stack traces as well when the unexpected interaction happens between child properties
 					// if that does not appear in log and you can't debug, you could enable full websocket logging to see what exactly the messages being sent to client were (could help make an idea which properties from which base objects interact with other)
 
 					hasContentToSend = true;
-					JSONUtils.writeClientConversions(w, clientDataConversions);
 					w.endObject();
 
 					sendMessageText(w.toString());
@@ -682,11 +656,10 @@ public class BaseWindow implements IWindow
 			boolean hasContentToSend = false;
 			JSONStringer w = new DebugFriendlyJSONStringer();
 			w.object();
-			DataConversion clientDataConversions = new DataConversion();
 
 			if (dataWriter != null)
 			{
-				hasContentToSend = dataWriter.writeJSONContent(w, null, converter, clientDataConversions);
+				hasContentToSend = dataWriter.writeJSONContent(w, null, converter);
 			}
 			w.endObject();
 
@@ -727,19 +700,14 @@ public class BaseWindow implements IWindow
 		sendAsyncMessage(new IToJSONWriter<IBrowserConverterContext>()
 		{
 			@Override
-			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
-				DataConversion clientDataConversions) throws JSONException
+			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException
 			{
 				JSONUtils.addKeyIfPresent(w, keyInParent);
 				w.object();
 
-				clientDataConversions.pushNode("forms");
-				boolean changesFound = writeAllComponentsChanges(w, "forms", ChangesToJSONConverter.INSTANCE, clientDataConversions);
-				clientDataConversions.popNode();
+				boolean changesFound = writeAllComponentsChanges(w, "forms", ChangesToJSONConverter.INSTANCE);
 
-				clientDataConversions.pushNode("services");
-				changesFound = writeAllServicesChanges(w, "services", clientDataConversions) || changesFound;
-				clientDataConversions.popNode();
+				changesFound = writeAllServicesChanges(w, "services") || changesFound;
 
 				w.endObject();
 
@@ -748,9 +716,9 @@ public class BaseWindow implements IWindow
 
 			@Override
 			public boolean checkForAndWriteAnyUnexpectedRemainingChanges(JSONStringer w, String keyInParent,
-				IToJSONConverter<IBrowserConverterContext> converter, DataConversion clientDataConversions)
+				IToJSONConverter<IBrowserConverterContext> converter)
 			{
-				return writeJSONContent(w, keyInParent, converter, clientDataConversions);
+				return writeJSONContent(w, keyInParent, converter);
 			}
 		}, ChangesToJSONConverter.INSTANCE);
 	}
@@ -779,10 +747,8 @@ public class BaseWindow implements IWindow
 			sendOnlyThisMessageInternal(new SimpleToJSONWriter<IBrowserConverterContext>()
 			{
 				@Override
-				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
-					DataConversion clientDataConversions) throws JSONException
+				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException
 				{
-					clientDataConversions.pushNode("services");
 					w.key("services");
 
 					w.array();
@@ -791,14 +757,11 @@ public class BaseWindow implements IWindow
 					serviceCall.remove(API_SERVER_ONLY_KEY_SERVICE);
 					PropertyDescription typesOfThisCall = createTypesOfServiceCall(argumentTypes);
 
-					if (clientDataConversions != null) clientDataConversions.pushNode(String.valueOf(0));
-					FullValueToJSONConverter.INSTANCE.toJSONValue(w, null, serviceCall, typesOfThisCall, clientDataConversions,
+					FullValueToJSONConverter.INSTANCE.toJSONValue(w, null, serviceCall, typesOfThisCall,
 						new BrowserConverterContext((ClientService)clientService, PushToServerEnum.allow));
-					if (clientDataConversions != null) clientDataConversions.popNode();
 
 					w.endArray();
 
-					clientDataConversions.popNode();
 					return true;
 				}
 			}, FullValueToJSONConverter.INSTANCE);
@@ -921,12 +884,12 @@ public class BaseWindow implements IWindow
 	}
 
 	@Override
-	public synchronized boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
-		DataConversion clientDataConversions) throws JSONException
+	public synchronized boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter)
+		throws JSONException
 	{
 		boolean contentHasBeenWritten = false;
 
-		for (Container fc : usedContainers.keySet())
+		for (Container fc : getClientSideWindowState().getUsedContainers())
 		{
 			if (fc.isChanged() && shouldSendChangesToClientWhenAvailable(fc))
 			{
@@ -937,9 +900,7 @@ public class BaseWindow implements IWindow
 					contentHasBeenWritten = true;
 				}
 				String containerName = fc.getName();
-				clientDataConversions.pushNode(containerName);
-				fc.writeAllComponentsChanges(w, containerName, converter, clientDataConversions);
-				clientDataConversions.popNode();
+				fc.writeAllComponentsChanges(w, containerName, converter);
 			}
 		}
 		if (contentHasBeenWritten) w.endObject();
@@ -958,7 +919,7 @@ public class BaseWindow implements IWindow
 		return formContainer.isVisible(); // subclasses may decide to override this and also send changes for hidden forms
 	}
 
-	public boolean writeAllServicesChanges(JSONWriter w, String keyInParent, DataConversion clientDataConversions) throws JSONException
+	public boolean writeAllServicesChanges(JSONWriter w, String keyInParent) throws JSONException
 	{
 		boolean contentHasBeenWritten = false;
 		for (IClientService service : getSession().getServices())
@@ -974,9 +935,7 @@ public class BaseWindow implements IWindow
 				}
 				String childName = service.getScriptingName();
 				w.key(childName).object();
-				clientDataConversions.pushNode(childName);
-				service.writeProperties(ChangesToJSONConverter.INSTANCE, FullValueToJSONConverter.INSTANCE, w, changes, clientDataConversions);
-				clientDataConversions.popNode();
+				service.writeProperties(ChangesToJSONConverter.INSTANCE, FullValueToJSONConverter.INSTANCE, w, changes);
 				w.endObject();
 			}
 		}
@@ -1007,18 +966,15 @@ public class BaseWindow implements IWindow
 				sendOnlyThisMessageInternal(new SimpleToJSONWriter<IBrowserConverterContext>()
 				{
 					@Override
-					public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
-						DataConversion clientDataConversions) throws JSONException
+					public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException
 					{
 						w.object();
 
 						Map<String, Object> call = getApiCallObjectForComponent(receiver, apiFunction, arguments, argumentTypes, callContributions);
 						PropertyDescription callTypes = (PropertyDescription)call.remove(API_SERVER_ONLY_KEY_ARG_TYPES);
 						w.key(API_KEY_CALL).object();
-						clientDataConversions.pushNode(API_KEY_CALL);
-						JSONUtils.writeData(FullValueToJSONConverter.INSTANCE, w, call, callTypes, clientDataConversions,
+						JSONUtils.writeData(FullValueToJSONConverter.INSTANCE, w, call, callTypes,
 							new BrowserConverterContext(receiver, PushToServerEnum.allow));
-						clientDataConversions.popNode();
 						w.endObject();
 
 						w.endObject();
@@ -1040,18 +996,15 @@ public class BaseWindow implements IWindow
 				Object ret = sendSyncMessage(new IToJSONWriter<IBrowserConverterContext>()
 				{
 					@Override
-					public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
-						DataConversion clientDataConversions) throws JSONException
+					public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException
 					{
-						writeComponentChanges(w, keyInParent, converter, clientDataConversions);
+						writeComponentChanges(w, keyInParent, converter);
 
 						Map<String, Object> call = getApiCallObjectForComponent(receiver, apiFunction, arguments, argumentTypes, callContributions);
 						PropertyDescription callTypes = (PropertyDescription)call.remove(API_SERVER_ONLY_KEY_ARG_TYPES);
 						w.key(API_KEY_CALL).object();
-						clientDataConversions.pushNode(API_KEY_CALL);
-						JSONUtils.writeData(FullValueToJSONConverter.INSTANCE, w, call, callTypes, clientDataConversions,
+						JSONUtils.writeData(FullValueToJSONConverter.INSTANCE, w, call, callTypes,
 							new BrowserConverterContext(receiver, PushToServerEnum.allow));
-						clientDataConversions.popNode();
 						w.endObject();
 
 						w.endObject();
@@ -1060,23 +1013,20 @@ public class BaseWindow implements IWindow
 
 					@Override
 					public boolean checkForAndWriteAnyUnexpectedRemainingChanges(JSONStringer w, String keyInParent,
-						IToJSONConverter<IBrowserConverterContext> converter, DataConversion clientDataConversions)
+						IToJSONConverter<IBrowserConverterContext> converter)
 					{
-						boolean changesFound = writeComponentChanges(w, keyInParent, converter, clientDataConversions);
+						boolean changesFound = writeComponentChanges(w, keyInParent, converter);
 
 						w.endObject();
 						return changesFound;
 					}
 
-					private boolean writeComponentChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
-						DataConversion clientDataConversions)
+					private boolean writeComponentChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter)
 					{
 						JSONUtils.addKeyIfPresent(w, keyInParent);
 						w.object();
 
-						clientDataConversions.pushNode("forms");
-						boolean changesFound = writeAllComponentsChanges(w, "forms", converter, clientDataConversions); // converter here is ChangesToJSONConverter.INSTANCE (see below arg to 'sendSyncMessage')
-						clientDataConversions.popNode();
+						boolean changesFound = writeAllComponentsChanges(w, "forms", converter); // converter here is ChangesToJSONConverter.INSTANCE (see below arg to 'sendSyncMessage')
 
 						// caller is responsible for calling w.endObject();
 						return changesFound;

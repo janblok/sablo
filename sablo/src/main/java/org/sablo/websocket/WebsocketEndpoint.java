@@ -533,8 +533,8 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 
 		try
 		{
-			sendText(window.getNextMessageNumber(), JSONUtils.writeDataWithConversions(FullValueToJSONConverter.INSTANCE, data,
-				dataTypes != null ? dataTypes.build() : null, BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER));
+			sendText(window.getNextMessageNumber(), JSONUtils.writeData(FullValueToJSONConverter.INSTANCE, data, dataTypes != null ? dataTypes.build() : null,
+				BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER));
 		}
 		catch (JSONException e)
 		{

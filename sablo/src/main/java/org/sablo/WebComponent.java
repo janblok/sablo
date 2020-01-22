@@ -16,8 +16,6 @@
 
 package org.sablo;
 
-import java.io.IOException;
-
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.WebObjectSpecification;
@@ -45,7 +43,7 @@ public class WebComponent extends BaseWebObject
 
 	public WebComponent(String componentType, String name, boolean waitForPropertyInitBeforeAttach)
 	{
-		this(name, WebComponentSpecProvider.getSpecProviderState().getWebComponentSpecification(componentType), waitForPropertyInitBeforeAttach);
+		this(name, WebComponentSpecProvider.getSpecProviderState().getWebObjectSpecification(componentType), waitForPropertyInitBeforeAttach);
 		properties.put("name", name);
 	}
 
@@ -166,41 +164,6 @@ public class WebComponent extends BaseWebObject
 	public Object invokeApi(WebObjectFunctionDefinition apiFunction, Object[] args)
 	{
 		return CurrentWindow.get().invokeApi(this, apiFunction, args, getParameterTypes(apiFunction));
-	}
-
-	/**
-	 * Execute a service function defined in the client.
-	 * Synchronous call, blocks until the result is returned.
-	 *
-	 * @param service
-	 *            the service name
-	 * @param functionName
-	 *            the functionName name
-	 * @param arguments
-	 *            the arguments
-	 * @return the value if any
-	 * @throws IOException
-	 */
-	public Object executeServiceCall(String service, String functionName, Object[] arguments) throws IOException
-	{
-		return CurrentWindow.get().getSession().getClientService(service).executeServiceCall(functionName, arguments);
-	}
-
-	/**
-	 * Execute a service function defined in the client.
-	 * Asynchronous non-blocking call.
-	 *
-	 * @param service
-	 *            the service name
-	 * @param functionName
-	 *            the functionName name
-	 * @param arguments
-	 *            the arguments
-	 * @throws IOException
-	 */
-	public void executeAsyncServiceCall(String service, String functionName, Object[] arguments)
-	{
-		CurrentWindow.get().getSession().getClientService(service).executeAsyncServiceCall(functionName, arguments);
 	}
 
 	@Override

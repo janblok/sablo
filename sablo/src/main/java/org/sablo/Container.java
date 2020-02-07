@@ -61,7 +61,7 @@ public abstract class Container extends WebComponent
 
 	public boolean isChanged()
 	{
-		return changed;
+		return changed || hasChanges();
 	}
 
 	public void add(WebComponent component)

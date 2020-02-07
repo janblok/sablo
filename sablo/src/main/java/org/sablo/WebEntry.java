@@ -33,6 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.sablo.security.ContentSecurityPolicyConfig;
 import org.sablo.services.template.ModifiablePropertiesGenerator;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebServiceSpecProvider;
@@ -111,10 +112,11 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 	protected abstract IWebsocketSessionFactory createSessionFactory();
 
 	public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain, Collection<String> cssContributions,
-		Collection<String> jsContributions, Collection<String> extraMetaData, Map<String, Object> variableSubstitution, boolean setContentSecurityPolicy)
-		throws IOException, ServletException
+		Collection<String> jsContributions, Collection<String> extraMetaData, Map<String, Object> variableSubstitution,
+		ContentSecurityPolicyConfig contentSecurityPolicyConfig) throws IOException, ServletException
 	{
 		HttpServletRequest request = (HttpServletRequest)servletRequest;
+		HttpServletResponse response = (HttpServletResponse)servletResponse;
 
 		// make sure a session is created. when a sablo client is created, that one should set the timeout to 0
 		HttpSession httpSession = request.getSession();
@@ -131,12 +133,12 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 		if (uri.endsWith("spec/" + ModifiablePropertiesGenerator.PUSH_TO_SERVER_BINDINGS_LIST + ".js"))
 		{
 			long lastSpecLoadTime = Math.max(WebComponentSpecProvider.getLastLoadTimestamp(), WebServiceSpecProvider.getLastLoadTimestamp());
-			if (HTTPUtils.checkAndSetUnmodified(((HttpServletRequest)servletRequest), ((HttpServletResponse)servletResponse), lastSpecLoadTime)) return;
+			if (HTTPUtils.checkAndSetUnmodified(request, response, lastSpecLoadTime)) return;
 
-			HTTPUtils.setNoCacheHeaders((HttpServletResponse)servletResponse);
+			HTTPUtils.setNoCacheHeaders(response);
 
-			((HttpServletResponse)servletResponse).setContentType("text/javascript");
-			((HttpServletResponse)servletResponse).setCharacterEncoding("UTF-8");
+			response.setContentType("text/javascript");
+			response.setCharacterEncoding("UTF-8");
 			PrintWriter w = servletResponse.getWriter();
 			ModifiablePropertiesGenerator.start(w);
 			ModifiablePropertiesGenerator.appendAll(w, WebComponentSpecProvider.getSpecProviderState().getAllWebObjectSpecifications(), "components");
@@ -150,11 +152,11 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 		URL indexPageResource = getIndexPageResource(request);
 		if (indexPageResource != null)
 		{
-			((HttpServletResponse)servletResponse).setContentType("text/html");
-			((HttpServletResponse)servletResponse).setCharacterEncoding("UTF-8");
+			response.setContentType("text/html");
+			response.setCharacterEncoding("UTF-8");
 			PrintWriter w = servletResponse.getWriter();
-			IndexPageEnhancer.enhance(indexPageResource, cssContributions, jsContributions, extraMetaData, variableSubstitution, w, this, this,
-				setContentSecurityPolicy);
+			IndexPageEnhancer.enhance(indexPageResource, request, cssContributions, jsContributions, extraMetaData, variableSubstitution, w, this, this,
+					contentSecurityPolicyConfig);
 			w.flush();
 			return;
 		}

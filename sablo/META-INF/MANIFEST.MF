@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Sablo core library
 Bundle-SymbolicName: sablo;singleton:=true
-Bundle-Version: 2019.12.0.3540_rc
+Bundle-Version: 2020.3.0.3560_rc
 Export-Package: org.sablo,
  org.sablo.eventthread,
  org.sablo.filter,
@@ -12,8 +12,8 @@ Export-Package: org.sablo,
  org.sablo.specification,
  org.sablo.specification.property,
  org.sablo.specification.property.types,
- org.sablo.startup,
  org.sablo.util,
+ org.sablo.security,
  org.sablo.websocket,
  org.sablo.websocket.impl,
  org.sablo.websocket.utils
@@ -23,14 +23,13 @@ Require-Bundle: org.junit,
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ClassPath: .
 Bundle-Vendor: Servoy
-Bundle-Activator: org.sablo.startup.Activator
 Bundle-ActivationPolicy: lazy
 Import-Package: javax.servlet,
  javax.servlet.http,
  javax.websocket;version="1.1.0",
  javax.websocket.server;version="1.1.0",
- org.json,
- org.osgi.framework
+ org.json
+Automatic-Module-Name: sablo
 
 Name: /sablo/sabloService.spec
 Web-Service: True

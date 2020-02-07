@@ -18,8 +18,6 @@ package org.sablo;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,10 +29,13 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.sablo.security.ContentSecurityPolicyConfig;
 import org.sablo.services.template.ModifiablePropertiesGenerator;
 import org.sablo.specification.PackageSpecification;
 import org.sablo.specification.WebComponentSpecProvider;
@@ -69,15 +70,16 @@ public class IndexPageEnhancer
 	/**
 	 * Enhance the provided index.html
 	 * @param resource url to index.html
+	 * @param request servlet request
 	 * @param cssContributions possible css contributions
 	 * @param jsContributions possible js contributions
 	 * @param variableSubstitution replace variables
 	 * @param writer the writer to write to
 	 * @throws IOException
 	 */
-	public static void enhance(URL resource, Collection<String> cssContributions, Collection<String> jsContributions, Collection<String> extraMetaData,
-		Map<String, Object> variableSubstitution, Writer writer, IContributionFilter contributionFilter, IContributionEntryFilter contributionEntryFilter,
-		boolean setContentSecurityPolicy) throws IOException
+	public static void enhance(URL resource, HttpServletRequest request, Collection<String> cssContributions, Collection<String> jsContributions,
+		Collection<String> extraMetaData, Map<String, Object> variableSubstitution, Writer writer, IContributionFilter contributionFilter,
+		IContributionEntryFilter contributionEntryFilter, ContentSecurityPolicyConfig contentSecurityPolicyConfig) throws IOException
 	{
 		String index_file = IOUtils.toString(resource, "UTF-8");
 
@@ -106,7 +108,7 @@ public class IndexPageEnhancer
 
 		StringBuilder sb = new StringBuilder(index_file);
 
-		if (setContentSecurityPolicy)
+		if (contentSecurityPolicyConfig != null)
 		{
 			int contentSecurityPolicyIndex = index_file.indexOf(CONTENT_SECURITY_POLICY);
 			if (contentSecurityPolicyIndex < 0)
@@ -115,7 +117,7 @@ public class IndexPageEnhancer
 			}
 			else
 			{
-				sb.insert(contentSecurityPolicyIndex + CONTENT_SECURITY_POLICY.length(), getContentSecurityPolicyTag(allCSSContributions, allJSContributions));
+				sb.insert(contentSecurityPolicyIndex + CONTENT_SECURITY_POLICY.length(), getContentSecurityPolicyTag(contentSecurityPolicyConfig));
 			}
 		}
 
@@ -126,52 +128,28 @@ public class IndexPageEnhancer
 		}
 		else
 		{
-			sb.insert(componentContributionsIndex + COMPONENT_CONTRIBUTIONS.length(),
-				getAllContributions(cssContributions, jsContributions, extraMetaData, contributionFilter, allCSSContributions, allJSContributions));
+			sb.insert(componentContributionsIndex + COMPONENT_CONTRIBUTIONS.length(), getAllContributions(cssContributions, jsContributions, extraMetaData,
+				contributionFilter, allCSSContributions, allJSContributions, contentSecurityPolicyConfig));
 		}
 		writer.append(sb);
 	}
 
-	private static String getContentSecurityPolicyTag(List<String> allCSSContributions, List<String> allJSContributions)
+	private static String getContentSecurityPolicyTag(ContentSecurityPolicyConfig contentSecurityPolicyConfig)
 	{
 		StringBuilder csp = new StringBuilder("<meta http-equiv=\"Content-Security-Policy\" content=\"");
-		csp.append("default-src 'self'");
-		csp.append("; frame-src *");
-		csp.append("; script-src 'self' 'unsafe-eval'"); // can we get rid of unsafe-eval?
-//		csp.append("; script-src-elem 'self'"); // experimental, not supported by all modern browsers yet
-		allJSContributions.stream() //
-			.filter(IndexPageEnhancer::isAbsoluteUrl) //
-			.forEach(url -> csp.append(' ').append(url));
-		csp.append("; style-src 'self' 'unsafe-inline'");
-		allCSSContributions.stream() //
-			.filter(IndexPageEnhancer::isAbsoluteUrl) //
-			.forEach(url -> csp.append(' ').append(url));
-		csp.append("; img-src 'self' data:");
-		csp.append("; font-src 'self' data:");
-		csp.append(";\">");
-
+		contentSecurityPolicyConfig.getDirectives().forEach(csp::append);
+		csp.append("\">");
 		return csp.toString();
-	}
-
-	private static boolean isAbsoluteUrl(String url)
-	{
-		try
-		{
-			return new URI(url).isAbsolute();
-		}
-		catch (URISyntaxException e)
-		{
-		}
-		return false;
 	}
 
 	public static Object[] getAllContributions(Boolean supportGrouping, IContributionEntryFilter ceFilter)
 	{
-		return getAllContributions(null, supportGrouping, ceFilter);
+		return getAllContributions(null, null, supportGrouping, ceFilter);
 	}
 
 	/**
 	 * Gets all JS and CSS contributions.
+	 * @param exportedPackages
 	 * @param set2
 	 * @param set
 	 * @param supportGrouping Boolean; if TRUE returns the contributions which support grouping,
@@ -180,7 +158,8 @@ public class IndexPageEnhancer
 	 * @return an object array which has as a first element the collection of css contributions, and as
 	 * the second element the collection of the js contributions.
 	 */
-	public static Object[] getAllContributions(Set<String> exportedWebObjects, Boolean supportGrouping, IContributionEntryFilter ceFilter)
+	public static Object[] getAllContributions(Set<String> exportedWebObjects, Set<String> exportedPackages, Boolean supportGrouping,
+		IContributionEntryFilter ceFilter)
 	{
 		ArrayList<String> allCSSContributions = new ArrayList<String>();
 		ArrayList<String> allJSContributions = new ArrayList<String>();
@@ -192,6 +171,7 @@ public class IndexPageEnhancer
 
 		for (PackageSpecification<WebObjectSpecification> packageDesc : webComponentPackagesDescriptions)
 		{
+			if (exportedPackages != null && !exportedPackages.contains(packageDesc.getPackageName())) continue;
 			if (packageDesc.getCssClientLibrary() != null)
 			{
 				mergeLibs(allLibraries, packageLibsToJSON(packageDesc.getCssClientLibrary(), "text/css"), supportGrouping);
@@ -239,7 +219,8 @@ public class IndexPageEnhancer
 	 * @return headContributions
 	 */
 	static String getAllContributions(Collection<String> cssContributions, Collection<String> jsContributions, Collection<String> extraMetaData,
-		IContributionFilter contributionFilter, List<String> allCSSContributions, List<String> allJSContributions)
+		IContributionFilter contributionFilter, List<String> allCSSContributions, List<String> allJSContributions,
+		ContentSecurityPolicyConfig contentSecurityPolicyConfig)
 	{
 		if (cssContributions != null)
 		{
@@ -257,25 +238,35 @@ public class IndexPageEnhancer
 			: allCSSContributions;
 		for (String lib : filteredCSSContributions)
 		{
-			retval.append(String.format("<link rel=\"stylesheet\" href=\"%s\"/>\n", lib));
+			retval.append("<link rel=\"stylesheet\" href=\"").append(lib).append("\"/>\n");
 		}
 		List<String> filteredJSContributions = contributionFilter != null ? contributionFilter.filterJSContributions(allJSContributions) : allJSContributions;
 		for (String lib : filteredJSContributions)
 		{
-			retval.append(String.format("<script src=\"%s\"></script>\n", lib));
+			retval.append("<script").append(getNonceTag(contentSecurityPolicyConfig)).append(" src=\"").append(lib).append("\"></script>\n");
 		}
 		if (extraMetaData != null)
 		{
 			for (String extra : extraMetaData)
 			{
-				retval.append(extra + "\n");
+				retval.append(extra).append('\n');
 			}
 		}
 
 		// lists properties that need to be watched for client to server changes for each component/service type
-		retval.append("<script src=\"spec/").append(ModifiablePropertiesGenerator.PUSH_TO_SERVER_BINDINGS_LIST).append(".js\"></script>\n");
+		retval.append("<script").append(getNonceTag(contentSecurityPolicyConfig)).append(" src=\"spec/").append(
+			ModifiablePropertiesGenerator.PUSH_TO_SERVER_BINDINGS_LIST).append(".js\"></script>\n");
 
 		return retval.toString();
+	}
+
+	private static String getNonceTag(ContentSecurityPolicyConfig contentSecurityPolicyConfig)
+	{
+		if (contentSecurityPolicyConfig == null)
+		{
+			return "";
+		}
+		return " nonce='" + contentSecurityPolicyConfig.getNonce() + "'";
 	}
 
 	/**

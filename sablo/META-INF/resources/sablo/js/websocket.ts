@@ -48,7 +48,7 @@ let webSocketModule = angular.module('webSocketModule', ['pushToServerData']).co
 		});
 		return $delegate;
 	})
-	$rootScopeProvider.digestTtl(15); 
+	$rootScopeProvider.digestTtl(25); 
 });
 
 // declare module pushToServer that generated module "pushToServerData" depends on - so that all pushToServer information is already present when starting 'webSocketModule'

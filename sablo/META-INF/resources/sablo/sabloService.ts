@@ -2,10 +2,7 @@ angular.module('$sabloService', ['sabloApp'])
 .factory("$sabloService", ['$sabloApplication', '$rootScope', '$window','$q', function($sabloApplication, $rootScope, $window,$q) {
 	var deferredEvents = {};
 	var messageID = 0;
-	
-	let a = null;
-	let b = a?.b;
-	
+
 	return {
 		setCurrentFormUrl: function(url) {
 			$rootScope.$apply(function () {

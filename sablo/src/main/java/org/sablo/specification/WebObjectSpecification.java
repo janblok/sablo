@@ -489,7 +489,12 @@ public class WebObjectSpecification extends PropertyDescription
 //				}
 				else if ("description".equals(key))
 				{
+					// deprecated, replaced by "doc" (DOCUMENTATION_TAG_FOR_PROP_OR_KEY_FOR_HANDLERS) below to match the properties "doc" tag
 					def.setDocumentation(jsonDef.getString("description"));
+				}
+				else if (DOCUMENTATION_TAG_FOR_PROP_OR_KEY_FOR_HANDLERS.equals(key))
+				{
+					def.setDocumentation(jsonDef.getString(DOCUMENTATION_TAG_FOR_PROP_OR_KEY_FOR_HANDLERS));
 				}
 				else if ("private".equals(key))
 				{

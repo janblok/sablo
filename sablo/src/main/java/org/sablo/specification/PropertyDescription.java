@@ -43,6 +43,11 @@ import org.slf4j.LoggerFactory;
 public class PropertyDescription
 {
 
+	/**
+	 * The tag name that can be used in .spec files of components/services to document what properties do. Can be used for documenting handlers as well - as a key in their JSON.
+	 */
+	public static final String DOCUMENTATION_TAG_FOR_PROP_OR_KEY_FOR_HANDLERS = "doc"; //$NON-NLS-1$
+
 	private static final Logger log = LoggerFactory.getLogger(WebObjectSpecification.class.getCanonicalName());
 
 	private final String name;
@@ -468,4 +473,15 @@ public class PropertyDescription
 		}
 		return "";
 	}
+
+	protected JSONObject copyOfTags()
+	{
+		return tags != null ? new JSONObject(tags.toString()) : null;
+	}
+
+	public String getDocumentation()
+	{
+		return (String)getTag(DOCUMENTATION_TAG_FOR_PROP_OR_KEY_FOR_HANDLERS);
+	}
+
 }

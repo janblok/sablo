@@ -123,6 +123,12 @@ abstract class AbstractPropertyDescriptionBuilder<B extends AbstractPropertyDesc
 		return getThis();
 	}
 
+	public B withTagsCopiedFrom(PropertyDescription otherPD)
+	{
+		this.tags = otherPD.copyOfTags();
+		return getThis();
+	}
+
 	public B withDeprecated(String deprecated)
 	{
 		this.deprecated = deprecated;

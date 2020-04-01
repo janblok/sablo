@@ -108,10 +108,16 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 		if (instance == null)
 		{
 			log.warn(
-				"Called WebComponentSpecProvider.getSpecProviderState() on a none initialzed provider, this can be just a problem in startup, returning an empty state");
+				"Called WebComponentSpecProvider.getSpecProviderState() on a none initialzed provider, this can be just a problem in startup, returning an empty state",
+				new RuntimeException("spec component provider is null"));
 			return new SpecProviderState(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList());
 		}
 		return instance.reader.getSpecProviderState();
+	}
+
+	public static boolean isLoaded()
+	{
+		return instance != null;
 	}
 
 	public static long getLastLoadTimestamp()

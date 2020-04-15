@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 public class ContentSecurityPolicyConfig
 {
 	public static final String DEFAULT_DEFAULT_SRC_DIRECTIVE_VALUE = "'self'";
-	public static final String DEFAULT_FRAME_SRC_DIRECTIVE_VALUE = "*";
+	public static final String DEFAULT_FRAME_SRC_DIRECTIVE_VALUE = "* data:";
 	public static final String DEFAULT_SCRIPT_SRC_DIRECTIVE_VALUE = "'unsafe-eval' 'nonce-${nonce}' 'strict-dynamic'"; // can we get rid of unsafe-eval?
 	// We cannot use random nonce for styles because this is would block inline style attributes on elements,
 	// when style-src-attr is supported by the major browsers we can use that to override inline styles for elements.

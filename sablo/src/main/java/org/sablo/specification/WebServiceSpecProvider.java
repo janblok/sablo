@@ -17,7 +17,7 @@
 package org.sablo.specification;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.jar.Manifest;
 
@@ -123,7 +123,14 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 	 */
 	public static SpecProviderState getSpecProviderState()
 	{
-		return instance == null ? null : instance.reader.getSpecProviderState();
+		if (instance == null)
+		{
+			log.warn(
+				"Called WebServiceSpecProvider.getSpecProviderState() on a none initialzed provider, this can be just a problem in startup, returning an empty state",
+				new RuntimeException("spec service provider is null"));
+			return new SpecProviderState(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList());
+		}
+		return instance.reader.getSpecProviderState();
 	}
 
 	public static long getLastLoadTimestamp()

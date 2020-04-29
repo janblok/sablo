@@ -1193,6 +1193,7 @@ webSocketModule.factory('$webSocket',
 						eventObj['eventName'] = eventName; 
 						eventObj['modifiers'] = modifiers;
 						eventObj['timestamp'] = new Date().getTime();
+						eventObj['data'] = $event['data'];
 						eventObj['x']= $event['pageX'];
 						eventObj['y']= $event['pageY'];
 						arg = eventObj
@@ -1203,6 +1204,7 @@ webSocketModule.factory('$webSocket',
 						eventObj['type'] = 'event'; 
 						eventObj['eventName'] = eventName;
 						eventObj['timestamp'] = new Date().getTime();
+						eventObj['data'] = arg['data'];
 						arg = eventObj
 					}
 					else arg = this.convertClientObject(arg); // TODO should be $sabloConverters.convertFromClientToServer(now, beanConversionInfo[property] ?, undefined);, but as we do not know handler arg types, we just do default conversion (for dates & types that use $sabloUtils.DEFAULT_CONVERSION_TO_SERVER_FUNC)

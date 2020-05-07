@@ -292,6 +292,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 	}
 
 	function callService(serviceName:string, methodName:string, argsObject, async?:boolean) {
+		if("dataPush" == methodName) {
+			console.log("RF sablo_app callService dataPush " + serviceName + " " + methodName + " " + JSON.stringify(argsObject) + " " + async);
+		}
 		var promise = getSession().callService(serviceName, methodName, argsObject, async)
 		return async ? promise : waitForServiceCallbacks(promise, [100, 200, 500, 1000, 3000, 5000])
 	}

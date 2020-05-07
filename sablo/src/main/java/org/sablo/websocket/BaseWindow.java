@@ -530,6 +530,11 @@ public class BaseWindow implements IWindow
 			{
 				clientDataConversions.pushNode("msg");
 				hasContentToSend = dataWriter.writeJSONContent(w, "msg", converter, clientDataConversions) || hasContentToSend;
+				if (hasContentToSend)
+				{
+					log.warn("RF basewindow hasContentToSend " + hasContentToSend);
+					log.warn(w.toString());
+				}
 				clientDataConversions.popNode();
 			}
 

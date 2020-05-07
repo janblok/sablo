@@ -987,8 +987,11 @@ webSocketModule.factory('$webSocket',
 
 	// converts from a client property JS value to a JSON that can be sent to the server using the appropriate registered handler
 	let convertFromClientToServer = function(newClientData, conversionInfo, oldClientData) {
+		console.log("RF converFromClientToServer " + JSON.stringify(conversionInfo));
 		if (typeof conversionInfo === 'string' || typeof conversionInfo === 'number') {
+			console.log("RF converFromClientToServer is string or number");
 			let customConverter = customPropertyConverters[conversionInfo];
+			console.log("RF converFromClientToServer customConverter " + JSON.stringify(customConverter));
 			if (customConverter) return customConverter.fromClientToServer(newClientData, oldClientData);
 			else { //converter not found - will not convert
 				$log.error("cannot find type converter (c->s) for: '" + conversionInfo + "'.");
@@ -999,6 +1002,7 @@ webSocketModule.factory('$webSocket',
 			for (let conKey in conversionInfo) {
 				retVal[conKey] = convertFromClientToServer(newClientData[conKey], conversionInfo[conKey], oldClientData ? oldClientData[conKey] : undefined);
 			}
+			console.log("RF converFromClientToServer " + JSON.stringify(retVal));
 			return retVal;
 		} else {
 			return newClientData;

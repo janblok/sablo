@@ -136,6 +136,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 	var getComponentChanges = function(now, prev, beanConversionInfo, parentSize, property) {
 		var changes = {}
 		if (property) {
+			if(property == "columns") {
+				console.log("RF getcomponentchanges " + JSON.stringify(beanConversionInfo));
+			}
 			if (beanConversionInfo && beanConversionInfo[property]) changes[property] = $sabloConverters.convertFromClientToServer(now, beanConversionInfo[property], prev);
 			else changes[property] = $sabloUtils.convertClientObject(now)
 		} else {

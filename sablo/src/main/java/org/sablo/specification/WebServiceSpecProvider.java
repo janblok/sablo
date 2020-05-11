@@ -121,6 +121,11 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 		return instance.reader.getSpecProviderState();
 	}
 
+	public static boolean isLoaded()
+	{
+		return instance != null;
+	}
+
 	public static long getLastLoadTimestamp()
 	{
 		synchronized (WebServiceSpecProvider.class)

@@ -504,6 +504,10 @@ public class WebObjectSpecification extends PropertyDescription
 				{
 					def.setDeprecated(jsonDef.getBoolean(key));
 				}
+				else if (ALLOW_ACCESS.equals(key))
+				{
+					def.setAllowAccess(jsonDef.getString(key));
+				}
 				else
 				{
 					if (customConfiguration == null) customConfiguration = new JSONObject();

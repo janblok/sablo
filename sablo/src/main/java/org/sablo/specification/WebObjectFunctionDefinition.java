@@ -46,6 +46,7 @@ public class WebObjectFunctionDefinition
 	private boolean preDataServiceCall;
 	private boolean priv;
 	private boolean deprecated;
+	private String allowaccess;
 
 	public WebObjectFunctionDefinition(String name)
 	{
@@ -252,11 +253,31 @@ public class WebObjectFunctionDefinition
 		return deprecated;
 	}
 
+	/**
+	 * Setter.
+	 * @see #getAllowAccess()
+	 */
+	public void setAllowAccess(String allowaccess)
+	{
+		this.allowaccess = allowaccess;
+	}
+
+	/**
+	 * Execution can be blocked by certain model properties, like "visible" - functions does not execute if
+	 * the component is not visible; allowaccess contains the list of the model properties (comma separated) that should
+	 * be ignored in blocking.
+	 * @return the allowaccess
+	 */
+	public String getAllowAccess()
+	{
+		return allowaccess;
+	}
+
 	@Override
 	public String toString()
 	{
 		return "WebObjectFunctionDefinition [name=" + name + ",\nreturnType=" + returnType + ",\nparameters=" + parameters + ",\nasync=" + async +
 			", delayUntilFormLoads=" + delayUntilFormLoads + ", discardPreviouslyQueuedSimilarCalls=" + discardPreviouslyQueuedSimilarCalls +
-			", blockEventProcessing=" + blockEventProcessing + ", asyncNow=" + asyncNow + "]";
+			", blockEventProcessing=" + blockEventProcessing + ", asyncNow=" + asyncNow + ", allowaccess=" + allowaccess + "]";
 	}
 }

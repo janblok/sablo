@@ -33,6 +33,7 @@ abstract class AbstractWebObjectSpecificationBuilder<B extends AbstractWebObject
 	protected String preview;
 	protected String definition = "";
 	protected JSONArray libraries;
+	protected JSONArray keywords;
 
 	public B withPackageName(String packageName)
 	{
@@ -84,6 +85,13 @@ abstract class AbstractWebObjectSpecificationBuilder<B extends AbstractWebObject
 	public B withLibraries(JSONArray libraries)
 	{
 		this.libraries = libraries;
+		return getThis();
+	}
+
+	public B withKeywords(JSONArray keywords)
+	{
+
+		this.keywords = keywords;
 		return getThis();
 	}
 }

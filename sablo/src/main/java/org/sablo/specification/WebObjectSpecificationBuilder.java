@@ -26,6 +26,6 @@ public class WebObjectSpecificationBuilder extends AbstractWebObjectSpecificatio
 	public WebObjectSpecification build()
 	{
 		return new WebObjectSpecification(name, packageName, packageType, getDisplayname(), categoryName, icon, preview, definition, libraries, config,
-			properties, deprecated);
+			properties, deprecated, keywords);
 	}
 }

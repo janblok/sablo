@@ -103,6 +103,7 @@ public class WebObjectSpecification extends PropertyDescription
 	private final String categoryName;
 	private final String icon;
 	private final String packageName;
+	private final JSONArray keywords;
 
 	private Map<String, IPropertyType< ? >> foundTypes;
 
@@ -128,14 +129,14 @@ public class WebObjectSpecification extends PropertyDescription
 	 */
 
 	protected WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
-		String definition, JSONArray libs)
+		String definition, JSONArray libs, JSONArray keywords)
 	{
-		this(name, packageName, packageType, displayName, categoryName, icon, preview, definition, libs, null, null, null);
+		this(name, packageName, packageType, displayName, categoryName, icon, preview, definition, libs, null, null, null, keywords);
 	}
 
 
 	WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
-		String definition, JSONArray libs, Object configObject, Map<String, PropertyDescription> properties, String deprecated)
+		String definition, JSONArray libs, Object configObject, Map<String, PropertyDescription> properties, String deprecated, JSONArray keywords)
 	{
 		super(name, null, configObject, properties, null, null, false, null, null, null, false, deprecated);
 		this.scriptingName = scriptifyNameIfNeeded(name, packageType);
@@ -147,6 +148,7 @@ public class WebObjectSpecification extends PropertyDescription
 		this.definition = definition;
 		this.libraries = libs != null ? libs : new JSONArray();
 		this.foundTypes = new HashMap<>();
+		this.keywords = keywords != null ? keywords : new JSONArray();
 	}
 
 	protected String scriptifyNameIfNeeded(String name, String packageType)
@@ -349,9 +351,12 @@ public class WebObjectSpecification extends PropertyDescription
 
 		WebObjectSpecification spec = new WebObjectSpecificationBuilder().withPackageName(packageName).withPackageType(
 			reader != null ? reader.getPackageType() : null).withDisplayName(json.optString("displayName", null)).withCategoryName(
-				json.optString("categoryName", null)).withIcon(json.optString("icon", null)).withPreview(json.optString("preview", null)).withDefinition(
-					json.getString("definition")).withLibraries(json.optJSONArray("libraries")).withProperties(properties).withName(
-						json.getString("name")).withDeprecated(json.optString("deprecated", null)).build();
+				json.optString("categoryName", null))
+			.withIcon(json.optString("icon", null)).withPreview(json.optString("preview", null)).withDefinition(
+				json.getString("definition"))
+			.withLibraries(json.optJSONArray("libraries")).withProperties(properties).withName(
+				json.getString("name"))
+			.withDeprecated(json.optString("deprecated", null)).withKeywords(json.optJSONArray("keywords")).build();
 		spec.foundTypes = types;
 		if (json.has("serverscript"))
 		{
@@ -814,5 +819,10 @@ public class WebObjectSpecification extends PropertyDescription
 	public String getDeprecatedMessage()
 	{
 		return (replacement != null && !"".equals("replacement") ? " Use '" + replacement + "'. " : "") + super.getDeprecatedMessage();
+	}
+
+	public JSONArray getKeywords()
+	{
+		return keywords;
 	}
 }

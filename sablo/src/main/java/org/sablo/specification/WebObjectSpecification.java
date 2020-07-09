@@ -507,7 +507,7 @@ public class WebObjectSpecification extends PropertyDescription
 				}
 				else if ("deprecated".equals(key))
 				{
-					def.setDeprecated(jsonDef.getBoolean(key));
+					def.setDeprecated(jsonDef.optString(key));
 				}
 				else if (ALLOW_ACCESS.equals(key))
 				{
@@ -572,7 +572,8 @@ public class WebObjectSpecification extends PropertyDescription
 				PropertyDescription pd = new PropertyDescriptionBuilder().withName(specName != null ? (specName + "." + typeName) : typeName).withType(
 					type).withProperties(
 						typeJSON.has("model") ? parseProperties("model", typeJSON, foundTypes, specName)
-							: parseProperties(typeName, jsonObject, foundTypes, specName)).build();
+							: parseProperties(typeName, jsonObject, foundTypes, specName))
+					.build();
 				type.setCustomJSONDefinition(pd);
 				// TODO this is currently never true? See 5 lines above this, types are always just PropertyDescription?
 				// is this really supported? or should we add it just to the properties? But how are these handlers then added and used
@@ -690,9 +691,12 @@ public class WebObjectSpecification extends PropertyDescription
 
 						PropertyDescription elementDescription = new PropertyDescriptionBuilder().withName(ARRAY_ELEMENT_PD_NAME).withType(type).withConfig(
 							type.parseConfig(elementConfig)).withDefaultValue(elementStandardConfigurationSettings.defaultValue).withInitialValue(
-								elementStandardConfigurationSettings.initialValue).withHasDefault(elementStandardConfigurationSettings.hasDefault).withValues(
-									elementStandardConfigurationSettings.values).withPushToServer(elementStandardConfigurationSettings.pushToServer).withTags(
-										elementStandardConfigurationSettings.tags).build();
+								elementStandardConfigurationSettings.initialValue)
+							.withHasDefault(elementStandardConfigurationSettings.hasDefault).withValues(
+								elementStandardConfigurationSettings.values)
+							.withPushToServer(elementStandardConfigurationSettings.pushToServer).withTags(
+								elementStandardConfigurationSettings.tags)
+							.build();
 						if (pp.array)
 						{
 							type = TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, elementDescription);
@@ -706,9 +710,12 @@ public class WebObjectSpecification extends PropertyDescription
 					pds.put(key,
 						new PropertyDescriptionBuilder().withName(key).withType(type).withConfig(type.parseConfig(configObject)).withDefaultValue(
 							standardConfigurationSettings.defaultValue).withInitialValue(standardConfigurationSettings.initialValue).withHasDefault(
-								standardConfigurationSettings.hasDefault).withValues(standardConfigurationSettings.values).withPushToServer(
-									standardConfigurationSettings.pushToServer).withTags(standardConfigurationSettings.tags).withDeprecated(
-										standardConfigurationSettings.deprecated).build());
+								standardConfigurationSettings.hasDefault)
+							.withValues(standardConfigurationSettings.values).withPushToServer(
+								standardConfigurationSettings.pushToServer)
+							.withTags(standardConfigurationSettings.tags).withDeprecated(
+								standardConfigurationSettings.deprecated)
+							.build());
 				}
 			}
 		}

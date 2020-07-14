@@ -76,30 +76,33 @@ class WebSpecReader
 		return lastLoadTimestamp;
 	}
 
-	synchronized void load()
+	void load()
 	{
-		lastLoadTimestamp = System.currentTimeMillis();
+		synchronized (this)
+		{
+			lastLoadTimestamp = System.currentTimeMillis();
 
-		cachedDescriptions.clear();
-		cachedLayoutDescriptions.clear();
-		allWebObjectSpecifications.clear();
-		allPackages.clear();
-		packagesWithGloballyDefinedTypes.clear();
-		List<Package> packages = new ArrayList<>();
-		for (IPackageReader packageReader : packageReaders)
-		{
-			packages.add(new Package(packageReader));
-		}
-		try
-		{
-			readGloballyDefinedTypes(packages);
-			cacheWebObjectSpecs(packages);
-		}
-		finally
-		{
-			for (Package p : packages)
+			cachedDescriptions.clear();
+			cachedLayoutDescriptions.clear();
+			allWebObjectSpecifications.clear();
+			allPackages.clear();
+			packagesWithGloballyDefinedTypes.clear();
+			List<Package> packages = new ArrayList<>();
+			for (IPackageReader packageReader : packageReaders)
 			{
-				p.dispose();
+				packages.add(new Package(packageReader));
+			}
+			try
+			{
+				readGloballyDefinedTypes(packages);
+				cacheWebObjectSpecs(packages);
+			}
+			finally
+			{
+				for (Package p : packages)
+				{
+					p.dispose();
+				}
 			}
 		}
 
@@ -112,111 +115,112 @@ class WebSpecReader
 	/**
 	 * Updates available packages. "toRemove" provided contents will be removed, "toAdd" will be made available.
 	 */
-	public synchronized void updatePackages(Collection<IPackageReader> packagesToRemove, Collection<IPackageReader> packagesToAdd)
+	public void updatePackages(Collection<IPackageReader> packagesToRemove, Collection<IPackageReader> packagesToAdd)
 	{
 		if (packagesToRemove.size() == 0 && packagesToAdd.size() == 0) return;
-
-		specProviderState = null;
-
-		lastLoadTimestamp = System.currentTimeMillis();
+		boolean shouldStillFireReloadListeners = true;
 		List<String> removedOrReloadedSpecs = new ArrayList<>(); // so not newly added
 
-		boolean shouldReloadAllDueToGlobalTypeChanges = false;
-		for (IPackageReader packageToRemove : packagesToRemove)
+		synchronized (this)
 		{
-			// find the package name from cache - cause the IPackageReader might already be invalid (contents deleted and such - so we can't rely on it's .getPackageName())
-			String packageNameToRemove = null;
-			for (Entry<String, List<IPackageReader>> e : allPackages.entrySet())
-			{
-				if (e.getValue().contains(packageToRemove))
-				{
-					packageNameToRemove = e.getKey();
-					break;
-				}
-			}
+			boolean shouldReloadAllDueToGlobalTypeChanges = false;
+			specProviderState = null;
 
-			if (packageNameToRemove != null)
-			{
-				if (packagesWithGloballyDefinedTypes.contains(packageNameToRemove))
-				{
-					shouldReloadAllDueToGlobalTypeChanges = true;
-					break; // we will reload all in this case anyway
-				}
+			lastLoadTimestamp = System.currentTimeMillis();
 
-				// unload package
-				cachedLayoutDescriptions.remove(packageNameToRemove);
-				packagesWithGloballyDefinedTypes.remove(packageNameToRemove);
-				PackageSpecification<WebObjectSpecification> removedPackageSpecs = cachedDescriptions.remove(packageNameToRemove);
-				if (removedPackageSpecs != null) for (String specName : removedPackageSpecs.getSpecifications().keySet())
+			for (IPackageReader packageToRemove : packagesToRemove)
+			{
+				// find the package name from cache - cause the IPackageReader might already be invalid (contents deleted and such - so we can't rely on it's .getPackageName())
+				String packageNameToRemove = null;
+				for (Entry<String, List<IPackageReader>> e : allPackages.entrySet())
 				{
-					allWebObjectSpecifications.remove(specName);
-					removedOrReloadedSpecs.add(specName);
-				}
-				List<IPackageReader> oldPackageReader = allPackages.remove(packageNameToRemove);
-				if (oldPackageReader != null)
-				{
-					// first remove all of them from the package readers
-					packageReaders.removeAll(oldPackageReader);
-					// remove the one we really want to remove from this list
-					oldPackageReader.remove(packageToRemove);
-					// then add the list back into the packagesToAdd so they are added
-					if (oldPackageReader.size() > 0)
+					if (e.getValue().contains(packageToRemove))
 					{
-						for (IPackageReader pr : oldPackageReader)
+						packageNameToRemove = e.getKey();
+						break;
+					}
+				}
+
+				if (packageNameToRemove != null)
+				{
+					if (packagesWithGloballyDefinedTypes.contains(packageNameToRemove))
+					{
+						shouldReloadAllDueToGlobalTypeChanges = true;
+						break; // we will reload all in this case anyway
+					}
+
+					// unload package
+					cachedLayoutDescriptions.remove(packageNameToRemove);
+					packagesWithGloballyDefinedTypes.remove(packageNameToRemove);
+					PackageSpecification<WebObjectSpecification> removedPackageSpecs = cachedDescriptions.remove(packageNameToRemove);
+					if (removedPackageSpecs != null) for (String specName : removedPackageSpecs.getSpecifications().keySet())
+					{
+						allWebObjectSpecifications.remove(specName);
+						removedOrReloadedSpecs.add(specName);
+					}
+					List<IPackageReader> oldPackageReader = allPackages.remove(packageNameToRemove);
+					if (oldPackageReader != null)
+					{
+						// first remove all of them from the package readers
+						packageReaders.removeAll(oldPackageReader);
+						// remove the one we really want to remove from this list
+						oldPackageReader.remove(packageToRemove);
+						// then add the list back into the packagesToAdd so they are added
+						if (oldPackageReader.size() > 0)
 						{
-							if (!packagesToAdd.contains(pr) && !packagesToRemove.contains(pr))
+							for (IPackageReader pr : oldPackageReader)
 							{
-								packagesToAdd.add(pr);
+								if (!packagesToAdd.contains(pr) && !packagesToRemove.contains(pr))
+								{
+									packagesToAdd.add(pr);
+								}
+								pr.clearError();
 							}
-							pr.clearError();
 						}
 					}
 				}
+				else
+				{
+					log.warn("Cannot unload an ng package: " + packageToRemove);
+				}
+			}
+
+			if (shouldReloadAllDueToGlobalTypeChanges)
+			{
+				load(); // reload all because removed packages had global types
+				shouldStillFireReloadListeners = false;
 			}
 			else
 			{
-				log.warn("Cannot unload an ng package: " + packageToRemove);
-			}
-		}
+				// load new packages
+				packageReaders.addAll(packagesToAdd);
 
-		boolean shouldStillFireReloadListeners = true;
-
-		if (shouldReloadAllDueToGlobalTypeChanges)
-		{
-			load(); // reload all because removed packages had global types
-			shouldStillFireReloadListeners = false;
-		}
-		else
-		{
-			// load new packages
-			packageReaders.addAll(packagesToAdd);
-
-			List<Package> packages = new ArrayList<>();
-			for (IPackageReader packageReader : packagesToAdd)
-			{
-				packages.add(new Package(packageReader));
-			}
-			try
-			{
-				if (readGloballyDefinedTypes(packages))
+				List<Package> packages = new ArrayList<>();
+				for (IPackageReader packageReader : packagesToAdd)
 				{
-					load(); // reload all because added packages have global types
-					shouldStillFireReloadListeners = false;
+					packages.add(new Package(packageReader));
 				}
-				else
+				try
 				{
-					cacheWebObjectSpecs(packages);
+					if (readGloballyDefinedTypes(packages))
+					{
+						load(); // reload all because added packages have global types
+						shouldStillFireReloadListeners = false;
+					}
+					else
+					{
+						cacheWebObjectSpecs(packages);
+					}
 				}
-			}
-			finally
-			{
-				for (Package p : packages)
+				finally
 				{
-					p.dispose();
+					for (Package p : packages)
+					{
+						p.dispose();
+					}
 				}
 			}
 		}
-
 
 		if (shouldStillFireReloadListeners)
 		{

@@ -45,7 +45,7 @@ public class WebObjectFunctionDefinition
 	private PropertyDescription asPropertyDescription;
 	private boolean preDataServiceCall;
 	private boolean priv;
-	private boolean deprecated;
+	private String deprecated = null;
 	private String allowaccess;
 
 	public WebObjectFunctionDefinition(String name)
@@ -243,14 +243,23 @@ public class WebObjectFunctionDefinition
 		return priv;
 	}
 
-	public void setDeprecated(boolean deprecated)
+	public void setDeprecated(String deprecated)
 	{
 		this.deprecated = deprecated;
 	}
 
 	public boolean isDeprecated()
 	{
-		return deprecated;
+		return deprecated != null && !"false".equalsIgnoreCase(deprecated.trim());
+	}
+
+	public String getDeprecatedMessage()
+	{
+		if (deprecated != null && !"false".equalsIgnoreCase(deprecated.trim()) && !"true".equalsIgnoreCase(deprecated.trim()))
+		{
+			return deprecated;
+		}
+		return "";
 	}
 
 	/**

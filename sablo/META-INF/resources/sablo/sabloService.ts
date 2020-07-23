@@ -1,5 +1,7 @@
+/// <reference path="./js/types_registry.ts" />
+
 angular.module('$sabloService', ['sabloApp'])
-.factory("$sabloService", ['$sabloApplication', '$rootScope', '$window','$q', function($sabloApplication, $rootScope, $window,$q) {
+.factory("$sabloService", ['$sabloApplication', '$rootScope', '$window', '$q', '$typesRegistry', function($sabloApplication, $rootScope, $window, $q, $typesRegistry: sablo.typesRegistry.TypesRegistry) {
 	var deferredEvents = {};
 	var messageID = 0;
 
@@ -37,15 +39,16 @@ angular.module('$sabloService', ['sabloApp'])
 			}
 		},
 
-		addComponentClientSideConversionTypes: function(componentTypes:number):void
+		addComponentClientSideConversionTypes: function(componentSpecifications: sablo.typesRegistry.IWebObjectTypesFromServer):void
 		{
-			hmmParamTypeNeedsToBeDefined;
+			$typesRegistry.addComponentClientSideConversionTypes(componentSpecifications);
 		},
 
-		setServiceClientSideConversionTypes: function(EmbeddableJSONWriter toBeSent):void
+		setServiceClientSideConversionTypes: function(serviceSpecifications: sablo.typesRegistry.IWebObjectTypesFromServer):void
 		{
-			defineReceivedTypeHere;
+			$typesRegistry.setServiceClientSideConversionTypes(serviceSpecifications);
 		}
 
 	}	
-}])
+}]);
+

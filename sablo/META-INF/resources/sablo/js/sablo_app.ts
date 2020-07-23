@@ -133,9 +133,10 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		return getFormStateImpl(name, true);
 	}
 
-	var getComponentChanges = function(now, prev, beanConversionInfo, parentSize, property) {
+	var getComponentChanges = function(now, prev, componentSpecName, parentSize, property) {
 		var changes = {}
 		if (property) {
+			// TODO USE componentSpecName instead of beanConversionInfo
 			if (beanConversionInfo && beanConversionInfo[property]) changes[property] = $sabloConverters.convertFromClientToServer(now, beanConversionInfo[property], prev);
 			else changes[property] = $sabloUtils.convertClientObject(now)
 		} else {
@@ -181,7 +182,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		}
 	};
 
-	var applyBeanData = function(beanModel, beanData, containerSize, changeNotifierGenerator, beanConversionInfo, newConversionInfo, componentScope) {
+	var applyBeanData = function(beanModel, beanData, containerSize, changeNotifierGenerator, componentSpecName: string, componentScope) {
 
 		if (newConversionInfo) { // then means beanConversionInfo should also be defined - we assume that
 			// beanConversionInfo will be granularly updated in the loop below

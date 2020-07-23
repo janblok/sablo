@@ -38,6 +38,7 @@ import org.sablo.specification.property.IPropertyConverterForBrowserWithDynamicC
 import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.IPropertyWithClientSideConversions;
 import org.sablo.specification.property.ISupportsGranularUpdates;
+import org.sablo.specification.property.ISupportsGranularUpdatesWithDynamicClientType;
 import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.types.DatePropertyType;
 import org.sablo.specification.property.types.TypesRegistry;
@@ -60,7 +61,7 @@ public class JSONUtils
 	public static final String CONVERSION_CL_SIDE_TYPE_KEY = "_T";
 	public static final String VALUE_KEY = "_V";
 
-	public static final String TYPES_KEY = "svy_types";
+//	public static final String TYPES_KEY = "svy_types";
 	private static final Logger log = LoggerFactory.getLogger(JSONUtils.class.getCanonicalName());
 
 
@@ -148,13 +149,13 @@ public class JSONUtils
 	 * key is null and you want to write the converted value write only the converted value to the writer, ignore the key.
 	 * @param value the value to be written to the writer.
 	 * @param valueType the types of the value; can be null in which case a 'best-effort' to JSON conversion will take place.
-	 * @param clientConversion the object where the type (like Date) of the conversion that should happen on the client.
 	 * @return true if the given value could be written using default logic and false otherwise.
 	 * @throws IllegalArgumentException if the given object could not be written to JSON for some reason.
 	 */
 	public static <ContextObject> boolean defaultToJSONValue(IToJSONConverter<ContextObject> toJSONConverter, JSONWriter w, String key, Object value,
-		PropertyDescription valueType, ContextObject contextObject) throws JSONException, IllegalArgumentException
+		ContextObject contextObject) throws JSONException, IllegalArgumentException
 	{
+		thisMethodShouldForceSendingSimple0bjectOrDefaultType_whichShouldBeCreatedClientSide_IfItNeedsCheckingNestedStructures();
 		// there is no clear conversion; see if we find a primitive/default or Class based conversion
 		Object converted = value;
 
@@ -300,25 +301,53 @@ public class JSONUtils
 	 *
 	 * @return a IJSONStringWithClientSideType representing the value (that can be embedded in a larger JSON) and the client side conversion type (if any).
 	 */
-	public static IJSONStringWithClientSideType getConvertedValueWithClientType(Object propertyValue, PropertyDescription pd,
+	public static IJSONStringWithClientSideType getFullConvertedValueWithClientType(Object propertyValue, PropertyDescription pd,
 		IBrowserConverterContext dataConverterContext)
 	{
-		EmbeddableJSONWriter ejw = new EmbeddableJSONWriter(true); // that 'true' is a workaround for allowing directly a value instead of object or array
 		IPropertyType< ? > type = (pd != null ? pd.getType() : null);
-		JSONString clientSideConversionType;
 
 		if (type instanceof IPropertyConverterForBrowserWithDynamicClientType)
-			clientSideConversionType = ((IPropertyConverterForBrowserWithDynamicClientType)type).toJSONWithDynamicClientSideType(ejw, null, propertyValue, pd,
-				dataConverterContext);
-		else
 		{
-			FullValueToJSONConverter.INSTANCE.toJSONValue(ejw, null, propertyValue, pd, dataConverterContext);
-			if (type instanceof IPropertyWithClientSideConversions)
-			{
-				clientSideConversionType = JSONUtils.getClientSideTypeJSONString(pd);
-			}
-			else clientSideConversionType = null;
+			EmbeddableJSONWriter ejw = new EmbeddableJSONWriter(true); // that 'true' is a workaround for allowing directly a value instead of object or array
+			JSONString clientSideConversionType;
+			clientSideConversionType = ((IPropertyConverterForBrowserWithDynamicClientType)type).toJSONWithDynamicClientSideType(ejw, propertyValue, pd,
+				dataConverterContext);
+			return new JSONStringWithClientSideType(ejw.toJSONString(), clientSideConversionType);
 		}
+		return getConvertedValueWithStaticClientType(propertyValue, pd, dataConverterContext, FullValueToJSONConverter.INSTANCE);
+	}
+
+	/**
+	 * Similar to {@link #getFullConvertedValueWithClientType(Object, PropertyDescription, IBrowserConverterContext)} but for changes, not full values.
+	 */
+	public static IJSONStringWithClientSideType getChangesWithClientType(Object propertyValue, PropertyDescription pd,
+		IBrowserConverterContext dataConverterContext)
+	{
+		IPropertyType< ? > type = (pd != null ? pd.getType() : null);
+		if (type instanceof ISupportsGranularUpdatesWithDynamicClientType)
+		{
+			EmbeddableJSONWriter ejw = new EmbeddableJSONWriter(true); // that 'true' is a workaround for allowing directly a value instead of object or array
+			JSONString clientSideConversionType = ((ISupportsGranularUpdatesWithDynamicClientType)type).changesToJSONWithDynamicClientSideType(ejw,
+				propertyValue, pd,
+				dataConverterContext);
+			return new JSONStringWithClientSideType(ejw.toJSONString(), clientSideConversionType);
+		}
+		else return getConvertedValueWithStaticClientType(propertyValue, pd, dataConverterContext, ChangesToJSONConverter.INSTANCE);
+	}
+
+	private static IJSONStringWithClientSideType getConvertedValueWithStaticClientType(Object propertyValue, PropertyDescription pd,
+		IBrowserConverterContext dataConverterContext, IToJSONConverter<IBrowserConverterContext> toJSONConverter)
+	{
+		IPropertyType< ? > type = (pd != null ? pd.getType() : null);
+		JSONString clientSideConversionType;
+		EmbeddableJSONWriter ejw = new EmbeddableJSONWriter(true); // that 'true' is a workaround for allowing directly a value instead of object or array
+
+		toJSONConverter.toJSONValue(ejw, null, propertyValue, pd, dataConverterContext);
+		if (type instanceof IPropertyWithClientSideConversions)
+		{
+			clientSideConversionType = JSONUtils.getClientSideTypeJSONString(pd);
+		}
+		else clientSideConversionType = null;
 
 		return new JSONStringWithClientSideType(ejw.toJSONString(), clientSideConversionType);
 	}

@@ -33,3 +33,10 @@ Automatic-Module-Name: sablo
 
 Name: /sablo/sabloService.spec
 Web-Service: True
+
+Name: /sablo/types/customJSONObject.spec
+Web-Service: True
+
+Name: /sablo/types/array.spec
+Web-Service: True
+

@@ -6,7 +6,7 @@
 /// <reference path="../../../../typings/window/window.d.ts" />
 /// <reference path="../../../../typings/sablo/sablo.d.ts" />
 
-let webSocketModule = angular.module('webSocketModule', ['pushToServerData']).config(function($provide, $logProvider,$rootScopeProvider) {
+let webSocketModule = angular.module('webSocketModule', ['pushToServerData', 'typesRegistryModule']).config(function($provide, $logProvider, $rootScopeProvider) {
 	window.____logProvider = $logProvider; // just in case someone wants to alter debug at runtime from browser console for example
 	
 	// log levels for when debugEnabled(true) is called - if that is false, these levels are irrelevant
@@ -949,59 +949,36 @@ webSocketModule.factory('$webSocket',
 			wsSession = session;
 		}
 	}
-}).factory("$sabloConverters", function($log) {
-	/**
-	 * Custom property converters can be registered via this service method: $webSocket.registerCustomPropertyHandler(...)
-	 */
-	let customPropertyConverters = {};
+}).factory("$sabloConverters", function($log, $typesRegistry: sablo.ITypesRegistryForSabloConverters) {
+	const CONVERSION_CL_SIDE_TYPE_KEY = "_T";
+	const VALUE_KEY = "_V";
 
-	let convertFromServerToClient = function(serverSentData, conversionInfo, currentClientData, scope, propertyContext) {
-		if (typeof conversionInfo === 'string' || typeof conversionInfo === 'number') {
-			let customConverter = customPropertyConverters[conversionInfo];
-			if (customConverter) serverSentData = customConverter.fromServerToClient(serverSentData, currentClientData, scope, propertyContext);
-			else { //converter not found - will not convert
-				$log.error("cannot find type converter (s->c) for: '" + conversionInfo + "'.");
-			}
-		} else if (conversionInfo) {
-			// typed custom objects will no go through here but rather on the if branch above; this is for untyped arrays/objects that need to be converted (like aggregated properties - component/service models for example)
-			for (let conKey in conversionInfo) {
-				serverSentData[conKey] = convertFromServerToClient(serverSentData[conKey], conversionInfo[conKey], currentClientData ? currentClientData[conKey] : undefined, scope, propertyContext); 
+	let convertFromServerToClient = function(serverSentData: any, typeOfData: sablo.IType<any>, currentClientData: any, scope: angular.IScope, propertyContext: sablo.IPropertyContext): any {
+		if (typeOfData) {
+			serverSentData = typeOfData.fromServerToClient(serverSentData, currentClientData, scope, propertyContext);
+		} else if (serverSentData instanceof Object && serverSentData[CONVERSION_CL_SIDE_TYPE_KEY] != undefined) {
+			// so a conversion is required client side but the type is not known beforehand on client (can be a result of JSONUtils.java # defaultToJSONValue(...) or could be a
+			// dataprovider type in a record view - foundset based impl. should handle these varying simple types nicer already inside special property types such as foundset/component/foundsetLinked)
+			let lookedUpType = $typesRegistry.getAlreadyRegisteredType(serverSentData[CONVERSION_CL_SIDE_TYPE_KEY]);
+			if (lookedUpType) return lookedUpType.fromServerToClient(serverSentData[VALUE_KEY], currentClientData, scope, propertyContext);
+			else { // needed type not found - will not convert
+				$log.error("no such type was registered (s->c varying or default type conversion) for: " + JSON.stringify(serverSentData[CONVERSION_CL_SIDE_TYPE_KEY], null, 2) + ".");
 			}
 		}
 		return serverSentData;
 	};
 
-	let updateAngularScope = function(value, conversionInfo, scope) {
-		if (typeof conversionInfo === 'string' || typeof conversionInfo === 'number') {
-			let customConverter = customPropertyConverters[conversionInfo];
-			if (customConverter) customConverter.updateAngularScope(value, scope);
-			else { //converter not found - will not convert
-				$log.error("cannot find type converter (to update scope) for: '" + conversionInfo + "'.");
-			}
-		} else if (conversionInfo) {
-			for (let conKey in conversionInfo) {
-				updateAngularScope(value[conKey], conversionInfo[conKey], scope); // TODO should componentScope really stay the same here? 
-			}
-		}
-	};
-
 	// converts from a client property JS value to a JSON that can be sent to the server using the appropriate registered handler
-	let convertFromClientToServer = function(newClientData, conversionInfo, oldClientData) {
-		if (typeof conversionInfo === 'string' || typeof conversionInfo === 'number') {
-			let customConverter = customPropertyConverters[conversionInfo];
-			if (customConverter) return customConverter.fromClientToServer(newClientData, oldClientData);
-			else { //converter not found - will not convert
-				$log.error("cannot find type converter (c->s) for: '" + conversionInfo + "'.");
+	let convertFromClientToServer = function(newClientData: any, typeOfData: sablo.IType<any>, oldClientData: any): any {
+		if (typeOfData) return typeOfData.fromClientToServer(newClientData, oldClientData);
+		else {
+			// this should rarely or never happen... but do our best to not fail sending (for example due to Date instances that can't be stringified via standard JSON)
+			let lookedUpObjectType = $typesRegistry.getAlreadyRegisteredType("object");
+			if (lookedUpObjectType) return lookedUpObjectType.fromClientToServer(newClientData, oldClientData);
+			else { // 'object' type not found?! it should always be there - will not convert
+				$log.error("'object' type was not registered (c->s default conversion) for.");
 				return newClientData;
 			}
-		} else if (conversionInfo) {
-			let retVal = (Array.isArray ? Array.isArray(newClientData) : $.isArray(newClientData)) ? [] : {};
-			for (let conKey in conversionInfo) {
-				retVal[conKey] = convertFromClientToServer(newClientData[conKey], conversionInfo[conKey], oldClientData ? oldClientData[conKey] : undefined);
-			}
-			return retVal;
-		} else {
-			return newClientData;
 		}
 	};
 
@@ -1011,9 +988,9 @@ webSocketModule.factory('$webSocket',
 		 * In a custom property value, the val[$sabloConverters.INTERNAL_IMPL] is to be used for internal state/impl details only - not to be accessed by components
 		 */
 		INTERNAL_IMPL: '__internalState',
-		TYPES_KEY: 'svy_types',
+		CONVERSION_CL_SIDE_TYPE_KEY: CONVERSION_CL_SIDE_TYPE_KEY,
 
-		prepareInternalState: function(propertyValue, optionalInternalStateValue) {
+		prepareInternalState: function(propertyValue, optionalInternalStateValue?) {
 			if (!propertyValue.hasOwnProperty(this.INTERNAL_IMPL))
 			{
 				if (angular.isUndefined(optionalInternalStateValue)) optionalInternalStateValue = {};
@@ -1032,56 +1009,56 @@ webSocketModule.factory('$webSocket',
 		convertFromServerToClient: convertFromServerToClient,
 
 		convertFromClientToServer: convertFromClientToServer,
+//
+//		updateAngularScope: updateAngularScope,
 
-		updateAngularScope: updateAngularScope,
-
-		/**
-		 * Registers a custom client side property handler into the system. These handlers are useful
-		 * for custom property types that require some special handling when received through JSON from server-side
-		 * or for sending content updates back. (for example convert received JSON into a different JS object structure that will be used
-		 * by beans or just implement partial updates for more complex property contents)
-		 *  
-		 * @param customHandler an object with the following methods/fields:
-		 * {
-		 * 
-		 *				// Called when a JSON update is received from the server for a property
-		 *				// @param serverSentJSONValue the JSON value received from the server for the property
-		 *				// @param currentClientValue the JS value that is currently used for that property in the client; can be null/undefined if
-		 *				//        conversion happens for service API call parameters for example...
-		 *				// @param scope scope that can be used to add component/service and property related watches; can be null/undefined if
-		 *				//        conversion happens for service/component API call parameters for example...
-		 *				// @param propertyContext a function that can be used to find other properties (by name) of the same service/component/custom object (if property is
-		 *              //        not found it also searches upwards in case of object nesting) if needed (if the property is 'linked' to another one); can be
-		 *              //        null/undefined if conversion happens for service/component API call parameters for example...
-		 *				// @return the new/updated client side property value; if this returned value is interested in triggering
-		 *				//         updates to server when something changes client side it must have these member functions in this[$sabloConverters.INTERNAL_IMPL]:
-		 *				//				setChangeNotifier: function(changeNotifier) - where changeNotifier is a function that can be called when
-		 *				//                                                          the value needs to send updates to the server; this method will
-		 *				//                                                          not be called when value is a call parameter for example, but will
-		 *				//                                                          be called when set into a component's/service's property/model
-		 *				//              isChanged: function() - should return true if the value needs to send updates to server
-		 * 				fromServerToClient: function (serverSentJSONValue, currentClientValue, scope, propertyContext) { (...); return newClientValue; },
-		 * 
-		 *				// Converts from a client property JS value to a JSON that will be sent to the server.
-		 *				// @param newClientData the new JS client side property value
-		 *				// @param oldClientData the old JS JS client side property value; can be null/undefined if
-		 *				//        conversion happens for service API call parameters for example...
-		 *				// @return the JSON value to send to the server.
-		 *				fromClientToServer: function(newClientData, oldClientData) { (...); return sendToServerJSON; }
-		 * 
-		 *				// Some 'smart' property types need an angular scope to register watches to; this method will get called on them
-		 *				// when the scope that they should use changed (old scope could get destroyed and then after a while a new one takes it's place).
-		 *				// This gives such property types a way to keep their watches operational even on the new scope.
-		 *				// @param clientValue the JS client side property value
-		 *				// @param scope the new scope. If null it means that the previous scope just got destroyed and property type should perform needed cleanup.
-		 *				updateAngularScope: function(clientValue, scope) { (...); }
-		 * 
-		 * }
-		 */
-		registerCustomPropertyHandler : function(propertyTypeID, customHandler, overwrite) {
-			if (overwrite == false && customPropertyConverters[propertyTypeID] ) return; 
-			customPropertyConverters[propertyTypeID] = customHandler;
-		}
+//		/**
+//		 * Registers a custom client side property handler into the system. These handlers are useful
+//		 * for custom property types that require some special handling when received through JSON from server-side
+//		 * or for sending content updates back. (for example convert received JSON into a different JS object structure that will be used
+//		 * by beans or just implement partial updates for more complex property contents)
+//		 *  
+//		 * @param customHandler an object with the following methods/fields:
+//		 * {
+//		 * 
+//		 *				// Called when a JSON update is received from the server for a property
+//		 *				// @param serverSentJSONValue the JSON value received from the server for the property
+//		 *				// @param currentClientValue the JS value that is currently used for that property in the client; can be null/undefined if
+//		 *				//        conversion happens for service API call parameters for example...
+//		 *				// @param scope scope that can be used to add component/service and property related watches; can be null/undefined if
+//		 *				//        conversion happens for service/component API call parameters for example...
+//		 *				// @param propertyContext a function that can be used to find other properties (by name) of the same service/component/custom object (if property is
+//		 *              //        not found it also searches upwards in case of object nesting) if needed (if the property is 'linked' to another one); can be
+//		 *              //        null/undefined if conversion happens for service/component API call parameters for example...
+//		 *				// @return the new/updated client side property value; if this returned value is interested in triggering
+//		 *				//         updates to server when something changes client side it must have these member functions in this[$sabloConverters.INTERNAL_IMPL]:
+//		 *				//				setChangeNotifier: function(changeNotifier) - where changeNotifier is a function that can be called when
+//		 *				//                                                          the value needs to send updates to the server; this method will
+//		 *				//                                                          not be called when value is a call parameter for example, but will
+//		 *				//                                                          be called when set into a component's/service's property/model
+//		 *				//              isChanged: function() - should return true if the value needs to send updates to server
+//		 * 				fromServerToClient: function (serverSentJSONValue, currentClientValue, scope, propertyContext) { (...); return newClientValue; },
+//		 * 
+//		 *				// Converts from a client property JS value to a JSON that will be sent to the server.
+//		 *				// @param newClientData the new JS client side property value
+//		 *				// @param oldClientData the old JS JS client side property value; can be null/undefined if
+//		 *				//        conversion happens for service API call parameters for example...
+//		 *				// @return the JSON value to send to the server.
+//		 *				fromClientToServer: function(newClientData, oldClientData) { (...); return sendToServerJSON; }
+//		 * 
+//		 *				// Some 'smart' property types need an angular scope to register watches to; this method will get called on them
+//		 *				// when the scope that they should use changed (old scope could get destroyed and then after a while a new one takes it's place).
+//		 *				// This gives such property types a way to keep their watches operational even on the new scope.
+//		 *				// @param clientValue the JS client side property value
+//		 *				// @param scope the new scope. If null it means that the previous scope just got destroyed and property type should perform needed cleanup.
+//		 *				updateAngularScope: function(clientValue, scope) { (...); }
+//		 * 
+//		 * }
+//		 */
+//		registerCustomPropertyHandler : function(propertyTypeID, customHandler, overwrite) {
+//			if (overwrite == false && customPropertyConverters[propertyTypeID] ) return; 
+//			customPropertyConverters[propertyTypeID] = customHandler;
+//		}
 
 	};
 }).factory("$sabloUtils", function($log, $sabloConverters:sablo.ISabloConverters,$swingModifiers) {
@@ -1102,7 +1079,8 @@ webSocketModule.factory('$webSocket',
 		return fulllist;
 	}
 
-	let isChanged = function(now, prev, conversionInfo) {
+	let isChanged = function(now, prev, clientSideType: sablo.IType<any>) {
+		seeWhatHasToBeDoneHEre();
 		if ((typeof conversionInfo === 'string' || typeof conversionInfo === 'number') && now && now[$sabloConverters.INTERNAL_IMPL] && now[$sabloConverters.INTERNAL_IMPL].isChanged) {
 			return now[$sabloConverters.INTERNAL_IMPL].isChanged();
 		}
@@ -1165,14 +1143,14 @@ webSocketModule.factory('$webSocket',
 			isChanged: isChanged,
 			getCombinedPropertyNames: getCombinedPropertyNames,
 
-			convertClientObject : function(value) {
-				if (value instanceof Date) {
-					value  = $sabloConverters.convertFromClientToServer(value, "Date", null);
-				} else if (value && typeof value[this.DEFAULT_CONVERSION_TO_SERVER_FUNC] == 'function') {
-					return value[this.DEFAULT_CONVERSION_TO_SERVER_FUNC]();
-				}
-				return value;
-			},
+//			convertClientObject : function(value) { make this part of 'object' type impl!
+//				if (value instanceof Date) {
+//					value  = $sabloConverters.convertFromClientToServer(value, "Date", null);
+//				} else if (value && typeof value[this.DEFAULT_CONVERSION_TO_SERVER_FUNC] == 'function') {
+//					return value[this.DEFAULT_CONVERSION_TO_SERVER_FUNC]();
+//				}
+//				return value;
+//			},
 
 			getEventArgs: function(args,eventName)
 			{

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.sablo.specification.property.CustomJSONObjectType;
 import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.IPropertyWithClientSideConversions;
 import org.sablo.websocket.utils.JSONUtils.EmbeddableJSONWriter;
@@ -37,7 +38,7 @@ public class ClientSideTypeCache
 {
 
 	private static final String PROPERTIES_KEY = "p";
-	private static final String CUSTOM_TYPES_KEY = "ct";
+	private static final String FACTORY_TYPE_DETAILS = "ftd"; // currently only factory type "custom object" will send to client specific subproperty types for each custom object type; on client, a type factory will be aware of those and will be able to create then specific custom object types as defined in spec files
 	private static final String HANDLERS_KEY = "h";
 	private static final String APIS_KEY = "a";
 	private static final String RETURN_VAL_KEY = "r";
@@ -73,15 +74,17 @@ public class ClientSideTypeCache
 	 *     p: { p1: ["JSON_obj", "ct1"], // custom object 'ct1'
 	 *          p2: "date",
 	 *          p3: ["JSON_arr", "component"], ... },                  // so any properties that have client side conversions (by name or in case of factory types via an array of 2: factory name and factory param)
-	 *    ct: { ct1: { p1: ..., p2: ..., ... },
-	 *          ct2: { p1: ..., p2: ..., ... }, ... },                 // any custom object types defined in the component spec (by name, each containing the sub-properties defined in spec. for it)
-	 *    ha: { handler1: { 0: "date", 3: "ct2", ...}, ... },          // any handler arguments with client side conversion types (by arg no.)
-	 *     a: { api1: { r: "type3",                                    // return value of api call if it's a converting client side type
-	 *                  1: "ct1", 5: "date, ..." }, ... }              // any api call arguments with client side conversion types (by arg no.)
+	 *   ftd: { "JSON_obj":
+	 *             { ct1: { p1: ..., p2: ..., ... },                       // ftd = factory type details (types that need to create specific type instances for usage); currently only custom object types need to send details about subproperties to client for each specific custom object type
+	 *               ct2: { p1: ..., p2: ..., ... }, ... } },              // any custom object types defined in the component spec (by name, each containing the sub-properties defined in spec. for it)
+	 *    ha: { handler1: { r: "foundsetRef",                                        // return value of handler if it's a converting client side type
+	 *                      0: "date", 3: ["JSON_obj", "ct2"], ...}, ... },          // any handler arguments with client side conversion types (by arg no.)
+	 *     a: { api1: { r: "foundsetRef",                              // return value of api call if it's a converting client side type
+	 *                  1: "ct1", 5: "date", ... }, ... }              // any api call arguments with client side conversion types (by arg no.)
 	 * }
 	 * </pre>
 	 *
-	 * NOTE: currently for child 'component' types we just send 'component' - and the type itself will say at runtime in toJSON which kind of child component it is (because components can't be created client side anyway - and we avoid some nesting complications in this code).
+	 * NOTE: currently for child 'component' types we just send 'component' - and the type itself will say at runtime in toJSON which kind of child component it is (because components can't be created client side anyway and sent to server - and we avoid some nesting complications in this code).
 	 * The same is true for any other type that cannot be created client-side but has some nested types and has client side conversions (nested types are not sent here).
 	 */
 	public static EmbeddableJSONWriter buildClientSideTypesFor(WebObjectSpecification webObjectSpec)
@@ -104,14 +107,14 @@ public class ClientSideTypeCache
 		if (customObjectTypes.size() > 0)
 		{
 			somethingWasWritten = true;
-			clientSideTypesJSON.key(CUSTOM_TYPES_KEY).object();
+			clientSideTypesJSON.key(FACTORY_TYPE_DETAILS).object().key(CustomJSONObjectType.TYPE_NAME).object();
 			for (Entry<String, PropertyDescription> cot : customObjectTypes.entrySet())
 			{
 				clientSideTypesJSON.key(cot.getKey()).object();
 				writePropertiesWithClientSideConversions(cot.getValue(), cot.getValue().getAllPropertiesNames(), clientSideTypesJSON, null);
 				clientSideTypesJSON.endObject();
 			}
-			clientSideTypesJSON.endObject();
+			clientSideTypesJSON.endObject().endObject();
 		}
 
 		// check apis

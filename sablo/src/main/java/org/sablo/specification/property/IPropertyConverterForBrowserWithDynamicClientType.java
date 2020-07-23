@@ -33,7 +33,7 @@ import org.sablo.websocket.utils.JSONUtils;
  * IMPORTANT:
  * <ul>
  * <li>if for this type {@link #toJSON(JSONWriter, String, Object, PropertyDescription, Object)} is called it will have to write both the type and the value using {@link JSONUtils#writeConvertedValueWithClientType(JSONWriter, String, String, java.util.concurrent.Callable)}. That means that the caller does not handle client side types separately in a special way.
- * <li>if for this type {@link #toJSONWithDynamicClientSideType(JSONWriter, String, Object, PropertyDescription, IBrowserConverterContext)} is called it will just write the value and return the client side type to be used (can be null). This means that the caller has special logic for sending the client side type for this property's value. This can be used to optimize for example large viewports with the same type.</li>
+ * <li>if for this type {@link #toJSONWithDynamicClientSideType(JSONWriter, String, Object, PropertyDescription, IBrowserConverterContext)} is called it will just write the value and return the client side type to be used (can be null). This means that the caller has special logic for sending the client side type for this property's value. This can be used to optimize for example large foundset viewports with the same type.</li>
  * </ul>
  *
  * @author acostescu
@@ -47,14 +47,13 @@ public interface IPropertyConverterForBrowserWithDynamicClientType<JT> extends I
 	 * Also see {@link #toJSON(JSONWriter, String, Object, PropertyDescription, Object)} which does almost the same thing with the differences mentioned in the interface description above.
 	 *
 	 * @param writer same as for {@link #toJSON(JSONWriter, String, Object, PropertyDescription, Object)}
-	 * @param key same as for {@link #toJSON(JSONWriter, String, Object, PropertyDescription, Object)}
 	 * @param sabloValue same as for {@link #toJSON(JSONWriter, String, Object, PropertyDescription, Object)}
 	 * @param propertyDescription same as for {@link #toJSON(JSONWriter, String, Object, PropertyDescription, Object)}
 	 * @param dataConverterContext same as for {@link #toJSON(JSONWriter, String, Object, PropertyDescription, Object)}
 	 * @return the client side type (usually it would be just the type name, but it could be other constructs that a {@link IPropertyWithClientSideConversions#writeClientSideTypeName(JSONWriter, String, PropertyDescription)} can return) to be used when converting the value once it reached the browser. It's a JSONString (a string representing actual JSON syntax) not a string because we want to be able to include it in JSON easily even if it not actually a String value.
 	 * @throws JSONException
 	 */
-	JSONString toJSONWithDynamicClientSideType(JSONWriter writer, String key, JT sabloValue, PropertyDescription propertyDescription,
+	JSONString toJSONWithDynamicClientSideType(JSONWriter writer, JT sabloValue, PropertyDescription propertyDescription,
 		IBrowserConverterContext dataConverterContext) throws JSONException;
 
 

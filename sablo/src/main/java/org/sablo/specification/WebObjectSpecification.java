@@ -103,6 +103,7 @@ public class WebObjectSpecification extends PropertyDescription
 	private final String categoryName;
 	private final String icon;
 	private final String packageName;
+	private final JSONArray keywords;
 
 	private Map<String, IPropertyType< ? >> foundTypes;
 
@@ -128,14 +129,14 @@ public class WebObjectSpecification extends PropertyDescription
 	 */
 
 	protected WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
-		String definition, JSONArray libs)
+		String definition, JSONArray libs, JSONArray keywords)
 	{
-		this(name, packageName, packageType, displayName, categoryName, icon, preview, definition, libs, null, null, null);
+		this(name, packageName, packageType, displayName, categoryName, icon, preview, definition, libs, null, null, null, keywords);
 	}
 
 
 	WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
-		String definition, JSONArray libs, Object configObject, Map<String, PropertyDescription> properties, String deprecated)
+		String definition, JSONArray libs, Object configObject, Map<String, PropertyDescription> properties, String deprecated, JSONArray keywords)
 	{
 		super(name, null, configObject, properties, null, null, false, null, null, null, false, deprecated);
 		this.scriptingName = scriptifyNameIfNeeded(name, packageType);
@@ -147,6 +148,7 @@ public class WebObjectSpecification extends PropertyDescription
 		this.definition = definition;
 		this.libraries = libs != null ? libs : new JSONArray();
 		this.foundTypes = new HashMap<>();
+		this.keywords = keywords != null ? keywords : new JSONArray();
 	}
 
 	protected String scriptifyNameIfNeeded(String name, String packageType)
@@ -349,9 +351,12 @@ public class WebObjectSpecification extends PropertyDescription
 
 		WebObjectSpecification spec = new WebObjectSpecificationBuilder().withPackageName(packageName).withPackageType(
 			reader != null ? reader.getPackageType() : null).withDisplayName(json.optString("displayName", null)).withCategoryName(
-				json.optString("categoryName", null)).withIcon(json.optString("icon", null)).withPreview(json.optString("preview", null)).withDefinition(
-					json.getString("definition")).withLibraries(json.optJSONArray("libraries")).withProperties(properties).withName(
-						json.getString("name")).withDeprecated(json.optString("deprecated", null)).build();
+				json.optString("categoryName", null))
+			.withIcon(json.optString("icon", null)).withPreview(json.optString("preview", null)).withDefinition(
+				json.getString("definition"))
+			.withLibraries(json.optJSONArray("libraries")).withProperties(properties).withName(
+				json.getString("name"))
+			.withDeprecated(json.optString("deprecated", null)).withKeywords(json.optJSONArray("keywords")).build();
 		spec.foundTypes = types;
 		if (json.has("serverscript"))
 		{
@@ -502,7 +507,11 @@ public class WebObjectSpecification extends PropertyDescription
 				}
 				else if ("deprecated".equals(key))
 				{
-					def.setDeprecated(jsonDef.getBoolean(key));
+					def.setDeprecated(jsonDef.optString(key));
+				}
+				else if (ALLOW_ACCESS.equals(key))
+				{
+					def.setAllowAccess(jsonDef.getString(key));
 				}
 				else
 				{
@@ -563,7 +572,8 @@ public class WebObjectSpecification extends PropertyDescription
 				PropertyDescription pd = new PropertyDescriptionBuilder().withName(specName != null ? (specName + "." + typeName) : typeName).withType(
 					type).withProperties(
 						typeJSON.has("model") ? parseProperties("model", typeJSON, foundTypes, specName)
-							: parseProperties(typeName, jsonObject, foundTypes, specName)).build();
+							: parseProperties(typeName, jsonObject, foundTypes, specName))
+					.build();
 				type.setCustomJSONDefinition(pd);
 				// TODO this is currently never true? See 5 lines above this, types are always just PropertyDescription?
 				// is this really supported? or should we add it just to the properties? But how are these handlers then added and used
@@ -681,9 +691,12 @@ public class WebObjectSpecification extends PropertyDescription
 
 						PropertyDescription elementDescription = new PropertyDescriptionBuilder().withName(ARRAY_ELEMENT_PD_NAME).withType(type).withConfig(
 							type.parseConfig(elementConfig)).withDefaultValue(elementStandardConfigurationSettings.defaultValue).withInitialValue(
-								elementStandardConfigurationSettings.initialValue).withHasDefault(elementStandardConfigurationSettings.hasDefault).withValues(
-									elementStandardConfigurationSettings.values).withPushToServer(elementStandardConfigurationSettings.pushToServer).withTags(
-										elementStandardConfigurationSettings.tags).build();
+								elementStandardConfigurationSettings.initialValue)
+							.withHasDefault(elementStandardConfigurationSettings.hasDefault).withValues(
+								elementStandardConfigurationSettings.values)
+							.withPushToServer(elementStandardConfigurationSettings.pushToServer).withTags(
+								elementStandardConfigurationSettings.tags)
+							.build();
 						if (pp.array)
 						{
 							type = TypesRegistry.createNewType(CustomJSONArrayType.TYPE_NAME, elementDescription);
@@ -697,9 +710,12 @@ public class WebObjectSpecification extends PropertyDescription
 					pds.put(key,
 						new PropertyDescriptionBuilder().withName(key).withType(type).withConfig(type.parseConfig(configObject)).withDefaultValue(
 							standardConfigurationSettings.defaultValue).withInitialValue(standardConfigurationSettings.initialValue).withHasDefault(
-								standardConfigurationSettings.hasDefault).withValues(standardConfigurationSettings.values).withPushToServer(
-									standardConfigurationSettings.pushToServer).withTags(standardConfigurationSettings.tags).withDeprecated(
-										standardConfigurationSettings.deprecated).build());
+								standardConfigurationSettings.hasDefault)
+							.withValues(standardConfigurationSettings.values).withPushToServer(
+								standardConfigurationSettings.pushToServer)
+							.withTags(standardConfigurationSettings.tags).withDeprecated(
+								standardConfigurationSettings.deprecated)
+							.build());
 				}
 			}
 		}
@@ -810,5 +826,10 @@ public class WebObjectSpecification extends PropertyDescription
 	public String getDeprecatedMessage()
 	{
 		return (replacement != null && !"".equals("replacement") ? " Use '" + replacement + "'. " : "") + super.getDeprecatedMessage();
+	}
+
+	public JSONArray getKeywords()
+	{
+		return keywords;
 	}
 }

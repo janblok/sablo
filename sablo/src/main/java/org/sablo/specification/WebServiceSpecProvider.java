@@ -87,32 +87,39 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 			{
 				if (instance == null)
 				{
-					try
+					List<IPackageReader> readers = new ArrayList<IPackageReader>();
+					for (String location : webComponentBundleNames)
 					{
-						List<IPackageReader> readers = new ArrayList<IPackageReader>();
-						for (String location : webComponentBundleNames)
+						try
 						{
 							readers.add(new Package.WarURLPackageReader(servletContext, location));
 						}
-
-						// scan all jars for services
-						for (String resourcePath : servletContext.getResourcePaths("/WEB-INF/lib"))
+						catch (Exception e)
 						{
-							if (resourcePath.toLowerCase().endsWith(".jar") || resourcePath.toLowerCase().endsWith(".zip"))
+							log.error("Exception during init", e);
+						}
+					}
+
+					// scan all jars for services
+					for (String resourcePath : servletContext.getResourcePaths("/WEB-INF/lib"))
+					{
+						if (resourcePath.toLowerCase().endsWith(".jar") || resourcePath.toLowerCase().endsWith(".zip"))
+						{
+							try
 							{
 								IPackageReader reader = new JarServletContextReader(servletContext, resourcePath);
 								Manifest mf = reader.getManifest();
 								if (mf != null && IPackageReader.WEB_SERVICE.equals(Package.getPackageType(mf))) readers.add(reader);
 							}
+							catch (Exception e)
+							{
+								log.error("Exception during init", e);
+							}
 						}
+					}
 
-						instance = new WebServiceSpecProvider(
-							new WebSpecReader(readers.toArray(new IPackageReader[readers.size()]), IPackageReader.WEB_SERVICE, specReloadSubject, null));
-					}
-					catch (Exception e)
-					{
-						log.error("Exception during init", e);
-					}
+					instance = new WebServiceSpecProvider(
+						new WebSpecReader(readers.toArray(new IPackageReader[readers.size()]), IPackageReader.WEB_SERVICE, specReloadSubject, null));
 				}
 			}
 		}
@@ -132,6 +139,11 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 			return new SpecProviderState(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), Collections.emptyList());
 		}
 		return instance.reader.getSpecProviderState();
+	}
+
+	public static boolean isLoaded()
+	{
+		return instance != null;
 	}
 
 	public static long getLastLoadTimestamp()

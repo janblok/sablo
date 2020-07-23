@@ -198,25 +198,8 @@ public class JSONUtils
 			Map<String, ? > map = (Map<String, ? >)converted;
 			for (Entry<String, ? > entry : map.entrySet())
 			{
-				//TODO remove the need for this when going to full tree recursion for sendChanges()
-				String[] keys = entry.getKey().split("\\.");
-				if (keys.length > 1)
-				{
-					//LIMITATION of JSONWriter because it can't add a property to an already written object
-					// currently for 2 properties like complexmodel.firstNameDataprovider
-					//								   size
-					//								   complexmodel.lastNameDataprovider
-					// it creates 2 json entries with the same key ('complexmodel') and on the client side it only takes one of them
-					w.key(keys[0]);
-					w.object();
-					toJSONConverter.toJSONValue(w, keys[1], entry.getValue(), valueType != null ? valueType.getProperty(entry.getKey()) : null, contextObject);
-					w.endObject();
-				} // END TODO REMOVE
-				else
-				{
-					toJSONConverter.toJSONValue(w, entry.getKey(), entry.getValue(), valueType != null ? valueType.getProperty(entry.getKey()) : null,
-						contextObject);
-				}
+				toJSONConverter.toJSONValue(w, entry.getKey(), entry.getValue(), valueType != null ? valueType.getProperty(entry.getKey()) : null,
+					contextObject);
 			}
 			w = w.endObject();
 		}

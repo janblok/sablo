@@ -193,18 +193,21 @@ webSocketModule.factory('$webSocket',
 			let p = s.$parent;
 			while (p && !scopesToDigest.hasItem(p)) p = p.$parent;
 			if (!p) { // if no parent form scope is going to do digest
-				if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will call digest for scope: " + (s && s["formname"] ? s["formname"] : scopeId));
-
-                if (digestAsync) {
-                    if ($log.debugLevel === $log.SPAM)
-                        $log.debug("sbl * digestAsync == true ?! Will call $evalAsync for scope: " + (s && s["formname"] ? s["formname"] : scopeId));
-                    // should normally never happen - but for example unit tests could do this
-                	s.$evalAsync(function() { /* just to trigger a digest on that scope */ });
-                } else {
-                	setIMHDTScopeHintInternal(s);
-                	s.$digest();
-                	setIMHDTScopeHintInternal(undefined);
-                }
+        		if (s["$$destroyed"]) $log.warn("[optimizeAndCallFormScopeDigest] - IGNORING an already $$destroyed scope (id:" + s.$id + "). Digest will not be called on such scopes.");
+        		else {
+					if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will call digest for scope: " + (s && s["formname"] ? s["formname"] : scopeId));
+	
+	                if (digestAsync) {
+	                    if ($log.debugLevel === $log.SPAM)
+	                        $log.debug("sbl * digestAsync == true ?! Will call $evalAsync for scope: " + (s && s["formname"] ? s["formname"] : scopeId));
+	                    // should normally never happen - but for example unit tests could do this
+	                	s.$evalAsync(function() { /* just to trigger a digest on that scope */ });
+	                } else {
+	                	setIMHDTScopeHintInternal(s);
+	                	s.$digest();
+	                	setIMHDTScopeHintInternal(undefined);
+	                }
+        		}
 			} else if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Will NOT call digest for scope: " + (s && s["formname"] ? s["formname"] : scopeId) + " because a parent form scope " + (p["formname"] ? p["formname"] : p.$id) + " is in the list...");
 		}
 	}
@@ -412,7 +415,12 @@ webSocketModule.factory('$webSocket',
 				try {
 					let touchedScopes = toExecuteAfterIncommingMessageWasHandled[i].task();
 					if (touchedScopes) {
-						touchedScopes.forEach((value) => {scopesToDigest.putItem(value)});
+						touchedScopes.forEach(
+								(touchedScope) => {
+				            		if (touchedScope["$$destroyed"]) $log.warn("[addIncomingMessageHandlingDoneTask] - exec after incomming is done; func returned an already $$destroyed scope (id:" + touchedScope.$id + ") to be digested. This usually happens when some component failed to unregister some listeners on scope $destroy. Please check to see why this happens - in order to avoid memory leaks. Func:\n", toExecuteAfterIncommingMessageWasHandled[i].task);
+									scopesToDigest.putItem(touchedScope);
+								}
+						);
 					} else if (toExecuteAfterIncommingMessageWasHandled[i].scopeHint) {
 						scopesToDigest.putItem(toExecuteAfterIncommingMessageWasHandled[i].scopeHint);
 					}
@@ -453,8 +461,12 @@ webSocketModule.factory('$webSocket',
 			// will not addPostIncommingMessageHandlingTask while not handling an incoming message; the task can execute right away then (maybe it was called due to a change detected in a watch instead of property listener)
             let touchedScopes = func();
             let scopesSet = null;
-            if (touchedScopes)
+            if (touchedScopes) {
             	scopesSet = new ScopeSet(touchedScopes);
+            	touchedScopes.forEach(function (scope) {
+            		if (scope["$$destroyed"]) $log.warn("[addIncomingMessageHandlingDoneTask] - exec directly; func returned an already $$destroyed scope (id:" + scope.$id + ") to be digested. This usually happens when some component failed to unregister some listeners on scope $destroy. Please check to see why this happens - in order to avoid memory leaks. Func:\n", func);
+            	});
+            }
             else if (currentIMHDTScopeHint)
             	scopesSet = new ScopeSet([currentIMHDTScopeHint]);
 
@@ -1171,6 +1183,7 @@ webSocketModule.factory('$webSocket',
 						eventObj['eventName'] = eventName; 
 						eventObj['modifiers'] = modifiers;
 						eventObj['timestamp'] = new Date().getTime();
+						eventObj['data'] = $event['data'];
 						eventObj['x']= $event['pageX'];
 						eventObj['y']= $event['pageY'];
 						arg = eventObj
@@ -1181,6 +1194,7 @@ webSocketModule.factory('$webSocket',
 						eventObj['type'] = 'event'; 
 						eventObj['eventName'] = eventName;
 						eventObj['timestamp'] = new Date().getTime();
+						eventObj['data'] = arg['data'];
 						arg = eventObj
 					}
 					else arg = this.convertClientObject(arg); // TODO should be $sabloConverters.convertFromClientToServer(now, beanConversionInfo[property] ?, undefined);, but as we do not know handler arg types, we just do default conversion (for dates & types that use $sabloUtils.DEFAULT_CONVERSION_TO_SERVER_FUNC)

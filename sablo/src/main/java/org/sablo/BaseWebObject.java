@@ -344,7 +344,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 	 *
 	 * @param property check properties that have for defined for this  when null, check for component-level visibility.
 	 */
-	public final boolean isVisible(String property)
+	public boolean isVisible(String property)
 	{
 		for (PropertyDescription prop : specification.getProperties(VisiblePropertyType.INSTANCE))
 		{

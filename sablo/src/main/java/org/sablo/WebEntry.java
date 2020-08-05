@@ -118,49 +118,51 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 		HttpServletRequest request = (HttpServletRequest)servletRequest;
 		HttpServletResponse response = (HttpServletResponse)servletResponse;
 
-		// make sure a session is created. when a sablo client is created, that one should set the timeout to 0
-		HttpSession httpSession = request.getSession();
-		if (getLogger().isDebugEnabled()) getLogger().debug("HttpSession created: " + httpSession);
-		// the session should be picked up in a websocket request very soon, set timeout low so it won't stay in case of robots
-		// if it is alreayd the time out the GetHttpSessionConfigurator would set then don't reset it to 60
-		if (httpSession.getMaxInactiveInterval() != GetHttpSessionConfigurator.NO_EXPIRE_TIMEOUT)
+		if ("GET".equalsIgnoreCase(request.getMethod()))
 		{
-			if (getLogger().isDebugEnabled()) getLogger().debug("Setting 60 seconds timeout on the HttpSession: " + httpSession);
-			httpSession.setMaxInactiveInterval(60);
-		}
+			// make sure a session is created. when a sablo client is created, that one should set the timeout to 0
+			HttpSession httpSession = request.getSession();
+			if (getLogger().isDebugEnabled()) getLogger().debug("HttpSession created: " + httpSession);
+			// the session should be picked up in a websocket request very soon, set timeout low so it won't stay in case of robots
+			// if it is alreayd the time out the GetHttpSessionConfigurator would set then don't reset it to 60
+			if (httpSession.getMaxInactiveInterval() != GetHttpSessionConfigurator.NO_EXPIRE_TIMEOUT)
+			{
+				if (getLogger().isDebugEnabled()) getLogger().debug("Setting 60 seconds timeout on the HttpSession: " + httpSession);
+				httpSession.setMaxInactiveInterval(60);
+			}
 
-		String uri = request.getRequestURI();
-		if (uri.endsWith("spec/" + ModifiablePropertiesGenerator.PUSH_TO_SERVER_BINDINGS_LIST + ".js"))
-		{
-			long lastSpecLoadTime = Math.max(WebComponentSpecProvider.getLastLoadTimestamp(), WebServiceSpecProvider.getLastLoadTimestamp());
-			if (HTTPUtils.checkAndSetUnmodified(request, response, lastSpecLoadTime)) return;
+			String uri = request.getRequestURI();
+			if (uri.endsWith("spec/" + ModifiablePropertiesGenerator.PUSH_TO_SERVER_BINDINGS_LIST + ".js"))
+			{
+				long lastSpecLoadTime = Math.max(WebComponentSpecProvider.getLastLoadTimestamp(), WebServiceSpecProvider.getLastLoadTimestamp());
+				if (HTTPUtils.checkAndSetUnmodified(request, response, lastSpecLoadTime)) return;
 
-			HTTPUtils.setNoCacheHeaders(response);
+				HTTPUtils.setNoCacheHeaders(response);
 
-			response.setContentType("text/javascript");
-			response.setCharacterEncoding("UTF-8");
-			PrintWriter w = servletResponse.getWriter();
-			ModifiablePropertiesGenerator.start(w);
-			ModifiablePropertiesGenerator.appendAll(w, WebComponentSpecProvider.getSpecProviderState().getAllWebComponentSpecifications(), "components");
-			ModifiablePropertiesGenerator.appendAll(w, WebServiceSpecProvider.getSpecProviderState().getAllWebComponentSpecifications(), "services");
-			ModifiablePropertiesGenerator.finish(w);
-			w.flush();
+				response.setContentType("text/javascript");
+				response.setCharacterEncoding("UTF-8");
+				PrintWriter w = servletResponse.getWriter();
+				ModifiablePropertiesGenerator.start(w);
+				ModifiablePropertiesGenerator.appendAll(w, WebComponentSpecProvider.getSpecProviderState().getAllWebComponentSpecifications(), "components");
+				ModifiablePropertiesGenerator.appendAll(w, WebServiceSpecProvider.getSpecProviderState().getAllWebComponentSpecifications(), "services");
+				ModifiablePropertiesGenerator.finish(w);
+				w.flush();
 
-			return;
-		}
+				return;
+			}
 
-		URL indexPageResource = getIndexPageResource(request);
-		if (indexPageResource != null)
-		{
-			response.setContentType("text/html");
-			response.setCharacterEncoding("UTF-8");
-			PrintWriter w = servletResponse.getWriter();
-			IndexPageEnhancer.enhance(indexPageResource, request, cssContributions, jsContributions, extraMetaData, variableSubstitution, w, this, this,
+			URL indexPageResource = getIndexPageResource(request);
+			if (indexPageResource != null)
+			{
+				response.setContentType("text/html");
+				response.setCharacterEncoding("UTF-8");
+				PrintWriter w = servletResponse.getWriter();
+				IndexPageEnhancer.enhance(indexPageResource, request, cssContributions, jsContributions, extraMetaData, variableSubstitution, w, this, this,
 					contentSecurityPolicyConfig);
-			w.flush();
-			return;
+				w.flush();
+				return;
+			}
 		}
-
 		filterChain.doFilter(servletRequest, servletResponse);
 	}
 

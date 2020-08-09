@@ -124,8 +124,8 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 			HttpSession httpSession = request.getSession();
 			if (getLogger().isDebugEnabled()) getLogger().debug("HttpSession created: " + httpSession);
 			// the session should be picked up in a websocket request very soon, set timeout low so it won't stay in case of robots
-			// if it is alreayd the time out the GetHttpSessionConfigurator would set then don't reset it to 60
-			if (httpSession.getMaxInactiveInterval() != GetHttpSessionConfigurator.NO_EXPIRE_TIMEOUT)
+			// if it is already the time out the GetHttpSessionConfigurator would set then don't reset it to 60
+			if (!Boolean.TRUE.equals(httpSession.getAttribute(GetHttpSessionConfigurator.WEBSOCKET_STARTED)))
 			{
 				if (getLogger().isDebugEnabled()) getLogger().debug("Setting 60 seconds timeout on the HttpSession: " + httpSession);
 				httpSession.setMaxInactiveInterval(60);

@@ -1059,12 +1059,13 @@ public abstract class BaseWebObject implements IWebObjectContext
 	 */
 	public void dispose()
 	{
+		propertyChangeSupport = null;
+		dirtyPropertyListener = null;
 		for (String pN : getAllPropertyNames(true))
 		{
 			Object pUnwrapped = getProperty(pN);
 			if (pUnwrapped instanceof ISmartPropertyValue) ((ISmartPropertyValue)pUnwrapped).detach(); // clear any listeners/held resources
 		}
-		propertyChangeSupport = null;
 	}
 
 	public boolean writeOwnChanges(JSONWriter w, String keyInParent, String nodeName, IToJSONConverter<IBrowserConverterContext> converter,

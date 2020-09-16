@@ -347,6 +347,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 			};
 		   if($webSocket.getURLParameter($websocketConstants.CLEAR_SESSION_PARAM) == 'true'){
 	            this.clearSabloInfo();
+	            $window.history.replaceState(null, null, $window.location.href.replace("?" + $websocketConstants.CLEAR_SESSION_PARAM+ "=true", "").replace("&" + $websocketConstants.CLEAR_SESSION_PARAM+ "=true", ""));
 	       }
 			wsSession = $webSocket.connect(wsSessionArgs.context, [getClientnr(), getWindowName(), getWindownr()], wsSessionArgs.queryArgs, wsSessionArgs.websocketUri);
 

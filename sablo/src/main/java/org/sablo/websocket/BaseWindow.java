@@ -185,7 +185,8 @@ public class BaseWindow implements IWindow
 	@Override
 	public long getLastPingTime()
 	{
-		IWebsocketEndpoint ep = getEndpoint();
+		// dont use sync block (getEndpoint), this shouldn't block.
+		IWebsocketEndpoint ep = endpoint;
 		if (ep != null) return ep.getLastPingTime();
 		return 0;
 	}

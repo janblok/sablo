@@ -185,7 +185,8 @@ public class BaseWindow implements IWindow
 	@Override
 	public long getLastPingTime()
 	{
-		IWebsocketEndpoint ep = getEndpoint();
+		// dont use sync block (getEndpoint), this shouldn't block.
+		IWebsocketEndpoint ep = endpoint;
 		if (ep != null) return ep.getLastPingTime();
 		return 0;
 	}
@@ -688,12 +689,13 @@ public class BaseWindow implements IWindow
 			{
 				hasContentToSend = dataWriter.writeJSONContent(w, null, converter, clientDataConversions);
 			}
-			w.endObject();
 
 			String text = null;
 
 			if (hasContentToSend)
 			{
+				JSONUtils.writeClientConversions(w, clientDataConversions);
+				w.endObject();
 				text = w.toString();
 				sendMessageText(text);
 			}

@@ -129,8 +129,10 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		{
 			List<String> connectNr = session.getRequestParameterMap().get(GetHttpSessionConfigurator.CONNECT_NR);
 			// this can happen when the server is restarted and the client reconnects the websocket
-			log.warn("Cannot find httpsession for websocket session, server restarted? clientnr=" + clntnr + ", winnr=" + winnr + ", winname=" + winname +
-				", connectnr: " + connectNr);
+			log.warn(
+				"Cannot find httpsession for websocket session, server restarted or client was suspended by the browser/os and did a websocekt reconnect after the client was already destroyed at the server? clientnr=" +
+					clntnr + ", winnr=" + winnr + ", winname=" + winname +
+					", connectnr: " + connectNr);
 			cancelSession(CLOSE_REASON_CLIENT_OUT_OF_SYNC);
 			return;
 		}

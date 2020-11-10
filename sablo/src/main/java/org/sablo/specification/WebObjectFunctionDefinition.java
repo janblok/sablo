@@ -47,6 +47,7 @@ public class WebObjectFunctionDefinition
 	private boolean priv;
 	private String deprecated = null;
 	private String allowaccess;
+	private boolean ignoreNGBlockDuplicateEvents = false;
 
 	public WebObjectFunctionDefinition(String name)
 	{
@@ -282,11 +283,29 @@ public class WebObjectFunctionDefinition
 		return allowaccess;
 	}
 
+	/**
+	 * False by default.<br/><br/>
+	 * Whatever the NG_BLOCK_DUPLICATE_EVENTS system property should be ignored
+	 */
+	public boolean shouldIgnoreNGBlockDuplicateEvents()
+	{
+		return ignoreNGBlockDuplicateEvents;
+	}
+
+	/**
+	 * @see #shouldIgnoreNGBlockDuplicateEvents()
+	 */
+	public void setIgnoreNGBlockDuplicateEvents(boolean ignoreNGBlockDuplicateEvents)
+	{
+		this.ignoreNGBlockDuplicateEvents = ignoreNGBlockDuplicateEvents;
+	}
+
 	@Override
 	public String toString()
 	{
 		return "WebObjectFunctionDefinition [name=" + name + ",\nreturnType=" + returnType + ",\nparameters=" + parameters + ",\nasync=" + async +
 			", delayUntilFormLoads=" + delayUntilFormLoads + ", discardPreviouslyQueuedSimilarCalls=" + discardPreviouslyQueuedSimilarCalls +
-			", blockEventProcessing=" + blockEventProcessing + ", asyncNow=" + asyncNow + ", allowaccess=" + allowaccess + "]";
+			", blockEventProcessing=" + blockEventProcessing + ", asyncNow=" + asyncNow + ", allowaccess=" + allowaccess + ", ignoreNGBlockDuplicateEvents=" +
+			ignoreNGBlockDuplicateEvents + "]";
 	}
 }

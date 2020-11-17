@@ -513,6 +513,10 @@ public class WebObjectSpecification extends PropertyDescription
 				{
 					def.setAllowAccess(jsonDef.getString(key));
 				}
+				else if ("ignoreNGBlockDuplicateEvents".equals(key))
+				{
+					def.setIgnoreNGBlockDuplicateEvents(jsonDef.getBoolean(key));
+				}
 				else
 				{
 					if (customConfiguration == null) customConfiguration = new JSONObject();

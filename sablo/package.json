@@ -1,5 +1,5 @@
 {
-  "name": "sablo-unit-test-module",
+  "name": "sablo",
   "description": "A module that bundles karma depenencies needed to tun karma for sablo",
   "dependencies": {
     "jasmine-core": "~3.6.0",

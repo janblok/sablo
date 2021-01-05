@@ -60,7 +60,8 @@ jobs:
     #    uses a compiled language
 
     - run: |
-       sablo/mvn clean install
+        cd sablo
+        mvn clean install
     #   make release
 
     - name: Perform CodeQL Analysis

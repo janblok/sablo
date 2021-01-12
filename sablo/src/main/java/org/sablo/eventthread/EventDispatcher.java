@@ -95,9 +95,9 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		currentMinEventLevel = minEventLevelToDispatch;
 
 		int i;
+		Event event = null;
 		try
 		{
-			Event event = null;
 			synchronized (events)
 			{
 				long remainingMillis = 123456; // dummy value just to compile
@@ -136,8 +136,13 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		}
 		catch (Throwable t)
 		{
-			log.error("Exception in dispatch()", t);
+			handleException(event, t);
 		}
+	}
+
+	protected void handleException(Event event, Throwable t)
+	{
+		log.error("Exception in dispatch()", t);
 	}
 
 	@Override

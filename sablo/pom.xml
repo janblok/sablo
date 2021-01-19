@@ -17,7 +17,7 @@
 
 	<url>http://maven.apache.org</url>
 	<properties>
-		<tycho.version>2.0.0</tycho.version>
+		<tycho.version>2.2.0</tycho.version>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<jenkins.javascript_tests.reportsDirectory>target/protractor-reports</jenkins.javascript_tests.reportsDirectory>

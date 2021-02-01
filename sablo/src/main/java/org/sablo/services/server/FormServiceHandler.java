@@ -197,7 +197,7 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 					PropertyDescription propertyDesc = webComponent.getSpecification().getProperty(key);
 					oldValue = propertyDesc != null
 						? JSONUtils.fromJSON(null, oldValue, propertyDesc, new BrowserConverterContext(webComponent, PushToServerEnum.allow), null) : null; // Is allow here ok?
-					if (oldValue != null && currentValue != null && !oldValue.equals(currentValue))
+					if (oldValue != null && currentValue != null && !JSONUtils.areJSONEqual(oldValue, currentValue)) // areJSONEqual will compare correctly JSONObject and JSONArray instances which do not implement equals correctly; and just use object equals for other types of values
 					{
 						if (!(oldValue instanceof Number && currentValue instanceof Number &&
 							((Number)oldValue).doubleValue() == ((Number)currentValue).doubleValue()))

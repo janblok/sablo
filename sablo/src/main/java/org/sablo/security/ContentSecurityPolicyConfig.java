@@ -36,7 +36,7 @@ public class ContentSecurityPolicyConfig
 	// when style-src-attr is supported by the major browsers we can use that to override inline styles for elements.
 	// Styles may be loaded by scripts from any source, unless we list them in the component manifest and include them here we have to allow all style sources
 	public static final String DEFAULT_STYLE_SRC_DIRECTIVE_VALUE = "* 'unsafe-inline'";
-	public static final String DEFAULT_IMG_SRC_DIRECTIVE_VALUE = "* data:";
+	public static final String DEFAULT_IMG_SRC_DIRECTIVE_VALUE = "* data: blob:";
 	public static final String DEFAULT_FONT_SRC_DIRECTIVE_VALUE = "* data:";
 	public static final String DEFAULT_OBJECT_SRC_DIRECTIVE_VALUE = "'none'";
 

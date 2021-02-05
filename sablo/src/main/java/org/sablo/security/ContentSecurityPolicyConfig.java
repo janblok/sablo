@@ -55,6 +55,11 @@ public class ContentSecurityPolicyConfig
 		return nonce;
 	}
 
+	public String getDirective(String directive)
+	{
+		return directives.get(directive);
+	}
+
 	public void setDirective(String directive, String value)
 	{
 		setDirective(directives, directive, value, nonce);

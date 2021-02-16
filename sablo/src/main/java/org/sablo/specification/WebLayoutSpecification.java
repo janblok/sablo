@@ -79,7 +79,7 @@ public class WebLayoutSpecification extends WebObjectSpecification
 		}
 
 		String jsonConfig = null;
-		if (json.getString("definition") != null)
+		if (json.optString("definition", null) != null)
 		{
 			jsonConfig = reader.readTextFile(json.getString("definition"), Charset.forName("UTF8"));
 		}
@@ -95,7 +95,8 @@ public class WebLayoutSpecification extends WebObjectSpecification
 				properties.put("tagType",
 					new PropertyDescriptionBuilder().withName("tagType").withType(pd.getType()).withConfig(pd.getConfig()).withDefaultValue(
 						json.get("tagType")).withHasDefault(true).withValues(pd.getValues()).withPushToServer(pd.getPushToServer()).withOptional(
-							pd.isOptional()).withDeprecated(pd.getDeprecated()).build());
+							pd.isOptional())
+						.withDeprecated(pd.getDeprecated()).build());
 			}
 			else
 			{
@@ -108,10 +109,14 @@ public class WebLayoutSpecification extends WebObjectSpecification
 
 		WebLayoutSpecification spec = new WebLayoutSpecificationBuilder().withName(json.getString("name")).withPackageName(packageName).withDisplayName(
 			json.optString("displayName", null)).withCategoryName(json.optString("categoryName", null)).withIcon(json.optString("icon", null)).withPreview(
-				json.optString("preview", null)).withDefinition(json.getString("definition")).withConfig(jsonConfig).withTopContainer(
-					topContainer).withAllowedChildren(children).withExcludedChildren(excludes).withDesignStyleClass(
-						json.optString("designStyleClass")).withLayout(json.optString("layout", null)).withProperties(properties).withDeprecated(
-							json.optString("deprecated", null)).build();
+				json.optString("preview", null))
+			.withDefinition(json.optString("definition")).withConfig(jsonConfig).withTopContainer(
+				topContainer)
+			.withAllowedChildren(children).withExcludedChildren(excludes).withDesignStyleClass(
+				json.optString("designStyleClass"))
+			.withLayout(json.optString("layout", null)).withProperties(properties).withDeprecated(
+				json.optString("deprecated", null))
+			.build();
 
 		if (json.has("attributes"))
 		{

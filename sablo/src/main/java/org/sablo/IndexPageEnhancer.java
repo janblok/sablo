@@ -35,7 +35,6 @@ import org.apache.commons.io.IOUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.sablo.security.ContentSecurityPolicyConfig;
 import org.sablo.services.template.ModifiablePropertiesGenerator;
 import org.sablo.specification.PackageSpecification;
 import org.sablo.specification.WebComponentSpecProvider;
@@ -52,7 +51,6 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("nls")
 public class IndexPageEnhancer
 {
-	private static final String CONTENT_SECURITY_POLICY = "<!-- content_security_policy -->";
 	/**
 	 * Token in html page after which we add component contributions. They have to be before the solution stylesheet.
 	 */
@@ -79,7 +77,7 @@ public class IndexPageEnhancer
 	 */
 	public static void enhance(URL resource, HttpServletRequest request, Collection<String> cssContributions, Collection<String> jsContributions,
 		Collection<String> extraMetaData, Map<String, Object> variableSubstitution, Writer writer, IContributionFilter contributionFilter,
-		IContributionEntryFilter contributionEntryFilter, ContentSecurityPolicyConfig contentSecurityPolicyConfig) throws IOException
+		IContributionEntryFilter contributionEntryFilter, String contentSecurityPolicyNonce) throws IOException
 	{
 		String index_file = IOUtils.toString(resource, "UTF-8");
 
@@ -108,19 +106,6 @@ public class IndexPageEnhancer
 
 		StringBuilder sb = new StringBuilder(index_file);
 
-		if (contentSecurityPolicyConfig != null)
-		{
-			int contentSecurityPolicyIndex = index_file.indexOf(CONTENT_SECURITY_POLICY);
-			if (contentSecurityPolicyIndex < 0)
-			{
-				log.warn("Could not find marker for content security policy: " + CONTENT_SECURITY_POLICY + " for resource " + resource);
-			}
-			else
-			{
-				sb.insert(contentSecurityPolicyIndex + CONTENT_SECURITY_POLICY.length(), getContentSecurityPolicyTag(contentSecurityPolicyConfig));
-			}
-		}
-
 		int componentContributionsIndex = sb.toString().indexOf(COMPONENT_CONTRIBUTIONS);
 		if (componentContributionsIndex < 0)
 		{
@@ -129,17 +114,9 @@ public class IndexPageEnhancer
 		else
 		{
 			sb.insert(componentContributionsIndex + COMPONENT_CONTRIBUTIONS.length(), getAllContributions(cssContributions, jsContributions, extraMetaData,
-				contributionFilter, allCSSContributions, allJSContributions, contentSecurityPolicyConfig));
+				contributionFilter, allCSSContributions, allJSContributions, contentSecurityPolicyNonce));
 		}
 		writer.append(sb);
-	}
-
-	private static String getContentSecurityPolicyTag(ContentSecurityPolicyConfig contentSecurityPolicyConfig)
-	{
-		StringBuilder csp = new StringBuilder("<meta http-equiv=\"Content-Security-Policy\" content=\"");
-		contentSecurityPolicyConfig.getDirectives().forEach(csp::append);
-		csp.append("\">");
-		return csp.toString();
 	}
 
 	public static Object[] getAllContributions(Boolean supportGrouping, IContributionEntryFilter ceFilter)
@@ -220,7 +197,7 @@ public class IndexPageEnhancer
 	 */
 	static String getAllContributions(Collection<String> cssContributions, Collection<String> jsContributions, Collection<String> extraMetaData,
 		IContributionFilter contributionFilter, List<String> allCSSContributions, List<String> allJSContributions,
-		ContentSecurityPolicyConfig contentSecurityPolicyConfig)
+		String contentSecurityPolicyNonce)
 	{
 		if (cssContributions != null)
 		{
@@ -243,7 +220,7 @@ public class IndexPageEnhancer
 		List<String> filteredJSContributions = contributionFilter != null ? contributionFilter.filterJSContributions(allJSContributions) : allJSContributions;
 		for (String lib : filteredJSContributions)
 		{
-			retval.append("<script").append(getNonceTag(contentSecurityPolicyConfig)).append(" src=\"").append(lib).append("\"></script>\n");
+			retval.append("<script").append(getNonceTag(contentSecurityPolicyNonce)).append(" src=\"").append(lib).append("\"></script>\n");
 		}
 		if (extraMetaData != null)
 		{
@@ -254,19 +231,19 @@ public class IndexPageEnhancer
 		}
 
 		// lists properties that need to be watched for client to server changes for each component/service type
-		retval.append("<script").append(getNonceTag(contentSecurityPolicyConfig)).append(" src=\"spec/").append(
+		retval.append("<script").append(getNonceTag(contentSecurityPolicyNonce)).append(" src=\"spec/").append(
 			ModifiablePropertiesGenerator.PUSH_TO_SERVER_BINDINGS_LIST).append(".js\"></script>\n");
 
 		return retval.toString();
 	}
 
-	private static String getNonceTag(ContentSecurityPolicyConfig contentSecurityPolicyConfig)
+	private static String getNonceTag(String nonce)
 	{
-		if (contentSecurityPolicyConfig == null)
+		if (nonce == null)
 		{
 			return "";
 		}
-		return " nonce='" + contentSecurityPolicyConfig.getNonce() + "'";
+		return " nonce='" + nonce + "'";
 	}
 
 	/**

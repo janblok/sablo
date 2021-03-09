@@ -17,6 +17,7 @@
 package org.sablo.specification;
 
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * @author lvostinar
@@ -34,6 +35,7 @@ abstract class AbstractWebObjectSpecificationBuilder<B extends AbstractWebObject
 	protected String definition = "";
 	protected JSONArray libraries;
 	protected JSONArray keywords;
+	protected JSONObject dependencies;
 
 	public B withPackageName(String packageName)
 	{
@@ -92,6 +94,12 @@ abstract class AbstractWebObjectSpecificationBuilder<B extends AbstractWebObject
 	{
 
 		this.keywords = keywords;
+		return getThis();
+	}
+
+	public B withDependencies(JSONObject dependencies) 
+	{
+		this.dependencies = dependencies;
 		return getThis();
 	}
 }

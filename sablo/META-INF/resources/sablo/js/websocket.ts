@@ -131,7 +131,7 @@ angular.module('pushToServer', []).factory('$propertyWatchesRegistry', function 
  * Setup the $webSocket service.
  */
 webSocketModule.factory('$webSocket',
-		function($rootScope, $injector, $window, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers, $interval, wsCloseCodes,$sabloLoadingIndicator, $timeout, $sabloTestability,$websocketConstants) {
+		function($rootScope, $injector, $window, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers, $interval, wsCloseCodes,$sabloLoadingIndicator, $timeout, $sabloTestability) {
 
 	let pathname = null;
 	
@@ -658,19 +658,6 @@ webSocketModule.factory('$webSocket',
 		let queryString = getQueryString();
 		if (queryString)
 		{
-			let index = queryString.indexOf($websocketConstants.CLEAR_SESSION_PARAM);
-			if (index >= 0) 
-			{
-				let params_arr = queryString.split("&");
-				for (let i = params_arr.length - 1; i >= 0; i -= 1)
-				{
-					if (params_arr[i].indexOf($websocketConstants.CLEAR_SESSION_PARAM) == 0)
-					{
-						params_arr.splice(i, 1);
-					}
-				} 
-				queryString = params_arr.join("&");
-			}
 			new_uri += queryString;
 		}
 		else
@@ -1288,8 +1275,6 @@ webSocketModule.factory('$webSocket',
 	}
 
 	return sabloUtils;
-}).value("$websocketConstants", {
-	CLEAR_SESSION_PARAM:"sabloClearSession"
 }).value("wsCloseCodes", {
 	NORMAL_CLOSURE: 1000, // indicates a normal closure, meaning that the purpose for which the connection was established has been fulfilled.
 	GOING_AWAY: 1001, // indicates that an endpoint is "going away", such as a server going down or a browser having navigated away from a page.

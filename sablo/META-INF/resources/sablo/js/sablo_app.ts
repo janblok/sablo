@@ -6,12 +6,21 @@ namespace sablo_app { export class Model{}}
 
 angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabloConstants", {
 	modelChangeNotifier: "$modelChangeNotifier"
-}).factory('$sabloApplication', function($rootScope: angular.IRootScopeService, $window: angular.IWindowService, $timeout: angular.ITimeoutService, $q: angular.IQService, $log: sablo.ILogService, $webSocket: sablo.IWebSocket, $sabloConverters: sablo.ISabloConverters, $sabloUtils: sablo.ISabloUtils, $sabloConstants: sablo.SabloConstants, webStorage,$websocketConstants) {
+}).factory('$sabloApplication', function($rootScope: angular.IRootScopeService, $window: angular.IWindowService, $timeout: angular.ITimeoutService, $q: angular.IQService, $log: sablo.ILogService, $webSocket: sablo.IWebSocket, $sabloConverters: sablo.ISabloConverters, $sabloUtils: sablo.ISabloUtils, $sabloConstants: sablo.SabloConstants, webStorage) {
 
 	// close the connection to the server when application is unloaded
 	$window.addEventListener('unload', function(event) {
+        sessionStorage.removeItem('svy_session_lock');
 		$webSocket.disconnect();
 	});
+    
+    if (sessionStorage.getItem('svy_session_lock')) {
+        webStorage.session.remove('windownr');
+        webStorage.session.remove('clientnr');
+        console.warn('Found a lock in session storage. The storage was cleared.');
+    }
+
+    sessionStorage.setItem('svy_session_lock', '1');
 
 	var oldError = $window.console.error;
 	var oldLog = $window.console.log;
@@ -345,10 +354,6 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 				queryArgs: queryArgs,
 				websocketUri: websocketUri
 			};
-		   if($webSocket.getURLParameter($websocketConstants.CLEAR_SESSION_PARAM) == 'true'){
-	            this.clearSabloInfo();
-	            $window.history.replaceState(null, null, $window.location.href.replace("?" + $websocketConstants.CLEAR_SESSION_PARAM+ "=true", "").replace("&" + $websocketConstants.CLEAR_SESSION_PARAM+ "=true", ""));
-	       }
 			wsSession = $webSocket.connect(wsSessionArgs.context, [getClientnr(), getWindowName(), getWindownr()], wsSessionArgs.queryArgs, wsSessionArgs.websocketUri);
 
 			wsSession.onMessageObject(function(msg, conversionInfo, scopesToDigest) {

@@ -353,10 +353,9 @@ public class JSONUtils
 	}
 
 	/**
-	 * @param value
-	 * @return
+	 * Returns String.valueOf(value); but catches also any exception thrown and turns it into an error message.
 	 */
-	private static String safeToString(Object value)
+	public static String safeToString(Object value)
 	{
 		try
 		{

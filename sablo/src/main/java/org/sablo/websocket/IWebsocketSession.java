@@ -24,6 +24,7 @@ import java.util.Map;
 import org.json.JSONObject;
 import org.sablo.eventthread.IEventDispatcher;
 import org.sablo.services.client.SabloService;
+import org.sablo.services.client.TypesRegistryService;
 import org.sablo.websocket.impl.ClientService;
 
 /**
@@ -123,6 +124,8 @@ public interface IWebsocketSession
 	boolean checkForWindowActivity();
 
 	SabloService getSabloService();
+
+	TypesRegistryService getTypesRegistryService();
 
 	Locale getLocale();
 

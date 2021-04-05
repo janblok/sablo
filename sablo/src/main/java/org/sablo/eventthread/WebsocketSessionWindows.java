@@ -156,7 +156,7 @@ public class WebsocketSessionWindows implements IWindow
 	}
 
 	@Override
-	public void executeAsyncServiceCall(IClientService clientService, String functionName, Object[] arguments, PropertyDescription argumentTypes)
+	public void executeAsyncServiceCall(IClientService clientService, String functionName, Object[] arguments, List<PropertyDescription> argumentTypes)
 	{
 		for (IWindow window : session.getWindows())
 		{
@@ -165,7 +165,7 @@ public class WebsocketSessionWindows implements IWindow
 	}
 
 	@Override
-	public void executeAsyncNowServiceCall(IClientService clientService, String functionName, Object[] arguments, PropertyDescription argumentTypes)
+	public void executeAsyncNowServiceCall(IClientService clientService, String functionName, Object[] arguments, List<PropertyDescription> argumentTypes)
 	{
 		for (IWindow window : session.getWindows())
 		{
@@ -188,13 +188,13 @@ public class WebsocketSessionWindows implements IWindow
 	}
 
 	@Override
-	public Object invokeApi(WebComponent receiver, WebObjectFunctionDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes)
+	public Object invokeApi(WebComponent receiver, WebObjectFunctionDefinition apiFunction, Object[] arguments)
 	{
 		Object retValue = null;
 		for (IWindow window : session.getWindows())
 		{
-			if (retValue == null) retValue = window.invokeApi(receiver, apiFunction, arguments, argumentTypes);
-			else window.invokeApi(receiver, apiFunction, arguments, argumentTypes);
+			if (retValue == null) retValue = window.invokeApi(receiver, apiFunction, arguments);
+			else window.invokeApi(receiver, apiFunction, arguments);
 		}
 		return retValue;
 	}

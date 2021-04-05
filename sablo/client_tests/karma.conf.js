@@ -11,12 +11,13 @@ module.exports = function(config){
 
 		// sablo scripts
 		'../META-INF/resources/sablo/js/*.js',
+		'../META-INF/resources/sablo/types/*.js',
 		
 		// test scripts
 		'test/**/*.js'
     ],
 
-    frameworks: ['jasmine'],
+    frameworks: ['es6-shim', 'jasmine'], // 'es6-shim' offers a polyfill for Map constructor on PhantomJS (that doesn't support that)
     browsers : ['PhantomJS'],
     //browsers : ['PhantomJS', 'Chrome', 'Firefox', 'IE'],//
 

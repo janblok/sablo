@@ -17,15 +17,15 @@
 package org.sablo.services.client;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.PropertyDescriptionBuilder;
-import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.specification.property.types.BooleanPropertyType;
 import org.sablo.specification.property.types.IntPropertyType;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.IClientService;
-import org.sablo.websocket.utils.JSONUtils.EmbeddableJSONWriter;
 
 /**
  * Class to access sablo builtin server-service methods.
@@ -36,6 +36,9 @@ import org.sablo.websocket.utils.JSONUtils.EmbeddableJSONWriter;
 public class SabloService
 {
 	public static final String SABLO_SERVICE = "$sabloService";
+
+	private static final PropertyDescription defidPD = new PropertyDescriptionBuilder().withName("defid").withType(IntPropertyType.INSTANCE).build();
+	private static final PropertyDescription successPD = new PropertyDescriptionBuilder().withName("success").withType(BooleanPropertyType.INSTANCE).build();
 
 	private final IClientService clientService;
 
@@ -56,27 +59,16 @@ public class SabloService
 
 	public void resolveDeferedEvent(int defid, boolean success, Object argument, PropertyDescription argumentPD)
 	{
-		PropertyDescription pd = null;
+		List<PropertyDescription> paramTypes = null;
 		if (argumentPD != null)
 		{
-			PropertyDescriptionBuilder pdBuilder = AggregatedPropertyType.newAggregatedPropertyBuilder();
-			pdBuilder.withProperty("0", new PropertyDescriptionBuilder().withName("defid").withType(IntPropertyType.INSTANCE).build());
-			pdBuilder.withProperty("1", argumentPD);
-			pdBuilder.withProperty("2", new PropertyDescriptionBuilder().withName("success").withType(BooleanPropertyType.INSTANCE).build());
-			pd = pdBuilder.build();
+			paramTypes = new ArrayList<>(3);
+			paramTypes.add(defidPD);
+			paramTypes.add(argumentPD);
+			paramTypes.add(successPD);
 		}
 		CurrentWindow.get().executeAsyncServiceCall(clientService, "resolveDeferedEvent",
-			new Object[] { Integer.valueOf(defid), argument, Boolean.valueOf(success) }, pd);
-	}
-
-	public void addComponentClientSideConversionTypes(EmbeddableJSONWriter toBeSent)
-	{
-		clientService.executeAsyncServiceCall("addComponentClientSideConversionTypes", new Object[] { toBeSent });
-	}
-
-	public void setServiceClientSideConversionTypes(EmbeddableJSONWriter toBeSent)
-	{
-		clientService.executeAsyncServiceCall("setServiceClientSideConversionTypes", new Object[] { toBeSent });
+			new Object[] { Integer.valueOf(defid), argument, Boolean.valueOf(success) }, paramTypes);
 	}
 
 }

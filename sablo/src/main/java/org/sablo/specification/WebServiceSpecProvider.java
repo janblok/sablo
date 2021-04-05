@@ -154,7 +154,7 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 		}
 	}
 
-	public EmbeddableJSONWriter getClientSideTypes()
+	public EmbeddableJSONWriter getClientSideSpecs()
 	{
 		if (clientSideTypesWithConversionsOnAllServices == null)
 		{
@@ -172,8 +172,8 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 					EmbeddableJSONWriter clSideTypesForThisComponent = ClientSideTypeCache.buildClientSideTypesFor(serviceSpec);
 					if (clSideTypesForThisComponent != null)
 					{
-						// TODO is .getSpecification().getName() enough or should we also include .getSpecification().getPackageName() here?
-						toBeSent.key(serviceSpec.getName()).value(clSideTypesForThisComponent);
+						// normally scriptingName (camel-case instead of dashes) does include package name (to make it unique) and it is also what is used to find service and service specs. client-side...
+						toBeSent.key(serviceSpec.getScriptingName()).value(clSideTypesForThisComponent);
 						hasClientSideTypes = true;
 					}
 				}

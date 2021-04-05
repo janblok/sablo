@@ -30,6 +30,9 @@ import org.sablo.specification.property.IPropertyType;
  * This is useful when you want to create and register types that wrap other types and can contribute to their wrapped
  * type's behavior only when some config options are specified in the .spec file.
  *
+ * For example in Servoy a dataprovider type defined in .spec will actually be a foundset linked type that can yield to dataprovider
+ * when parsing .spec if "forFoundset" is not present in it's configuration. If it is present it will remain a foundset linked type.
+ *
  * @author acostescu
  */
 public interface IYieldingType<T, YT> extends IPropertyType<T>

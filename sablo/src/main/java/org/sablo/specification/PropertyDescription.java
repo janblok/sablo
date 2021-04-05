@@ -61,7 +61,7 @@ public class PropertyDescription
 	private final JSONObject tags;
 	private String deprecated = null;
 
-	//case of nested type
+	// case of nested type
 	private final Map<String, PropertyDescription> properties;
 	private final boolean hasDefault;
 
@@ -234,7 +234,25 @@ public class PropertyDescription
 		return values == null ? Collections.emptyList() : Collections.unmodifiableList(values);
 	}
 
+	/**
+	 * If .spec file declared a pushToServer value then it will return that value; otherwise it will return/default to PushToServerEnum.reject.
+	 * Reject is a default for root level properties that do not specify a push to server; all others levels - when they need to compute the pushToServerLevel
+	 * can use {@link #getPushToServerAsDeclaredInSpecFile()} so that they can differentiate between reject being declared in .spec file and nothing being declared
+	 * in .spec file.
+	 *
+	 * @see PushToServerEnum#combineWithChild(PushToServerEnum)
+	 */
 	public PushToServerEnum getPushToServer()
+	{
+		return pushToServer != null ? pushToServer : PushToServerEnum.reject;
+	}
+
+	/**
+	 * If .spec file declared a pushToServer value then it will return that value; otherwise it will return null.
+	 *
+	 * @see PushToServerEnum#combineWithChild(PushToServerEnum)
+	 */
+	public PushToServerEnum getPushToServerAsDeclaredInSpecFile()
 	{
 		return pushToServer;
 	}
@@ -378,6 +396,31 @@ public class PropertyDescription
 	{
 		List<PropertyDescription> propertyPath = getPropertyPath(propname);
 		return propertyPath.get(propertyPath.size() - 1);
+	}
+
+	public static class PDAndComputedPushToServer
+	{
+		public final PropertyDescription pd;
+		public final PushToServerEnum pushToServer;
+
+		public PDAndComputedPushToServer(PropertyDescription pd, PushToServerEnum pushToServer)
+		{
+			this.pd = pd;
+			this.pushToServer = pushToServer;
+		}
+	}
+
+	public PDAndComputedPushToServer computePushToServerForPropertyPathAndGetPD(String propname)
+	{
+		List<PropertyDescription> propertyPath = getPropertyPath(propname);
+		PushToServerEnum computedPTS = (propertyPath.size() > 0 ? propertyPath.get(0).getPushToServer() : PushToServerEnum.reject); // default for root properties is reject; the rest of the path is computed from parent computed and child declared pushToServer values
+
+		for (int i = 1; i < propertyPath.size(); i++)
+		{
+			computedPTS = computedPTS.combineWithChild(propertyPath.get(i).getPushToServerAsDeclaredInSpecFile()); // note that here we use getPushToServerAsDeclaredInSpecFile() which can return null as well; for root property we used getPushToServer()
+		}
+
+		return new PDAndComputedPushToServer(propertyPath.get(propertyPath.size() - 1), computedPTS);
 	}
 
 	public Map<String, PropertyDescription> getProperties()

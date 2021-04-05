@@ -46,7 +46,6 @@ import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.sablo.specification.WebObjectSpecificationBuilder;
 import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.ChangeAwareList;
-import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.specification.property.types.DimensionPropertyType;
 import org.sablo.specification.property.types.VisiblePropertyType;
 import org.sablo.websocket.BaseWindow;
@@ -119,11 +118,8 @@ public class WebComponentTest
 		assertEquals(new Dimension(10, 10), properties.get("size"));
 		assertEquals(new Dimension(10, 10), component.getProperty("size"));
 
-		HashMap<String, Object> data = new HashMap<>();
-		data.put("msg", properties);
-
-		String msg = JSONUtils.writeDataAsFullToJSON(data, null, null);
-		assertEquals(new JSONObject("{\"msg\":{\"name\":\"test\",\"size\":{\"width\":10,\"height\":10}}}").toString(), new JSONObject(msg).toString());
+		String msg = JSONUtils.writeDataAsFullToJSON(properties, null, null);
+		assertEquals(new JSONObject("{\"name\":\"test\",\"size\":{\"width\":10,\"height\":10}}").toString(), new JSONObject(msg).toString());
 
 		component.putBrowserProperty("size", new JSONObject("{\"width\":20,\"height\":20}"));
 		properties = component.getRawPropertiesWithoutDefaults();
@@ -151,11 +147,8 @@ public class WebComponentTest
 		assertEquals(Color.black, properties.get("background"));
 		assertEquals(Color.black, component.getProperty("background"));
 
-		HashMap<String, Object> data = new HashMap<>();
-		data.put("msg", properties);
-
-		String msg = JSONUtils.writeChanges(data, null, null);
-		assertEquals("{\"msg\":{\"background\":\"#000000\",\"name\":\"test\"}}", msg);
+		String msg = JSONUtils.writeChanges(properties, null, null);
+		assertEquals("{\"background\":\"#000000\",\"name\":\"test\"}", msg);
 
 		component.putBrowserProperty("background", "#ff0000");
 		properties = component.getRawPropertiesWithoutDefaults();
@@ -183,12 +176,10 @@ public class WebComponentTest
 		assertEquals(new Font("SansSerif", Font.BOLD, 12), properties.get("font"));
 		assertEquals(new Font("SansSerif", Font.BOLD, 12), component.getProperty("font"));
 
-		HashMap<String, Object> data = new HashMap<>();
-		data.put("msg", properties);
-
-		String msg = JSONUtils.writeDataAsFullToJSON(data, null, null);
+		String msg = JSONUtils.writeDataAsFullToJSON(properties, null, null);
 		assertEquals(new JSONObject(
-			"{\"msg\":{\"font\":{\"fontWeight\":\"bold\",\"fontStyle\":\"normal\",\"fontSize\":\"12px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"},\"name\":\"test\"}}").toString(),
+			"{\"font\":{\"fontWeight\":\"bold\",\"fontStyle\":\"normal\",\"fontSize\":\"12px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"},\"name\":\"test\"}")
+				.toString(),
 			new JSONObject(msg).toString());
 
 		component.putBrowserProperty("font", new JSONObject("{\"fontStyle\":\"italic\",\"fontSize\":\"10px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"}"));
@@ -220,11 +211,8 @@ public class WebComponentTest
 		assertEquals(new Point(10, 10), properties.get("location"));
 		assertEquals(new Point(10, 10), component.getProperty("location"));
 
-		HashMap<String, Object> data = new HashMap<>();
-		data.put("msg", properties);
-
-		String msg = JSONUtils.writeDataAsFullToJSON(data, null, null);
-		assertEquals(new JSONObject("{\"msg\":{\"location\":{\"x\":10,\"y\":10},\"name\":\"test\"}}").toString(), new JSONObject(msg).toString());
+		String msg = JSONUtils.writeDataAsFullToJSON(properties, null, null);
+		assertEquals(new JSONObject("{\"location\":{\"x\":10,\"y\":10},\"name\":\"test\"}").toString(), new JSONObject(msg).toString());
 
 		component.putBrowserProperty("location", new JSONObject("{\"x\":20,\"y\":20}"));
 		properties = component.getRawPropertiesWithoutDefaults();
@@ -246,7 +234,6 @@ public class WebComponentTest
 		customType.put("active", Boolean.TRUE);
 		customType.put("foreground", Color.black);
 
-
 		assertTrue(component.setProperty("atype", customType));
 
 		Map<String, Object> properties = component.getRawPropertiesWithoutDefaults();
@@ -255,39 +242,42 @@ public class WebComponentTest
 		assertEquals(customType, properties.get("atype"));
 		assertEquals(customType, component.getProperty("atype"));
 
-		HashMap<String, Object> data = new HashMap<>();
-		data.put("msg", properties);
+		// the following uses just a default conversion not customObjectType; but test that anyway to see that Color type works based on class type conversions
+		String msg = JSONUtils.writeDataAsFullToJSON(properties, null, null);
+		assertEquals("{\"atype\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"},\"name\":\"test\"}", msg);
 
-		String msg = JSONUtils.writeDataAsFullToJSON(data, null, null);
-		assertEquals("{\"msg\":{\"atype\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"},\"name\":\"test\"}}", msg);
+		// now do it as it's supposed to be done
+		msg = JSONUtils.writeDataAsFullToJSON(properties, component.getSpecification(), null);
+		assertEquals("{\"atype\":{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},\"name\":\"test\"}", msg);
 
 		component.putBrowserProperty("atype",
-			new JSONObject("{\"vEr\":1,\"v\":{\"name\":\"myname\",\"active\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}}"));
+			new JSONObject(
+				"{\"vEr\":2,\"v\":{\"name\":\"myNAME\",\"active\":false,\"text\":\"test\",\"foreground\":\"#ffffff\",\"size\":{\"width\":10,\"height\":10}}}"));
 		properties = component.getRawPropertiesWithoutDefaults();
 		assertNotNull(properties.get("atype"));
 		assertSame(properties.get("atype"), component.getProperty("atype"));
 
 		customType = (Map<String, Object>)component.getProperty("atype");
-		assertEquals("myname", customType.get("name"));
+		assertEquals("myNAME", customType.get("name"));
 		assertEquals(Boolean.FALSE, customType.get("active"));
 		assertEquals(new Dimension(10, 10), customType.get("size"));
+		assertEquals(Color.white, customType.get("foreground"));
 
 		// TODO also for custom types none existing properties should just be added? Like in the component itself?
-		// for now we dont allow it..
+		// for now we don't allow it..
 		component.putBrowserProperty("atype",
-			new JSONObject("{\"vEr\":2,\"v\":{\"name\":\"myname\",\"notintype\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}}"));
+			new JSONObject("{\"vEr\":3,\"v\":{\"name\":\"YOURname\",\"notintype\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}}"));
 		properties = component.getRawPropertiesWithoutDefaults();
 		assertNotNull(properties.get("atype"));
 		assertSame(properties.get("atype"), component.getProperty("atype"));
 
 		customType = (Map<String, Object>)component.getProperty("atype");
-		assertEquals("myname", customType.get("name"));
+		assertEquals("YOURname", customType.get("name"));
 		assertNull(customType.get("active"));
 		assertNull(customType.get("notintype"));
 
 		// TODO add partial updates for custom types?
 		// but how do we know that? that the previous value must be taken as a base, and updates should overwrite, and somehow properties marked as deletes should be deleted?
-
 	}
 
 	@Test
@@ -321,23 +311,18 @@ public class WebComponentTest
 			same = same | (o != array2.get(i++));
 		assertTrue(same);
 
-		HashMap<String, Object> data = new HashMap<>();
 		TypedData<Map<String, Object>> properties = component.getProperties();
-		data.put("msg", properties.content);
 
-		PropertyDescriptionBuilder messageTypesBuilder = AggregatedPropertyType.newAggregatedPropertyBuilder();
-		messageTypesBuilder.withProperty("msg", properties.contentType);
-
-		PropertyDescription messageTypes = messageTypesBuilder.build();
-
-		String msg = JSONUtils.writeDataAsFullToJSON(data, messageTypes, allowDataConverterContext);
+		String msg = JSONUtils.writeDataAsFullToJSON(properties.content, properties.contentType, allowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}]}}}").toString(),
+			"{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}]}}")
+				.toString(),
 			new JSONObject(msg).toString());
 
-		msg = JSONUtils.writeDataAsFullToJSON(data, messageTypes, shallowDataConverterContext);
+		msg = JSONUtils.writeDataAsFullToJSON(properties.content, properties.contentType, shallowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"msg\":{\"name\":\"test\",\"types\":{\"vEr\":3,\"w\":false,\"v\":[{\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}]}}}").toString(),
+			"{\"name\":\"test\",\"types\":{\"vEr\":3,\"v\":[{\"vEr\":3,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":3,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}]}}")
+				.toString(),
 			new JSONObject(msg).toString());
 
 		component.putBrowserProperty("types",

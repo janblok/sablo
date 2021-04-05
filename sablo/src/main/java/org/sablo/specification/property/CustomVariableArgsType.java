@@ -48,7 +48,7 @@ public class CustomVariableArgsType extends CustomJSONPropertyType<Object> imple
 	public Object fromJSON(Object newJSONValue, Object previousSabloValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext,
 		ValueReference<Boolean> returnValueAdjustedIncommingValue)
 	{
-		//not needed for now, this type is for passing variable number of parameters
+		// not needed for now; this type is currently used just for passing a variable number of parameters to client (component and service apis)
 		return null;
 	}
 
@@ -60,9 +60,9 @@ public class CustomVariableArgsType extends CustomJSONPropertyType<Object> imple
 		writer.array();
 		if (sabloValue instanceof List)
 		{
-			for (int i = 0; i < ((List)sabloValue).size(); i++)
+			for (Object element : ((List)sabloValue))
 			{
-				JSONUtils.FullValueToJSONConverter.INSTANCE.toJSONValue(writer, null, ((List)sabloValue).get(i), getCustomJSONTypeDefinition(),
+				JSONUtils.FullValueToJSONConverter.INSTANCE.toJSONValue(writer, null, element, getCustomJSONTypeDefinition(),
 					dataConverterContext);
 			}
 		}

@@ -41,13 +41,18 @@ public class ClientSideWindowState
 
 	private String currentFormUrl;
 	private final WeakHashMap<Container, Object> usedContainers = new WeakHashMap<>(3); // set of used container browser-side - in order to collect all changes and send them when needed
-	private final ClientSideTypesState clientSideTypesWithConversionsState;
+	private final ClientSideSpecState clientSideTypesWithConversionsState;
 	protected final IWindow window;
 
 	public ClientSideWindowState(IWindow window)
 	{
+		this(window, new ClientSideSpecState(window));
+	}
+
+	public ClientSideWindowState(IWindow window, ClientSideSpecState clientSideTypesState)
+	{
 		this.window = window;
-		clientSideTypesWithConversionsState = new ClientSideTypesState(window);
+		clientSideTypesWithConversionsState = clientSideTypesState;
 	}
 
 	protected void setCurrentFormUrl(String newFormUrl)
@@ -101,7 +106,13 @@ public class ClientSideWindowState
 		// browser refresh or new browser window
 		// so we need to send back anything that is needed in the browser for this window state
 		sendCurrentFormUrl();
-		usedContainers.clear(); // if this is due to a refresh we need to clear the used containers as they will be loaded again anyway; a fresh window will have none anyway
+
+		// if this is due to a refresh we need to clear the used containers as they will be loaded again anyway; a fresh window will have none anyway
+		usedContainers.forEach((c, o) -> {
+			c.clearRegisteredToWindow();
+		});
+		usedContainers.clear();
+
 		clientSideTypesWithConversionsState.handleFreshBrowserWindowConnected();
 	}
 

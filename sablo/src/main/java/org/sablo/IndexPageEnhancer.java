@@ -36,7 +36,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.sablo.security.ContentSecurityPolicyConfig;
-import org.sablo.services.template.ModifiablePropertiesGenerator;
 import org.sablo.specification.PackageSpecification;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebObjectSpecification;
@@ -252,10 +251,6 @@ public class IndexPageEnhancer
 				retval.append(extra).append('\n');
 			}
 		}
-
-		// lists properties that need to be watched for client to server changes for each component/service type
-		retval.append("<script").append(getNonceTag(contentSecurityPolicyConfig)).append(" src=\"spec/").append(
-			ModifiablePropertiesGenerator.PUSH_TO_SERVER_BINDINGS_LIST).append(".js\"></script>\n");
 
 		return retval.toString();
 	}

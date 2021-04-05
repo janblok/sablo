@@ -8,7 +8,6 @@ Export-Package: org.sablo,
  org.sablo.filter,
  org.sablo.services.client,
  org.sablo.services.server,
- org.sablo.services.template,
  org.sablo.specification,
  org.sablo.specification.property,
  org.sablo.specification.property.types,
@@ -34,9 +33,15 @@ Automatic-Module-Name: sablo
 Name: /sablo/sabloService.spec
 Web-Service: True
 
+Name: /sablo/js/typesRegistry.spec
+Web-Service: True
+
 Name: /sablo/types/customJSONObject.spec
 Web-Service: True
 
 Name: /sablo/types/array.spec
+Web-Service: True
+
+Name: /sablo/types/objectType.spec
 Web-Service: True
 

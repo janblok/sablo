@@ -55,7 +55,6 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 	protected static final String UPDATES = "u";
 	protected static final String KEY = "k";
 	protected static final String VALUE = "v";
-	protected static final String PUSH_TO_SERVER = "w";
 	protected static final String INITIALIZE = "in";
 	protected static final String NO_OP = "n";
 
@@ -164,7 +163,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 	public ChangeAwareMap<ET, WT> fromJSON(Object newJSONValue, ChangeAwareMap<ET, WT> previousChangeAwareMap, PropertyDescription pd,
 		IBrowserConverterContext dataConverterContext, ValueReference<Boolean> returnValueAdjustedIncommingValue)
 	{
-		PushToServerEnum pushToServer = BrowserConverterContext.getPushToServerValue(dataConverterContext);
+		PushToServerEnum pushToServerForWholeCustomObject = BrowserConverterContext.getPushToServerValue(dataConverterContext);
 
 		JSONObject clientReceivedJSON;
 		if (newJSONValue instanceof JSONObject && (clientReceivedJSON = (JSONObject)newJSONValue).has(CONTENT_VERSION) &&
@@ -178,8 +177,8 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 					{
 						if (previousChangeAwareMap == null)
 						{
-							log.warn("property " + pd.getName() +
-								" is typed as json object; it got browser updates but server-side it is null; ignoring browser update. Update JSON: " +
+							log.warn("Property (" + pd + ") of '" + (dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
+								"' is typed as json object; it got browser updates but server-side it is null; ignoring browser update. Update JSON: " +
 								newJSONValue);
 						}
 						else
@@ -202,12 +201,17 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 
 								if (keyPD != null)
 								{
+									PushToServerEnum pushToServerComputedOfSubprop = pushToServerForWholeCustomObject
+										.combineWithChild(keyPD.getPushToServerAsDeclaredInSpecFile());
 									if ((keyPD.getType() instanceof IPushToServerSpecialType &&
 										((IPushToServerSpecialType)keyPD.getType()).shouldAlwaysAllowIncommingJSON()) ||
-										PushToServerEnum.allow.compareTo(pushToServer) <= 0)
+										PushToServerEnum.allow
+											.compareTo(pushToServerComputedOfSubprop) <= 0)
 									{
 										ValueReference<Boolean> returnValueAdjustedIncommingValueForKey = new ValueReference<Boolean>(Boolean.FALSE);
-										WT newWrappedEl = (WT)JSONUtils.fromJSON(wrappedBaseMap.get(key), val, keyPD, dataConverterContext,
+										WT newWrappedEl = (WT)JSONUtils.fromJSON(wrappedBaseMap.get(key), val, keyPD,
+											dataConverterContext == null ? null
+												: dataConverterContext.newInstanceWithPushToServer(pushToServerComputedOfSubprop),
 											returnValueAdjustedIncommingValueForKey);
 										previousChangeAwareMap.putInWrappedBaseList(key, newWrappedEl, false);
 
@@ -217,15 +221,17 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 									else
 									{
 										someUpdateAccessDenied = true;
-										log.error("Property (" + pd +
-											") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to update custom object element value '" +
+										log.error("Property (" + pd + "), subkey " + keyPD + " of '" +
+											(dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
+											"' that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to update custom object element value '" +
 											keyPD + "' serverside. Denying and will attempt to send back full value! Update JSON: " + newJSONValue);
 									}
 								}
 								else
 								{
-									if (!angularAutoAddedKeysToIgnore.contains(key)) log.warn(
-										"Cannot set property '" + key + "' of custom JSON Object as it's type is undefined. Update JSON: " + newJSONValue);
+									if (!angularAutoAddedKeysToIgnore.contains(key)) log.warn("Property (" + pd + ") of '" +
+										(dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
+										"'. Cannot set property '" + key + "' of custom JSON Object as it's type is undefined. Update JSON: " + newJSONValue);
 								}
 							}
 							if (someUpdateAccessDenied) previousChangeAwareMap.getChangeSetter().markAllChanged();
@@ -234,23 +240,25 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 					}
 					else
 					{
-						if (PushToServerEnum.allow.compareTo(pushToServer) > 0)
+						if (PushToServerEnum.allow.compareTo(pushToServerForWholeCustomObject) > 0)
 						{
-							log.error("Property (" + pd +
-								") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full custom object value serverside. Denying and attempting to send back full value! Update JSON: " +
+							log.error("Property (" + pd + ") of '" + (dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
+								"' that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full custom object value serverside. Denying and attempting to send back full value! Update JSON: " +
 								newJSONValue);
 							if (previousChangeAwareMap != null) previousChangeAwareMap.getChangeSetter().markAllChanged();
 							return previousChangeAwareMap;
 						}
 
 						// full replace
-						return fullValueReplaceFromBrowser(previousChangeAwareMap, pd, dataConverterContext, clientReceivedJSON.getJSONObject(VALUE));
+						return fullValueReplaceFromBrowser(previousChangeAwareMap, pd, dataConverterContext, clientReceivedJSON.getJSONObject(VALUE),
+							returnValueAdjustedIncommingValue);
 					}
 				}
 				else
 				{
-					log.info("property " + pd.getName() + " is typed as JSON object; it got browser updates (" + clientReceivedJSON.getInt(CONTENT_VERSION) +
-						") but expected server version (" + (previousChangeAwareMap.getListContentVersion() + 1) +
+					log.info("Property (" + pd + ") of '" + (dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
+						"' is typed as JSON object; it got browser updates (" + clientReceivedJSON.getInt(CONTENT_VERSION) +
+						") but expected server version (" + previousChangeAwareMap.getListContentVersion() +
 						") - so server changed meanwhile; ignoring browser update. Update JSON: " + newJSONValue);
 
 					// dropped browser update because server object changed meanwhile;
@@ -262,16 +270,17 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 			}
 			catch (JSONException e)
 			{
-				log.error("Cannot correctly parse custom JSON object property updates/values from browser. Update JSON: " + newJSONValue, e);
+				log.error("Property (" + pd + ") of '" + (dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
+					"'. Cannot correctly parse custom JSON object property updates/values from browser. Update JSON: " + newJSONValue, e);
 				return previousChangeAwareMap;
 			}
 		}
 		else if (newJSONValue == null)
 		{
-			if (PushToServerEnum.allow.compareTo(pushToServer) > 0)
+			if (PushToServerEnum.allow.compareTo(pushToServerForWholeCustomObject) > 0)
 			{
-				log.error("Property (" + pd +
-					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full custom object value serverside to null. Denying and attempting to send back full value! Update JSON: " +
+				log.error("Property (" + pd + ") of '" + (dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
+					"' that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full custom object value serverside to null. Denying and attempting to send back full value! Update JSON: " +
 					newJSONValue);
 				if (previousChangeAwareMap != null) previousChangeAwareMap.getChangeSetter().markAllChanged();
 				return previousChangeAwareMap;
@@ -283,36 +292,30 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		{
 			if (((JSONObject)newJSONValue).has(NO_OP)) return previousChangeAwareMap;
 
-			if (PushToServerEnum.allow.compareTo(pushToServer) > 0)
-			{
-				log.error("Property (" + pd +
-					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full custom object value serverside (uoc). Denying and attempting to send back full value! Update JSON: " +
-					newJSONValue);
-				if (previousChangeAwareMap != null) previousChangeAwareMap.getChangeSetter().markAllChanged();
-				return previousChangeAwareMap;
-			}
-
-			// this can happen if the property was undefined before (so not even aware of type client side) and it was assigned a complete object value client side;
-			// in this case we must update server value and send a request back to client containing the type and letting it know that it must start watching the new value (for granular updates)
-			ChangeAwareMap<ET, WT> newChangeAwareMap = fullValueReplaceFromBrowser(previousChangeAwareMap, pd, dataConverterContext, (JSONObject)newJSONValue);
-			newChangeAwareMap.getChangeSetter().markMustSendTypeToClient();
-			return newChangeAwareMap;
+			log.error("Property (" + pd + ") of '" + (dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
+				"' o tried to change something from client to server but with unsupported content: " + newJSONValue);
+			if (previousChangeAwareMap != null) previousChangeAwareMap.getChangeSetter().markAllChanged();
+			return previousChangeAwareMap;
 		}
 		else
 		{
-			log.error("property " + pd.getName() + " is typed as JSON object, but the value is not an JSONObject or supported update value: " + newJSONValue);
+			log.error("property " + pd + " of '" + (dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
+				"' is typed as custom JSON object, but the value is not an JSONObject or supported update value: " + newJSONValue);
 			return previousChangeAwareMap;
 		}
 	}
 
 	protected ChangeAwareMap<ET, WT> fullValueReplaceFromBrowser(ChangeAwareMap<ET, WT> previousChangeAwareMap, PropertyDescription pd,
-		IBrowserConverterContext dataConverterContext, JSONObject clientReceivedJSON)
+		IBrowserConverterContext dataConverterContext, JSONObject clientReceivedJSON, ValueReference<Boolean> returnValueAdjustedIncommingValue)
 	{
+		PushToServerEnum pushToServerForWholeCustomObject = BrowserConverterContext.getPushToServerValue(dataConverterContext);
+
 		Map<String, WT> map = new HashMap<String, WT>();
 		Map<String, WT> previousWrappedBaseMap = (previousChangeAwareMap != null ? previousChangeAwareMap.getWrappedBaseMapForReadOnly() : null);
 		List<String> adjustedNewValueKeys = new ArrayList<>();
 
 		Iterator<String> it = clientReceivedJSON.keys();
+		boolean someUpdateAccessDenied = false;
 		while (it.hasNext())
 		{
 			String key = it.next();
@@ -320,21 +323,40 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 			PropertyDescription keyPD = getCustomJSONTypeDefinition().getProperty(key);
 			if (keyPD != null)
 			{
-				if (previousWrappedBaseMap != null)
-				{
-					oldVal = previousWrappedBaseMap.get(key);
-				}
-				try
-				{
-					ValueReference<Boolean> returnValueAdjustedIncommingValueForKey = new ValueReference<Boolean>(Boolean.FALSE);
-					map.put(key, (WT)JSONUtils.fromJSON(oldVal, clientReceivedJSON.opt(key), getCustomJSONTypeDefinition().getProperty(key),
-						dataConverterContext, returnValueAdjustedIncommingValueForKey));
+				PushToServerEnum pushToServerComputedOfSubprop = pushToServerForWholeCustomObject
+					.combineWithChild(keyPD.getPushToServerAsDeclaredInSpecFile());
 
-					if (returnValueAdjustedIncommingValueForKey.value.booleanValue()) adjustedNewValueKeys.add(key);
-				}
-				catch (JSONException e)
+				if ((keyPD.getType() instanceof IPushToServerSpecialType &&
+					((IPushToServerSpecialType)keyPD.getType()).shouldAlwaysAllowIncommingJSON()) ||
+					PushToServerEnum.allow
+						.compareTo(pushToServerComputedOfSubprop) <= 0)
 				{
-					log.error("Cannot parse JSON object element browser JSON.", e);
+					if (previousWrappedBaseMap != null)
+					{
+						oldVal = previousWrappedBaseMap.get(key);
+					}
+					try
+					{
+						ValueReference<Boolean> returnValueAdjustedIncommingValueForKey = new ValueReference<Boolean>(Boolean.FALSE);
+						map.put(key, (WT)JSONUtils.fromJSON(oldVal, clientReceivedJSON.opt(key), getCustomJSONTypeDefinition().getProperty(key),
+							dataConverterContext == null ? null : dataConverterContext.newInstanceWithPushToServer(pushToServerComputedOfSubprop),
+							returnValueAdjustedIncommingValueForKey));
+
+						if (returnValueAdjustedIncommingValueForKey.value.booleanValue()) adjustedNewValueKeys.add(key);
+					}
+					catch (JSONException e)
+					{
+						log.error("Cannot parse JSON object element browser JSON.", e);
+					}
+				}
+				else
+				{
+					someUpdateAccessDenied = true;
+					log.error("Property (" + pd + "), subkey " + keyPD + " of '" +
+						(dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
+						"' that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to update custom object element value '" +
+						keyPD + "' serverside (throught full obj. value). Denying and will attempt to send back full value! Update JSON: " +
+						clientReceivedJSON);
 				}
 			}
 			else
@@ -348,7 +370,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		if (wrappingChildren != null)
 		{
 			IWrappingContext wrappingContext = (dataConverterContext instanceof IWrappingContext ? (IWrappingContext)dataConverterContext
-				: new WrappingContext(dataConverterContext.getWebObject(), pd.getName()));
+				: new WrappingContext(dataConverterContext == null ? null : dataConverterContext.getWebObject(), pd.getName()));
 			newBaseMap = new WrapperMap<ET, WT>(map, wrappingChildren, pd, wrappingContext);
 		}
 		else
@@ -362,7 +384,13 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 			/* TODO we should have here access to webObjectContext ... and give ChangeAwareMap.getOrCreateComponentOrServiceExtension(webObjectContext); */null,
 			getCustomJSONTypeDefinition());
 
-		for (String key : adjustedNewValueKeys)
+		if (someUpdateAccessDenied)
+		{
+			if (previousChangeAwareMap != null) previousChangeAwareMap.getChangeSetter().markAllChanged();
+			else if (returnValueAdjustedIncommingValue != null) returnValueAdjustedIncommingValue.value = Boolean.TRUE;
+			// else no way to tell the system to re-send the server value to client when an client to server change deny happened
+		}
+		else for (String key : adjustedNewValueKeys)
 			retVal.getChangeSetter().markElementChangedByRef(key);
 
 		return retVal;
@@ -394,20 +422,19 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 			writer.object();
 			if (changes.mustSendAll() || fullValue)
 			{
+				PushToServerEnum pushToServer = BrowserConverterContext.getPushToServerValue(dataConverterContext);
 				// send all (currently we don't support granular updates for remove but we could in the future)
 				writer.key(CONTENT_VERSION).value(changeAwareMap.increaseContentVersion());
 
-				PushToServerEnum pushToServer = BrowserConverterContext.getPushToServerValue(dataConverterContext);
-				if (pushToServer == PushToServerEnum.shallow || pushToServer == PushToServerEnum.deep)
-				{
-					writer.key(PUSH_TO_SERVER).value(pushToServer == PushToServerEnum.shallow ? false : true);
-				}
 
 				writer.key(VALUE).object();
 				for (Entry<String, WT> e : wrappedBaseMap.entrySet())
 				{
+					PropertyDescription childPD = getCustomJSONTypeDefinition().getProperty(e.getKey());
 					toJSONConverterForFullValue.toJSONValue(writer, e.getKey(), wrappedBaseMap.get(e.getKey()),
-						getCustomJSONTypeDefinition().getProperty(e.getKey()), dataConverterContext);
+						childPD,
+						dataConverterContext == null ? null : dataConverterContext.newInstanceWithPushToServer(
+							pushToServer.combineWithChild(childPD != null ? childPD.getPushToServerAsDeclaredInSpecFile() : PushToServerEnum.reject)));
 				}
 				writer.endObject();
 			}
@@ -421,25 +448,15 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 
 					// else write changed indexes / granular update:
 					writer.key(CONTENT_VERSION).value(changeAwareMap.getListContentVersion());
-					if (changes.mustSendTypeToClient())
-					{
-						// updates + mustSendTypeToClient can happen if child elements are also similar - and need to instrument their values client-side when set by reference/completely from browser
-						writer.key(INITIALIZE).value(true);
-					}
 
 					writer.key(UPDATES).array();
 
 					// we only get here if fullValue == false (so this is not a fullToJSON (or servoy initialToJSON))
 					// we will write granular update with fully value of a changed key if we have changes by reference; for changed keys by content we will write updates from that key
-					int nextIndexInChangesArray = writeValueForChangedElements(writer, dataConverterContext, wrappedBaseMap, keysWithUpdates, 0, true);
-					writeValueForChangedElements(writer, dataConverterContext, wrappedBaseMap, keysChangedByRef, nextIndexInChangesArray, false);
+					writeValueForChangedElements(writer, dataConverterContext, wrappedBaseMap, keysWithUpdates, true);
+					writeValueForChangedElements(writer, dataConverterContext, wrappedBaseMap, keysChangedByRef, false);
 
 					writer.endArray();
-				}
-				else if (changes.mustSendTypeToClient())
-				{
-					writer.key(CONTENT_VERSION).value(changeAwareMap.getListContentVersion());
-					writer.key(INITIALIZE).value(true);
 				}
 				else
 				{
@@ -457,26 +474,32 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		return writer;
 	}
 
-	protected int writeValueForChangedElements(JSONWriter writer, IBrowserConverterContext dataConverterContext, Map<String, WT> wrappedBaseMap,
-		Set<String> keysWithUpdates, int startIndexInArrayOfChangesForClient, boolean keysWithUpdatedContent)
+	protected void writeValueForChangedElements(JSONWriter writer, IBrowserConverterContext dataConverterContext, Map<String, WT> wrappedBaseMap,
+		Set<String> keysWithUpdates, boolean keysWithUpdatedContent)
 	{
+		PushToServerEnum pushToServer = BrowserConverterContext.getPushToServerValue(dataConverterContext);
+
 		for (String k : keysWithUpdates)
 		{
 			writer.object().key(KEY).value(k);
+			PropertyDescription childPD = getCustomJSONTypeDefinition().getProperty(k);
 			if (keysWithUpdatedContent)
 			{
 				// this method is only called when the custom object is requested to send updates (not full values); so we can assume that we can send only changes if possible (this method will never be expected to fully send properties, no matter how they changed)
 				// the value of these keys has changed content inside it - let it send only changes (if it is change aware of course)
-				JSONUtils.changesToBrowserJSONValue(writer, VALUE, wrappedBaseMap.get(k), getCustomJSONTypeDefinition().getProperty(k), dataConverterContext);
+				JSONUtils.changesToBrowserJSONValue(writer, VALUE, wrappedBaseMap.get(k), childPD,
+					dataConverterContext == null ? null : dataConverterContext.newInstanceWithPushToServer(
+						pushToServer.combineWithChild(childPD != null ? childPD.getPushToServerAsDeclaredInSpecFile() : PushToServerEnum.reject)));
 			}
 			else
 			{
 				// the value has changed completely by reference; send it's full contents
-				JSONUtils.toBrowserJSONFullValue(writer, VALUE, wrappedBaseMap.get(k), getCustomJSONTypeDefinition().getProperty(k), dataConverterContext);
+				JSONUtils.toBrowserJSONFullValue(writer, VALUE, wrappedBaseMap.get(k), childPD,
+					dataConverterContext == null ? null : dataConverterContext.newInstanceWithPushToServer(
+						pushToServer.combineWithChild(childPD != null ? childPD.getPushToServerAsDeclaredInSpecFile() : PushToServerEnum.reject)));
 			}
 			writer.endObject();
 		}
-		return startIndexInArrayOfChangesForClient;
 	}
 
 	@Override

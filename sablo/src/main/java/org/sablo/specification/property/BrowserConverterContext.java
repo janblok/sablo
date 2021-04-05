@@ -34,12 +34,17 @@ public class BrowserConverterContext extends WrappingContext implements IBrowser
 	 */
 	public static final BrowserConverterContext NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER = new BrowserConverterContext(null, PushToServerEnum.reject);
 
-	private final PushToServerEnum parentPropertyPushToServerValue;
+	private final PushToServerEnum computedPropertyPushToServerValue;
 
-	public BrowserConverterContext(BaseWebObject webObject, PushToServerEnum rootPropertyPushToServerValue)
+	public BrowserConverterContext(BaseWebObject webObject, PushToServerEnum computedPropertyPushToServerValue)
 	{
 		super(webObject, null); //TODO get the property name somehow
-		this.parentPropertyPushToServerValue = rootPropertyPushToServerValue;
+		this.computedPropertyPushToServerValue = computedPropertyPushToServerValue;
+	}
+
+	public IBrowserConverterContext newInstanceWithPushToServer(PushToServerEnum npts)
+	{
+		return new BrowserConverterContext(webObject, npts);
 	}
 
 	@Override
@@ -47,7 +52,7 @@ public class BrowserConverterContext extends WrappingContext implements IBrowser
 	{
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((parentPropertyPushToServerValue == null) ? 0 : parentPropertyPushToServerValue.hashCode());
+		result = prime * result + ((computedPropertyPushToServerValue == null) ? 0 : computedPropertyPushToServerValue.hashCode());
 		result = prime * result + ((webObject == null) ? 0 : webObject.hashCode());
 		return result;
 	}
@@ -59,11 +64,11 @@ public class BrowserConverterContext extends WrappingContext implements IBrowser
 		if (obj == null) return false;
 		if (getClass() != obj.getClass()) return false;
 		BrowserConverterContext other = (BrowserConverterContext)obj;
-		if (parentPropertyPushToServerValue == null)
+		if (computedPropertyPushToServerValue == null)
 		{
-			if (other.parentPropertyPushToServerValue != null) return false;
+			if (other.computedPropertyPushToServerValue != null) return false;
 		}
-		else if (!parentPropertyPushToServerValue.equals(other.parentPropertyPushToServerValue)) return false;
+		else if (!computedPropertyPushToServerValue.equals(other.computedPropertyPushToServerValue)) return false;
 		if (webObject == null)
 		{
 			if (other.webObject != null) return false;
@@ -73,9 +78,9 @@ public class BrowserConverterContext extends WrappingContext implements IBrowser
 	}
 
 	@Override
-	public PushToServerEnum getPushToServerValue()
+	public PushToServerEnum getComputedPushToServerValue()
 	{
-		return parentPropertyPushToServerValue;
+		return computedPropertyPushToServerValue;
 	}
 
 	public static PushToServerEnum getPushToServerValue(IBrowserConverterContext context)
@@ -86,7 +91,7 @@ public class BrowserConverterContext extends WrappingContext implements IBrowser
 				new RuntimeException("Just for showing the execution stack"));
 			return PushToServerEnum.reject; // should never happen (BrowserConverterContext should always be present); but just in case to avoid a possible NPE breaking more unrelated functionality
 		}
-		PushToServerEnum v = context.getPushToServerValue();
+		PushToServerEnum v = context.getComputedPushToServerValue();
 		if (v == null)
 		{
 			log.warn("No PushToServerEnum present in an IBrowserConverterContext instance. Will default to 'reject'. This is where it happened: ",

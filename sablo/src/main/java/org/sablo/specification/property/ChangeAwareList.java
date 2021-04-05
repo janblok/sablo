@@ -143,8 +143,6 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		void markElementChangedByRef(int i);
 
 		void markAllChanged();
-
-		void markMustSendTypeToClient();
 	}
 
 	public class Changes implements IChangeSetter
@@ -155,7 +153,6 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		private final List<Integer> removedIndexes = new ArrayList<Integer>();
 		private final List<Integer> addedIndexes = new ArrayList<Integer>();
 		private boolean allChanged;
-		private boolean mustSendTypeToClient;
 
 		private boolean immutableMode = false;
 
@@ -179,11 +176,6 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		public Set<Integer> getIndexesWithContentUpdates()
 		{
 			return indexesWithContentUpdates;
-		}
-
-		public boolean mustSendTypeToClient()
-		{
-			return mustSendTypeToClient;
 		}
 
 		public boolean mustSendAll()
@@ -218,21 +210,10 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		private void clearChanges()
 		{
 			allChanged = false;
-			mustSendTypeToClient = false;
 			indexesWithContentUpdates.clear();
 			indexesChangedByRef.clear();
 			removedIndexes.clear();
 			addedIndexes.clear();
-		}
-
-		public void markMustSendTypeToClient()
-		{
-			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
-
-			boolean oldMustSendTypeToClient = changes.mustSendTypeToClient;
-			changes.mustSendTypeToClient = true;
-			if (changes.indexesChangedByRef.size() == 0 && changes.indexesWithContentUpdates.size() == 0 && !changes.allChanged && !oldMustSendTypeToClient &&
-				changes.addedIndexes.size() == 0 && changes.removedIndexes.size() == 0 && changeMonitor != null) changeMonitor.valueChanged();
 		}
 
 		protected void markElementContentsUpdated(int i)
@@ -240,7 +221,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
 
 			if (!changes.addedIndexes.contains(Integer.valueOf(i)) && !changes.indexesChangedByRef.contains(Integer.valueOf(i)) &&
-				changes.indexesWithContentUpdates.add(Integer.valueOf(i)) && !changes.allChanged && !changes.mustSendTypeToClient && changeMonitor != null)
+				changes.indexesWithContentUpdates.add(Integer.valueOf(i)) && !changes.allChanged && changeMonitor != null)
 				changeMonitor.valueChanged();
 		}
 
@@ -251,7 +232,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			if (!changes.addedIndexes.contains(Integer.valueOf(i)) && changes.indexesChangedByRef.add(Integer.valueOf(i)))
 			{
 				// so it was now added to 'indexesChangedByRef'
-				if (!changes.allChanged && !changes.indexesWithContentUpdates.contains(Integer.valueOf(i)) && !changes.mustSendTypeToClient &&
+				if (!changes.allChanged && !changes.indexesWithContentUpdates.contains(Integer.valueOf(i)) &&
 					changeMonitor != null) changeMonitor.valueChanged();
 				else changes.indexesWithContentUpdates.remove(Integer.valueOf(i)); // remove it from 'indexesWithContentUpdates' if present - as that element will be sent fully now
 			}
@@ -261,7 +242,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		{
 			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
 
-			if (changes.removedIndexes.add(Integer.valueOf(i)) && !changes.allChanged && !changes.mustSendTypeToClient && changeMonitor != null)
+			if (changes.removedIndexes.add(Integer.valueOf(i)) && !changes.allChanged && changeMonitor != null)
 				changeMonitor.valueChanged();
 		}
 
@@ -269,7 +250,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		{
 			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
 
-			if (changes.addedIndexes.add(Integer.valueOf(i)) && !changes.allChanged && !changes.mustSendTypeToClient && changeMonitor != null)
+			if (changes.addedIndexes.add(Integer.valueOf(i)) && !changes.allChanged && changeMonitor != null)
 				changeMonitor.valueChanged();
 		}
 
@@ -279,13 +260,13 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 
 			boolean alreadyCh = changes.allChanged;
 			changes.allChanged = true;
-			if (!alreadyCh && changes.indexesWithContentUpdates.size() == 0 && changes.indexesChangedByRef.size() == 0 && !changes.mustSendTypeToClient &&
+			if (!alreadyCh && changes.indexesWithContentUpdates.size() == 0 && changes.indexesChangedByRef.size() == 0 &&
 				changeMonitor != null) changeMonitor.valueChanged();
 		}
 
 		protected boolean isChanged()
 		{
-			return (allChanged || mustSendTypeToClient || indexesChangedByRef.size() > 0 || indexesWithContentUpdates.size() > 0 || removedIndexes.size() > 0);
+			return (allChanged || indexesChangedByRef.size() > 0 || indexesWithContentUpdates.size() > 0 || removedIndexes.size() > 0);
 		}
 
 	}

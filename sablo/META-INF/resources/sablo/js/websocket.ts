@@ -6,7 +6,7 @@
 /// <reference path="../../../../typings/window/window.d.ts" />
 /// <reference path="../../../../typings/sablo/sablo.d.ts" />
 
-let webSocketModule = angular.module('webSocketModule', ['pushToServerData', 'typesRegistryModule']).config(function($provide, $logProvider, $rootScopeProvider) {
+let webSocketModule = angular.module('webSocketModule', ['$typesRegistry']).config(function($provide, $logProvider, $rootScopeProvider) {
 	window.____logProvider = $logProvider; // just in case someone wants to alter debug at runtime from browser console for example
 	
 	// log levels for when debugEnabled(true) is called - if that is false, these levels are irrelevant
@@ -51,47 +51,39 @@ let webSocketModule = angular.module('webSocketModule', ['pushToServerData', 'ty
 	$rootScopeProvider.digestTtl(25); 
 });
 
-// declare module pushToServer that generated module "pushToServerData" depends on - so that all pushToServer information is already present when starting 'webSocketModule'
-angular.module('pushToServer', []).factory('$propertyWatchesRegistry', function () {
-	let propertiesThatShouldBeAutoPushedToServer = {}; // key == ("components" or "services"), value is something like {
-	//                                                           "pck1Component1" : { "myDeepWatchedProperty" : true, "myShallowWatchedProperty" : false }
-	//                                                       }
-	
-	function getPropertiesToAutoWatchForComponent(componentTypeName) {
-		return propertiesThatShouldBeAutoPushedToServer["components"][componentTypeName];
-	};
-	
-	function getPropertiesToAutoWatchForService(serviceTypeName) {
-		return propertiesThatShouldBeAutoPushedToServer["services"][serviceTypeName];
-	};
-	
-	// returns an array of watch unregister functions
-	// propertiesToAutoWatch is meant to be the return value of getPropertiesToAutoWatchForComponent or getPropertiesToAutoWatchForService
-	function watchDumbProperties(scope, model, propertiesToAutoWatch, changedCallbackFunction) {
+webSocketModule.factory('$propertyWatchUtils', function ($typesRegistry: sablo.ITypesRegistry) {
+	/** returns an array of watch unregister functions */
+	function watchDumbProperties(scope: angular.IScope, model, webObjectSpecification: sablo.IWebObjectSpecification,
+	                             changedCallbackFunction: (newValue: any, oldValue:any, propertyName: string) => void): (() => void)[] {
 		let unwatchF = [];
-		function getChangeFunction(property, initialV) {
-			let firstTime = true;
-			return function(newValue, oldValue) {
-				if (firstTime) {
-					// value from server should not be sent back; but as directives in their controller methods can already change the values or properties
-					// (so before the first watch execution) we can't just rely only on the "if (oldValue === newValue) return;" below cause in that case it won't send
-					// a value that actually changed to server
-					oldValue = initialV;
-					initialV = undefined;
-					firstTime = false;
+		const pds = webObjectSpecification?.getPropertyDescriptions();
+		
+		if (pds) {
+			function getChangeFunction(propertyName: string, initialV: any) {
+				let firstTime = true;
+				return function(newValue: any, oldValue: any) {
+					if (firstTime) {
+						// value from server should not be sent back; but as directives in their controller methods can already change the values or properties
+						// (so before the first watch execution) we can't just rely only on the "if (oldValue === newValue) return;" below cause in that case it won't send
+						// a value that actually changed to server
+						oldValue = initialV;
+						initialV = undefined;
+						firstTime = false;
+					}
+					if (oldValue === newValue) return;
+					changedCallbackFunction(newValue, oldValue, propertyName);
 				}
-				if (oldValue === newValue) return;
-				changedCallbackFunction(newValue, oldValue, property);
 			}
-		}
-		function getWatchFunction(property) {
-			return function() { 
-				return model[property];
+			function getWatchFunction(propertyName) {
+				return function() { 
+					return model[propertyName];
+				}
 			}
-		}
-		for (let p in propertiesToAutoWatch) {
-			let wf = getWatchFunction(p);
-			unwatchF.push(scope.$watch(wf, getChangeFunction(p, wf()), propertiesToAutoWatch[p]));
+			for (const propertyName of Object.keys(pds)) {
+				const wf = getWatchFunction(propertyName);
+				const pushToServer = pds[propertyName].getPropertyPushToServer();
+				if (pushToServer.value >= sablo.typesRegistry.PushToServerEnum.shallow.value) unwatchF.push(scope.$watch(wf, getChangeFunction(propertyName, wf()), pushToServer == sablo.typesRegistry.PushToServerEnum.shallow ? false : true));
+			}
 		}
 		
 		return unwatchF;
@@ -99,39 +91,32 @@ angular.module('pushToServer', []).factory('$propertyWatchesRegistry', function 
 	
 	return {
 		
-		getPropertiesToAutoWatchForComponent: getPropertiesToAutoWatchForComponent,
-		
-		// returns an array of watch unregister functions
-		watchDumbPropertiesForComponent: function watchDumbPropertiesForComponent(scope, componentTypeName, model, changedCallbackFunction) {
-			return watchDumbProperties(scope, model, getPropertiesToAutoWatchForComponent(componentTypeName), changedCallbackFunction);
+		/** returns an array of watch unregister functions */
+		watchDumbPropertiesForComponent: function watchDumbPropertiesForComponent(scope: angular.IScope, componentTypeName: string,
+		                                                                          model: object, changedCallbackFunction: (newValue: any, oldValue:any, propertyName: string) => void): (() => void)[] {
+			return watchDumbProperties(scope, model, 
+					$typesRegistry.getComponentSpecification(componentTypeName),
+					changedCallbackFunction);
 		},
 		
-		// returns an array of watch unregister functions
-		watchDumbPropertiesForService: function watchDumbPropertiesForService(scope, serviceTypeName, model, changedCallbackFunction) {
-			return watchDumbProperties(scope, model, getPropertiesToAutoWatchForService(serviceTypeName), changedCallbackFunction);
-		},
-		
-		clearAutoWatchPropertiesList: function () {
-			propertiesThatShouldBeAutoPushedToServer = {};
-		},
-		
-		// categoryName can be "components" or "services"
-		// autoWatchPropertiesPerBaseWebObject is something like {
-		//                                                           "pck1Component1" : { "myDeepWatchedProperty" : true, "myShallowWatchedProperty" : false }
-		//                                                       }
-		setAutoWatchPropertiesList: function (categoryName, autoWatchPropertiesPerBaseWebObject) {
-			propertiesThatShouldBeAutoPushedToServer[categoryName] = autoWatchPropertiesPerBaseWebObject;
+		/** returns an array of watch unregister functions */
+		watchDumbPropertiesForService: function watchDumbPropertiesForService(scope: angular.IScope, serviceTypeName: string,
+		                                                                      model: object, changedCallbackFunction: (newValue: any, oldValue:any, propertyName: string) => void): (() => void)[] {
+			return watchDumbProperties(scope, model, 
+					$typesRegistry.getServiceSpecification(serviceTypeName),
+					changedCallbackFunction);
 		}
 		
 	};
-});
+})
 
 
 /**
  * Setup the $webSocket service.
  */
-webSocketModule.factory('$webSocket',
-		function($rootScope, $injector, $window, $log, $q, $services, $sabloConverters, $sabloUtils, $swingModifiers, $interval, wsCloseCodes,$sabloLoadingIndicator, $timeout, $sabloTestability,$websocketConstants) {
+.factory('$webSocket',
+		function($rootScope, $injector, $window, $log, $q, $services, $sabloConverters: sablo.ISabloConverters, $sabloUtils: sablo.ISabloUtils, $swingModifiers, $interval,
+				wsCloseCodes, $sabloLoadingIndicator, $timeout, $sabloTestability, $websocketConstants, $typesRegistry: sablo.ITypesRegistry) {
 
 	let pathname = null;
 	
@@ -213,8 +198,8 @@ webSocketModule.factory('$webSocket',
 	}
 
 	let handleMessage = function(message) {
-		let obj
-		let responseValue
+		let obj;
+		let responseValue;
 		functionsToExecuteAfterIncommingMessageWasHandled = [];
 		let hideIndicatorCounter = 0;
 
@@ -240,20 +225,29 @@ webSocketModule.factory('$webSocket',
 			
 			if ($log.debugLevel === $log.SPAM) $log.debug("sbl * message.data (parsed) = " + JSON.stringify(obj, null, "  "));
 
-			if (obj.services) {
-				// services call, first process the once with the flag 'apply_first'
-				if (obj[$sabloConverters.TYPES_KEY] && obj[$sabloConverters.TYPES_KEY].services) {
-					obj.services = $sabloConverters.convertFromServerToClient(obj.services, obj[$sabloConverters.TYPES_KEY].services, undefined, undefined, undefined)
-				}
-				for (let index in obj.services) {
-					let service = obj.services[index];
-					if (service['pre_data_service_call']) {
-						let serviceInstance = $injector.get(service.name);
+			let responseValueType: sablo.IType<any>;
+			
+			if (obj.serviceApis) {
+				// services calls; first process the once with the flag 'apply_first'
+				for (let index in obj.serviceApis) {
+					let serviceCall = obj.serviceApis[index];
+					if (serviceCall['pre_data_service_call']) {
+						let serviceSpec = $typesRegistry.getServiceSpecification(serviceCall.name);
+						let serviceInstance = $injector.get(serviceCall.name);
 						if (serviceInstance
-								&& serviceInstance[service.call]) {
+								&& serviceInstance[serviceCall.call]) {
+							let serviceCallSpec = serviceSpec?.getApiFunction(serviceCall.call);
+							
+							if (serviceCall.args) for (let argNo = 0; argNo < serviceCall.args.length; argNo++) {
+								serviceCall.args[argNo] = $sabloConverters.convertFromServerToClient(serviceCall.args[argNo], serviceCallSpec?.getArgumentType(argNo),
+								                        undefined, undefined, undefined, undefined, $sabloUtils.PROPERTY_CONTEXT_FOR_INCOMMING_ARGS_AND_RETURN_VALUES)
+							}
+							
+							responseValueType = serviceCallSpec?.returnType;
+
 							// responseValue keeps last services call return value
-							responseValue = serviceInstance[service.call].apply(serviceInstance, service.args);
-							$services.digest(service.name);
+							responseValue = serviceInstance[serviceCall.call].apply(serviceInstance, serviceCall.args);
+							$services.digest(serviceCall.name);
 						}
 					}
 				}
@@ -265,18 +259,14 @@ webSocketModule.factory('$webSocket',
 				if (deferredEvent != null && angular.isDefined(deferredEvent)) {
 					if (obj.exception) {
 						// something went wrong
-						if (obj[$sabloConverters.TYPES_KEY] && obj[$sabloConverters.TYPES_KEY].exception) {
-							obj.exception = $sabloConverters.convertFromServerToClient(obj.exception, obj[$sabloConverters.TYPES_KEY].exception, undefined, undefined, undefined)
-						}
+						// do a default conversion although I doubt it will do anything (don't think server will send client side type for exceptions)
+						obj.exception = $sabloConverters.convertFromServerToClient(obj.exception, undefined, undefined, undefined, undefined, undefined, undefined);
 						$rootScope.$apply(function() {
 							deferredEvent.reject(obj.exception);
 						})
 					} else {
-						if (obj[$sabloConverters.TYPES_KEY] && obj[$sabloConverters.TYPES_KEY].ret) {
-							obj.ret = $sabloConverters.convertFromServerToClient(obj.ret, obj[$sabloConverters.TYPES_KEY].ret, undefined, undefined, undefined)
-						}
 						$rootScope.$apply(function() {
-							deferredEvent.resolve(obj.ret);
+							deferredEvent.resolve(obj.ret); // if it's a handler/server side api call that expects a return value, any type conversions should be done in code triggered by this resolve (in calling code)
 						})
 					}
 				} else $log.warn("Response to an unknown handler call dismissed; can happen (normal) if a handler call gets interrupted by a full browser refresh.");
@@ -289,7 +279,7 @@ webSocketModule.factory('$webSocket',
 			if (obj.msg) {
 				let scopesToDigest = new ScopeSet();
 				for (let handler in onMessageObjectHandlers) {
-					let ret = onMessageObjectHandlers[handler](obj.msg, obj[$sabloConverters.TYPES_KEY] ? obj[$sabloConverters.TYPES_KEY].msg : undefined, scopesToDigest)
+					let ret = onMessageObjectHandlers[handler](obj.msg, scopesToDigest);
 					if (ret) responseValue = ret;
 					
 					if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Checking if any form scope changes need to be digested (obj.msg).");
@@ -298,20 +288,30 @@ webSocketModule.factory('$webSocket',
 			}
 
 			if (obj.msg && obj.msg.services) {
-				$services.updateServiceScopes(obj.msg.services, (obj[$sabloConverters.TYPES_KEY] && obj[$sabloConverters.TYPES_KEY].msg) ? obj[$sabloConverters.TYPES_KEY].msg.services : undefined);
+				$services.updateServiceScopes(obj.msg.services);
 			}
 
-			if (obj.services) {
-				// normal services call
-				for (let index in obj.services) {
-					let service = obj.services[index];
-					if (!service['pre_data_service_call']) {
-						let serviceInstance = $injector.get(service.name);
+			if (obj.serviceApis) {
+				// normal service api calls
+				for (let index in obj.serviceApis) {
+					let serviceCall = obj.serviceApis[index];
+					if (!serviceCall['pre_data_service_call']) {
+						let serviceSpec = $typesRegistry.getServiceSpecification(serviceCall.name);
+						let serviceInstance = $injector.get(serviceCall.name);
 						if (serviceInstance
-								&& serviceInstance[service.call]) {
+								&& serviceInstance[serviceCall.call]) {
+							let serviceCallSpec = serviceSpec?.getApiFunction(serviceCall.call);
+							
+							if (serviceCall.args) for (let argNo = 0; argNo < serviceCall.args.length; argNo++) {
+								serviceCall.args[argNo] = $sabloConverters.convertFromServerToClient(serviceCall.args[argNo], serviceCallSpec?.getArgumentType(argNo),
+								                        undefined, undefined, undefined, undefined, $sabloUtils.PROPERTY_CONTEXT_FOR_INCOMMING_ARGS_AND_RETURN_VALUES)
+							}
+							
+							responseValueType = serviceCallSpec?.returnType;
+							
 							// responseValue keeps last services call return value
-							responseValue = serviceInstance[service.call].apply(serviceInstance, service.args);
-							$services.digest(service.name);
+							responseValue = serviceInstance[serviceCall.call].apply(serviceInstance, serviceCall.args);
+							$services.digest(serviceCall.name);
 						}
 					}
 				}
@@ -328,17 +328,18 @@ webSocketModule.factory('$webSocket',
 				}
 			}
 			
-			// delayed calls
-			if (obj.calls)
+			// component api calls
+			if (obj.componentApis)
 			{
 				let scopesToDigest = new ScopeSet();
-				for(let i = 0;i < obj.calls.length;i++) 
+				for(let i = 0;i < obj.componentApis.length;i++) 
 				{
 					for (let handler in onMessageObjectHandlers) {
-						onMessageObjectHandlers[handler](obj.calls[i], (obj[$sabloConverters.TYPES_KEY] && obj[$sabloConverters.TYPES_KEY].calls) ? obj[$sabloConverters.TYPES_KEY].calls[i] : undefined, scopesToDigest);
+						let ret = onMessageObjectHandlers[handler]({ call: obj.componentApis[i] }, scopesToDigest);
+                        if (ret) responseValue = ret;
 					}
 					
-					if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Checking if any (obj.calls) form scopes changes need to be digested (obj.calls).");
+					if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Checking if any (obj.componentApis) form scopes changes need to be digested (obj.componentApis).");
 				}
 				optimizeAndCallFormScopeDigest(scopesToDigest); // as we are currently not inside a digest cycle, digest the affected scopes
 			}	
@@ -362,7 +363,7 @@ webSocketModule.factory('$webSocket',
 							smsgid : obj.smsgid
 					}
 					if (ret != undefined) {
-						response['ret'] = $sabloUtils.convertClientObject(ret);
+						response['ret'] = $sabloConverters.convertFromClientToServer(ret, responseValueType, undefined, undefined, $sabloUtils.PROPERTY_CONTEXT_FOR_OUTGOING_ARGS_AND_RETURN_VALUES);
 					}
 					if (hideIndicatorCounter) {
 						while ( hideIndicatorCounter-- > 0 ) {
@@ -492,7 +493,7 @@ webSocketModule.factory('$webSocket',
 		}
 	}
 
-	let callService = function(serviceName, methodName, argsObject,async) {
+	let callService = function(serviceName, methodName, argsObject, async) {
 		let cmd = {
 				service : serviceName,
 				methodname : methodName,
@@ -518,7 +519,7 @@ webSocketModule.factory('$webSocket',
 	let onOpenHandlers = [];
 	let onErrorHandlers = [];
 	let onCloseHandlers = [];
-	let onMessageObjectHandlers = [];
+	let onMessageObjectHandlers: sablo.MessageObjectHandler[] = [];
 
 	let WebsocketSession = function() {
 
@@ -684,7 +685,7 @@ webSocketModule.factory('$webSocket',
 	 */
 	return  <sablo.IWebSocket> {
 
-		connect : function(context, args, queryArgs, websocketUri) {
+		connect: function(context, args, queryArgs, websocketUri) {
 
 			connectionArguments = {
 					context: context,
@@ -749,7 +750,7 @@ webSocketModule.factory('$webSocket',
 			}
 
 			// todo should we just merge $websocket and $services into $sablo that just has all
-			// the public api of sablo (like connect, conversions, services)
+			// the public api of sablo (like connect, client side types, services)
 			$services.setSession(wsSession);
 
 			return wsSession
@@ -782,7 +783,7 @@ webSocketModule.factory('$webSocket',
 		addIncomingMessageHandlingDoneTask: addIncomingMessageHandlingDoneTask,
 		
 		disconnect: function() {
-			if(websocket) {
+			if (websocket) {
 				websocket.close();
 				connected = 'CLOSED';
 				if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Connection mode (disconnect): ... CLOSED (" + new Date().getTime() + ")");
@@ -797,47 +798,76 @@ webSocketModule.factory('$webSocket',
 		setQueryString: setQueryString,
 		getQueryString: getQueryString	
 	};
-}).factory("$services", function($rootScope, $sabloConverters, $sabloUtils, $propertyWatchesRegistry, $log){
+}).factory("$services", function($rootScope, $sabloConverters: sablo.ISabloConverters, $sabloUtils: sablo.ISabloUtils, $propertyWatchUtils: sablo.IPropertyWatchUtils,
+		$log: sablo.ILogService, $typesRegistry: sablo.ITypesRegistry, $pushToServerUtils: sablo.IPushToServerUtils) {
 	// serviceName:{} service model
 	let serviceScopes = $rootScope.$new(true);
-	let serviceScopesConversionInfo = {};
+	let serviceScopesDynamicClientSideTypes = {};
 	let watches = {}
 	let wsSession = null;
-	let sendServiceChanges = function(now, prev, servicename, property) {
-		let changes = {}
-		let conversionInfo = serviceScopesConversionInfo[servicename];
-		if (property) {
-			if (conversionInfo && conversionInfo[property]) changes[property] = $sabloConverters.convertFromClientToServer(now, conversionInfo[property], prev);
-			else changes[property] = $sabloUtils.convertClientObject(now);
-		} else {
-			// TODO hmm I think it will never go through here anymore; remove this else code
-			// first build up a list of all the properties both have.
-			let fulllist = $sabloUtils.getCombinedPropertyNames(now,prev);
-			let changes = {};
-			
-			for (let prop in fulllist) {
-				let changed = false;
-				if (!(prev && now)) {
-					changed = true; // true if just one of them is undefined; both cannot be undefined at this point if we are already iterating on combined property names
-				} else {
-					changed = $sabloUtils.isChanged(now[prop], prev[prop], conversionInfo ? conversionInfo[prop] : undefined)
-				}
-				
-				if (changed) {
-					if (conversionInfo && conversionInfo[prop]) changes[prop] = $sabloConverters.convertFromClientToServer(now[prop], conversionInfo[prop], prev ? prev[prop] : undefined);
-					else changes[prop] = $sabloUtils.convertClientObject(now[prop])
-				}
-			}
-		}
-		for (let prop in changes) { // weird way to only send it if it has at least one element
-			wsSession.sendMessageObject({servicedatapush:servicename,changes:changes})
-			return;
-		}
+	
+	const addWatchesToService = function(serviceName: string) {
+        watches[serviceName] = $propertyWatchUtils.watchDumbPropertiesForService(serviceScopes[serviceName], serviceName, serviceScopes[serviceName].model, function(newValue, oldValue, property) {
+                    sendServiceChanges(newValue, oldValue, serviceName, property);
+                });    
+    }
+    
+    const createServiceScopeIfNeeded = function(serviceName: string, andAddWatches: boolean) {
+        if (!serviceScopes[serviceName]) {
+            serviceScopes[serviceName] = serviceScopes.$new(true);
+            serviceScopes[serviceName].model = {};
+            serviceScopesDynamicClientSideTypes[serviceName] = {};
+
+            
+            if (andAddWatches) addWatchesToService(serviceName);
+        }
+        return serviceScopes[serviceName];
+    };
+    
+	const getServiceScope = function(serviceName: string) {
+		serviceName = scriptifyServiceNameIfNeeded(serviceName);
+		
+        createServiceScopeIfNeeded(serviceName, true);
+		return serviceScopes[serviceName];
 	};
-	let getChangeNotifier = function(servicename, property) {
+	
+	const setChangeNotifierIfSmartProperty = function(propertyValue: any, serviceName: string, propertyName: string) {
+        if (propertyValue && propertyValue[$sabloConverters.INTERNAL_IMPL] && propertyValue[$sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
+            let changeNotifier = getChangeNotifier(serviceName, propertyName);
+            propertyValue[$sabloConverters.INTERNAL_IMPL].setChangeNotifier(changeNotifier);
+            // we check for changes anyway in case a property type doesn't do that itself in setChangeNotifier
+            if (propertyValue[$sabloConverters.INTERNAL_IMPL].isChanged && propertyValue[$sabloConverters.INTERNAL_IMPL].isChanged()) changeNotifier();
+        }
+    }
+
+	let sendServiceChanges = function(now, prev, servicename, propertyName) {
+		let changes = {}
+		
+		var propertyType: sablo.IType<any>;
+		const serviceSpec = $typesRegistry.getServiceSpecification(servicename);
+		propertyType = $sabloUtils.getInDepthProperty(serviceScopesDynamicClientSideTypes, servicename, propertyName); // first check if it's a dynamic type
+
+		if (!propertyType) { // try static types for props.
+			propertyType = serviceSpec?.getPropertyType(propertyName);
+		}
+		
+		const serviceScope = getServiceScope(servicename);
+		
+		changes[propertyName] = $sabloConverters.convertFromClientToServer(now, propertyType, prev,
+				serviceScope, {
+					getProperty: (propertyN: string) => { return serviceScope.model ? serviceScope.model[propertyN] : undefined },
+					getPushToServerCalculatedValue: () => { return serviceSpec ? serviceSpec.getPropertyPushToServer(propertyName) : $pushToServerUtils.reject }
+				});
+
+        // set/update change notifier just in case a new full value was set into a smart property type that needs a changeNotifier for that specific property 
+        setChangeNotifierIfSmartProperty(now, servicename, propertyName);
+		
+		wsSession.sendMessageObject( { servicedatapush: servicename, changes: changes } );
+	};
+	let getChangeNotifier = function(servicename, propertyName) {
 		return function() {
 			let serviceModel = serviceScopes[servicename].model;
-			sendServiceChanges(serviceModel[property], serviceModel[property], servicename, property);
+			sendServiceChanges(serviceModel[propertyName], serviceModel[propertyName], servicename, propertyName);
 		}
 	};
 	
@@ -859,45 +889,28 @@ webSocketModule.factory('$webSocket',
 	}
 
 	return {
-		getServiceScope: function(serviceName) {
-			serviceName = scriptifyServiceNameIfNeeded(serviceName);
-			
-			if (!serviceScopes[serviceName]) {
-				serviceScopes[serviceName] = serviceScopes.$new(true);
-				serviceScopes[serviceName].model = {};
-				
-				watches[serviceName] = $propertyWatchesRegistry.watchDumbPropertiesForService(serviceScopes[serviceName], serviceName, serviceScopes[serviceName].model, function(newValue, oldValue, property) {
-					sendServiceChanges(newValue, oldValue, serviceName, property);
-				});
-			}
-			return serviceScopes[serviceName];
-		},
-		updateServiceScopes: function(services, conversionInfo) {
+		getServiceScope: getServiceScope,
+		updateServiceScopes: function(services) {
 			for (let servicename in services) {
 				// current model
 				let serviceScope = serviceScopes[servicename];
+				const serviceSpec: sablo.IWebObjectSpecification = $typesRegistry.getServiceSpecification(servicename); // get static client side types for this service - if it has any
+				const propertyContextCreator: sablo.IPropertyContextCreator = $pushToServerUtils.newRootPropertyContextCreator(
+						function(propertyName: string) { return serviceScope.model ? serviceScope.model[propertyName] : undefined },
+						serviceSpec
+				);
+				
 				if (!serviceScope) {
-					serviceScope = serviceScopes[servicename] = serviceScopes.$new(true);
-					// so no previous service state; set it now
-					if (conversionInfo && conversionInfo[servicename]) {
-						// convert all properties, remember type for when a client-server conversion will be needed
-						services[servicename] = $sabloConverters.convertFromServerToClient(services[servicename], conversionInfo[servicename], undefined, serviceScope, function(propertyName: string) { return serviceScope.model ? serviceScope.model[propertyName] : undefined })
-					}
+					serviceScope = createServiceScopeIfNeeded(servicename, false); // so no previous service state; initialize it now
+
+					// convert all properties, remember type for when a client-server conversion will be needed
+					for (var propertyName in services[servicename]) {
+						let propertyType = serviceSpec?.getPropertyType(propertyName); // get static client side type if any
 						
-					serviceScope.model = services[servicename];
-					
-					if (conversionInfo && conversionInfo[servicename]) {
-						serviceScopesConversionInfo[servicename] = conversionInfo[servicename];
+						serviceScope.model[propertyName] = $sabloConverters.convertFromServerToClient(services[servicename][propertyName], propertyType, undefined,
+								serviceScopesDynamicClientSideTypes[servicename], propertyName, serviceScope, propertyContextCreator.withPushToServerFor(propertyName));
 						
-						for (let pn in conversionInfo[servicename]) {
-							if (services[servicename][pn] && services[servicename][pn][$sabloConverters.INTERNAL_IMPL]
-									&& services[servicename][pn][$sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
-								let changeNotifier = getChangeNotifier(servicename, pn);
-								services[servicename][pn][$sabloConverters.INTERNAL_IMPL].setChangeNotifier(changeNotifier);
-								// we check for changes anyway in case a property type doesn't do that itself in setChangeNotifier
-								if (services[servicename][pn][$sabloConverters.INTERNAL_IMPL].isChanged && services[servicename][pn][$sabloConverters.INTERNAL_IMPL].isChanged()) changeNotifier();
-							}
-						}
+						setChangeNotifierIfSmartProperty(serviceScope.model[propertyName], servicename, propertyName);
 					}
 				} else {
 					let serviceData = services[servicename];
@@ -907,40 +920,32 @@ webSocketModule.factory('$webSocket',
 						unwatchFunctionElement();
 					});
 
-					if (conversionInfo && conversionInfo[servicename]) {
-						serviceData = $sabloConverters.convertFromServerToClient(serviceData, conversionInfo[servicename], serviceScope.model, serviceScope, function(propertyName: string) { return serviceScope.model ? serviceScope.model[propertyName] : undefined })
-					}
-
-					for (let key in serviceData) {
-						let oldValueForKey = serviceScope.model[key];
-						serviceScope.model[key] = serviceData[key];
+					// convert all properties, remember type for when a client-server conversion will be needed
+					for (let propertyName in serviceData) {
+						let oldValue = serviceScope.model[propertyName];
 						
-						if (conversionInfo && conversionInfo[servicename] && conversionInfo[servicename][key]) {
-							// remember type for when a client-server conversion will be needed
-							if (!serviceScopesConversionInfo[servicename]) serviceScopesConversionInfo[servicename] = {};
+						let staticPropertyType = serviceSpec?.getPropertyType(propertyName); // get static client side type if any
+						let oldPropertyType = staticPropertyType ? staticPropertyType : serviceScopesDynamicClientSideTypes[servicename][propertyName]; // use dynamic type (if available) if no static is available
+						
+						serviceScope.model[propertyName] = $sabloConverters.convertFromServerToClient(serviceData[propertyName], staticPropertyType, serviceScope.model[propertyName],
+								serviceScopesDynamicClientSideTypes[servicename], propertyName, serviceScope, propertyContextCreator.withPushToServerFor(propertyName));
 
-							let oldConversionInfoForKey = serviceScopesConversionInfo[servicename][key];
-							serviceScopesConversionInfo[servicename][key] = conversionInfo[servicename][key];
-
-							if ((serviceData[key] !== oldValueForKey || oldConversionInfoForKey !== conversionInfo[servicename][key]) && serviceData[key]
-									&& serviceData[key][$sabloConverters.INTERNAL_IMPL] && serviceData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
-								// setChangeNotifier can be called now after the new conversion info and value are set (getChangeNotifier(servicename, key) will probably use the values in model and that has to point to the new value if reference was changed)
+						let newPropertyType = staticPropertyType ? staticPropertyType : serviceScopesDynamicClientSideTypes[servicename][propertyName]; // use dynamic type (if available) if no static is available
+						
+						if (newPropertyType) {
+							if (serviceScope.model[propertyName] !== oldValue || oldPropertyType !== newPropertyType) {
+								// setChangeNotifier can be called now after the new conversion info and value are set (getChangeNotifier(servicename, propertyName) will probably use the values in model and that has to point to the new value if reference was changed)
 								// as setChangeNotifier on smart property types might end up calling the change notifier right away to announce it already has changes (because for example
 								// the convertFromServerToClient on that property type above might have triggered some listener to the service that uses it which then requested
 								// another thing from the property type and it then already has changes...) // TODO should we decouple this scenario? if we are still processing server to client changes when change notifier is called we could trigger the change notifier later/async for sending changes back to server...
-								let changeNotifier = getChangeNotifier(servicename, key);
-								serviceData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier(changeNotifier);
-								// we check for changes anyway in case a property type doesn't do it itself as described in the comment above
-								if (serviceData[key][$sabloConverters.INTERNAL_IMPL].isChanged && serviceData[key][$sabloConverters.INTERNAL_IMPL].isChanged()) changeNotifier();
+                                setChangeNotifierIfSmartProperty(serviceScope.model[propertyName], servicename, propertyName);
 							}
-						} else if (angular.isDefined(serviceScopesConversionInfo[servicename]) && angular.isDefined(serviceScopesConversionInfo[servicename][key])) {
-							delete serviceScopesConversionInfo[servicename][key];
 						}
 					}
 				}
 				
 				// register a new watch
-				watches[servicename] = $propertyWatchesRegistry.watchDumbPropertiesForService(serviceScope, servicename, serviceScope.model, function(newValue, oldValue, property) {
+				watches[servicename] = $propertyWatchUtils.watchDumbPropertiesForService(serviceScope, servicename, serviceScope.model, function(newValue, oldValue, property) {
 					sendServiceChanges(newValue, oldValue, servicename, property);
 				});
 
@@ -965,33 +970,65 @@ webSocketModule.factory('$webSocket',
 	const CONVERSION_CL_SIDE_TYPE_KEY = "_T";
 	const VALUE_KEY = "_V";
 
-	let convertFromServerToClient = function(serverSentData: any, typeOfData: sablo.IType<any>, currentClientData: any, scope: angular.IScope, propertyContext: sablo.IPropertyContext): any {
+	let convertFromServerToClient = function(serverSentData: any,
+			typeOfData: sablo.IType<any>,
+			currentClientData: any,
+			dynamicPropertyTypesHolder: { [nameOrIndex: string]: sablo.IType<any> } /*some types decide at runtime the type needed on client - for example dataprovider type could send date, and we will store that info here*/,
+			keyForDynamicTypes: string,
+			scope: angular.IScope,
+			propertyContext: sablo.IPropertyContext): any {
+				
+		let convertedData = serverSentData;
 		if (typeOfData) {
-			serverSentData = typeOfData.fromServerToClient(serverSentData, currentClientData, scope, propertyContext);
+			convertedData = typeOfData.fromServerToClient(serverSentData, currentClientData, scope, propertyContext);
+			
+			// if no dynamic type, remove any previously stored dynamic type for this value
+			if (dynamicPropertyTypesHolder && keyForDynamicTypes) delete dynamicPropertyTypesHolder[keyForDynamicTypes];
 		} else if (serverSentData instanceof Object && serverSentData[CONVERSION_CL_SIDE_TYPE_KEY] != undefined) {
-			// so a conversion is required client side but the type is not known beforehand on client (can be a result of JSONUtils.java # defaultToJSONValue(...) or could be a
-			// dataprovider type in a record view - foundset based impl. should handle these varying simple types nicer already inside special property types such as foundset/component/foundsetLinked)
+			// NOTE: default server conversions will end up here with 'object' type if they need any Date conversions (value or sub-property/sub-elements)
+			
+			// so a conversion is required client side but the type is not known beforehand on client (can be a result of
+			// JSONUtils.java # defaultToJSONValue(...) or could be a dataprovider type in a record view - foundset based
+			// impl. should handle these varying simple types nicer already inside special property types such as foundset/component/foundsetLinked)
+			
 			let lookedUpType = $typesRegistry.getAlreadyRegisteredType(serverSentData[CONVERSION_CL_SIDE_TYPE_KEY]);
-			if (lookedUpType) return lookedUpType.fromServerToClient(serverSentData[VALUE_KEY], currentClientData, scope, propertyContext);
-			else { // needed type not found - will not convert
+			if (lookedUpType) {
+				// if caller is interested in storing dynamic types do that; (remember dynamic conversion info for when it will be sent back to server - it might need special conversion as well)
+				if (dynamicPropertyTypesHolder && keyForDynamicTypes) dynamicPropertyTypesHolder[keyForDynamicTypes] = lookedUpType;
+				
+				convertedData = lookedUpType.fromServerToClient(serverSentData[VALUE_KEY], currentClientData, scope, propertyContext);
+				
+			} else { // needed type not found - will not convert
 				$log.error("no such type was registered (s->c varying or default type conversion) for: " + JSON.stringify(serverSentData[CONVERSION_CL_SIDE_TYPE_KEY], null, 2) + ".");
 			}
-		}
-		return serverSentData;
+		} else if (dynamicPropertyTypesHolder && keyForDynamicTypes) delete dynamicPropertyTypesHolder[keyForDynamicTypes]; // no dynamic type; so remove any previously stored dynamic type for this value
+		
+		return convertedData;
 	};
 
+	let lookedUpObjectType:sablo.IType<any>;
+	
 	// converts from a client property JS value to a JSON that can be sent to the server using the appropriate registered handler
-	let convertFromClientToServer = function(newClientData: any, typeOfData: sablo.IType<any>, oldClientData: any): any {
-		if (typeOfData) return typeOfData.fromClientToServer(newClientData, oldClientData);
+	let convertFromClientToServer = function(newClientData: any,
+			typeOfData: sablo.IType<any>,
+			oldClientData: any,
+			scope: angular.IScope,
+			propertyContext: sablo.IPropertyContext): any {
+			
+		let ret: any;	
+		if (typeOfData) ret = typeOfData.fromClientToServer(newClientData, oldClientData, scope, propertyContext);
 		else {
 			// this should rarely or never happen... but do our best to not fail sending (for example due to Date instances that can't be stringified via standard JSON)
-			let lookedUpObjectType = $typesRegistry.getAlreadyRegisteredType("object");
-			if (lookedUpObjectType) return lookedUpObjectType.fromClientToServer(newClientData, oldClientData);
-			else { // 'object' type not found?! it should always be there - will not convert
+			if (! lookedUpObjectType) lookedUpObjectType = $typesRegistry.getAlreadyRegisteredType("object");
+			
+			if (lookedUpObjectType) ret = lookedUpObjectType.fromClientToServer(newClientData, oldClientData, scope, propertyContext);
+			else { // 'object' type not found?! it should always be there - no default conversion can be done...
 				$log.error("'object' type was not registered (c->s default conversion) for.");
-				return newClientData;
+				ret = newClientData;
 			}
 		}
+		
+		return ret === undefined ? null : ret; // JSON does not allow undefined; use null instead...
 	};
 
 	return <sablo.ISabloConverters> {
@@ -999,9 +1036,10 @@ webSocketModule.factory('$webSocket',
 		/**
 		 * In a custom property value, the val[$sabloConverters.INTERNAL_IMPL] is to be used for internal state/impl details only - not to be accessed by components
 		 */
-		INTERNAL_IMPL: '__internalState',
+		INTERNAL_IMPL: '__internalState', // important - if you change this value you HAVE to change a number of typescript classes that declare this at compile time
 		CONVERSION_CL_SIDE_TYPE_KEY: CONVERSION_CL_SIDE_TYPE_KEY,
-
+        VALUE_KEY: VALUE_KEY,
+        
 		prepareInternalState: function(propertyValue, optionalInternalStateValue?) {
 			if (!propertyValue.hasOwnProperty(this.INTERNAL_IMPL))
 			{
@@ -1020,57 +1058,7 @@ webSocketModule.factory('$webSocket',
 
 		convertFromServerToClient: convertFromServerToClient,
 
-		convertFromClientToServer: convertFromClientToServer,
-//
-//		updateAngularScope: updateAngularScope,
-
-//		/**
-//		 * Registers a custom client side property handler into the system. These handlers are useful
-//		 * for custom property types that require some special handling when received through JSON from server-side
-//		 * or for sending content updates back. (for example convert received JSON into a different JS object structure that will be used
-//		 * by beans or just implement partial updates for more complex property contents)
-//		 *  
-//		 * @param customHandler an object with the following methods/fields:
-//		 * {
-//		 * 
-//		 *				// Called when a JSON update is received from the server for a property
-//		 *				// @param serverSentJSONValue the JSON value received from the server for the property
-//		 *				// @param currentClientValue the JS value that is currently used for that property in the client; can be null/undefined if
-//		 *				//        conversion happens for service API call parameters for example...
-//		 *				// @param scope scope that can be used to add component/service and property related watches; can be null/undefined if
-//		 *				//        conversion happens for service/component API call parameters for example...
-//		 *				// @param propertyContext a function that can be used to find other properties (by name) of the same service/component/custom object (if property is
-//		 *              //        not found it also searches upwards in case of object nesting) if needed (if the property is 'linked' to another one); can be
-//		 *              //        null/undefined if conversion happens for service/component API call parameters for example...
-//		 *				// @return the new/updated client side property value; if this returned value is interested in triggering
-//		 *				//         updates to server when something changes client side it must have these member functions in this[$sabloConverters.INTERNAL_IMPL]:
-//		 *				//				setChangeNotifier: function(changeNotifier) - where changeNotifier is a function that can be called when
-//		 *				//                                                          the value needs to send updates to the server; this method will
-//		 *				//                                                          not be called when value is a call parameter for example, but will
-//		 *				//                                                          be called when set into a component's/service's property/model
-//		 *				//              isChanged: function() - should return true if the value needs to send updates to server
-//		 * 				fromServerToClient: function (serverSentJSONValue, currentClientValue, scope, propertyContext) { (...); return newClientValue; },
-//		 * 
-//		 *				// Converts from a client property JS value to a JSON that will be sent to the server.
-//		 *				// @param newClientData the new JS client side property value
-//		 *				// @param oldClientData the old JS JS client side property value; can be null/undefined if
-//		 *				//        conversion happens for service API call parameters for example...
-//		 *				// @return the JSON value to send to the server.
-//		 *				fromClientToServer: function(newClientData, oldClientData) { (...); return sendToServerJSON; }
-//		 * 
-//		 *				// Some 'smart' property types need an angular scope to register watches to; this method will get called on them
-//		 *				// when the scope that they should use changed (old scope could get destroyed and then after a while a new one takes it's place).
-//		 *				// This gives such property types a way to keep their watches operational even on the new scope.
-//		 *				// @param clientValue the JS client side property value
-//		 *				// @param scope the new scope. If null it means that the previous scope just got destroyed and property type should perform needed cleanup.
-//		 *				updateAngularScope: function(clientValue, scope) { (...); }
-//		 * 
-//		 * }
-//		 */
-//		registerCustomPropertyHandler : function(propertyTypeID, customHandler, overwrite) {
-//			if (overwrite == false && customPropertyConverters[propertyTypeID] ) return; 
-//			customPropertyConverters[propertyTypeID] = customHandler;
-//		}
+		convertFromClientToServer: convertFromClientToServer
 
 	};
 }).factory("$sabloUtils", function($log, $sabloConverters:sablo.ISabloConverters,$swingModifiers) {
@@ -1092,8 +1080,7 @@ webSocketModule.factory('$webSocket',
 	}
 
 	let isChanged = function(now, prev, clientSideType: sablo.IType<any>) {
-		seeWhatHasToBeDoneHEre();
-		if ((typeof conversionInfo === 'string' || typeof conversionInfo === 'number') && now && now[$sabloConverters.INTERNAL_IMPL] && now[$sabloConverters.INTERNAL_IMPL].isChanged) {
+		if (clientSideType && now && now[$sabloConverters.INTERNAL_IMPL] && now[$sabloConverters.INTERNAL_IMPL].isChanged) {
 			return now[$sabloConverters.INTERNAL_IMPL].isChanged();
 		}
 
@@ -1120,7 +1107,7 @@ webSocketModule.factory('$webSocket',
 					if(prop == "$$hashKey") continue; // ng repeat creates a child scope for each element in the array any scope has a $$hashKey property which must be ignored since it is not part of the model
 					if (prev[prop] !== now[prop]) {
 						if (typeof now[prop] == "object") {
-							if (isChanged(now[prop],prev[prop], conversionInfo ? conversionInfo[prop] : undefined)) {
+							if (isChanged(now[prop],prev[prop], undefined)) {
 								return true;
 							}
 						} else {
@@ -1134,15 +1121,25 @@ webSocketModule.factory('$webSocket',
 		return true;
 	}
 	let currentEventLevelForServer;
+	
+    const PROPERTY_CONTEXT_FOR_INCOMMING_ARGS_AND_RETURN_VALUES:sablo.IPropertyContext = {
+        getProperty: (propertyName: string): any  => { return undefined; }, // arguments/return values received from server in case of api calls/handlers are not properties of a component or service so can't return sibling properties 
+        getPushToServerCalculatedValue: () => { return sablo.typesRegistry.PushToServerEnum.reject; }
+    };
+    
+    const PROPERTY_CONTEXT_FOR_OUTGOING_ARGS_AND_RETURN_VALUES:sablo.IPropertyContext = {
+        getProperty: (propertyName: string): any  => { return undefined; }, // arguments/return values sent to server in case of api calls/handlers are not properties of a component or service so can't return sibling properties
+        getPushToServerCalculatedValue: () => { return sablo.typesRegistry.PushToServerEnum.allow; }
+    };
+    
 	let sabloUtils:sablo.ISabloUtils = {
 			// execution priority on server value used when for example a blocking API call from server needs to request more data from the server through this change
 			// or whenever during a (blocking) API call to client we want some messages sent to the server to still be processed.
 			EVENT_LEVEL_SYNC_API_CALL: 500,
 			
-			// objects that have a function named like this in them will send to server the result of that function call when no conversion type is available (in case of
-			// usage as handler arg. for example where we don't know the arg. types on client)
-			DEFAULT_CONVERSION_TO_SERVER_FUNC: "_dctsf",
-
+			PROPERTY_CONTEXT_FOR_INCOMMING_ARGS_AND_RETURN_VALUES: PROPERTY_CONTEXT_FOR_INCOMMING_ARGS_AND_RETURN_VALUES,
+			PROPERTY_CONTEXT_FOR_OUTGOING_ARGS_AND_RETURN_VALUES: PROPERTY_CONTEXT_FOR_OUTGOING_ARGS_AND_RETURN_VALUES,
+			
 			// eventLevelValue can be undefined for DEFAULT
 			setCurrentEventLevelForServer: function(eventLevelValue) {
 				currentEventLevelForServer = eventLevelValue;
@@ -1155,21 +1152,14 @@ webSocketModule.factory('$webSocket',
 			isChanged: isChanged,
 			getCombinedPropertyNames: getCombinedPropertyNames,
 
-//			convertClientObject : function(value) { make this part of 'object' type impl!
-//				if (value instanceof Date) {
-//					value  = $sabloConverters.convertFromClientToServer(value, "Date", null);
-//				} else if (value && typeof value[this.DEFAULT_CONVERSION_TO_SERVER_FUNC] == 'function') {
-//					return value[this.DEFAULT_CONVERSION_TO_SERVER_FUNC]();
-//				}
-//				return value;
-//			},
-
-			getEventArgs: function(args,eventName)
+			getEventArgs: function(args, eventName: string, handlerSpecification: sablo.IWebObjectFunction)
 			{
 				let newargs = []
 				for (let i = 0; i < args.length; i++) {
 					let arg = args[i]
 					if (arg && arg.originalEvent) arg = arg.originalEvent;
+					
+					// TODO these two ifs could be moved to a "JSEvent" client side type implementation (and if spec is correct it will work through the normal types system)
 					if(arg  instanceof MouseEvent ||arg  instanceof KeyboardEvent){
 						let $event = arg;
 						let eventObj = {}
@@ -1197,7 +1187,7 @@ webSocketModule.factory('$webSocket',
 						eventObj['data'] = arg['data'];
 						arg = eventObj
 					}
-					else arg = this.convertClientObject(arg); // TODO should be $sabloConverters.convertFromClientToServer(now, beanConversionInfo[property] ?, undefined);, but as we do not know handler arg types, we just do default conversion (for dates & types that use $sabloUtils.DEFAULT_CONVERSION_TO_SERVER_FUNC)
+					else arg = $sabloConverters.convertFromClientToServer(arg, handlerSpecification?.getArgumentType(i), undefined, undefined, PROPERTY_CONTEXT_FOR_OUTGOING_ARGS_AND_RETURN_VALUES);
 
 					newargs.push(arg)
 				}
@@ -1382,7 +1372,7 @@ webSocketModule.factory('$webSocket',
 			return isDefaultShowing;
 		}
 	};
-}).factory("$sabloDeferHelper", function($timeout, $log, $sabloTestability, $q) {
+}).factory("$sabloDeferHelper", function($timeout: angular.ITimeoutService, $log, $sabloTestability, $q: angular.IQService) {
 	function retrieveDeferForHandling(msgId, internalState) {
 	     let deferred = internalState.deferred[msgId];
 	     let defer;

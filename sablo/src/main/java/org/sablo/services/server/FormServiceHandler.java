@@ -24,8 +24,7 @@ import org.json.JSONObject;
 import org.json.JSONString;
 import org.sablo.Container;
 import org.sablo.WebComponent;
-import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
+import org.sablo.specification.PropertyDescription.PDAndComputedPushToServer;
 import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.websocket.CurrentWindow;
@@ -194,9 +193,11 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 				{
 					Object oldValue = oldvalues.opt(key);
 					Object currentValue = webComponent.getProperty(key);
-					PropertyDescription propertyDesc = webComponent.getSpecification().getProperty(key);
-					oldValue = propertyDesc != null
-						? JSONUtils.fromJSON(null, oldValue, propertyDesc, new BrowserConverterContext(webComponent, PushToServerEnum.allow), null) : null; // Is allow here ok?
+					PDAndComputedPushToServer propertyDescAndPushToServer = webComponent.getSpecification().computePushToServerForPropertyPathAndGetPD(key);
+					oldValue = propertyDescAndPushToServer.pd != null
+						? JSONUtils.fromJSON(null, oldValue, propertyDescAndPushToServer.pd,
+							new BrowserConverterContext(webComponent, propertyDescAndPushToServer.pushToServer), null)
+						: null;
 					if (oldValue != null && currentValue != null && !oldValue.equals(currentValue))
 					{
 						if (!(oldValue instanceof Number && currentValue instanceof Number &&

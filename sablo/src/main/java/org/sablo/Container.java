@@ -140,4 +140,10 @@ public abstract class Container extends WebComponent
 
 		return contentHasBeenWritten;
 	}
+
+	public void clearRegisteredToWindow()
+	{
+		alreadyRegisteredToWindow = null;
+	}
+
 }

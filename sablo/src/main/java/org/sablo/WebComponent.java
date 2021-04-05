@@ -163,7 +163,7 @@ public class WebComponent extends BaseWebObject
 	 */
 	public Object invokeApi(WebObjectFunctionDefinition apiFunction, Object[] args)
 	{
-		return CurrentWindow.get().invokeApi(this, apiFunction, args, getParameterTypes(apiFunction));
+		return CurrentWindow.get().invokeApi(this, apiFunction, args);
 	}
 
 	@Override
@@ -171,4 +171,11 @@ public class WebComponent extends BaseWebObject
 	{
 		return super.isEnabled() && (parent == null || parent.isEnabled());
 	}
+
+	@Override
+	public String toString()
+	{
+		return "Web Component: " + getName(); //$NON-NLS-1$
+	}
+
 }

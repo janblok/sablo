@@ -37,18 +37,9 @@ angular.module('$sabloService', ['sabloApp'])
 				if (success) defered.resolve(argument);
 				else defered.reject(argument)
 			}
-		},
-
-		addComponentClientSideConversionTypes: function(componentSpecifications: sablo.typesRegistry.IWebObjectTypesFromServer):void
-		{
-			$typesRegistry.addComponentClientSideConversionTypes(componentSpecifications);
-		},
-
-		setServiceClientSideConversionTypes: function(serviceSpecifications: sablo.typesRegistry.IWebObjectTypesFromServer):void
-		{
-			$typesRegistry.setServiceClientSideConversionTypes(serviceSpecifications);
 		}
 
-	}	
+	}
+
 }]);
 

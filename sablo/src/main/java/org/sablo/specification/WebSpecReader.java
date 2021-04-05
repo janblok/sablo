@@ -50,6 +50,8 @@ class WebSpecReader
 	private final Set<String> packagesWithGloballyDefinedTypes = new HashSet<>(); // packageNames of packages that have globally defined types
 	private final IDefaultComponentPropertiesProvider defaultComponentPropertiesProvider;
 
+	private final ClientSideTypeCache clientSideTypeCache;
+
 	private final List<IPackageReader> packageReaders;
 
 	private final String attributeName;
@@ -68,6 +70,8 @@ class WebSpecReader
 		this.attributeName = attributeName;
 		this.specReloadSubject = specReloadSubject;
 		this.defaultComponentPropertiesProvider = defaultComponentPropertiesProvider;
+		this.clientSideTypeCache = new ClientSideTypeCache();
+
 		load();
 	}
 
@@ -82,6 +86,7 @@ class WebSpecReader
 		{
 			lastLoadTimestamp = System.currentTimeMillis();
 
+			clientSideTypeCache.clear();
 			cachedDescriptions.clear();
 			cachedLayoutDescriptions.clear();
 			allWebObjectSpecifications.clear();
@@ -157,6 +162,7 @@ class WebSpecReader
 					{
 						allWebObjectSpecifications.remove(specName);
 						removedOrReloadedSpecs.add(specName);
+						clientSideTypeCache.clear(specName);
 					}
 					List<IPackageReader> oldPackageReader = allPackages.remove(packageNameToRemove);
 					if (oldPackageReader != null)
@@ -342,12 +348,12 @@ class WebSpecReader
 			}
 		}
 		list.add(p.getReader());
-		PackageSpecification<WebObjectSpecification> webComponentPackageSpecification = p.getWebObjectDescriptions(attributeName,
+		PackageSpecification<WebObjectSpecification> webObjectPackageSpecification = p.getWebObjectDescriptions(attributeName,
 			defaultComponentPropertiesProvider);
-		if (!cachedDescriptions.containsKey(webComponentPackageSpecification.getPackageName()))
+		if (!cachedDescriptions.containsKey(webObjectPackageSpecification.getPackageName()))
 		{
-			cachedDescriptions.put(webComponentPackageSpecification.getPackageName(), webComponentPackageSpecification);
-			Map<String, WebObjectSpecification> webComponentDescriptions = webComponentPackageSpecification.getSpecifications();
+			cachedDescriptions.put(webObjectPackageSpecification.getPackageName(), webObjectPackageSpecification);
+			Map<String, WebObjectSpecification> webComponentDescriptions = webObjectPackageSpecification.getSpecifications();
 			for (WebObjectSpecification desc : webComponentDescriptions.values())
 			{
 				WebObjectSpecification old = allWebObjectSpecifications.put(desc.getName(), desc);
@@ -362,6 +368,11 @@ class WebSpecReader
 		}
 	}
 
+	public ClientSideTypeCache getClientSideTypeCache()
+	{
+		return clientSideTypeCache; // TODO do we need to create a copy similar to what getSpecProviderState() does?
+	}
+
 	/**
 	 * Get the current state of spec providers, returns an immutable state.
 	 */
@@ -373,6 +384,5 @@ class WebSpecReader
 		}
 		return specProviderState;
 	}
-
 
 }

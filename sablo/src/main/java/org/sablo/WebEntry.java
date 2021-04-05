@@ -34,10 +34,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.sablo.security.ContentSecurityPolicyConfig;
-import org.sablo.services.template.ModifiablePropertiesGenerator;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebServiceSpecProvider;
-import org.sablo.util.HTTPUtils;
 import org.sablo.websocket.GetHttpSessionConfigurator;
 import org.sablo.websocket.IWebsocketSessionFactory;
 import org.sablo.websocket.WebsocketSessionManager;
@@ -129,26 +127,6 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 			httpSession.setMaxInactiveInterval(60);
 		}
 
-		String uri = request.getRequestURI();
-		if (uri.endsWith("spec/" + ModifiablePropertiesGenerator.PUSH_TO_SERVER_BINDINGS_LIST + ".js"))
-		{
-			long lastSpecLoadTime = Math.max(WebComponentSpecProvider.getLastLoadTimestamp(), WebServiceSpecProvider.getLastLoadTimestamp());
-			if (HTTPUtils.checkAndSetUnmodified(request, response, lastSpecLoadTime)) return;
-
-			HTTPUtils.setNoCacheHeaders(response);
-
-			response.setContentType("text/javascript");
-			response.setCharacterEncoding("UTF-8");
-			PrintWriter w = servletResponse.getWriter();
-			ModifiablePropertiesGenerator.start(w);
-			ModifiablePropertiesGenerator.appendAll(w, WebComponentSpecProvider.getSpecProviderState().getAllWebObjectSpecifications(), "components");
-			ModifiablePropertiesGenerator.appendAll(w, WebServiceSpecProvider.getSpecProviderState().getAllWebObjectSpecifications(), "services");
-			ModifiablePropertiesGenerator.finish(w);
-			w.flush();
-
-			return;
-		}
-
 		URL indexPageResource = getIndexPageResource(request);
 		if (indexPageResource != null)
 		{
@@ -156,7 +134,7 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 			response.setCharacterEncoding("UTF-8");
 			PrintWriter w = servletResponse.getWriter();
 			IndexPageEnhancer.enhance(indexPageResource, request, cssContributions, jsContributions, extraMetaData, variableSubstitution, w, this, this,
-					contentSecurityPolicyConfig);
+				contentSecurityPolicyConfig);
 			w.flush();
 			return;
 		}

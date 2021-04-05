@@ -26,21 +26,23 @@ import org.sablo.specification.WebServiceSpecProvider;
 import org.sablo.websocket.utils.JSONUtils.EmbeddableJSONWriter;
 
 /**
+ * Class that can send needed client side type and pushToServer information to browser.
+ *
  * @author acostescu
  */
-public class ClientSideTypesState
+public class ClientSideSpecState
 {
 
-	private final static Object DUMMY_O = new Object(); // just a dummy value for componentsWhosTypesThatUseClientConversionsWereAlreadySentToClient in cases where we are only interested in keys - so that we don't have lots of Object instances
+	private final static Object DUMMY_O = new Object(); // just a dummy value for componentsWhosNeededClientSpecsWereAlreadySentToClient in cases where we are only interested in keys - so that we don't have lots of Object instances
 
 	// component handlers/return/param types of api calls or model property types that need conversions in browser to/from websocket need to
 	// be sent to browser so that it knows what to do; but they are sent only when needed (when a component is used in this window the first time, it sends all it's types over)
 	// it only keeps the full component names that were already sent (as keys in the map); the value is just an object that we don't care about (it could be a set of form names which are shown in the window if we'd want to also remove type info from client if containers having certain components are no longer there, but for now we avoid doing that in case those components will be reused in containers that will be showing in the future; the number of custom components available in the system is limited anyway)
-	private final HashMap<String, Object> componentsWhosTypesThatUseClientConversionsWereAlreadySentToClient = new HashMap<>(3);
+	private final HashMap<String, Object> componentsWhosClientSpecsWereAlreadySentToClient = new HashMap<>(3);
 
 	protected IWindow window;
 
-	public ClientSideTypesState(IWindow window)
+	public ClientSideSpecState(IWindow window)
 	{
 		this.window = window;
 	}
@@ -48,14 +50,14 @@ public class ClientSideTypesState
 	/**
 	 * Sends all types with client-side conversions from all services to the browser window.
 	 */
-	public void sendAllServiceClientTypes()
+	public void sendAllServiceClientSideSpecs()
 	{
-		EmbeddableJSONWriter clSideTypesForThisComponent = WebServiceSpecProvider.getInstance().getClientSideTypes();
-		if (clSideTypesForThisComponent != null)
+		EmbeddableJSONWriter clSideSpecs = WebServiceSpecProvider.getInstance().getClientSideSpecs();
+		if (clSideSpecs != null)
 		{
 			if (window.getSession() != null)
 			{
-				window.getSession().getSabloService().setServiceClientSideConversionTypes(clSideTypesForThisComponent);
+				window.getSession().getTypesRegistryService().setServiceClientSideSpecs(clSideSpecs);
 			}
 		}
 	}
@@ -66,7 +68,7 @@ public class ClientSideTypesState
 	public void handleNewContainerToBeSentToClient(Container container)
 	{
 		// as a note - container.getComponents() in case of Servoy will also already contain all simple form component component child components (not the ones in list form component component)
-		boolean hasClientSideTypes = false;
+		boolean hasClientSideSpecs = false;
 		EmbeddableJSONWriter toBeSent = new EmbeddableJSONWriter();
 		toBeSent.object(); // keys are spec names, values are objects so: { compNameFromSpec: { /* see comment from ClientSideTypeCache.getClientSideTypesFor() */ } , ... }
 		for (WebComponent component : container.getComponents())
@@ -75,25 +77,27 @@ public class ClientSideTypesState
 			// TODO is .getSpecification().getName() enough or should we also include .getSpecification().getPackageName() here?
 			// usually (or always?) components contain in their name packageName-... anyway
 			String componentType = componentSpec.getName();
-			if (componentsWhosTypesThatUseClientConversionsWereAlreadySentToClient.put(componentType, DUMMY_O) == null)
+			if (componentsWhosClientSpecsWereAlreadySentToClient.put(componentType, DUMMY_O) == null)
 			{
 				// we didn't yet send client-side property types for this component to the browser window; do so now; it is added to the map now
-				EmbeddableJSONWriter clSideTypesForThisComponent = WebComponentSpecProvider.getInstance().getClientSideTypeCache().getClientSideTypesFor(
+				EmbeddableJSONWriter clSideSpecForThisComponent = WebComponentSpecProvider.getInstance().getClientSideTypeCache().getClientSideSpecFor(
 					componentSpec);
-				if (clSideTypesForThisComponent != null)
+				if (clSideSpecForThisComponent != null)
 				{
-					toBeSent.key(componentType).value(clSideTypesForThisComponent);
-					hasClientSideTypes = true;
+					toBeSent.key(componentType).value(clSideSpecForThisComponent);
+					hasClientSideSpecs = true;
 				}
 			}
+
+			if (component instanceof Container) handleNewContainerToBeSentToClient((Container)component); // for components that have child components through component prop. type
 		}
 		toBeSent.endObject();
 
-		if (hasClientSideTypes)
+		if (hasClientSideSpecs)
 		{
 			if (window.getSession() != null)
 			{
-				window.getSession().getSabloService().addComponentClientSideConversionTypes(toBeSent);
+				window.getSession().getTypesRegistryService().addComponentClientSideSpecs(toBeSent);
 			}
 		}
 
@@ -101,14 +105,14 @@ public class ClientSideTypesState
 
 	public void dispose()
 	{
-		componentsWhosTypesThatUseClientConversionsWereAlreadySentToClient.clear();
+		componentsWhosClientSpecsWereAlreadySentToClient.clear();
 	}
 
 	public void handleFreshBrowserWindowConnected()
 	{
 		// clear all form and component client types; these will be loaded (again if it's a refresh) anyway later - and sent as needed
-		componentsWhosTypesThatUseClientConversionsWereAlreadySentToClient.clear();
-		sendAllServiceClientTypes(); // we send all service types with client side conversions because a service could get called client side at any time, even if it was not yet used before on the server
+		componentsWhosClientSpecsWereAlreadySentToClient.clear();
+		sendAllServiceClientSideSpecs(); // we send all service types with client side conversions because a service could get called client side at any time, even if it was not yet used before on the server
 		// TODO if globally defined custom object types become useful for clients in the future - see org.sablo.specification.WebSpecReader.readGloballyDefinedTypes(List<Package>)
 		// then we should send here to the client also all such globally defined custom object types
 	}

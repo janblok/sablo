@@ -31,7 +31,7 @@ public interface IToJSONWriter<ContextT>
 {
 
 	/**
-	 * Writes as JSON changes from all components of all registered Containers.
+	 * Writes some JSON content.
 	 * @param keyInParent a key (can be null in which case it should be ignored) that must be appended to 'w' initially if this method call writes content to it. If the method returns false, nothing should be written to the writer...
 	 */
 	boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<ContextT> converter) throws JSONException;

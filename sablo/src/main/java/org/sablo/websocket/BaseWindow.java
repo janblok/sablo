@@ -33,9 +33,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.websocket.CloseReason;
 
 import org.json.JSONException;
+import org.json.JSONString;
 import org.json.JSONStringer;
 import org.json.JSONWriter;
-import org.sablo.BaseWebObject;
 import org.sablo.Container;
 import org.sablo.WebComponent;
 import org.sablo.specification.PropertyDescription;
@@ -56,7 +56,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** A window is created for a websocket endpoint to communicate with the websocket session.
- * When the websocket connection a dropped and recrated (browser refresh), the window will be reused.
+ * When the websocket connection is dropped and recreated (browser refresh), the window will be reused.
  *
  * @author jcompagner, rgansevles
  */
@@ -65,10 +65,6 @@ public class BaseWindow implements IWindow
 {
 
 	private static final String API_KEY_DELAY_UNTIL_FORM_LOADS = "delayUntilFormLoads"; //$NON-NLS-1$
-	private static final String API_SERVER_ONLY_KEY_FORM_CONTAINER = "forServerOnly_formContainer"; //$NON-NLS-1$
-	private static final String API_SERVER_ONLY_KEY_COMPONENT = "forServerOnly_component"; //$NON-NLS-1$
-	private static final String API_SERVER_ONLY_KEY_ARG_TYPES = "forServerOnly_callTypes"; //$NON-NLS-1$
-	private static final String API_SERVER_ONLY_KEY_SERVICE = "forServerOnly_service"; //$NON-NLS-1$
 	private static final String API_KEY_NAME = "name"; //$NON-NLS-1$
 	private static final String API_KEY_CALL = "call"; //$NON-NLS-1$
 	private static final String API_KEY_ARGS = "args"; //$NON-NLS-1$
@@ -76,6 +72,11 @@ public class BaseWindow implements IWindow
 	private static final String API_KEY_COMPONENT_NAME = "bean"; //$NON-NLS-1$
 	private static final String API_KEY_FORM_NAME = "form"; //$NON-NLS-1$
 	private static final String API_PRE_DATA_SERVICE_CALL = "pre_data_service_call"; //$NON-NLS-1$
+
+	private static final String COMPONENT_CALLS = "componentApis";
+	private static final String SERVICE_CALLS = "serviceApis";
+
+	private static final String SERVICE_DATA = "services";
 
 	// this system property is not publicly documented as normally toJSON should never generate new changes; it is there just in case a temporary increase is needed
 	// until some unexpected property behavior can be corrected (warnings will be logged anyway if such a situation is detected)
@@ -94,9 +95,8 @@ public class BaseWindow implements IWindow
 	private final AtomicInteger nextMessageId = new AtomicInteger(0);
 	private final AtomicInteger lastSentMessage = new AtomicInteger(0);
 
-	private final List<Map<String, ? >> serviceCalls = new ArrayList<>();
-	private final List<Map<String, Object>> delayedOrAsyncComponentApiCalls = new ArrayList<>();
-	private final PropertyDescriptionBuilder serviceCallTypes = AggregatedPropertyType.newAggregatedPropertyBuilder();
+	private final List<ServiceCall> serviceCalls = new ArrayList<>();
+	private final List<ComponentCall> componentApiCalls = new ArrayList<>();
 
 	private final ClientSideWindowState clientSideState = createClientSideWindowState();
 
@@ -230,7 +230,7 @@ public class BaseWindow implements IWindow
 		}
 
 		// this (server) window was connected to a fresh browser window (either new window of refreshed (F5) browser window)
-		// so we need to send anything that is needed in the browser for this window
+		// so we need to send everything that is needed in the browser for this window
 		try
 		{
 			sendUsedServicesCurrentState();
@@ -274,7 +274,7 @@ public class BaseWindow implements IWindow
 					if (serviceData != null && serviceData.size() > 0)
 					{
 						JSONUtils.addKeyIfPresent(w, keyInParent);
-						w.object().key("services").object();
+						w.object().key(SERVICE_DATA).object();
 						for (IClientService service : services)
 						{
 							String serviceName = service.getScriptingName();
@@ -304,7 +304,7 @@ public class BaseWindow implements IWindow
 					JSONUtils.addKeyIfPresent(w, keyInParent);
 					w.object();
 
-					boolean changesFound = writeAllServicesChanges(w, "services");
+					boolean changesFound = writeAllServicesChanges(w, SERVICE_DATA);
 
 					w.endObject();
 
@@ -427,39 +427,39 @@ public class BaseWindow implements IWindow
 		}, converter);
 	}
 
-	/**
-	 * Sends a message to the client/browser, containing the given data (transformed into JSON based on given dataTypes).
-	 *
-	 * If there are any pending service calls those will be sent to the client/attached to the message as well.
-	 *
-	 * @param data the data to be sent to the client (converted to JSON format where needed).
-	 * @param dataTypes description of the data structure; each key in "data" might have a corresponding child "dataTypes.getProperty(key)" who's type can be used for "to JSON" conversion.
-	 * @param converter converter for values to json.
-	 * @param blockEventProcessing if true then the event processing will be blocked until we get the expected response from the browser/client (or until a timeout expires).
-	 * @return it will return whatever the client sends back as a response to this message.
-	 * @throws IOException when such an exception occurs.
-	 * @throws CancellationException if cancelled for some reason while waiting for response
-	 * @throws TimeoutException if it timed out while waiting for a response value. This can happen if blockEventProcessing == true.
-	 */
-	protected Object sendSyncMessage(final Map<String, ? > data, final PropertyDescription dataTypes, IToJSONConverter<IBrowserConverterContext> converter,
-		boolean blockEventProcessing, final ClientService service) throws IOException, CancellationException, TimeoutException
-	{
-		return sendSyncMessage((data == null || data.size() == 0) ? null : new SimpleToJSONWriter<IBrowserConverterContext>()
-		{
-			@Override
-			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converterParam) throws JSONException
-			{
-				if (data != null && data.size() > 0)
-				{
-					JSONUtils.addKeyIfPresent(w, keyInParent);
-					converterParam.toJSONValue(w, null, data, dataTypes, new BrowserConverterContext(service, PushToServerEnum.allow));
-					return true;
-				}
-				return false;
-			}
-
-		}, converter, blockEventProcessing);
-	}
+//	/**
+//	 * Sends a message to the client/browser, containing the given data (transformed into JSON based on given dataTypes).
+//	 *
+//	 * If there are any pending service calls those will be sent to the client/attached to the message as well.
+//	 *
+//	 * @param data the data to be sent to the client (converted to JSON format where needed).
+//	 * @param dataTypes description of the data structure; each key in "data" might have a corresponding child "dataTypes.getProperty(key)" who's type can be used for "to JSON" conversion.
+//	 * @param converter converter for values to json.
+//	 * @param blockEventProcessing if true then the event processing will be blocked until we get the expected response from the browser/client (or until a timeout expires).
+//	 * @return it will return whatever the client sends back as a response to this message.
+//	 * @throws IOException when such an exception occurs.
+//	 * @throws CancellationException if cancelled for some reason while waiting for response
+//	 * @throws TimeoutException if it timed out while waiting for a response value. This can happen if blockEventProcessing == true.
+//	 */
+//	protected Object sendSyncMessage(final Map<String, ? > data, final PropertyDescription dataTypes, IToJSONConverter<IBrowserConverterContext> converter,
+//		boolean blockEventProcessing, final ClientService service) throws IOException, CancellationException, TimeoutException
+//	{
+//		return sendSyncMessage((data == null || data.size() == 0) ? null : new SimpleToJSONWriter<IBrowserConverterContext>()
+//		{
+//			@Override
+//			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converterParam) throws JSONException
+//			{
+//				if (data != null && data.size() > 0)
+//				{
+//					JSONUtils.addKeyIfPresent(w, keyInParent);
+//					converterParam.toJSONValue(w, null, data, dataTypes, new BrowserConverterContext(service, PushToServerEnum.allow));
+//					return true;
+//				}
+//				return false;
+//			}
+//
+//		}, converter, blockEventProcessing);
+//	}
 
 	/**
 	 * Sends a message to the client/browser just like {@link #sendAsyncMessage(IToJSONWriter, IToJSONConverter)} does.
@@ -507,7 +507,7 @@ public class BaseWindow implements IWindow
 	protected boolean sendMessageInternal(IToJSONWriter<IBrowserConverterContext> dataWriter, IToJSONConverter<IBrowserConverterContext> converter,
 		Integer smsgidOptional) throws IOException
 	{
-		if (dataWriter == null && serviceCalls.size() == 0 && delayedOrAsyncComponentApiCalls.size() == 0) return false;
+		if (dataWriter == null && serviceCalls.size() == 0 && componentApiCalls.size() == 0) return false;
 
 		if (getEndpoint() == null)
 		{
@@ -528,49 +528,36 @@ public class BaseWindow implements IWindow
 			if (serviceCalls.size() > 0)
 			{
 				hasContentToSend = true;
-				w.key("services");
-				PropertyDescription pd = serviceCallTypes.build();
+				w.key(SERVICE_CALLS);
 				w.array();
-				for (int i = 0; i < serviceCalls.size(); i++)
+				for (ServiceCall serviceCall : serviceCalls)
 				{
-					ClientService clientService = (ClientService)serviceCalls.get(i).remove(API_SERVER_ONLY_KEY_SERVICE);
-					FullValueToJSONConverter.INSTANCE.toJSONValue(w, null, serviceCalls.get(i), pd.getProperty(String.valueOf(i)),
-						new BrowserConverterContext(clientService, PushToServerEnum.allow));
+					serviceCall.writeToJSON(w);
 				}
 				w.endArray();
 			}
-			if (delayedOrAsyncComponentApiCalls.size() > 0)
+			if (componentApiCalls.size() > 0)
 			{
-				Iterator<Map<String, Object>> it = delayedOrAsyncComponentApiCalls.iterator();
+				Iterator<ComponentCall> it = componentApiCalls.iterator();
 				boolean callObjectStarted = false;
-				int callIdx = 0;
 				while (it.hasNext())
 				{
-					Map<String, Object> delayedCall = it.next();
-					WebComponent component = (WebComponent)delayedCall.get(API_SERVER_ONLY_KEY_COMPONENT);
-					Container formContainer = (Container)delayedCall.get(API_SERVER_ONLY_KEY_FORM_CONTAINER);
-					if (!((Boolean)delayedCall.get(API_KEY_DELAY_UNTIL_FORM_LOADS)).booleanValue() || isFormResolved(formContainer))
+					ComponentCall delayedCall = it.next();
+					if (!delayedCall.delayUntilFormLoads || isFormResolved(delayedCall.formContainer))
 					{
 						// so it is either async (so not 'delayUntilFormLoads') in which case it must execute anyway or it is 'delayUntilFormLoads' and the form is loaded/resolved so it can get executed on client
 						hasContentToSend = true;
-
-						// the following field(s) were just passed in the map in order to be used above (still on server side) - they are not meant to reach client
-						delayedCall.remove(API_SERVER_ONLY_KEY_COMPONENT);
-						delayedCall.remove(API_SERVER_ONLY_KEY_FORM_CONTAINER);
-						// delayedCall.remove(API_KEY_DELAY_UNTIL_FORM_LOADS); we keep and do send this to client just in case form is no longer there for some reason when the call arrives - and it shouldn't try to force-load it on client
-
 						it.remove();
 
 						if (!callObjectStarted)
 						{
 							callObjectStarted = true;
-							w.key("calls").array();
+							w.key(COMPONENT_CALLS).array();
 						}
-						PropertyDescription callTypes = (PropertyDescription)delayedCall.remove(API_SERVER_ONLY_KEY_ARG_TYPES);
-						w.object().key(API_KEY_CALL).object();
-						JSONUtils.writeData(converter, w, delayedCall, callTypes, new BrowserConverterContext(component, PushToServerEnum.allow));
-						callIdx++;
-						w.endObject().endObject();
+
+						w.object();
+						delayedCall.writeToJSON(w);
+						w.endObject();
 					}
 				}
 				if (callObjectStarted)
@@ -707,7 +694,7 @@ public class BaseWindow implements IWindow
 
 				boolean changesFound = writeAllComponentsChanges(w, "forms", ChangesToJSONConverter.INSTANCE);
 
-				changesFound = writeAllServicesChanges(w, "services") || changesFound;
+				changesFound = writeAllServicesChanges(w, SERVICE_DATA) || changesFound;
 
 				w.endObject();
 
@@ -733,14 +720,15 @@ public class BaseWindow implements IWindow
 	public Object executeServiceCall(IClientService clientService, String functionName, Object[] arguments, WebObjectFunctionDefinition apiFunction,
 		IToJSONWriter<IBrowserConverterContext> pendingChangesWriter, boolean blockEventProcessing) throws IOException
 	{
-		PropertyDescription argumentTypes = (apiFunction != null ? BaseWebObject.getParameterTypes(apiFunction) : null);
+		List<PropertyDescription> argumentTypes = (apiFunction != null ? apiFunction.getParameters() : null);
+		if (argumentTypes != null && argumentTypes.size() == 0) argumentTypes = null;
 
 		addServiceCall(clientService, functionName, arguments, argumentTypes);
 		return executeCall(clientService, functionName, arguments, pendingChangesWriter, blockEventProcessing, true);
 	}
 
 	@Override
-	public void executeAsyncNowServiceCall(IClientService clientService, String functionName, Object[] arguments, PropertyDescription argumentTypes)
+	public void executeAsyncNowServiceCall(IClientService clientService, String functionName, Object[] arguments, List<PropertyDescription> argumentTypes)
 	{
 		try
 		{
@@ -749,17 +737,10 @@ public class BaseWindow implements IWindow
 				@Override
 				public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException
 				{
-					w.key("services");
+					w.key(SERVICE_CALLS);
 
 					w.array();
-
-					Map<String, Object> serviceCall = createServiceCall(clientService, functionName, arguments, argumentTypes);
-					serviceCall.remove(API_SERVER_ONLY_KEY_SERVICE);
-					PropertyDescription typesOfThisCall = createTypesOfServiceCall(argumentTypes);
-
-					FullValueToJSONConverter.INSTANCE.toJSONValue(w, null, serviceCall, typesOfThisCall,
-						new BrowserConverterContext((ClientService)clientService, PushToServerEnum.allow));
-
+					createServiceCall(clientService, functionName, arguments, argumentTypes).writeToJSON(w);
 					w.endArray();
 
 					return true;
@@ -773,7 +754,7 @@ public class BaseWindow implements IWindow
 		}
 	}
 
-	private Object executeCall(IClientService clientService, String functionName, Object[] arguments,
+	private Object executeCall(Object webObjectForToStringInCaseOfErrors, String functionNameInCaseOfErrors, Object[] argumentsInCaseOfErrors,
 		IToJSONWriter<IBrowserConverterContext> pendingChangesWriter, boolean blockEventProcessing, boolean retry) throws IOException
 	{
 		try
@@ -784,16 +765,19 @@ public class BaseWindow implements IWindow
 		{
 			if (!retry)
 			{
-				throw new CancellationException("Cancelled while executing service call " + clientService.getName() + "." + functionName +
-					"(...). Arguments: " + (arguments == null ? null : Arrays.asList(arguments)));
+				throw new CancellationException(
+					"Cancelled while executing service call " + webObjectForToStringInCaseOfErrors + "." + functionNameInCaseOfErrors +
+						"(...). Arguments: " + (argumentsInCaseOfErrors == null ? null : Arrays.asList(argumentsInCaseOfErrors)));
 			}
 		}
 		catch (TimeoutException e)
 		{
 			if (!retry)
 			{
-				throw new RuntimeException("Timed out while executing service call " + clientService.getName() + "." + functionName + "(...). Arguments: " +
-					(arguments == null ? null : Arrays.asList(arguments)), e);
+				throw new RuntimeException(
+					"Timed out while executing service call " + webObjectForToStringInCaseOfErrors + "." + functionNameInCaseOfErrors + "(...). Arguments: " +
+						(argumentsInCaseOfErrors == null ? null : Arrays.asList(argumentsInCaseOfErrors)),
+					e);
 			}
 		}
 		catch (IOException e)
@@ -814,28 +798,43 @@ public class BaseWindow implements IWindow
 				log.warn("InterruptedException occurred", e);
 			}
 		}
-		return executeCall(clientService, functionName, arguments, pendingChangesWriter, blockEventProcessing, false);
+		return executeCall(webObjectForToStringInCaseOfErrors, functionNameInCaseOfErrors, argumentsInCaseOfErrors, pendingChangesWriter, blockEventProcessing,
+			false);
 	}
 
 	@Override
-	public void executeAsyncServiceCall(IClientService clientService, String functionName, Object[] arguments, PropertyDescription argumentTypes)
+	public void executeAsyncServiceCall(IClientService clientService, String functionName, Object[] arguments, List<PropertyDescription> argumentTypes)
 	{
 		addServiceCall(clientService, functionName, arguments, argumentTypes);
 	}
 
-	private Map<String, Object> createServiceCall(IClientService clientService, String functionName, Object[] arguments, PropertyDescription argumentTypes)
+	private ServiceCall createServiceCall(IClientService clientService, String functionName, Object[] arguments, List<PropertyDescription> argumentTypes)
 	{
-		// {"services":[{name:serviceName,call:functionName,args:argumentsArray}]}
-		Map<String, Object> serviceCall = new HashMap<>();
-		serviceCall.put(API_SERVER_ONLY_KEY_SERVICE, clientService);
-		serviceCall.put(API_KEY_NAME, clientService.getScriptingName());
-		serviceCall.put(API_KEY_CALL, functionName);
 		WebObjectFunctionDefinition handler = clientService.getSpecification().getApiFunction(functionName);
-		if (handler != null && handler.isPreDataServiceCall()) serviceCall.put(API_PRE_DATA_SERVICE_CALL, Boolean.TRUE);
-		if (argumentTypes != null && argumentTypes.getProperties().size() > 0)
+		return new ServiceCall(clientService, functionName, processVarArgsIfNeeded(arguments, argumentTypes), argumentTypes,
+			(handler != null && handler.isPreDataServiceCall()));
+	}
+
+	public ComponentCall createComponentCall(WebComponent component, WebObjectFunctionDefinition apiFunction, Object[] arguments,
+		Map<String, JSONString> callContributions)
+	{
+		return createComponentCall(component, apiFunction, arguments, callContributions, false, null);
+	}
+
+	private ComponentCall createComponentCall(WebComponent component, WebObjectFunctionDefinition apiFunction, Object[] arguments,
+		Map<String, JSONString> callContributions,
+		boolean delayUntilFormLoads, Container formContainer)
+	{
+		return new ComponentCall(component, apiFunction, processVarArgsIfNeeded(arguments, apiFunction.getParameters()), callContributions, delayUntilFormLoads,
+			formContainer);
+	}
+
+	private Object[] processVarArgsIfNeeded(Object[] arguments, List<PropertyDescription> argumentTypes)
+	{
+		if (argumentTypes != null && argumentTypes.size() > 0)
 		{
-			int typesNumber = argumentTypes.getProperties().size();
-			PropertyDescription pd = argumentTypes.getProperty(String.valueOf(typesNumber - 1));
+			int typesNumber = argumentTypes.size();
+			PropertyDescription pd = argumentTypes.get(typesNumber - 1);
 			if (pd.getType() instanceof CustomVariableArgsType && arguments.length > typesNumber)
 			{
 				// handle variable args
@@ -848,25 +847,12 @@ public class BaseWindow implements IWindow
 				arguments = Arrays.copyOf(arguments, typesNumber);
 			}
 		}
-
-		serviceCall.put(API_KEY_ARGS, arguments);
-		return serviceCall;
+		return arguments;
 	}
 
-	private PropertyDescription createTypesOfServiceCall(PropertyDescription argumentTypes)
+	private void addServiceCall(IClientService clientService, String functionName, Object[] arguments, List<PropertyDescription> argumentTypes)
 	{
-		PropertyDescriptionBuilder typesOfThisCall = AggregatedPropertyType.newAggregatedPropertyBuilder();
-		if (argumentTypes != null) typesOfThisCall.withProperty(API_KEY_ARGS, argumentTypes);
-		return typesOfThisCall.build();
-	}
-
-	private void addServiceCall(IClientService clientService, String functionName, Object[] arguments, PropertyDescription argumentTypes)
-	{
-		Map<String, Object> serviceCall = createServiceCall(clientService, functionName, arguments, argumentTypes);
-		PropertyDescription typesOfThisCall = createTypesOfServiceCall(argumentTypes);
-
-		serviceCalls.add(serviceCall);
-		serviceCallTypes.withProperty(String.valueOf(serviceCalls.size() - 1), typesOfThisCall);
+		serviceCalls.add(createServiceCall(clientService, functionName, arguments, argumentTypes));
 	}
 
 	@Override
@@ -875,9 +861,6 @@ public class BaseWindow implements IWindow
 		return endpoint != null && endpoint.hasSession();
 	}
 
-	/**
-	 * @return the endpoint
-	 */
 	public synchronized IWebsocketEndpoint getEndpoint()
 	{
 		return endpoint;
@@ -943,20 +926,22 @@ public class BaseWindow implements IWindow
 		return contentHasBeenWritten;
 	}
 
-	public Object invokeApi(WebComponent receiver, WebObjectFunctionDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes)
+	@Override
+	public Object invokeApi(WebComponent receiver, WebObjectFunctionDefinition apiFunction, Object[] arguments)
 	{
-		return invokeApi(receiver, apiFunction, arguments, argumentTypes, null);
+		return invokeApi(receiver, apiFunction, arguments, null);
 	}
 
 	protected Object invokeApi(final WebComponent receiver, final WebObjectFunctionDefinition apiFunction, final Object[] arguments,
-		final PropertyDescription argumentTypes, final Map<String, Object> callContributions)
+		final Map<String, JSONString> callContributions)
 	{
 		// {"call":{"form":"product","bean":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}}
 		boolean delayedCall = isDelayedApiCall(apiFunction);
 
 		if (delayedCall || isAsyncApiCall(apiFunction))
 		{
-			Map<String, Object> call = getApiCallObjectForComponent(receiver, apiFunction, arguments, argumentTypes, callContributions);
+			ComponentCall call = createComponentCall(receiver, apiFunction, arguments, callContributions, delayedCall,
+				delayedCall ? getFormContainer(receiver) : null);
 			addDelayedOrAsyncComponentCall(apiFunction, call, receiver, delayedCall);
 		}
 		else if (isAsyncNowApiCall(apiFunction))
@@ -968,16 +953,10 @@ public class BaseWindow implements IWindow
 					@Override
 					public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException
 					{
-						w.object();
+						w.key(COMPONENT_CALLS).array().object();
+						createComponentCall(receiver, apiFunction, arguments, callContributions).writeToJSON(w);
+						w.endObject().endArray();
 
-						Map<String, Object> call = getApiCallObjectForComponent(receiver, apiFunction, arguments, argumentTypes, callContributions);
-						PropertyDescription callTypes = (PropertyDescription)call.remove(API_SERVER_ONLY_KEY_ARG_TYPES);
-						w.key(API_KEY_CALL).object();
-						JSONUtils.writeData(FullValueToJSONConverter.INSTANCE, w, call, callTypes,
-							new BrowserConverterContext(receiver, PushToServerEnum.allow));
-						w.endObject();
-
-						w.endObject();
 						return true;
 					}
 				}, FullValueToJSONConverter.INSTANCE);
@@ -991,48 +970,32 @@ public class BaseWindow implements IWindow
 		}
 		else
 		{
+			// sync call; add it to the list to keep call order with any previous delayed/async api calls and then trigger the call
+			componentApiCalls.add(createComponentCall(receiver, apiFunction, arguments, callContributions));
 			try
 			{
-				Object ret = sendSyncMessage(new IToJSONWriter<IBrowserConverterContext>()
+				Object ret = executeCall(receiver, apiFunction.getName(), arguments, new IToJSONWriter<IBrowserConverterContext>()
 				{
 					@Override
 					public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException
-					{
-						writeComponentChanges(w, keyInParent, converter);
-
-						Map<String, Object> call = getApiCallObjectForComponent(receiver, apiFunction, arguments, argumentTypes, callContributions);
-						PropertyDescription callTypes = (PropertyDescription)call.remove(API_SERVER_ONLY_KEY_ARG_TYPES);
-						w.key(API_KEY_CALL).object();
-						JSONUtils.writeData(FullValueToJSONConverter.INSTANCE, w, call, callTypes,
-							new BrowserConverterContext(receiver, PushToServerEnum.allow));
-						w.endObject();
-
-						w.endObject();
-						return true;
-					}
-
-					@Override
-					public boolean checkForAndWriteAnyUnexpectedRemainingChanges(JSONStringer w, String keyInParent,
-						IToJSONConverter<IBrowserConverterContext> converter)
-					{
-						boolean changesFound = writeComponentChanges(w, keyInParent, converter);
-
-						w.endObject();
-						return changesFound;
-					}
-
-					private boolean writeComponentChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter)
 					{
 						JSONUtils.addKeyIfPresent(w, keyInParent);
 						w.object();
 
 						boolean changesFound = writeAllComponentsChanges(w, "forms", converter); // converter here is ChangesToJSONConverter.INSTANCE (see below arg to 'sendSyncMessage')
 
-						// caller is responsible for calling w.endObject();
+						w.endObject();
 						return changesFound;
 					}
 
-				}, ChangesToJSONConverter.INSTANCE, apiFunction.getBlockEventProcessing());
+					@Override
+					public boolean checkForAndWriteAnyUnexpectedRemainingChanges(JSONStringer w, String keyInParent,
+						IToJSONConverter<IBrowserConverterContext> converter)
+					{
+						return writeJSONContent(w, keyInParent, converter);
+					}
+
+				}, apiFunction.getBlockEventProcessing(), true);
 
 				if (apiFunction.getReturnType() != null)
 				{
@@ -1056,74 +1019,40 @@ public class BaseWindow implements IWindow
 				throw new RuntimeException("Cancelled while invoking API: " + apiFunction + ". Arguments: " +
 					(arguments == null ? null : Arrays.asList(arguments)) + ". On: " + receiver, e);
 			}
-			catch (TimeoutException e)
-			{
-				throw new RuntimeException("Timed out while invoking API: " + apiFunction + ". Arguments: " +
-					(arguments == null ? null : Arrays.asList(arguments)) + ". On: " + receiver, e);
-			}
 		}
 
 		return null;
 	}
 
-	private Map<String, Object> getApiCallObjectForComponent(final WebComponent receiver, final WebObjectFunctionDefinition apiFunction,
-		final Object[] arguments, final PropertyDescription argumentTypes, final Map<String, Object> callContributions)
-	{
-		Map<String, Object> call = new HashMap<>();
-		PropertyDescriptionBuilder callTypes = AggregatedPropertyType.newAggregatedPropertyBuilder();
-		if (callContributions != null) call.putAll(callContributions);
-		Container topContainer = receiver.getParent();
-		while (topContainer != null && topContainer.getParent() != null)
-		{
-			topContainer = topContainer.getParent();
-		}
-		call.put(API_KEY_FORM_NAME, topContainer.getName());
-		call.put(API_KEY_COMPONENT_NAME, receiver.getName());
-		call.put(API_KEY_FUNCTION_NAME, apiFunction.getName());
-		if (arguments != null && arguments.length > 0)
-		{
-			call.put(API_KEY_ARGS, arguments);
-			if (argumentTypes != null) callTypes.withProperty(API_KEY_ARGS, argumentTypes);
-		}
-		call.put(API_SERVER_ONLY_KEY_ARG_TYPES, callTypes.build());
-		return call;
-	}
-
-	protected void addDelayedOrAsyncComponentCall(final WebObjectFunctionDefinition apiFunction, Map<String, Object> call, WebComponent component,
+	protected void addDelayedOrAsyncComponentCall(final WebObjectFunctionDefinition apiFunction, ComponentCall call, WebComponent component,
 		boolean isDelayedCall)
 	{
-		// just keep the needed information about this delayed call in there (not to be sent to client necessarily, but to be able to check if the form is available on client or not)
-		call.put(API_SERVER_ONLY_KEY_COMPONENT, component);
-		call.put(API_SERVER_ONLY_KEY_FORM_CONTAINER, getFormContainer(component));
-		call.put(API_KEY_DELAY_UNTIL_FORM_LOADS, Boolean.valueOf(isDelayedCall));
-
 		if (apiFunction.shouldDiscardPreviouslyQueuedSimilarCalls())
 		{
 			// for example requestFocus uses that - so that only the last .requestFocus() actually executes (if the form is loaded)
-			Iterator<Map<String, Object>> it = delayedOrAsyncComponentApiCalls.iterator();
+			Iterator<ComponentCall> it = componentApiCalls.iterator();
 			while (it.hasNext())
 			{
-				Map<String, Object> delayedOrAsyncCall = it.next();
-				if (apiFunction.getName().equals(delayedOrAsyncCall.get(API_KEY_FUNCTION_NAME)))
+				ComponentCall delayedOrAsyncCall = it.next();
+				if (apiFunction.getName().equals(delayedOrAsyncCall.apiFunction.getName()))
 				{
 					it.remove();
 				}
 			}
 		}
-		delayedOrAsyncComponentApiCalls.add(call);
+		componentApiCalls.add(call);
 	}
 
 	protected boolean hasPendingDelayedCalls(Container formContainer)
 	{
 		boolean hasPendingDelayedCalls = false;
-		if (delayedOrAsyncComponentApiCalls.size() > 0)
+		if (componentApiCalls.size() > 0)
 		{
-			Iterator<Map<String, Object>> it = delayedOrAsyncComponentApiCalls.iterator();
+			Iterator<ComponentCall> it = componentApiCalls.iterator();
 			while (it.hasNext())
 			{
-				Map<String, Object> delayedCall = it.next();
-				if (((Boolean)delayedCall.get(API_KEY_DELAY_UNTIL_FORM_LOADS)).booleanValue() &&
-					formContainer == (Container)delayedCall.get(API_SERVER_ONLY_KEY_FORM_CONTAINER))
+				ComponentCall delayedCall = it.next();
+				if (delayedCall.delayUntilFormLoads && formContainer == delayedCall.formContainer)
 				{
 					hasPendingDelayedCalls = true;
 					break;
@@ -1151,6 +1080,110 @@ public class BaseWindow implements IWindow
 	protected static boolean isAsyncNowApiCall(WebObjectFunctionDefinition apiFunction)
 	{
 		return apiFunction.getReturnType() == null && apiFunction.isAsyncNow();
+	}
+
+	private static class ServiceCall
+	{
+
+		private final IClientService clientService;
+		private final String functionName;
+		private final Object[] arguments;
+		private final List<PropertyDescription> argumentTypes;
+		private final boolean preDataServiceCall;
+
+		public ServiceCall(IClientService clientService, String functionName, Object[] arguments,
+			List<PropertyDescription> argumentTypes, boolean preDataServiceCall)
+		{
+			this.clientService = clientService;
+			this.functionName = functionName;
+			this.arguments = arguments;
+			this.argumentTypes = argumentTypes;
+			this.preDataServiceCall = preDataServiceCall;
+		}
+
+		/**
+		 * Writes to JSON what can then be sent to client in order to execute this service call.
+		 */
+		public void writeToJSON(JSONWriter w)
+		{
+			// {"services":[{name:serviceName,call:functionName,args:argumentsArray}]}
+			w.object();
+			w.key(API_KEY_NAME).value(clientService.getScriptingName());
+			w.key(API_KEY_CALL).value(functionName);
+			if (preDataServiceCall) w.key(API_PRE_DATA_SERVICE_CALL).value(true);
+			if (arguments != null)
+			{
+				w.key(API_KEY_ARGS).array();
+				for (int i = 0; i < arguments.length; i++)
+				{
+					FullValueToJSONConverter.INSTANCE.toJSONValue(w, null, arguments[i],
+						argumentTypes != null && i < argumentTypes.size() ? argumentTypes.get(i) : null,
+						new BrowserConverterContext((ClientService)clientService, PushToServerEnum.allow));
+				}
+				w.endArray();
+			}
+			w.endObject();
+		}
+
+	}
+
+	private static class ComponentCall
+	{
+
+		private final WebComponent component;
+		private final Object[] arguments;
+		private final WebObjectFunctionDefinition apiFunction;
+		private final Map<String, JSONString> callContributions;
+		private final boolean delayUntilFormLoads;
+		private final Container formContainer;
+
+		public ComponentCall(WebComponent component, WebObjectFunctionDefinition apiFunction, Object[] arguments, Map<String, JSONString> callContributions,
+			boolean delayUntilFormLoads, Container formContainer)
+		{
+			this.component = component;
+			this.apiFunction = apiFunction;
+			this.arguments = arguments;
+			this.callContributions = callContributions;
+			this.delayUntilFormLoads = delayUntilFormLoads;
+			this.formContainer = formContainer; // this is only relevant if delayUntilFormLoads == true
+		}
+
+		/**
+		 * Writes to JSON what can then be sent to client in order to execute this component call.
+		 */
+		public void writeToJSON(JSONWriter w)
+		{
+			Container topContainer = component.getParent();
+			while (topContainer != null && topContainer.getParent() != null)
+			{
+				topContainer = topContainer.getParent();
+			}
+
+			w.key(API_KEY_FORM_NAME).value(topContainer.getName());
+			w.key(API_KEY_COMPONENT_NAME).value(component.getName());
+			w.key(API_KEY_FUNCTION_NAME).value(apiFunction.getName());
+
+			if (arguments != null && arguments.length > 0)
+			{
+				w.key(API_KEY_ARGS).array();
+				List<PropertyDescription> argumentTypes = apiFunction.getParameters();
+				for (int i = 0; i < arguments.length; i++)
+				{
+					FullValueToJSONConverter.INSTANCE.toJSONValue(w, null, arguments[i],
+						argumentTypes != null && i < argumentTypes.size() ? argumentTypes.get(i) : null,
+						new BrowserConverterContext(component, PushToServerEnum.allow));
+				}
+				w.endArray();
+			}
+
+			// we send this to client just in case form is no longer there for some reason when the call arrives - and it shouldn't try to force-load it on client
+			if (delayUntilFormLoads) w.key(API_KEY_DELAY_UNTIL_FORM_LOADS).value(true);
+
+			if (callContributions != null) callContributions.forEach((String key, JSONString value) -> {
+				w.key(key).value(value);
+			});
+		}
+
 	}
 
 }

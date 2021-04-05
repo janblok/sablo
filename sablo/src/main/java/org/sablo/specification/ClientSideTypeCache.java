@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.sablo.specification.property.CustomJSONObjectType;
+import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.IPropertyWithClientSideConversions;
 import org.sablo.websocket.utils.JSONUtils.EmbeddableJSONWriter;
@@ -38,10 +39,12 @@ public class ClientSideTypeCache
 {
 
 	private static final String PROPERTIES_KEY = "p";
-	private static final String FACTORY_TYPE_DETAILS = "ftd"; // currently only factory type "custom object" will send to client specific subproperty types for each custom object type; on client, a type factory will be aware of those and will be able to create then specific custom object types as defined in spec files
+	private static final String FACTORY_TYPE_DETAILS = "ftd"; // currently only factory type "custom object" will send to client specific sub-property types or information for each custom object type; on client, a type factory will be aware of those and will be able to create then specific custom object types as defined in the .spec files
 	private static final String HANDLERS_KEY = "h";
 	private static final String APIS_KEY = "a";
 	private static final String RETURN_VAL_KEY = "r";
+	public static final String PROPERTY_TYPE = "t";
+	public static final String PROPERTY_PUSH_TO_SERVER_VALUE = "s";
 
 	private final HashMap<String, EmbeddableJSONWriter> webObjectClientTypeCache = new HashMap<>();
 
@@ -51,7 +54,13 @@ public class ClientSideTypeCache
 		webObjectClientTypeCache.clear();
 	}
 
-	public EmbeddableJSONWriter getClientSideTypesFor(WebObjectSpecification webObjectSpec)
+	public void clear(String specName)
+	{
+		webObjectClientTypeCache.remove(specName);
+	}
+
+
+	public EmbeddableJSONWriter getClientSideSpecFor(WebObjectSpecification webObjectSpec)
 	{
 		EmbeddableJSONWriter cachedClSideTs;
 		String webObjectName = webObjectSpec.getName();
@@ -66,21 +75,50 @@ public class ClientSideTypeCache
 	}
 
 	/**
-	 * Make sure to use {@link #getClientSideTypesFor(WebObjectSpecification)} where possible - if you are not going to cache it yourself - to take it from cache instead of building it each time.
+	 * Make sure to use {@link #getClientSideSpecFor(WebObjectSpecification)} where possible - if you are not going to cache it yourself - to take it from cache instead of building it each time.
 	 *
-	 * Will build something like this for components and services (no handlers for services of course)
+	 * It will build something like this for components and services (no handlers for services of course):
 	 * <pre>
 	 * {
-	 *     p: { p1: ["JSON_obj", "ct1"], // custom object 'ct1'
-	 *          p2: "date",
-	 *          p3: ["JSON_arr", "component"], ... },                  // so any properties that have client side conversions (by name or in case of factory types via an array of 2: factory name and factory param)
-	 *   ftd: { "JSON_obj":
-	 *             { ct1: { p1: ..., p2: ..., ... },                       // ftd = factory type details (types that need to create specific type instances for usage); currently only custom object types need to send details about subproperties to client for each specific custom object type
-	 *               ct2: { p1: ..., p2: ..., ... }, ... } },              // any custom object types defined in the component spec (by name, each containing the sub-properties defined in spec. for it)
-	 *    ha: { handler1: { r: "foundsetRef",                                        // return value of handler if it's a converting client side type
-	 *                      0: "date", 3: ["JSON_obj", "ct2"], ...}, ... },          // any handler arguments with client side conversion types (by arg no.)
-	 *     a: { api1: { r: "foundsetRef",                              // return value of api call if it's a converting client side type
-	 *                  1: "ct1", 5: "date", ... }, ... }              // any api call arguments with client side conversion types (by arg no.)
+	 *     "p": {                                                   // properties
+	 *                                                              // client side types of properties; so any properties that have client side conversions (by name or in case of factory types via an array of 2: factory name and factory param)
+	 *     	        "prop1": ["JSON_obj", "ct1"],                   // custom object 'ct1'; see below the "ftd" section; no push to server specified
+	 *              "prop2": "date",
+	 *              "prop3": ["JSON_arr", ["object", 2]],           // an 'object[]' array declared in spec with *element* pushToServer shallow (that 2) - no push to server on the array itself
+	 *              "prop4": ["JSON_arr", "component"],             // this is a simple array, with no element declared pushToServer value, it just gives it's element type directly; no more generated numeric ids
+	 *              "prop5": {                                      // if a prop has both a client side type and a push to server it will be set here as an object with 2 keys
+	 *                  "t": "int",                                 // 'int' type property
+	 *                  "s": 1                                      // with pushToServer set to 'allow' (1) - push to server values as declared in spec file; "s" key values are PushToServerEnum.ordinal() numeric values (they are shorter then toString); for example 0 would be PushToServerEnum.reject, 2 would be PushToServerEnum.shallow
+	 *              },
+	 *              "prop6": {                                      // prop with no client-side type but it has a pushToServer of 'deep'
+	 *                  "s": 2
+	 *              }
+	 *              ...
+	 *     },
+	 *     "ftd": {                                                 // ftd = factory type details (types that need to create specific type instances for usage); currently only custom object types need to send details about sub-properties to client for each specific custom object type
+	 *         "JSON_obj": {                                        // any custom object types defined in the component spec (by name, each containing the sub-properties defined in spec. for it)
+	 *             "ct1": {                                         // structure is the same as in "p" root key above
+	 *     	            "prop1": ...,
+	 *                  "prop2": ...,
+	 *                  ...
+	 *             },
+	 *             ...
+	 *         }
+	 *     },
+	 *     "ha": {                                                  // handlers
+	 *         "handler1": {
+	 *             "r": "foundsetRef",                              // return value of handler if it's a converting client side type
+	 *             0: "date", 3: ["JSON_obj", "ct2"], ...           // any handler arguments with client side conversion types (by arg no.)
+	 *         },
+	 *         ...
+	 *     },
+	 *     "a": {                                                   // api functions
+	 *         "api1": {
+	 *             "r": "foundsetRef",                              // return value of api call if it's a converting client side type
+	 *             1: "ct1", 5: "date", ...                         // any api call arguments with client side conversion types (by arg no.)
+	 *         },
+	 *         ...
+	 *     }
 	 * }
 	 * </pre>
 	 *
@@ -100,18 +138,19 @@ public class ClientSideTypeCache
 		boolean somethingWasWritten = false;
 
 		// check model properties
-		somethingWasWritten = writePropertiesWithClientSideConversions(webObjectSpec, modelProperties, clientSideTypesJSON, PROPERTIES_KEY);
+		somethingWasWritten = writePropertiesWithClientSidePDs(webObjectSpec, modelProperties, clientSideTypesJSON, PROPERTIES_KEY);
 
 		// check for/write any custom object types
-		Map<String, PropertyDescription> customObjectTypes = webObjectSpec.getCustomJSONProperties();
+		Map<String, ICustomType< ? >> customObjectTypes = webObjectSpec.getDeclaredCustomObjectTypes();
 		if (customObjectTypes.size() > 0)
 		{
 			somethingWasWritten = true;
 			clientSideTypesJSON.key(FACTORY_TYPE_DETAILS).object().key(CustomJSONObjectType.TYPE_NAME).object();
-			for (Entry<String, PropertyDescription> cot : customObjectTypes.entrySet())
+			for (ICustomType< ? > cot : customObjectTypes.values())
 			{
-				clientSideTypesJSON.key(cot.getKey()).object();
-				writePropertiesWithClientSideConversions(cot.getValue(), cot.getValue().getAllPropertiesNames(), clientSideTypesJSON, null);
+				clientSideTypesJSON.key(cot.getName()).object();
+				writePropertiesWithClientSidePDs(cot.getCustomJSONTypeDefinition(), cot.getCustomJSONTypeDefinition().getAllPropertiesNames(),
+					clientSideTypesJSON, null);
 				clientSideTypesJSON.endObject();
 			}
 			clientSideTypesJSON.endObject().endObject();
@@ -178,24 +217,58 @@ public class ClientSideTypeCache
 		return somethingFromFuncWasWritten || parentObjectStartWasAlreadyWritten;
 	}
 
-	private static boolean writePropertiesWithClientSideConversions(PropertyDescription parentPD, Collection<String> modelProperties,
+	private static boolean writePropertiesWithClientSidePDs(PropertyDescription parentPD, Collection<String> modelProperties,
 		EmbeddableJSONWriter clientSideTypesJSON, String addAsObjectWithKey)
 	{
 		boolean anyPropWritten = false;
-		for (String prop : modelProperties)
+		EmbeddableJSONWriter tempWriter;
+		boolean propTypeWasWritten;
+		for (String propertyName : modelProperties)
 		{
-			PropertyDescription propPD = parentPD.getProperty(prop);
+			PropertyDescription propPD = parentPD.getProperty(propertyName);
 			IPropertyType< ? > propType = propPD.getType();
+
+			propTypeWasWritten = false;
+			tempWriter = null;
 			if (propType instanceof IPropertyWithClientSideConversions< ? >)
 			{
+				tempWriter = new EmbeddableJSONWriter(true);
+				propTypeWasWritten = ((IPropertyWithClientSideConversions< ? >)propType).writeClientSideTypeName(tempWriter, null, propPD);
+			}
+
+			if (propPD.getPushToServerAsDeclaredInSpecFile() != null)
+			{
+				// something will be written (this push to server at least)
 				if (!anyPropWritten)
 				{
 					anyPropWritten = true;
 					if (addAsObjectWithKey != null) clientSideTypesJSON.key(addAsObjectWithKey).object();
 				}
-				((IPropertyWithClientSideConversions< ? >)propType).writeClientSideTypeName(clientSideTypesJSON, prop, propPD); // return value false can't be handled easily here as an undo of .key(addAsObjectWithKey).object() is not easy to do - but there's no harm sending even an empty {} there to client - if no properties need that
+
+				// we have a push to server value; so we create an object with a 's' key that can have also the type 't' key if needed
+				clientSideTypesJSON.key(propertyName).object();
+				if (propTypeWasWritten)
+				{
+					// both type and pushto server were written
+					clientSideTypesJSON.key(PROPERTY_TYPE).value(tempWriter);
+				}
+				clientSideTypesJSON.key(PROPERTY_PUSH_TO_SERVER_VALUE).value(propPD.getPushToServerAsDeclaredInSpecFile().ordinal());
+
+				clientSideTypesJSON.endObject();
+			}
+			else if (propTypeWasWritten)
+			{
+				// something will be written (this prop. client side type at least)
+				if (!anyPropWritten)
+				{
+					anyPropWritten = true;
+					if (addAsObjectWithKey != null) clientSideTypesJSON.key(addAsObjectWithKey).object();
+				}
+
+				clientSideTypesJSON.key(propertyName).value(tempWriter);
 			}
 		}
+
 		if (anyPropWritten && addAsObjectWithKey != null)
 		{
 			clientSideTypesJSON.endObject();

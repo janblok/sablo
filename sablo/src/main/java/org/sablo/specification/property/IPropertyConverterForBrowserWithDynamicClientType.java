@@ -20,7 +20,7 @@ import org.json.JSONException;
 import org.json.JSONString;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.websocket.ClientSideTypesState;
+import org.sablo.websocket.ClientSideSpecState;
 import org.sablo.websocket.utils.JSONUtils;
 
 /**
@@ -28,7 +28,7 @@ import org.sablo.websocket.utils.JSONUtils;
  * but it also can require random client-side conversions (for incomming data from server). For example a type sending random data types
  * might want to sometimes send no client side conversion (for numbers, booleans, strings) but send a 'date' client side conversions when the data it contains is a Date. <br/><br/>
  *
- * So sometimes client-side needs to perform some conversions but not always the same type (so this conversions types are not known initially are not available client side via the {@link ClientSideTypesState} mechanism).<br/><br/>
+ * So sometimes client-side needs to perform some conversions but not always the same type (so this conversions types are not known initially are not available client side via the {@link ClientSideSpecState} mechanism).<br/><br/>
  *
  * IMPORTANT:
  * <ul>
@@ -43,7 +43,7 @@ public interface IPropertyConverterForBrowserWithDynamicClientType<JT> extends I
 {
 
 	/**
-	 * See interface description for an explanation of how this method should be/is used.
+	 * See interface javadoc above for an explanation of how this method should be/is used.
 	 * Also see {@link #toJSON(JSONWriter, String, Object, PropertyDescription, Object)} which does almost the same thing with the differences mentioned in the interface description above.
 	 *
 	 * @param writer same as for {@link #toJSON(JSONWriter, String, Object, PropertyDescription, Object)}

@@ -146,7 +146,7 @@ public class TypesRegistry
 	/**
 	 * @param parsedTypes
 	 */
-	public static void addTypes(Collection<IPropertyType< ? >> collection)
+	public static void addTypes(Collection< ? extends IPropertyType< ? >> collection)
 	{
 		for (IPropertyType< ? > type : collection)
 		{

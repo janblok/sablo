@@ -36,6 +36,7 @@ import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
 import org.sablo.eventthread.WebsocketSessionWindows;
 import org.sablo.services.client.SabloService;
+import org.sablo.services.client.TypesRegistryService;
 import org.sablo.services.server.ConsoleLoggerServiceHandler;
 import org.sablo.services.server.FormServiceHandler;
 import org.sablo.specification.WebObjectSpecification;
@@ -422,6 +423,12 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	public SabloService getSabloService()
 	{
 		return new SabloService(getClientService(SabloService.SABLO_SERVICE));
+	}
+
+	@Override
+	public TypesRegistryService getTypesRegistryService()
+	{
+		return new TypesRegistryService(getClientService(TypesRegistryService.TYPES_REGISTRY_SERVICE));
 	}
 
 	@Override

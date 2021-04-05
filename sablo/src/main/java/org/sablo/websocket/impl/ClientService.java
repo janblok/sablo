@@ -16,6 +16,7 @@
 package org.sablo.websocket.impl;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.json.JSONException;
 import org.json.JSONStringer;
@@ -133,17 +134,10 @@ public class ClientService extends BaseWebObject implements IClientService
 		CurrentWindow.get().executeAsyncNowServiceCall(this, functionName, arguments, getParameterTypes(functionName));
 	}
 
-	protected PropertyDescription getParameterTypes(String functionName)
+	protected List<PropertyDescription> getParameterTypes(String functionName)
 	{
-		// we have a list of properties available; create a suitable wrapper PropertyDescription that has the
-		// param indexes as child PropertyDescriptions
-		PropertyDescription parameterTypes = null;
 		WebObjectFunctionDefinition apiFunc = specification.getApiFunction(functionName);
-		if (apiFunc != null)
-		{
-			parameterTypes = BaseWebObject.getParameterTypes(apiFunc);
-		}
-		return parameterTypes;
+		return (apiFunc != null) ? apiFunc.getParameters() : null;
 	}
 
 	/**
@@ -211,6 +205,12 @@ public class ClientService extends BaseWebObject implements IClientService
 			}
 		}
 		return serviceDefinition;
+	}
+
+	@Override
+	public String toString()
+	{
+		return "Client service: " + getName(); //$NON-NLS-1$
 	}
 
 }

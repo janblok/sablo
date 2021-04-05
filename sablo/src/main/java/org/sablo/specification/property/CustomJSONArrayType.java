@@ -25,6 +25,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
+import org.sablo.specification.ClientSideTypeCache;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.sablo.util.ValueReference;
@@ -54,7 +55,6 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 
 	protected static final String INDEX = "i";
 	protected static final String VALUE = "v";
-	protected static final String PUSH_TO_SERVER = "w";
 	protected static final String INITIALIZE = "in";
 	protected static final String NO_OP = "n";
 
@@ -150,7 +150,10 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 	public ChangeAwareList<ET, WT> fromJSON(Object newJSONValue, ChangeAwareList<ET, WT> previousChangeAwareList, PropertyDescription pd,
 		IBrowserConverterContext dataConverterContext, ValueReference<Boolean> returnValueAdjustedIncommingValue)
 	{
-		PushToServerEnum pushToServer = BrowserConverterContext.getPushToServerValue(dataConverterContext);
+		// maybe these 2 pushToServer values should be made only 1... but for example one could have array 'allow' and child elements of type 'object' with 'deep' (if only child element changes are to be automatically sent from angulat deep watches to server)
+		PushToServerEnum pushToServerOnWholeArray = BrowserConverterContext.getPushToServerValue(dataConverterContext);
+		PushToServerEnum pushToServerComputedOnElements = pushToServerOnWholeArray
+			.combineWithChild(getCustomJSONTypeDefinition().getPushToServerAsDeclaredInSpecFile());
 
 		if (newJSONValue instanceof JSONObject)
 		{
@@ -161,18 +164,21 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 			{
 				if (previousChangeAwareList == null || clientReceivedJSON.getInt(CONTENT_VERSION) == previousChangeAwareList.getListContentVersion())
 				{
+					IBrowserConverterContext elementDataConverterContext = dataConverterContext == null ? null
+						: dataConverterContext.newInstanceWithPushToServer(pushToServerComputedOnElements);
 					if (clientReceivedJSON.has(CHANGE_TYPE_UPDATES))
 					{
 						if (previousChangeAwareList == null)
 						{
-							log.warn("property " + pd.getName() +
-								" is typed as array; it got browser updates but server-side it is null; ignoring browser update. Update JSON: " + newJSONValue);
+							log.warn("Property (" + pd + ") of '" + (dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
+								"' is typed as array; it got browser updates but server-side it is null; ignoring browser update. Update JSON: " +
+								newJSONValue);
 						}
 						else
 						{
 							if ((getCustomJSONTypeDefinition().getType() instanceof IPushToServerSpecialType &&
 								((IPushToServerSpecialType)getCustomJSONTypeDefinition().getType()).shouldAlwaysAllowIncommingJSON()) ||
-								PushToServerEnum.allow.compareTo(pushToServer) <= 0)
+								PushToServerEnum.allow.compareTo(pushToServerComputedOnElements) <= 0)
 							{
 								JSONObject updates = (JSONObject)newJSONValue;
 
@@ -191,22 +197,24 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 									{
 										ValueReference<Boolean> returnValueAdjustedIncommingValueForIndex = new ValueReference<Boolean>(Boolean.FALSE);
 										WT newWrappedEl = (WT)JSONUtils.fromJSON(wrappedBaseListReadOnly.get(idx), val, getCustomJSONTypeDefinition(),
-											dataConverterContext, returnValueAdjustedIncommingValueForIndex);
+											elementDataConverterContext,
+											returnValueAdjustedIncommingValueForIndex);
 										previousChangeAwareList.setInWrappedBaseList(idx, newWrappedEl, false);
 										if (returnValueAdjustedIncommingValueForIndex.value.booleanValue())
 											previousChangeAwareList.getChangeSetter().markElementChangedByRef(idx);
 									}
 									else
 									{
-										log.error("Custom array property updates from browser are incorrect. Index out of bounds: idx (" +
+										log.error("Property (" + pd + ") of '" + (dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
+											"'. Custom array property updates from browser are incorrect. Index out of bounds: idx (" +
 											wrappedBaseListReadOnly.size() + ")");
 									}
 								}
 							}
 							else
 							{
-								log.error("Property (" + pd +
-									") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to update array element values serverside. Denying and attempting to send back full value! Update JSON: " +
+								log.error("Property (" + pd + ") of '" + (dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
+									"' that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to update array element values serverside. Denying and attempting to send back full value! Update JSON: " +
 									newJSONValue);
 								if (previousChangeAwareList != null) previousChangeAwareList.getChangeSetter().markAllChanged();
 								return previousChangeAwareList;
@@ -216,23 +224,25 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 					}
 					else
 					{
-						if (PushToServerEnum.allow.compareTo(pushToServer) > 0)
+						if (PushToServerEnum.allow.compareTo(pushToServerOnWholeArray) > 0)
 						{
-							log.error("Property (" + pd +
-								") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full array value serverside. Denying and attempting to send back full value! Update JSON: " +
+							log.error("Property (" + pd + ") of '" + (dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
+								"' that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full array value serverside. Denying and attempting to send back full value! Update JSON: " +
 								newJSONValue);
 							if (previousChangeAwareList != null) previousChangeAwareList.getChangeSetter().markAllChanged();
 							return previousChangeAwareList;
 						}
 
 						// full replace
-						return fullValueReplaceFromBrowser(previousChangeAwareList, pd, dataConverterContext, clientReceivedJSON.getJSONArray(VALUE));
+						return fullValueReplaceFromBrowser(previousChangeAwareList, pd, elementDataConverterContext, clientReceivedJSON.getJSONArray(VALUE),
+							returnValueAdjustedIncommingValue);
 					}
 				}
 				else
 				{
-					log.info("property " + pd.getName() + " is typed as array; it got browser updates (" + clientReceivedJSON.getInt(CONTENT_VERSION) +
-						") but expected server version (" + (previousChangeAwareList.getListContentVersion() + 1) +
+					log.info("Property (" + pd + ") of '" + (dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
+						"' is typed as array; it got browser updates (" + clientReceivedJSON.getInt(CONTENT_VERSION) +
+						") but expected server version (" + previousChangeAwareList.getListContentVersion() +
 						")  - so server changed meanwhile; ignoring browser update. Update JSON: " + newJSONValue);
 
 					// dropped browser update because server object changed meanwhile;
@@ -244,16 +254,17 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 			}
 			catch (JSONException e)
 			{
-				log.error("Cannot correctly parse custom array property updates/values from browser. Update JSON: " + newJSONValue, e);
+				log.error("Property (" + pd + ") of '" + (dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
+					"'. Cannot correctly parse custom array property updates/values from browser. Update JSON: " + newJSONValue, e);
 				return previousChangeAwareList;
 			}
 		}
 		else if (newJSONValue == null)
 		{
-			if (previousChangeAwareList != null && PushToServerEnum.allow.compareTo(pushToServer) > 0)
+			if (previousChangeAwareList != null && PushToServerEnum.allow.compareTo(pushToServerOnWholeArray) > 0)
 			{
-				log.error("Property (" + pd +
-					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the array value serverside to null. Denying and attempting to send back full value! Update JSON: " +
+				log.error("Property (" + pd + ") of '" + (dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
+					"' that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the array value serverside to null. Denying and attempting to send back full value! Update JSON: " +
 					newJSONValue);
 				previousChangeAwareList.getChangeSetter().markAllChanged();
 				return previousChangeAwareList;
@@ -262,78 +273,87 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 		}
 		else if (newJSONValue instanceof JSONArray)
 		{
-			if (PushToServerEnum.allow.compareTo(pushToServer) > 0)
-			{
-				log.error("Property (" + pd +
-					") that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to change the full array value serverside (uoc). Denying and attempting to send back full value! Update JSON: " +
-					newJSONValue);
-				if (previousChangeAwareList != null) previousChangeAwareList.getChangeSetter().markAllChanged();
-				return previousChangeAwareList;
-			}
+			log.error("Property (" + pd + ") of '" + (dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
+				"' is trying to send a full JSONArray from client without going through client side conversion. Denying and attempting to send back old full value! Update JSON: " +
+				newJSONValue);
 
-			// this can happen if the property was undefined before (so not even aware of type client side) and it was assigned a complete array value client side;
-			// in this case we must update server value and send a request back to client containing the type and letting it know that it must start watching the new value (for granular updates)
-			ChangeAwareList<ET, WT> newChangeAwareList = fullValueReplaceFromBrowser(previousChangeAwareList, pd, dataConverterContext,
-				(JSONArray)newJSONValue);
-			newChangeAwareList.getChangeSetter().markMustSendTypeToClient();
-			return newChangeAwareList;
+			if (previousChangeAwareList != null) previousChangeAwareList.getChangeSetter().markAllChanged();
+			return previousChangeAwareList;
 		}
 		else
 		{
-			log.error("property " + pd.getName() + " is typed as array, but the value is not an JSONArray or supported update value: " + newJSONValue);
+			log.error("Property (" + pd + ") of '" + (dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
+				"' is typed as array, but the value is not a supported update value: " + newJSONValue);
 			return previousChangeAwareList;
 		}
 	}
 
 	private ChangeAwareList<ET, WT> fullValueReplaceFromBrowser(ChangeAwareList<ET, WT> previousChangeAwareList, PropertyDescription pd,
-		IBrowserConverterContext dataConverterContext, JSONArray array)
+		IBrowserConverterContext elementDataConverterContext, JSONArray array, ValueReference<Boolean> returnValueAdjustedIncommingValue)
 	{
-		List<WT> list = new ArrayList<WT>();
-		List<WT> previousWrappedBaseList = (previousChangeAwareList != null ? previousChangeAwareList.getWrappedBaseListForReadOnly() : null);
-		List<Integer> adjustedNewValueIndexes = new ArrayList<>();
-
-		for (int i = 0; i < array.length(); i++)
+		if ((getCustomJSONTypeDefinition().getType() instanceof IPushToServerSpecialType &&
+			((IPushToServerSpecialType)getCustomJSONTypeDefinition().getType()).shouldAlwaysAllowIncommingJSON()) ||
+			PushToServerEnum.allow.compareTo(elementDataConverterContext.getComputedPushToServerValue()) <= 0)
 		{
-			WT oldVal = null;
-			if (previousWrappedBaseList != null && previousWrappedBaseList.size() > i)
-			{
-				oldVal = previousWrappedBaseList.get(i);
-			}
-			try
-			{
-				ValueReference<Boolean> returnValueAdjustedIncommingValueForIndex = new ValueReference<Boolean>(Boolean.FALSE);
-				list.add((WT)JSONUtils.fromJSON(oldVal, array.opt(i), getCustomJSONTypeDefinition(), dataConverterContext,
-					returnValueAdjustedIncommingValueForIndex));
-				if (returnValueAdjustedIncommingValueForIndex.value.booleanValue()) adjustedNewValueIndexes.add(i);
-			}
-			catch (JSONException e)
-			{
-				log.error("Cannot parse array element browser JSON.", e);
-			}
-		}
+			List<WT> list = new ArrayList<WT>();
+			List<WT> previousWrappedBaseList = (previousChangeAwareList != null ? previousChangeAwareList.getWrappedBaseListForReadOnly() : null);
+			List<Integer> adjustedNewValueIndexes = new ArrayList<>();
 
-		List<ET> newBaseList;
-		IPropertyType<ET> elementType = getElementType();
-		if (elementType instanceof IWrapperType< ? , ? >)
-		{
-			IWrappingContext wrappingContext = (dataConverterContext instanceof IWrappingContext ? (IWrappingContext)dataConverterContext
-				: new WrappingContext(dataConverterContext.getWebObject(), pd.getName()));
-			newBaseList = new WrapperList<ET, WT>(list, (IWrapperType<ET, WT>)elementType, pd, wrappingContext);
+			for (int i = 0; i < array.length(); i++)
+			{
+				WT oldVal = null;
+				if (previousWrappedBaseList != null && previousWrappedBaseList.size() > i)
+				{
+					oldVal = previousWrappedBaseList.get(i);
+				}
+				try
+				{
+					ValueReference<Boolean> returnValueAdjustedIncommingValueForIndex = new ValueReference<Boolean>(Boolean.FALSE);
+					list.add((WT)JSONUtils.fromJSON(oldVal, array.opt(i), getCustomJSONTypeDefinition(), elementDataConverterContext,
+						returnValueAdjustedIncommingValueForIndex));
+					if (returnValueAdjustedIncommingValueForIndex.value.booleanValue()) adjustedNewValueIndexes.add(i);
+				}
+				catch (JSONException e)
+				{
+					log.error("Cannot parse array element browser JSON.", e);
+				}
+			}
+
+			List<ET> newBaseList;
+			IPropertyType<ET> elementType = getElementType();
+			if (elementType instanceof IWrapperType< ? , ? >)
+			{
+				IWrappingContext wrappingContext = (elementDataConverterContext instanceof IWrappingContext ? (IWrappingContext)elementDataConverterContext
+					: new WrappingContext(elementDataConverterContext.getWebObject(), pd.getName()));
+				newBaseList = new WrapperList<ET, WT>(list, (IWrapperType<ET, WT>)elementType, pd, wrappingContext);
+			}
+			else
+			{
+				newBaseList = (List<ET>)list; // in this case ET == WT
+			}
+
+			// TODO how to handle previous null value here; do we need to re-send to client or not (for example initially both client and server had values, at the same time server==null client sends full update); how do we know case server version is unknown then
+			ChangeAwareList<ET, WT> retVal = new ChangeAwareList<ET, WT>(newBaseList/* , dataConverterContext */,
+				previousChangeAwareList != null ? previousChangeAwareList.increaseContentVersion() : 1);
+
+
+			for (Integer idx : adjustedNewValueIndexes)
+				retVal.getChangeSetter().markElementChangedByRef(idx.intValue());
+
+			return retVal;
 		}
 		else
 		{
-			newBaseList = (List<ET>)list; // in this case ET == WT
+			log.error("Property (" + pd + ") of '" + (elementDataConverterContext != null ? elementDataConverterContext.getWebObject() : null) +
+				"' that doesn't define a suitable pushToServer value (allow/shallow/deep) on elements tried to update array element values through full update serverside." +
+				"Denying and attempting to send back full value! Update JSON: " +
+				array);
+			if (previousChangeAwareList != null) previousChangeAwareList.getChangeSetter().markAllChanged();
+			else if (returnValueAdjustedIncommingValue != null) returnValueAdjustedIncommingValue.value = Boolean.TRUE;
+			// else no way to tell the system to re-send the server value to client when an client to server change deny happened
+
+			return previousChangeAwareList;
 		}
-
-		// TODO how to handle previous null value here; do we need to re-send to client or not (for example initially both client and server had values, at the same time server==null client sends full update); how do we kno case server version is unknown then
-		ChangeAwareList<ET, WT> retVal = new ChangeAwareList<ET, WT>(newBaseList/* , dataConverterContext */,
-			previousChangeAwareList != null ? previousChangeAwareList.increaseContentVersion() : 1);
-
-
-		for (Integer idx : adjustedNewValueIndexes)
-			retVal.getChangeSetter().markElementChangedByRef(idx.intValue());
-
-		return retVal;
 	}
 
 	@Override
@@ -366,16 +386,10 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 				// send all (currently we don't support granular updates for add/remove but we could in the future)
 				writer.key(CONTENT_VERSION).value(changeAwareList.increaseContentVersion());
 
-				PushToServerEnum pushToServer = BrowserConverterContext.getPushToServerValue(dataConverterContext);
-				if (pushToServer == PushToServerEnum.shallow || pushToServer == PushToServerEnum.deep)
-				{
-					writer.key(PUSH_TO_SERVER).value(pushToServer == PushToServerEnum.shallow ? false : true);
-				}
-
 				writer.key(VALUE).array();
-				for (int i = 0; i < wrappedBaseListReadOnly.size(); i++)
+				for (WT element : wrappedBaseListReadOnly)
 				{
-					toJSONConverterForFullValue.toJSONValue(writer, null, wrappedBaseListReadOnly.get(i), getCustomJSONTypeDefinition(), dataConverterContext);
+					toJSONConverterForFullValue.toJSONValue(writer, null, element, getCustomJSONTypeDefinition(), dataConverterContext);
 				}
 				writer.endArray();
 			}
@@ -384,11 +398,6 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 			{
 				// else write changed indexes / granular update:
 				writer.key(CONTENT_VERSION).value(changeAwareList.getListContentVersion());
-				if (changes.mustSendTypeToClient())
-				{
-					// updates + mustSendTypeToClient can happen if child elements are also similar - and need to instrument their values client-side when set by reference/completely from browser
-					writer.key(INITIALIZE).value(true);
-				}
 
 				if (changes.getRemovedIndexes().size() > 0)
 				{
@@ -411,11 +420,6 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 				{
 					writeValues(writer, dataConverterContext, changes.getIndexesWithContentUpdates(), wrappedBaseListReadOnly, CHANGE_TYPE_UPDATES);
 				}
-			}
-			else if (changes.mustSendTypeToClient())
-			{
-				writer.key(CONTENT_VERSION).value(changeAwareList.getListContentVersion());
-				writer.key(INITIALIZE).value(true);
 			}
 			else
 			{
@@ -463,20 +467,29 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 	@Override
 	public boolean writeClientSideTypeName(JSONWriter w, String keyToAddTo, PropertyDescription pd)
 	{
+		// writes ["JSON_arr", type] or ["JSON_arr", [type, elementPushToServer]] if the element declared a pushToServer value in spec file (through "elementConfig")
 		JSONUtils.addKeyIfPresent(w, keyToAddTo);
 
 		w.array().value(TYPE_NAME);
 		PropertyDescription elementPD = getCustomJSONTypeDefinition();
-		if (elementPD != null && elementPD.getType() instanceof IPropertyWithClientSideConversions< ? >)
+		if (elementPD.getPushToServerAsDeclaredInSpecFile() != null) w.object().key(ClientSideTypeCache.PROPERTY_TYPE);
+		if (elementPD.getType() instanceof IPropertyWithClientSideConversions< ? >)
 		{
 			boolean written = ((IPropertyWithClientSideConversions< ? >)elementPD.getType()).writeClientSideTypeName(w, null, elementPD);
 			if (!written) w.value(null); // value type doesn't need client side conversions...
 		}
 		else
 		{
+			// value type doesn't need client side conversions...
 			w.value(null);
 		}
+		if (elementPD.getPushToServerAsDeclaredInSpecFile() != null)
+		{
+			w.key(ClientSideTypeCache.PROPERTY_PUSH_TO_SERVER_VALUE).value(elementPD.getPushToServerAsDeclaredInSpecFile().ordinal());
+			w.endObject();
+		}
 		w.endArray();
+
 		return true;
 	}
 

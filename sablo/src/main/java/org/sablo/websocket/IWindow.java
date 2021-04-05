@@ -109,7 +109,7 @@ public interface IWindow
 	 * @param arguments the arguments to be passed to the service's function call.
 	 * @param argumentTypes the types of arguments passed; can be null (the types are used for correct 'to JSON' conversion for websocket traffic).
 	 */
-	void executeAsyncServiceCall(IClientService clientService, String functionName, Object[] arguments, PropertyDescription argumentTypes);
+	void executeAsyncServiceCall(IClientService clientService, String functionName, Object[] arguments, List<PropertyDescription> argumentTypes);
 
 	/**
 	 * Execute a (client/browser) async-now method; such methods are to be executed right away but do not wait for a return value.
@@ -119,7 +119,7 @@ public interface IWindow
 	 * @param arguments the arguments to be passed to the service's function call.
 	 * @param argumentTypes the types of arguments passed; can be null (the types are used for correct 'to JSON' conversion for websocket traffic).
 	 */
-	void executeAsyncNowServiceCall(IClientService clientService, String functionName, Object[] arguments, PropertyDescription argumentTypes);
+	void executeAsyncNowServiceCall(IClientService clientService, String functionName, Object[] arguments, List<PropertyDescription> argumentTypes);
 
 	/**
 	 * Execute a (client/browser) service call asynchronously and returns the resulting value.
@@ -142,7 +142,7 @@ public interface IWindow
 	 * @param apiFunction the function to invoke
 	 * @param arguments
 	 */
-	public Object invokeApi(WebComponent receiver, WebObjectFunctionDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes);
+	public Object invokeApi(WebComponent receiver, WebObjectFunctionDefinition apiFunction, Object[] arguments);
 
 	/**
 	 * It there an active session to the browser?

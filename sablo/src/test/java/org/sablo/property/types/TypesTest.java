@@ -40,7 +40,7 @@ import org.sablo.specification.property.types.IntPropertyType;
 import org.sablo.specification.property.types.LongPropertyType;
 import org.sablo.specification.property.types.PointPropertyType;
 import org.sablo.specification.property.types.TypesRegistry;
-import org.sablo.websocket.BaseWebsocketSession;
+import org.sablo.util.TestBaseWebsocketSession;
 import org.sablo.websocket.BaseWindow;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.WebsocketSessionKey;
@@ -51,28 +51,6 @@ import org.sablo.websocket.WebsocketSessionKey;
  */
 public class TypesTest
 {
-
-	private static class TestBaseWebsocketSession extends BaseWebsocketSession
-	{
-		private Locale locale = Locale.getDefault();
-
-		public TestBaseWebsocketSession(WebsocketSessionKey getSessionKey)
-		{
-			super(getSessionKey);
-		}
-
-		@Override
-		public Locale getLocale()
-		{
-			return locale;
-		}
-
-		public void setLocale(Locale locale)
-		{
-			this.locale = locale;
-		}
-	}
-
 	@Before
 	public void setUp() throws Exception
 	{

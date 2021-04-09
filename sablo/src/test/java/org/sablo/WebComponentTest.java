@@ -49,9 +49,11 @@ import org.sablo.specification.property.ChangeAwareList;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.specification.property.types.DimensionPropertyType;
 import org.sablo.specification.property.types.VisiblePropertyType;
+import org.sablo.util.TestBaseWebsocketSession;
 import org.sablo.websocket.BaseWindow;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.TypedData;
+import org.sablo.websocket.WebsocketSessionKey;
 import org.sablo.websocket.utils.JSONUtils;
 
 /**
@@ -123,7 +125,7 @@ public class WebComponentTest
 		data.put("msg", properties);
 
 		String msg = JSONUtils.writeDataWithConversions(data, null, null);
-		assertEquals(new JSONObject("{\"msg\":{\"name\":\"test\",\"size\":{\"width\":10,\"height\":10}}}").toString(), new JSONObject(msg).toString());
+		assertTrue(new JSONObject("{\"msg\":{\"name\":\"test\",\"size\":{\"width\":10,\"height\":10}}}").similar(new JSONObject(msg)));
 
 		component.putBrowserProperty("size", new JSONObject("{\"width\":20,\"height\":20}"));
 		properties = component.getRawPropertiesWithoutDefaults();
@@ -187,9 +189,9 @@ public class WebComponentTest
 		data.put("msg", properties);
 
 		String msg = JSONUtils.writeDataWithConversions(data, null, null);
-		assertEquals(new JSONObject(
-			"{\"msg\":{\"font\":{\"fontWeight\":\"bold\",\"fontStyle\":\"normal\",\"fontSize\":\"12px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"},\"name\":\"test\"}}").toString(),
-			new JSONObject(msg).toString());
+		assertTrue(new JSONObject(
+			"{\"msg\":{\"font\":{\"fontWeight\":\"bold\",\"fontStyle\":\"normal\",\"fontSize\":\"12px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"},\"name\":\"test\"}}")
+				.similar(new JSONObject(msg)));
 
 		component.putBrowserProperty("font", new JSONObject("{\"fontStyle\":\"italic\",\"fontSize\":\"10px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"}"));
 		properties = component.getRawPropertiesWithoutDefaults();
@@ -224,7 +226,7 @@ public class WebComponentTest
 		data.put("msg", properties);
 
 		String msg = JSONUtils.writeDataWithConversions(data, null, null);
-		assertEquals(new JSONObject("{\"msg\":{\"location\":{\"x\":10,\"y\":10},\"name\":\"test\"}}").toString(), new JSONObject(msg).toString());
+		assertTrue(new JSONObject("{\"msg\":{\"location\":{\"x\":10,\"y\":10},\"name\":\"test\"}}").similar(new JSONObject(msg)));
 
 		component.putBrowserProperty("location", new JSONObject("{\"x\":20,\"y\":20}"));
 		properties = component.getRawPropertiesWithoutDefaults();
@@ -259,7 +261,8 @@ public class WebComponentTest
 		data.put("msg", properties);
 
 		String msg = JSONUtils.writeDataWithConversions(data, null, null);
-		assertEquals("{\"msg\":{\"atype\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"},\"name\":\"test\"}}", msg);
+		assertTrue(new JSONObject("{\"msg\":{\"atype\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"},\"name\":\"test\"}}")
+			.similar(new JSONObject(msg)));
 
 		component.putBrowserProperty("atype",
 			new JSONObject("{\"vEr\":1,\"v\":{\"name\":\"myname\",\"active\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}}"));
@@ -331,14 +334,15 @@ public class WebComponentTest
 		PropertyDescription messageTypes = messageTypesBuilder.build();
 
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(new JSONObject(
-			"{\"msg\":{\"types\":{\"vEr\":2,\"v\":[{\"rt\":\"mycomponent.mytype\",\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"rt\":\"mycomponent.mytype\",\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"0\":\"JSON_obj\",\"1\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
-			new JSONObject(msg).toString());
+		assertTrue(new JSONObject(
+			"{\"msg\":{\"types\":{\"vEr\":2,\"v\":[{\"rt\":\"mycomponent.mytype\",\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"rt\":\"mycomponent.mytype\",\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"0\":\"JSON_obj\",\"1\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}")
+				.similar(new JSONObject(msg)));
 
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, shallowDataConverterContext);
-		assertEquals(new JSONObject(
-			"{\"msg\":{\"types\":{\"vEr\":3,\"w\":false,\"v\":[{\"rt\":\"mycomponent.mytype\",\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"rt\":\"mycomponent.mytype\",\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"0\":\"JSON_obj\",\"1\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}").toString(),
-			new JSONObject(msg).toString());
+		assertTrue(new JSONObject(
+			"{\"msg\":{\"types\":{\"vEr\":3,\"w\":false,\"v\":[{\"rt\":\"mycomponent.mytype\",\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"rt\":\"mycomponent.mytype\",\"vEr\":3,\"w\":false,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"0\":\"JSON_obj\",\"1\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"types\":\"JSON_arr\"}}}")
+				.similar(new JSONObject(msg)));
+
 
 		component.putBrowserProperty("types",
 			new JSONObject("{\"vEr\":3,\"v\":[{\"vEr\":3,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}}," +
@@ -374,57 +378,51 @@ public class WebComponentTest
 		testcomponent.setProperty("background", Color.BLACK);
 		form.add(testcomponent);
 
-		CurrentWindow.runForWindow(new BaseWindow(null, 99, "test")
+		CurrentWindow.runForWindow(new BaseWindow(new TestBaseWebsocketSession(new WebsocketSessionKey("1", 42)), 99, "test")
 		{
 			@Override
 			public Container getForm(String formName)
 			{
 				return form;
 			}
-		}, new Runnable()
-		{
+		}, () -> {
+			assertEquals(Color.BLACK, testcomponent.getProperty("background"));
 
-			@Override
-			public void run()
+			try
 			{
-				assertEquals(Color.BLACK, testcomponent.getProperty("background"));
+				JSONObject json = new JSONObject();
+				json.put("formname", "test");
+				json.put("beanname", testcomponent.getName());
+				JSONObject changes = new JSONObject();
+				changes.put("background", "#0000FF");
+				json.put("changes", changes);
 
-				try
-				{
-					JSONObject json = new JSONObject();
-					json.put("formname", "test");
-					json.put("beanname", testcomponent.getName());
-					JSONObject changes = new JSONObject();
-					changes.put("background", "#0000FF");
-					json.put("changes", changes);
+				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
 
-					FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
+				// should be changed.
+				Assert.assertEquals(Color.BLUE, testcomponent.getProperty("background"));
 
-					// should be changed.
-					Assert.assertEquals(Color.BLUE, testcomponent.getProperty("background"));
+				changes.put("background", "#FF0000");
+				JSONObject oldvalues = new JSONObject();
+				oldvalues.put("background", "#0000FF");
+				json.put("oldvalues", oldvalues);
 
-					changes.put("background", "#FF0000");
-					JSONObject oldvalues = new JSONObject();
-					oldvalues.put("background", "#0000FF");
-					json.put("oldvalues", oldvalues);
+				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
 
-					FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
+				// should be changed, old value was really the old value.
+				Assert.assertEquals(Color.RED, testcomponent.getProperty("background"));
 
-					// should be changed, old value was really the old value.
-					Assert.assertEquals(Color.RED, testcomponent.getProperty("background"));
+				changes.put("background", "#00FF00");
 
-					changes.put("background", "#00FF00");
-
-					// should not be changed, still RED
-					FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
-					Assert.assertEquals(Color.RED, testcomponent.getProperty("background"));
-				}
-				catch (Exception e)
-				{
-					throw new RuntimeException(e);
-				}
-
+				// should not be changed, still RED
+				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
+				Assert.assertEquals(Color.RED, testcomponent.getProperty("background"));
 			}
+			catch (Exception e)
+			{
+				throw new RuntimeException(e);
+			}
+
 		});
 	}
 
@@ -446,65 +444,59 @@ public class WebComponentTest
 		testcomponent.setProperty("changeintallow", Integer.valueOf(1));
 		form.add(testcomponent);
 
-		CurrentWindow.runForWindow(new BaseWindow(null, 99, "test")
+		CurrentWindow.runForWindow(new BaseWindow(new TestBaseWebsocketSession(new WebsocketSessionKey("1", 42)), 99, "test")
 		{
 			@Override
 			public Container getForm(String formName)
 			{
 				return form;
 			}
-		}, new Runnable()
-		{
+		}, () -> {
+			assertEquals(Integer.valueOf(1), testcomponent.getProperty("changeintallow"));
 
-			@Override
-			public void run()
+			try
 			{
-				assertEquals(Integer.valueOf(1), testcomponent.getProperty("changeintallow"));
+				JSONObject json = new JSONObject();
+				json.put("formname", "test");
+				json.put("beanname", testcomponent.getName());
+				JSONObject changes = new JSONObject();
+				changes.put("changeintallow", Integer.valueOf(2));
+				json.put("changes", changes);
 
-				try
-				{
-					JSONObject json = new JSONObject();
-					json.put("formname", "test");
-					json.put("beanname", testcomponent.getName());
-					JSONObject changes = new JSONObject();
-					changes.put("changeintallow", Integer.valueOf(2));
-					json.put("changes", changes);
+				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
 
-					FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
+				// should be changed.
+				Assert.assertEquals(Integer.valueOf(2), testcomponent.getProperty("changeintallow"));
 
-					// should be changed.
-					Assert.assertEquals(Integer.valueOf(2), testcomponent.getProperty("changeintallow"));
+				changes.put("changeintallow", Integer.valueOf(3));
+				JSONObject oldvalues = new JSONObject();
+				oldvalues.put("changeintallow", Integer.valueOf(2));
+				json.put("oldvalues", oldvalues);
 
-					changes.put("changeintallow", Integer.valueOf(3));
-					JSONObject oldvalues = new JSONObject();
-					oldvalues.put("changeintallow", Integer.valueOf(2));
-					json.put("oldvalues", oldvalues);
+				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
 
-					FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
+				// should be changed, old value was really the old value.
+				Assert.assertEquals(Integer.valueOf(3), testcomponent.getProperty("changeintallow"));
 
-					// should be changed, old value was really the old value.
-					Assert.assertEquals(Integer.valueOf(3), testcomponent.getProperty("changeintallow"));
+				changes.put("changeintallow", Integer.valueOf(4));
 
-					changes.put("changeintallow", Integer.valueOf(4));
+				// should not be changed, still 3
+				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
+				Assert.assertEquals(Integer.valueOf(3), testcomponent.getProperty("changeintallow"));
 
-					// should not be changed, still 3
-					FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
-					Assert.assertEquals(Integer.valueOf(3), testcomponent.getProperty("changeintallow"));
+				changes.put("changeintallow", new Double(4));
+				oldvalues.put("changeintallow", new Double(3));
 
-					changes.put("changeintallow", new Double(4));
-					oldvalues.put("changeintallow", new Double(3));
+				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
 
-					FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
-
-					// should be changed, old value was really the old value.
-					Assert.assertEquals(Integer.valueOf(4), testcomponent.getProperty("changeintallow"));
-				}
-				catch (Exception e)
-				{
-					throw new RuntimeException(e);
-				}
-
+				// should be changed, old value was really the old value.
+				Assert.assertEquals(Integer.valueOf(4), testcomponent.getProperty("changeintallow"));
 			}
+			catch (Exception e)
+			{
+				throw new RuntimeException(e);
+			}
+
 		});
 	}
 

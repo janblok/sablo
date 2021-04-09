@@ -120,9 +120,9 @@ public class CustomArrayAndCustomObjectTypeTest
 
 		PropertyDescription messageTypes = messageTypesBuilder.build();
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(new JSONObject(
-			"{\"msg\":{\"typesReject\":{\"vEr\":2,\"v\":[{\"rt\":\"mycomponent.mytype\",\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"rt\":\"mycomponent.mytype\",\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}"),
-			new JSONObject(msg), true);
+		assertTrue(new JSONObject(
+			"{\"msg\":{\"typesReject\":{\"vEr\":2,\"v\":[{\"rt\":\"mycomponent.mytype\",\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"rt\":\"mycomponent.mytype\",\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}")
+				.similar(new JSONObject(msg)));
 
 		// try to change whole thing... should be blocked by array property
 		component.putBrowserProperty("typesReject",
@@ -133,9 +133,9 @@ public class CustomArrayAndCustomObjectTypeTest
 		properties = component.getProperties();
 		data.put("msg", properties.content);
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(new JSONObject(
-			"{\"msg\":{\"typesReject\":{\"vEr\":3,\"v\":[{\"vEr\":3,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":3,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"1\":\"JSON_obj\",\"0\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}"),
-			new JSONObject(msg), false);
+		assertTrue(new JSONObject(
+			"{\"msg\":{\"typesReject\":{\"vEr\":3,\"v\":[{\"rt\":\"mycomponent.mytype\",\"vEr\":3,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"rt\":\"mycomponent.mytype\",\"vEr\":3,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}],\"svy_types\":{\"0\":\"JSON_obj\",\"1\":\"JSON_obj\"}},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"typesReject\":\"JSON_arr\"}}}")
+				.similar(new JSONObject(msg)));
 
 		// try to update by setting one whole value of the array... should be blocked by element custom object type
 		component.putBrowserProperty("typesReject",
@@ -267,9 +267,9 @@ public class CustomArrayAndCustomObjectTypeTest
 		PropertyDescription messageTypes = messageTypesBuilder.build();
 
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(new JSONObject(
-			"{\"msg\":{\"name\":\"test\",\"simpleArrayReject\":{\"vEr\":2,\"v\":[1,2,3,4]}},\"svy_types\":{\"msg\":{\"simpleArrayReject\":\"JSON_arr\"}}}").toString(),
-			new JSONObject(msg).toString());
+		assertTrue(new JSONObject(
+			"{\"msg\":{\"name\":\"test\",\"simpleArrayReject\":{\"vEr\":2,\"v\":[1,2,3,4]}},\"svy_types\":{\"msg\":{\"simpleArrayReject\":\"JSON_arr\"}}}")
+				.similar(new JSONObject(msg)));
 
 		// try to change whole thing... should be blocked by array property
 		component.putBrowserProperty("simpleArrayReject", new JSONObject("{\"vEr\":2,\"v\":[ 5, 4, 3, 2 ,1]}"));
@@ -277,9 +277,9 @@ public class CustomArrayAndCustomObjectTypeTest
 		properties = component.getProperties();
 		data.put("msg", properties.content);
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(new JSONObject(
-			"{\"msg\":{\"name\":\"test\",\"simpleArrayReject\":{\"vEr\":3,\"v\":[1,2,3,4]}},\"svy_types\":{\"msg\":{\"simpleArrayReject\":\"JSON_arr\"}}}").toString(),
-			new JSONObject(msg).toString());
+		assertTrue(new JSONObject(
+			"{\"msg\":{\"name\":\"test\",\"simpleArrayReject\":{\"vEr\":3,\"v\":[1,2,3,4]}},\"svy_types\":{\"msg\":{\"simpleArrayReject\":\"JSON_arr\"}}}")
+				.similar(new JSONObject(msg)));
 
 		// try to update by setting one whole value of the array... should be blocked by element custom object type
 		component.putBrowserProperty("simpleArrayReject", new JSONObject("{\"vEr\":3,\"u\":[ {\"i\":'1', 'v': 15}]}"));
@@ -287,9 +287,9 @@ public class CustomArrayAndCustomObjectTypeTest
 		properties = component.getProperties();
 		data.put("msg", properties.content);
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(new JSONObject(
-			"{\"msg\":{\"name\":\"test\",\"simpleArrayReject\":{\"vEr\":4,\"v\":[1,2,3,4]}},\"svy_types\":{\"msg\":{\"simpleArrayReject\":\"JSON_arr\"}}}").toString(),
-			new JSONObject(msg).toString());
+		assertTrue(new JSONObject(
+			"{\"msg\":{\"name\":\"test\",\"simpleArrayReject\":{\"vEr\":4,\"v\":[1,2,3,4]}},\"svy_types\":{\"msg\":{\"simpleArrayReject\":\"JSON_arr\"}}}")
+				.similar(new JSONObject(msg)));
 	}
 
 	@Test
@@ -321,8 +321,9 @@ public class CustomArrayAndCustomObjectTypeTest
 		PropertyDescription messageTypes = messageTypesBuilder.build();
 
 		String msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(
-			"{\"msg\":{\"simpleArrayAllow\":{\"vEr\":2,\"v\":[1,2,3,4]},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"simpleArrayAllow\":\"JSON_arr\"}}}", msg);
+		assertTrue(new JSONObject(
+			"{\"msg\":{\"simpleArrayAllow\":{\"vEr\":2,\"v\":[1,2,3,4]},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"simpleArrayAllow\":\"JSON_arr\"}}}")
+				.similar(new JSONObject(msg)));
 
 		// try to change whole thing...
 		component.putBrowserProperty("simpleArrayAllow", new JSONObject("{\"vEr\":2,\"v\":[ 5, 4, 3, 2, 1 ]}"));
@@ -330,9 +331,9 @@ public class CustomArrayAndCustomObjectTypeTest
 		properties = component.getProperties();
 		data.put("msg", properties.content);
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(
-			"{\"msg\":{\"simpleArrayAllow\":{\"vEr\":4,\"v\":[5,4,3,2,1]},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"simpleArrayAllow\":\"JSON_arr\"}}}",
-			msg);
+		assertTrue(new JSONObject(
+			"{\"msg\":{\"simpleArrayAllow\":{\"vEr\":4,\"v\":[5,4,3,2,1]},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"simpleArrayAllow\":\"JSON_arr\"}}}")
+				.similar(new JSONObject(msg)));
 
 		// try to update by setting one whole value of the array...
 		component.putBrowserProperty("simpleArrayAllow", new JSONObject("{\"vEr\":4,\"u\":[ {\"i\":'1', 'v': 150}]}"));
@@ -340,9 +341,9 @@ public class CustomArrayAndCustomObjectTypeTest
 		properties = component.getProperties();
 		data.put("msg", properties.content);
 		msg = JSONUtils.writeDataWithConversions(data, messageTypes, allowDataConverterContext);
-		assertEquals(
-			"{\"msg\":{\"simpleArrayAllow\":{\"vEr\":5,\"v\":[5,150,3,2,1]},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"simpleArrayAllow\":\"JSON_arr\"}}}",
-			msg);
+		assertTrue(new JSONObject(
+			"{\"msg\":{\"simpleArrayAllow\":{\"vEr\":5,\"v\":[5,150,3,2,1]},\"name\":\"test\"},\"svy_types\":{\"msg\":{\"simpleArrayAllow\":\"JSON_arr\"}}}")
+				.similar(new JSONObject(msg)));
 	}
 
 	@Test

@@ -73,7 +73,7 @@ public class ConsoleLoggerServiceHandler implements IServerService
 
 	protected String getInformationMessage(String message)
 	{
-		return session.getSessionKey() + "|" + message;
+		return message;
 	}
 
 	protected IWebsocketSession getSession()

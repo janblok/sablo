@@ -152,8 +152,10 @@ public class WebObjectSpecification extends PropertyDescription
 	private final String icon;
 	private final String packageName;
 	private final JSONArray keywords;
+	private final JSONObject dependencies;
 
 	private Map<String, ICustomType< ? >> foundTypes;
+	private static IPackageReader reader;
 
 	/**
 	 * Different then name only for services, not components/layouts.
@@ -177,14 +179,15 @@ public class WebObjectSpecification extends PropertyDescription
 	 */
 
 	protected WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
-		String definition, JSONArray libs, JSONArray keywords)
+		String definition, JSONArray libs, JSONArray keywords, JSONObject dependencies)
 	{
-		this(name, packageName, packageType, displayName, categoryName, icon, preview, definition, libs, null, null, null, keywords);
+		this(name, packageName, packageType, displayName, categoryName, icon, preview, definition, libs, null, null, null, keywords, dependencies);
 	}
 
 
 	WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
-		String definition, JSONArray libs, Object configObject, Map<String, PropertyDescription> properties, String deprecated, JSONArray keywords)
+		String definition, JSONArray libs, Object configObject, Map<String, PropertyDescription> properties, String deprecated, JSONArray keywords,
+		JSONObject dependencies)
 	{
 		super(name, null, configObject, properties, null, null, false, null, null, null, false, deprecated);
 		this.scriptingName = scriptifyNameIfNeeded(name, packageType);
@@ -197,6 +200,7 @@ public class WebObjectSpecification extends PropertyDescription
 		this.libraries = libs != null ? libs : new JSONArray();
 		this.foundTypes = new HashMap<>();
 		this.keywords = keywords != null ? keywords : new JSONArray();
+		this.dependencies = dependencies != null ? dependencies : new JSONObject();
 	}
 
 	protected String scriptifyNameIfNeeded(String name, String packageType)
@@ -220,8 +224,16 @@ public class WebObjectSpecification extends PropertyDescription
 	/**
 	 * @return
 	 */
-	public URL getServerScript()
+	public URL getServerScript(boolean fromDependencies)
 	{
+		if (fromDependencies && this.dependencies != null && !this.dependencies.isNull("serverscript")) try
+		{
+			return WebObjectSpecification.reader.getUrlForPath(dependencies.optString("serverscript").substring(packageName.length()));
+		}
+		catch (MalformedURLException e)
+		{
+			e.printStackTrace();
+		}
 		return serverScript;
 	}
 
@@ -385,6 +397,7 @@ public class WebObjectSpecification extends PropertyDescription
 		IDefaultComponentPropertiesProvider defaultComponentPropertiesProvider) throws JSONException
 	{
 		JSONObject json = new JSONObject(specfileContent);
+		WebObjectSpecification.reader = reader;
 
 		// first types, can be used in properties
 		Map<String, ICustomType< ? >> types = WebObjectSpecification.parseTypes(json);
@@ -404,7 +417,8 @@ public class WebObjectSpecification extends PropertyDescription
 				json.getString("definition"))
 			.withLibraries(json.optJSONArray("libraries")).withProperties(properties).withName(
 				json.getString("name"))
-			.withDeprecated(json.optString("deprecated", null)).withKeywords(json.optJSONArray("keywords")).build();
+			.withDeprecated(json.optString("deprecated", null)).withKeywords(json.optJSONArray("keywords")).withDependencies(json.optJSONObject("dependencies"))
+			.build();
 		spec.foundTypes = types;
 		if (json.has("serverscript"))
 		{
@@ -560,6 +574,10 @@ public class WebObjectSpecification extends PropertyDescription
 				else if (ALLOW_ACCESS.equals(key))
 				{
 					def.setAllowAccess(jsonDef.getString(key));
+				}
+				else if ("ignoreNGBlockDuplicateEvents".equals(key))
+				{
+					def.setIgnoreNGBlockDuplicateEvents(jsonDef.getBoolean(key));
 				}
 				else
 				{
@@ -879,5 +897,10 @@ public class WebObjectSpecification extends PropertyDescription
 	public JSONArray getKeywords()
 	{
 		return keywords;
+	}
+
+	public JSONObject getDependencies()
+	{
+		return dependencies;
 	}
 }

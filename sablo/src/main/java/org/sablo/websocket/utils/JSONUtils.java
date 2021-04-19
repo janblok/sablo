@@ -17,10 +17,15 @@
 package org.sablo.websocket.utils;
 
 import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONString;
@@ -752,5 +757,63 @@ public class JSONUtils
 		}
 
 	}
+
+	// THESE METHODS FOR JSON comparison are copy pasted from servoy_shared's Utils to avoid a dependency; if you alter them please update code in both places!
+	// BEGIN -------------------------
+	/**
+	 * Identical to {@link #areJSONEqual(Object, Object, String)} where keysToIgnoreRegex is null (so it doesn't skip any keys during comparison).
+	 */
+	public static boolean areJSONEqual(Object json1, Object json2)
+	{
+		return areJSONEqual(json1, json2, null);
+	}
+
+	/**
+	 * Compares 2 json values for deep-equality.
+	 * json1 and json2 can be JSONObject, JSONArray (those are compared by content) or something else that is compared by ref/equals (JSON primitives).
+	 *
+	 * @param json1 the first JSON value to be compared.
+	 * @param json2 the second JSON value to be compared.
+	 * @return true if the two json values are deep-equal (ignoring key orders in case of JSONObject).
+	 */
+	public static boolean areJSONEqual(Object json1, Object json2, String keysToIgnoreRegex)
+	{
+		Object obj1Converted = convertJsonElement(json1, keysToIgnoreRegex);
+		Object obj2Converted = convertJsonElement(json2, keysToIgnoreRegex);
+
+		return obj1Converted == null ? obj1Converted == null : obj1Converted.equals(obj2Converted);
+	}
+
+	private static Object convertJsonElement(Object elem, String keysToIgnoreRegex)
+	{
+		if (elem instanceof JSONObject)
+		{
+			JSONObject jsonObj = (JSONObject)elem;
+			Iterator<String> keys = jsonObj.keys();
+			Map<String, Object> map = new HashMap<>();
+			while (keys.hasNext())
+			{
+				String key = keys.next();
+				if (keysToIgnoreRegex == null || !key.matches(keysToIgnoreRegex)) map.put(key, convertJsonElement(jsonObj.opt(key), keysToIgnoreRegex));
+			}
+			return map;
+		}
+		else if (elem instanceof JSONArray)
+		{
+			JSONArray jsonArray = (JSONArray)elem;
+			List<Object> list = new ArrayList<>(jsonArray.length());
+			for (int i = 0; i < jsonArray.length(); i++)
+			{
+				list.add(convertJsonElement(jsonArray.opt(i), keysToIgnoreRegex));
+			}
+			return list;
+		}
+		else
+		{
+			return elem;
+		}
+	}
+
+	// END -------------------------
 
 }

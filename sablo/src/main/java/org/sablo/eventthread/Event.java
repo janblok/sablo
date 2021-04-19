@@ -81,13 +81,7 @@ public class Event
 	 */
 	public final void execute()
 	{
-		IWindow window = currentWindow;
-		if (window == null)
-		{
-			// this was an event not triggered by a specific endpoint, just relay it to all the endpoints
-			// could be changes in the data model that must be pushed to all endpoints, or a close/shutdown/logout
-			window = createWebsocketSessionWindows();
-		}
+		IWindow window = getWindow();
 
 		CurrentWindow.runForWindow(window, new Runnable()
 		{
@@ -198,5 +192,17 @@ public class Event
 	public boolean isExecutingInBackground()
 	{
 		return runInBackground;
+	}
+
+	public IWindow getWindow()
+	{
+		IWindow window = currentWindow;
+		if (window == null)
+		{
+			// this was an event from not triggered by a specific endpoint, just relay it to all the endpoints
+			// could be changes in the data model that must be pushed to all endpoints, or a close/shutdown/logout
+			window = createWebsocketSessionWindows();
+		}
+		return window;
 	}
 }

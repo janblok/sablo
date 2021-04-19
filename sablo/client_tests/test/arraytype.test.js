@@ -20,6 +20,8 @@ describe("Test array_custom_property suite", function() {
 	};
 
 	beforeEach(function() {
+        sessionStorage.removeItem('svy_session_lock'); // workaround for some new code in websocket.ts
+        
         module('sabloApp'); // for Date type
         module('custom_json_array_property');
 

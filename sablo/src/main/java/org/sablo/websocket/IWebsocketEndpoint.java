@@ -39,7 +39,6 @@ public interface IWebsocketEndpoint
 	 * for some initialization call to be executed on server (that initialization call can use a higher event level through {@link IEventDispatchAwareServerService#getMethodEventThreadLevel(String, org.json.JSONObject)}).
 	 */
 	public static final int EVENT_LEVEL_SYNC_API_CALL = 500;
-	public static final String CLEAR_SESSION_PARAM = "sabloClearSession";
 
 	public static final String CLOSE_REASON_CLIENT_OUT_OF_SYNC = "CLIENT-OUT-OF-SYNC";
 

@@ -16,10 +16,8 @@
 
 package org.sablo.security;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Container for ContentSecurityPolicy header directives.
@@ -31,12 +29,13 @@ public class ContentSecurityPolicyConfig
 {
 	public static final String DEFAULT_DEFAULT_SRC_DIRECTIVE_VALUE = "'self'";
 	public static final String DEFAULT_FRAME_SRC_DIRECTIVE_VALUE = "* data:";
+	public static final String DEFAULT_FRAME_ANCESTORS_DIRECTIVE_VALUE = "'self'";
 	public static final String DEFAULT_SCRIPT_SRC_DIRECTIVE_VALUE = "'unsafe-eval' 'nonce-${nonce}' 'strict-dynamic'"; // can we get rid of unsafe-eval?
 	// We cannot use random nonce for styles because this is would block inline style attributes on elements,
 	// when style-src-attr is supported by the major browsers we can use that to override inline styles for elements.
 	// Styles may be loaded by scripts from any source, unless we list them in the component manifest and include them here we have to allow all style sources
 	public static final String DEFAULT_STYLE_SRC_DIRECTIVE_VALUE = "* 'unsafe-inline'";
-	public static final String DEFAULT_IMG_SRC_DIRECTIVE_VALUE = "* data:";
+	public static final String DEFAULT_IMG_SRC_DIRECTIVE_VALUE = "* data: blob:";
 	public static final String DEFAULT_FONT_SRC_DIRECTIVE_VALUE = "* data:";
 	public static final String DEFAULT_OBJECT_SRC_DIRECTIVE_VALUE = "'none'";
 
@@ -55,16 +54,19 @@ public class ContentSecurityPolicyConfig
 		return nonce;
 	}
 
+	public String getDirective(String directive)
+	{
+		return directives.get(directive);
+	}
+
 	public void setDirective(String directive, String value)
 	{
 		setDirective(directives, directive, value, nonce);
 	}
 
-	public Collection<String> getDirectives()
+	public Map<String, String> getDirectives()
 	{
-		return directives.entrySet().stream() //
-			.map(entry -> entry.getKey() + ' ' + entry.getValue() + ';') //
-			.collect(Collectors.toList());
+		return directives;
 	}
 
 	private static void setDirective(Map<String, String> directives, String directive, String value, String nonce)
@@ -76,6 +78,7 @@ public class ContentSecurityPolicyConfig
 	{
 		Map<String, String> defaultDirectives = new HashMap<>();
 		setDirective(defaultDirectives, "frame-src", DEFAULT_FRAME_SRC_DIRECTIVE_VALUE, nonce);
+		setDirective(defaultDirectives, "frame-ancestors", DEFAULT_FRAME_ANCESTORS_DIRECTIVE_VALUE, nonce);
 		setDirective(defaultDirectives, "script-src", DEFAULT_SCRIPT_SRC_DIRECTIVE_VALUE, nonce);
 		setDirective(defaultDirectives, "style-src", DEFAULT_STYLE_SRC_DIRECTIVE_VALUE, nonce);
 		setDirective(defaultDirectives, "img-src", DEFAULT_IMG_SRC_DIRECTIVE_VALUE, nonce);

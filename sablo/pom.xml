@@ -6,7 +6,7 @@
 		<maven>3.6.0</maven>
 	</prerequisites>
 	<groupId>org.sablo</groupId>
-	<version>2020.9.0.3600_rc</version>
+	<version>2021.6.0.3680_rc</version>
 	<artifactId>sablo</artifactId>
 	<packaging>eclipse-plugin</packaging>
 	<name>Sablo Core</name>
@@ -17,7 +17,7 @@
 
 	<url>http://maven.apache.org</url>
 	<properties>
-		<tycho.version>1.7.0</tycho.version>
+		<tycho.version>2.3.0</tycho.version>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<jenkins.javascript_tests.reportsDirectory>target/protractor-reports</jenkins.javascript_tests.reportsDirectory>
@@ -117,7 +117,7 @@
 					<plugin>
 						<groupId>com.github.eirslett</groupId>
 						<artifactId>frontend-maven-plugin</artifactId>
-						<version>1.8.0</version>
+						<version>1.11.0</version>
 						<executions>
 
 							<!-- 1. Install node and npm locally -->
@@ -127,7 +127,7 @@
 									<goal>install-node-and-npm</goal>
 								</goals>
 								<configuration>
-									<nodeVersion>v12.18.0</nodeVersion>
+									<nodeVersion>v14.15.4</nodeVersion>
 								</configuration>
 							</execution>
 

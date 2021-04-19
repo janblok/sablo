@@ -31,7 +31,7 @@ public class GetHttpSessionConfigurator extends Configurator
 {
 	private static Logger log; // log is initialized lazily, creating a logger before log4j is initialized gives errors.
 
-	public static final int NO_EXPIRE_TIMEOUT = -3;
+	public static final String WEBSOCKET_STARTED = "sablo.websocket-started";
 
 	public static final String DISABLE_ORIGIN_CHECK = "<None>";
 	public static final String USE_HOST_HEADER = "<Host>";
@@ -81,7 +81,8 @@ public class GetHttpSessionConfigurator extends Configurator
 		if (getLogger().isDebugEnabled()) getLogger().debug("Get HttpSession " + httpSession + " for connectNr: " + connectNr.get(0));
 		if (httpSession != null)
 		{
-			httpSession.setMaxInactiveInterval(NO_EXPIRE_TIMEOUT); // make sure it never expires, set to minus 3 to see that it is more a value that we have set.
+			httpSession.setAttribute(WEBSOCKET_STARTED, Boolean.TRUE);
+			httpSession.setMaxInactiveInterval(0); // make sure it never expires.
 		}
 
 		return httpSession;

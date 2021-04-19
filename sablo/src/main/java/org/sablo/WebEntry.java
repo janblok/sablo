@@ -33,7 +33,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.sablo.security.ContentSecurityPolicyConfig;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebServiceSpecProvider;
 import org.sablo.websocket.GetHttpSessionConfigurator;
@@ -111,34 +110,36 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 
 	public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain, Collection<String> cssContributions,
 		Collection<String> jsContributions, Collection<String> extraMetaData, Map<String, Object> variableSubstitution,
-		ContentSecurityPolicyConfig contentSecurityPolicyConfig) throws IOException, ServletException
+		String contentSecurityPolicyNonce) throws IOException, ServletException
 	{
 		HttpServletRequest request = (HttpServletRequest)servletRequest;
 		HttpServletResponse response = (HttpServletResponse)servletResponse;
 
-		// make sure a session is created. when a sablo client is created, that one should set the timeout to 0
-		HttpSession httpSession = request.getSession();
-		if (getLogger().isDebugEnabled()) getLogger().debug("HttpSession created: " + httpSession);
-		// the session should be picked up in a websocket request very soon, set timeout low so it won't stay in case of robots
-		// if it is alreayd the time out the GetHttpSessionConfigurator would set then don't reset it to 60
-		if (httpSession.getMaxInactiveInterval() != GetHttpSessionConfigurator.NO_EXPIRE_TIMEOUT)
+		if ("GET".equalsIgnoreCase(request.getMethod()))
 		{
-			if (getLogger().isDebugEnabled()) getLogger().debug("Setting 60 seconds timeout on the HttpSession: " + httpSession);
-			httpSession.setMaxInactiveInterval(60);
-		}
+			// make sure a session is created. when a sablo client is created, that one should set the timeout to 0
+			HttpSession httpSession = request.getSession();
+			if (getLogger().isDebugEnabled()) getLogger().debug("HttpSession created: " + httpSession);
+			// the session should be picked up in a websocket request very soon, set timeout low so it won't stay in case of robots
+			// if it is already the time out the GetHttpSessionConfigurator would set then don't reset it to 60
+			if (!Boolean.TRUE.equals(httpSession.getAttribute(GetHttpSessionConfigurator.WEBSOCKET_STARTED)))
+			{
+				if (getLogger().isDebugEnabled()) getLogger().debug("Setting 60 seconds timeout on the HttpSession: " + httpSession);
+				httpSession.setMaxInactiveInterval(60);
+			}
 
-		URL indexPageResource = getIndexPageResource(request);
-		if (indexPageResource != null)
-		{
-			response.setContentType("text/html");
-			response.setCharacterEncoding("UTF-8");
-			PrintWriter w = servletResponse.getWriter();
-			IndexPageEnhancer.enhance(indexPageResource, request, cssContributions, jsContributions, extraMetaData, variableSubstitution, w, this, this,
-				contentSecurityPolicyConfig);
-			w.flush();
-			return;
+			URL indexPageResource = getIndexPageResource(request);
+			if (indexPageResource != null)
+			{
+				response.setContentType("text/html");
+				response.setCharacterEncoding("UTF-8");
+				PrintWriter w = servletResponse.getWriter();
+				IndexPageEnhancer.enhance(indexPageResource, request, cssContributions, jsContributions, extraMetaData, variableSubstitution, w, this, this,
+					contentSecurityPolicyNonce);
+				w.flush();
+				return;
+			}
 		}
-
 		filterChain.doFilter(servletRequest, servletResponse);
 	}
 

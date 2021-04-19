@@ -9,13 +9,22 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 	modelChangeNotifier: "$modelChangeNotifier"
 }).factory('$sabloApplication', function($rootScope: angular.IRootScopeService, $window: angular.IWindowService, $timeout: angular.ITimeoutService,
 		$q: angular.IQService, $log: sablo.ILogService, $webSocket: sablo.IWebSocket, $sabloConverters: sablo.ISabloConverters,
-		$sabloUtils: sablo.ISabloUtils, $sabloConstants: sablo.SabloConstants, webStorage,$websocketConstants,
+		$sabloUtils: sablo.ISabloUtils, $sabloConstants: sablo.SabloConstants, webStorage,
 		$typesRegistry: sablo.ITypesRegistry) {
 
 	// close the connection to the server when application is unloaded
 	$window.addEventListener('unload', function(event) {
+        sessionStorage.removeItem('svy_session_lock');
 		$webSocket.disconnect();
 	});
+    
+    if (sessionStorage.getItem('svy_session_lock')) {
+        webStorage.session.remove('windownr');
+        webStorage.session.remove('clientnr');
+        $log.warn('Found a lock in session storage. The storage was cleared.');
+    }
+
+    sessionStorage.setItem('svy_session_lock', '1');
 
 	var oldError = $window.console.error;
 	var oldLog = $window.console.log;
@@ -391,11 +400,6 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 				queryArgs: queryArgs,
 				websocketUri: websocketUri
 			};
-			
-            if ($webSocket.getURLParameter($websocketConstants.CLEAR_SESSION_PARAM) == 'true') {
-                this.clearSabloInfo();
-            }
-            
 			wsSession = $webSocket.connect(wsSessionArgs.context, [getClientnr(), getWindowName(), getWindownr()], wsSessionArgs.queryArgs, wsSessionArgs.websocketUri);
 
 			wsSession.onMessageObject(function(msg, scopesToDigest) {

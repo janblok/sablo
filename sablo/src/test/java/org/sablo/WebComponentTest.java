@@ -21,6 +21,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -48,9 +49,11 @@ import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.ChangeAwareList;
 import org.sablo.specification.property.types.DimensionPropertyType;
 import org.sablo.specification.property.types.VisiblePropertyType;
+import org.sablo.util.TestBaseWebsocketSession;
 import org.sablo.websocket.BaseWindow;
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.TypedData;
+import org.sablo.websocket.WebsocketSessionKey;
 import org.sablo.websocket.utils.JSONUtils;
 
 /**
@@ -119,7 +122,7 @@ public class WebComponentTest
 		assertEquals(new Dimension(10, 10), component.getProperty("size"));
 
 		String msg = JSONUtils.writeDataAsFullToJSON(properties, null, null);
-		assertEquals(new JSONObject("{\"name\":\"test\",\"size\":{\"width\":10,\"height\":10}}").toString(), new JSONObject(msg).toString());
+		assertEquals(new JSONObject("{\"name\":\"test\",\"size\":{\"width\":10,\"height\":10}}"), new JSONObject(msg), true);
 
 		component.putBrowserProperty("size", new JSONObject("{\"width\":20,\"height\":20}"));
 		properties = component.getRawPropertiesWithoutDefaults();
@@ -178,9 +181,8 @@ public class WebComponentTest
 
 		String msg = JSONUtils.writeDataAsFullToJSON(properties, null, null);
 		assertEquals(new JSONObject(
-			"{\"font\":{\"fontWeight\":\"bold\",\"fontStyle\":\"normal\",\"fontSize\":\"12px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"},\"name\":\"test\"}")
-				.toString(),
-			new JSONObject(msg).toString());
+			"{\"font\":{\"fontWeight\":\"bold\",\"fontStyle\":\"normal\",\"fontSize\":\"12px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"},\"name\":\"test\"}"),
+			new JSONObject(msg), true);
 
 		component.putBrowserProperty("font", new JSONObject("{\"fontStyle\":\"italic\",\"fontSize\":\"10px\",\"fontFamily\":\"SansSerif, Verdana, Arial\"}"));
 		properties = component.getRawPropertiesWithoutDefaults();
@@ -212,7 +214,7 @@ public class WebComponentTest
 		assertEquals(new Point(10, 10), component.getProperty("location"));
 
 		String msg = JSONUtils.writeDataAsFullToJSON(properties, null, null);
-		assertEquals(new JSONObject("{\"location\":{\"x\":10,\"y\":10},\"name\":\"test\"}").toString(), new JSONObject(msg).toString());
+		assertEquals(new JSONObject("{\"location\":{\"x\":10,\"y\":10},\"name\":\"test\"}"), new JSONObject(msg), true);
 
 		component.putBrowserProperty("location", new JSONObject("{\"x\":20,\"y\":20}"));
 		properties = component.getRawPropertiesWithoutDefaults();
@@ -315,15 +317,13 @@ public class WebComponentTest
 
 		String msg = JSONUtils.writeDataAsFullToJSON(properties.content, properties.contentType, allowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}]}}")
-				.toString(),
-			new JSONObject(msg).toString());
+			"{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}]}}"),
+			new JSONObject(msg), true);
 
 		msg = JSONUtils.writeDataAsFullToJSON(properties.content, properties.contentType, shallowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"name\":\"test\",\"types\":{\"vEr\":3,\"v\":[{\"vEr\":3,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":3,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}]}}")
-				.toString(),
-			new JSONObject(msg).toString());
+			"{\"name\":\"test\",\"types\":{\"vEr\":3,\"v\":[{\"vEr\":3,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":3,\"v\":{\"name\":\"myname2\",\"active\":false,\"foreground\":\"#ffffff\"}}]}}"),
+			new JSONObject(msg), true);
 
 		component.putBrowserProperty("types",
 			new JSONObject("{\"vEr\":3,\"v\":[{\"vEr\":3,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}}," +
@@ -359,57 +359,51 @@ public class WebComponentTest
 		testcomponent.setProperty("background", Color.BLACK);
 		form.add(testcomponent);
 
-		CurrentWindow.runForWindow(new BaseWindow(null, 99, "test")
+		CurrentWindow.runForWindow(new BaseWindow(new TestBaseWebsocketSession(new WebsocketSessionKey("1", 42)), 99, "test")
 		{
 			@Override
 			public Container getForm(String formName)
 			{
 				return form;
 			}
-		}, new Runnable()
-		{
+		}, () -> {
+			assertEquals(Color.BLACK, testcomponent.getProperty("background"));
 
-			@Override
-			public void run()
+			try
 			{
-				assertEquals(Color.BLACK, testcomponent.getProperty("background"));
+				JSONObject json = new JSONObject();
+				json.put("formname", "test");
+				json.put("beanname", testcomponent.getName());
+				JSONObject changes = new JSONObject();
+				changes.put("background", "#0000FF");
+				json.put("changes", changes);
 
-				try
-				{
-					JSONObject json = new JSONObject();
-					json.put("formname", "test");
-					json.put("beanname", testcomponent.getName());
-					JSONObject changes = new JSONObject();
-					changes.put("background", "#0000FF");
-					json.put("changes", changes);
+				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
 
-					FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
+				// should be changed.
+				Assert.assertEquals(Color.BLUE, testcomponent.getProperty("background"));
 
-					// should be changed.
-					Assert.assertEquals(Color.BLUE, testcomponent.getProperty("background"));
+				changes.put("background", "#FF0000");
+				JSONObject oldvalues = new JSONObject();
+				oldvalues.put("background", "#0000FF");
+				json.put("oldvalues", oldvalues);
 
-					changes.put("background", "#FF0000");
-					JSONObject oldvalues = new JSONObject();
-					oldvalues.put("background", "#0000FF");
-					json.put("oldvalues", oldvalues);
+				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
 
-					FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
+				// should be changed, old value was really the old value.
+				Assert.assertEquals(Color.RED, testcomponent.getProperty("background"));
 
-					// should be changed, old value was really the old value.
-					Assert.assertEquals(Color.RED, testcomponent.getProperty("background"));
+				changes.put("background", "#00FF00");
 
-					changes.put("background", "#00FF00");
-
-					// should not be changed, still RED
-					FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
-					Assert.assertEquals(Color.RED, testcomponent.getProperty("background"));
-				}
-				catch (Exception e)
-				{
-					throw new RuntimeException(e);
-				}
-
+				// should not be changed, still RED
+				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
+				Assert.assertEquals(Color.RED, testcomponent.getProperty("background"));
 			}
+			catch (Exception e)
+			{
+				throw new RuntimeException(e);
+			}
+
 		});
 	}
 
@@ -431,65 +425,59 @@ public class WebComponentTest
 		testcomponent.setProperty("changeintallow", Integer.valueOf(1));
 		form.add(testcomponent);
 
-		CurrentWindow.runForWindow(new BaseWindow(null, 99, "test")
+		CurrentWindow.runForWindow(new BaseWindow(new TestBaseWebsocketSession(new WebsocketSessionKey("1", 42)), 99, "test")
 		{
 			@Override
 			public Container getForm(String formName)
 			{
 				return form;
 			}
-		}, new Runnable()
-		{
+		}, () -> {
+			assertEquals(Integer.valueOf(1), testcomponent.getProperty("changeintallow"));
 
-			@Override
-			public void run()
+			try
 			{
-				assertEquals(Integer.valueOf(1), testcomponent.getProperty("changeintallow"));
+				JSONObject json = new JSONObject();
+				json.put("formname", "test");
+				json.put("beanname", testcomponent.getName());
+				JSONObject changes = new JSONObject();
+				changes.put("changeintallow", Integer.valueOf(2));
+				json.put("changes", changes);
 
-				try
-				{
-					JSONObject json = new JSONObject();
-					json.put("formname", "test");
-					json.put("beanname", testcomponent.getName());
-					JSONObject changes = new JSONObject();
-					changes.put("changeintallow", Integer.valueOf(2));
-					json.put("changes", changes);
+				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
 
-					FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
+				// should be changed.
+				Assert.assertEquals(Integer.valueOf(2), testcomponent.getProperty("changeintallow"));
 
-					// should be changed.
-					Assert.assertEquals(Integer.valueOf(2), testcomponent.getProperty("changeintallow"));
+				changes.put("changeintallow", Integer.valueOf(3));
+				JSONObject oldvalues = new JSONObject();
+				oldvalues.put("changeintallow", Integer.valueOf(2));
+				json.put("oldvalues", oldvalues);
 
-					changes.put("changeintallow", Integer.valueOf(3));
-					JSONObject oldvalues = new JSONObject();
-					oldvalues.put("changeintallow", Integer.valueOf(2));
-					json.put("oldvalues", oldvalues);
+				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
 
-					FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
+				// should be changed, old value was really the old value.
+				Assert.assertEquals(Integer.valueOf(3), testcomponent.getProperty("changeintallow"));
 
-					// should be changed, old value was really the old value.
-					Assert.assertEquals(Integer.valueOf(3), testcomponent.getProperty("changeintallow"));
+				changes.put("changeintallow", Integer.valueOf(4));
 
-					changes.put("changeintallow", Integer.valueOf(4));
+				// should not be changed, still 3
+				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
+				Assert.assertEquals(Integer.valueOf(3), testcomponent.getProperty("changeintallow"));
 
-					// should not be changed, still 3
-					FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
-					Assert.assertEquals(Integer.valueOf(3), testcomponent.getProperty("changeintallow"));
+				changes.put("changeintallow", new Double(4));
+				oldvalues.put("changeintallow", new Double(3));
 
-					changes.put("changeintallow", new Double(4));
-					oldvalues.put("changeintallow", new Double(3));
+				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
 
-					FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
-
-					// should be changed, old value was really the old value.
-					Assert.assertEquals(Integer.valueOf(4), testcomponent.getProperty("changeintallow"));
-				}
-				catch (Exception e)
-				{
-					throw new RuntimeException(e);
-				}
-
+				// should be changed, old value was really the old value.
+				Assert.assertEquals(Integer.valueOf(4), testcomponent.getProperty("changeintallow"));
 			}
+			catch (Exception e)
+			{
+				throw new RuntimeException(e);
+			}
+
 		});
 	}
 

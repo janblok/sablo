@@ -26,6 +26,6 @@ public class WebObjectSpecificationBuilder extends AbstractWebObjectSpecificatio
 	public WebObjectSpecification build()
 	{
 		return new WebObjectSpecification(name, packageName, packageType, getDisplayname(), categoryName, icon, preview, definition, libraries, config,
-			properties, deprecated, keywords, dependencies);
+			properties, deprecated, keywords, ng2Config);
 	}
 }

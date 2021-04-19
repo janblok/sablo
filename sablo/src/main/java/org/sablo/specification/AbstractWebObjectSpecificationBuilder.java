@@ -35,7 +35,7 @@ abstract class AbstractWebObjectSpecificationBuilder<B extends AbstractWebObject
 	protected String definition = "";
 	protected JSONArray libraries;
 	protected JSONArray keywords;
-	protected JSONObject dependencies;
+	protected JSONObject ng2Config;
 
 	public B withPackageName(String packageName)
 	{
@@ -97,9 +97,9 @@ abstract class AbstractWebObjectSpecificationBuilder<B extends AbstractWebObject
 		return getThis();
 	}
 
-	public B withDependencies(JSONObject dependencies) 
+	public B withNG2Config(JSONObject ng2Config)
 	{
-		this.dependencies = dependencies;
+		this.ng2Config = ng2Config;
 		return getThis();
 	}
 }

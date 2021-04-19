@@ -18,6 +18,8 @@ package org.sablo.websocket;
 
 import java.util.concurrent.Callable;
 
+import org.slf4j.MDC;
+
 
 /**
  * The currently active window, set via a ThreadLocal.
@@ -60,10 +62,12 @@ public class CurrentWindow
 		if (window == null)
 		{
 			currentWindow.remove();
+			MDC.remove("sessionkey");
 		}
 		else
 		{
 			currentWindow.set(window);
+			MDC.put("sessionkey", window.getSession().getSessionKey().toString());
 		}
 		return old;
 	}

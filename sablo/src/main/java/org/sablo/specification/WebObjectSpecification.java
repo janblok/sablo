@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
  * Parse .spec files for components/services (web objects).
  * @author rgansevles
  */
+@SuppressWarnings("nls")
 public class WebObjectSpecification extends PropertyDescription
 {
 	/**
@@ -152,7 +153,7 @@ public class WebObjectSpecification extends PropertyDescription
 	private final String icon;
 	private final String packageName;
 	private final JSONArray keywords;
-	private final JSONObject dependencies;
+	private final JSONObject ng2Config;
 
 	private Map<String, ICustomType< ? >> foundTypes;
 	private static IPackageReader reader;
@@ -179,15 +180,15 @@ public class WebObjectSpecification extends PropertyDescription
 	 */
 
 	protected WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
-		String definition, JSONArray libs, JSONArray keywords, JSONObject dependencies)
+		String definition, JSONArray libs, JSONArray keywords, JSONObject ng2Config)
 	{
-		this(name, packageName, packageType, displayName, categoryName, icon, preview, definition, libs, null, null, null, keywords, dependencies);
+		this(name, packageName, packageType, displayName, categoryName, icon, preview, definition, libs, null, null, null, keywords, ng2Config);
 	}
 
 
 	WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
 		String definition, JSONArray libs, Object configObject, Map<String, PropertyDescription> properties, String deprecated, JSONArray keywords,
-		JSONObject dependencies)
+		JSONObject ng2Config)
 	{
 		super(name, null, configObject, properties, null, null, false, null, null, null, false, deprecated);
 		this.scriptingName = scriptifyNameIfNeeded(name, packageType);
@@ -200,7 +201,7 @@ public class WebObjectSpecification extends PropertyDescription
 		this.libraries = libs != null ? libs : new JSONArray();
 		this.foundTypes = new HashMap<>();
 		this.keywords = keywords != null ? keywords : new JSONArray();
-		this.dependencies = dependencies != null ? dependencies : new JSONObject();
+		this.ng2Config = ng2Config != null ? ng2Config : new JSONObject();
 	}
 
 	protected String scriptifyNameIfNeeded(String name, String packageType)
@@ -226,11 +227,13 @@ public class WebObjectSpecification extends PropertyDescription
 	 */
 	public URL getServerScript(boolean fromDependencies)
 	{
-		if (fromDependencies && this.dependencies != null && !this.dependencies.isNull("serverscript")) try
+		if (fromDependencies && this.ng2Config != null && ng2Config.has("dependencies") && !this.ng2Config.getJSONObject("dependencies").isNull("serverscript"))
+			try
 		{
-			return WebObjectSpecification.reader.getUrlForPath(dependencies.optString("serverscript").substring(packageName.length()));
+			return WebObjectSpecification.reader
+				.getUrlForPath(this.ng2Config.getJSONObject("dependencies").optString("serverscript").substring(packageName.length()));
 		}
-		catch (MalformedURLException e)
+			catch (MalformedURLException e)
 		{
 			e.printStackTrace();
 		}
@@ -392,7 +395,6 @@ public class WebObjectSpecification extends PropertyDescription
 		return WebObjectSpecification.parseTypes(typesContainer);
 	}
 
-	@SuppressWarnings("unchecked")
 	public static WebObjectSpecification parseSpec(String specfileContent, String packageName, IPackageReader reader,
 		IDefaultComponentPropertiesProvider defaultComponentPropertiesProvider) throws JSONException
 	{
@@ -417,7 +419,7 @@ public class WebObjectSpecification extends PropertyDescription
 				json.getString("definition"))
 			.withLibraries(json.optJSONArray("libraries")).withProperties(properties).withName(
 				json.getString("name"))
-			.withDeprecated(json.optString("deprecated", null)).withKeywords(json.optJSONArray("keywords")).withDependencies(json.optJSONObject("dependencies"))
+			.withDeprecated(json.optString("deprecated", null)).withKeywords(json.optJSONArray("keywords")).withNG2Config(json.optJSONObject("ng2Config"))
 			.build();
 		spec.foundTypes = types;
 		if (json.has("serverscript"))
@@ -899,8 +901,8 @@ public class WebObjectSpecification extends PropertyDescription
 		return keywords;
 	}
 
-	public JSONObject getDependencies()
+	public JSONObject getNG2Config()
 	{
-		return dependencies;
+		return ng2Config;
 	}
 }

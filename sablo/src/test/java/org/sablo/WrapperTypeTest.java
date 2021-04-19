@@ -180,8 +180,8 @@ public class WrapperTypeTest
 
 		String msg = JSONUtils.writeDataAsFullToJSON(data,
 			AggregatedPropertyType.newAggregatedPropertyBuilder().withProperty("msg", properties.contentType).build(), null);
-		assertEquals(new JSONObject("{\"msg\":{\"somepropp\":{\"string\":\"test\",\"counter\":1},\"name\":\"test\"}}").toString(),
-			new JSONObject(msg).toString());
+		assertTrue(new JSONObject("{\"msg\":{\"somepropp\":{\"string\":\"test\",\"counter\":1},\"name\":\"test\"}}")
+			.similar(new JSONObject(msg)));
 
 		component.putBrowserProperty("somepropp", "tester");
 

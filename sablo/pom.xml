@@ -21,6 +21,7 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<jenkins.javascript_tests.reportsDirectory>target/protractor-reports</jenkins.javascript_tests.reportsDirectory>
+        <test.script>test</test.script>
 	</properties>
 
 	<build>
@@ -106,7 +107,7 @@
 					<plugin>
 						<groupId>com.github.eirslett</groupId>
 						<artifactId>frontend-maven-plugin</artifactId>
-						<version>1.11.0</version>
+						<version>1.11.3</version>
 						<executions>
 
 							<!-- 1. Install node and npm locally -->
@@ -116,7 +117,7 @@
 									<goal>install-node-and-npm</goal>
 								</goals>
 								<configuration>
-									<nodeVersion>v14.15.4</nodeVersion>
+									<nodeVersion>v16.0.0</nodeVersion>
 								</configuration>
 							</execution>
 
@@ -143,10 +144,12 @@
 							<execution>
 								<id>javascript_tests</id>
 								<goals>
-									<goal>karma</goal>
+									<goal>npm</goal>
 								</goals>
 								<configuration>
-									<karmaConfPath>client_tests/karma.conf</karmaConfPath>
+									<skipTests>${maven.test.skip}</skipTests>
+									<failOnError>true</failOnError>
+									<arguments>run ${test.script}</arguments>
 								</configuration>
 							</execution>
 						</executions>

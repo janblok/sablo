@@ -11,23 +11,22 @@ module.exports = function(config){
 
 		// sablo scripts
 		'../META-INF/resources/sablo/js/*.js',
-		'../META-INF/resources/sablo/types/*.js',
 		
 		// test scripts
 		'test/**/*.js'
     ],
 
-    frameworks: ['es6-shim', 'jasmine'], // 'es6-shim' offers a polyfill for Map constructor on PhantomJS (that doesn't support that)
-    browsers : ['PhantomJS'],
+    frameworks: ['jasmine'],
+    browsers: ['ChromeHeadless'],
     //browsers : ['PhantomJS', 'Chrome', 'Firefox', 'IE'],//
 
-    /*plugins : [    <- not needed since karma loads by default all sibling plugins that start with karma-*
-            'karma-junit-reporter',
-            'karma-chrome-launcher',
-            'karma-firefox-launcher',
-            'karma-script-launcher',
-            'karma-jasmine'
-            ],*/
+    plugins: [
+      require('karma-jasmine'),
+      require('karma-chrome-launcher'),
+      require('@chiragrupani/karma-chromium-edge-launcher'),
+      require('karma-coverage'),
+      require('karma-junit-reporter')
+    ],
     singleRun: true,
     //singleRun: false,
     //browserNoActivityTimeout:999999,

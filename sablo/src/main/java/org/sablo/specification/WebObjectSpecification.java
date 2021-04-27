@@ -156,7 +156,6 @@ public class WebObjectSpecification extends PropertyDescription
 	private final JSONObject ng2Config;
 
 	private Map<String, ICustomType< ? >> foundTypes;
-	private static IPackageReader reader;
 
 	/**
 	 * Different then name only for services, not components/layouts.
@@ -164,6 +163,8 @@ public class WebObjectSpecification extends PropertyDescription
 	private final String scriptingName;
 
 	private URL serverScript;
+
+	private URL serverScriptNG2;
 
 	private URL specURL;
 
@@ -217,27 +218,18 @@ public class WebObjectSpecification extends PropertyDescription
 	/**
 	 * @param serverScript the serverScript to set
 	 */
-	public void setServerScript(URL serverScript)
+	public void setServerScript(URL serverScript, URL serverScriptNG2)
 	{
 		this.serverScript = serverScript;
+		this.serverScriptNG2 = serverScriptNG2;
 	}
 
 	/**
 	 * @return
 	 */
-	public URL getServerScript(boolean fromDependencies)
+	public URL getServerScript(boolean isServerScriptForNG2)
 	{
-		if (fromDependencies && this.ng2Config != null && ng2Config.has("dependencies") && !this.ng2Config.getJSONObject("dependencies").isNull("serverscript"))
-			try
-		{
-			return WebObjectSpecification.reader
-				.getUrlForPath(this.ng2Config.getJSONObject("dependencies").optString("serverscript").substring(packageName.length()));
-		}
-			catch (MalformedURLException e)
-		{
-			e.printStackTrace();
-		}
-		return serverScript;
+		return isServerScriptForNG2 && serverScriptNG2 != null ? serverScriptNG2 : serverScript;
 	}
 
 
@@ -399,7 +391,6 @@ public class WebObjectSpecification extends PropertyDescription
 		IDefaultComponentPropertiesProvider defaultComponentPropertiesProvider) throws JSONException
 	{
 		JSONObject json = new JSONObject(specfileContent);
-		WebObjectSpecification.reader = reader;
 
 		// first types, can be used in properties
 		Map<String, ICustomType< ? >> types = WebObjectSpecification.parseTypes(json);
@@ -426,7 +417,16 @@ public class WebObjectSpecification extends PropertyDescription
 		{
 			try
 			{
-				spec.setServerScript(reader.getUrlForPath(json.getString("serverscript").substring(packageName.length())));
+				URL serverScript = reader.getUrlForPath(json.getString("serverscript").substring(packageName.length()));
+				if (spec.ng2Config != null && spec.ng2Config.has("dependencies") && !spec.ng2Config.getJSONObject("dependencies").isNull("serverscript"))
+				{
+					spec.setServerScript(serverScript,
+						reader.getUrlForPath(spec.ng2Config.getJSONObject("dependencies").optString("serverscript").substring(packageName.length())));
+				}
+				else
+				{
+					spec.setServerScript(serverScript, null);
+				}
 			}
 			catch (MalformedURLException e)
 			{

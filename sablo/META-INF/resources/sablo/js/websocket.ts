@@ -200,6 +200,7 @@ webSocketModule.factory('$propertyWatchUtils', function ($typesRegistry: sablo.I
 	let handleMessage = function(message) {
 		let obj;
 		let responseValue;
+        let oldFTEAIMWH = functionsToExecuteAfterIncommingMessageWasHandled; // normally this will always be null here; but in some browsers (FF) an alert on window can make these calls nest unexpectedly; so oldFTEAIMWH avoids exceptions in those cases as well - as we do not restore to null but to old when nesting happens
 		functionsToExecuteAfterIncommingMessageWasHandled = [];
 		let hideIndicatorCounter = 0;
 
@@ -261,13 +262,11 @@ webSocketModule.factory('$propertyWatchUtils', function ($typesRegistry: sablo.I
 						// something went wrong
 						// do a default conversion although I doubt it will do anything (don't think server will send client side type for exceptions)
 						obj.exception = $sabloConverters.convertFromServerToClient(obj.exception, undefined, undefined, undefined, undefined, undefined, undefined);
-						$rootScope.$apply(function() {
-							deferredEvent.reject(obj.exception);
-						})
+						deferredEvent.reject(obj.exception);
+                        $rootScope.$applyAsync(); // not sure that this is needed at all here but it is meant to replace (by making sure a root digest is called) a very old sync $apply that was used here for the reject; it would error out because of that in firefox where an $apply might happen on top of another $apply then in some situations (alerts combined with sync calls to and from server); and that is not allowed by angular 
 					} else {
-						$rootScope.$apply(function() {
-							deferredEvent.resolve(obj.ret); // if it's a handler/server side api call that expects a return value, any type conversions should be done in code triggered by this resolve (in calling code)
-						})
+						deferredEvent.resolve(obj.ret); // if it's a handler/server side api call that expects a return value, any type conversions should be done in code triggered by this resolve (in calling code)
+                        $rootScope.$applyAsync(); // not sure that this is needed at all here but it is meant to replace (by making sure a root digest is called) a very old sync $apply that was used here for the resolve; it would error out because of that in firefox where an $apply might happen on top of another $apply then in some situations (alerts combined with sync calls to and from server); and that is not allowed by angular 
 					}
 				} else $log.warn("Response to an unknown handler call dismissed; can happen (normal) if a handler call gets interrupted by a full browser refresh.");
 				delete deferredEvents[obj.cmsgid];
@@ -410,7 +409,7 @@ webSocketModule.factory('$propertyWatchUtils', function ($typesRegistry: sablo.I
 			let scopesToDigest = new ScopeSet();
 
 			let toExecuteAfterIncommingMessageWasHandled = functionsToExecuteAfterIncommingMessageWasHandled;
-			functionsToExecuteAfterIncommingMessageWasHandled = undefined; // clear this before calling just in the unlikely case that some handlers want to add more such tasks (and we don't want to loose those but rather execute them right away)
+            functionsToExecuteAfterIncommingMessageWasHandled = oldFTEAIMWH; // clear/restore this before calling just in the unlikely case that some handlers want to add more such tasks (and we don't want to loose those but rather execute them right away)
 			
 			for (let i = 0; i < toExecuteAfterIncommingMessageWasHandled.length; i++) {
 				try {

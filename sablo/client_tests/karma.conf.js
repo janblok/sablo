@@ -11,6 +11,7 @@ module.exports = function(config){
 
 		// sablo scripts
 		'../META-INF/resources/sablo/js/*.js',
+		'../META-INF/resources/sablo/types/*.js',
 		
 		// test scripts
 		'test/**/*.js'
@@ -18,7 +19,7 @@ module.exports = function(config){
 
     frameworks: ['jasmine'],
     browsers: ['ChromeHeadless'],
-    //browsers : ['PhantomJS', 'Chrome', 'Firefox', 'IE'],//
+    //browsers : ['Chrome', 'Firefox', 'IE'],//
 
     plugins: [
       require('karma-jasmine'),

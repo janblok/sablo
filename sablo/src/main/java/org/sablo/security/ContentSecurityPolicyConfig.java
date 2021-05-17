@@ -27,6 +27,7 @@ import java.util.Map;
  */
 public class ContentSecurityPolicyConfig
 {
+	public static final String DEFAULT_BASE_URI_VALUE = "'self'";
 	public static final String DEFAULT_DEFAULT_SRC_DIRECTIVE_VALUE = "'self'";
 	public static final String DEFAULT_FRAME_SRC_DIRECTIVE_VALUE = "* data:";
 	public static final String DEFAULT_FRAME_ANCESTORS_DIRECTIVE_VALUE = "'self'";
@@ -84,6 +85,8 @@ public class ContentSecurityPolicyConfig
 		setDirective(defaultDirectives, "img-src", DEFAULT_IMG_SRC_DIRECTIVE_VALUE, nonce);
 		setDirective(defaultDirectives, "font-src", DEFAULT_FONT_SRC_DIRECTIVE_VALUE, nonce);
 		setDirective(defaultDirectives, "object-src", DEFAULT_OBJECT_SRC_DIRECTIVE_VALUE, nonce);
+		setDirective(defaultDirectives, "base-uri", DEFAULT_BASE_URI_VALUE, nonce);
+		setDirective(defaultDirectives, "form-action", DEFAULT_BASE_URI_VALUE, nonce);
 		return defaultDirectives;
 	}
 }

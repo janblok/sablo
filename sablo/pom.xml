@@ -107,7 +107,7 @@
 					<plugin>
 						<groupId>com.github.eirslett</groupId>
 						<artifactId>frontend-maven-plugin</artifactId>
-						<version>1.11.3</version>
+						<version>1.12.0</version>
 						<executions>
 
 							<!-- 1. Install node and npm locally -->
@@ -117,7 +117,7 @@
 									<goal>install-node-and-npm</goal>
 								</goals>
 								<configuration>
-									<nodeVersion>v16.0.0</nodeVersion>
+									<nodeVersion>v16.2.0</nodeVersion>
 								</configuration>
 							</execution>
 

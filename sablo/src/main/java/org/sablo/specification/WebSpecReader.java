@@ -333,7 +333,8 @@ class WebSpecReader
 					log.error("Location 1 : " + oldPackage.getPackageURL());
 					log.error("Location 2 : " + p.getReader().getPackageURL());
 					log.error("Will discard location 1 and load location 2... But this should be adressed by the solution.");
-					p.getReader().reportError("", new DuplicateEntityException("Duplicate package found: " + oldPackage.getPackageName()));
+					p.getReader().reportError("", new DuplicateEntityException("Duplicate package found: " + oldPackage.getPackageName() + " (" +
+						oldPackage.getPackageURL() + ")"));
 				}
 			}
 		}

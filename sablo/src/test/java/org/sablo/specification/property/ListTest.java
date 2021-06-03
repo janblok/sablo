@@ -17,10 +17,12 @@
 package org.sablo.specification.property;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Set;
 
 import org.junit.Test;
 import org.sablo.IChangeListener;
@@ -57,114 +59,63 @@ public class ListTest
 		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
 
 		ChangeAwareList<ChangeAwareMap<String, Object>, Object>.Changes ch = lst.getChangesImmutableAndPrepareForReset();
-		assertEquals(4, ch.getAddedIndexes().size());
+		ArrayOperation[] opSeq = ch.getGranularUpdatesKeeper().getEquivalentSequenceOfOperations();
+		assertEquals(1, opSeq.length);
+		assertGranularOpIs(0, 3, ArrayOperation.INSERT, null, opSeq[0]);
 		assertTrue(changed[0]);
 
 		ch.doneHandling();
 		changed[0] = false;
 
-		assertEquals(0, ch.getIndexesChangedByRef().size());
-		assertEquals(0, ch.getIndexesWithContentUpdates().size());
 		lst.get(0).put("test", "test");
 		ch = lst.getChangesImmutableAndPrepareForReset();
-		assertEquals(0, ch.getIndexesChangedByRef().size());
-		assertEquals(1, ch.getIndexesWithContentUpdates().size());
 
-		assertEquals(new Integer(0), ch.getIndexesWithContentUpdates().toArray()[0]);
+		opSeq = ch.getGranularUpdatesKeeper().getEquivalentSequenceOfOperations();
+		assertTrue(changed[0]);
+		assertEquals(1, opSeq.length);
+		assertGranularOpIs(0, 0, ArrayOperation.CHANGE, ChangeAwareList.GRANULAR_UPDATE_OP, opSeq[0]);
 
 		ch.doneHandling();
+		changed[0] = false;
 
+		// now simulate a splice with shift of elements
 		lst.set(0, lst.get(1));
 		lst.set(1, lst.get(2));
-		lst.remove(2);
+		lst.set(2, lst.get(3));
+		lst.remove(3);
 		lst.get(1).put("test1", "test123");
 
 		ch = lst.getChangesImmutableAndPrepareForReset();
-		assertEquals(2, ch.getIndexesChangedByRef().size());
-		assertEquals(0, ch.getIndexesWithContentUpdates().size());
-		assertEquals(new Integer(0), ch.getIndexesChangedByRef().toArray()[0]);
-		assertEquals(new Integer(1), ch.getIndexesChangedByRef().toArray()[1]);
-
-		assertEquals(1, ch.getRemovedIndexes().size());
-		assertEquals(new Integer(2), ch.getRemovedIndexes().toArray()[0]);
-		assertTrue(ch.mustSendAll());
-
-		ch.doneHandling();
-		lst.get(1).getChangesImmutableAndPrepareForReset().doneHandling();
-
-		lst.get(1).put("test1", "test1");
-		assertEquals(1, ch.getIndexesWithContentUpdates().size());
-		assertEquals(0, ch.getIndexesChangedByRef().size());
-
-		assertEquals(new Integer(1), ch.getIndexesWithContentUpdates().toArray()[0]);
-
-		assertEquals(3, lst.changeHandlers.size());
-	}
-
-	@Test
-	public void spliceTestEndOfList() throws Exception
-	{
-		ChangeAwareList<ChangeAwareMap<String, Object>, Object> lst = new ChangeAwareList<ChangeAwareMap<String, Object>, Object>(
-			new ArrayList<ChangeAwareMap<String, Object>>());
-
-		final boolean[] changed = new boolean[1];
-		IChangeListener listener = new IChangeListener()
-		{
-			@Override
-			public void valueChanged()
-			{
-				changed[0] = true;
-			}
-		};
-		lst.attachToBaseObject(listener, null);
-		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
-		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
-		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
-		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
-
-		ChangeAwareList<ChangeAwareMap<String, Object>, Object>.Changes ch = lst.getChangesImmutableAndPrepareForReset();
-		assertEquals(4, ch.getAddedIndexes().size());
 		assertTrue(changed[0]);
+		assertFalse(ch.mustSendAll());
+		opSeq = ch.getGranularUpdatesKeeper().getEquivalentSequenceOfOperations();
+		assertEquals(2, opSeq.length);
+		assertGranularOpIs(0, 0, ArrayOperation.DELETE, null, opSeq[0]);
+		assertGranularOpIs(0, 2, ArrayOperation.CHANGE, null, opSeq[1]);
 
 		ch.doneHandling();
 		changed[0] = false;
-
-		assertEquals(0, ch.getIndexesChangedByRef().size());
-		assertEquals(0, ch.getIndexesWithContentUpdates().size());
-		lst.get(0).put("test", "test");
-		ch = lst.getChangesImmutableAndPrepareForReset();
-		assertEquals(0, ch.getIndexesChangedByRef().size());
-		assertEquals(1, ch.getIndexesWithContentUpdates().size());
-
-		assertEquals(new Integer(0), ch.getIndexesWithContentUpdates().toArray()[0]);
-
-		ch.doneHandling();
-
-		lst.set(1, lst.get(2));
-		lst.set(2, lst.get(3));
-		lst.remove(2);
-		lst.get(1).put("test1", "test123");
-
-		ch = lst.getChangesImmutableAndPrepareForReset();
-		assertEquals(2, ch.getIndexesChangedByRef().size());
-		assertEquals(0, ch.getIndexesWithContentUpdates().size());
-		assertEquals(new Integer(1), ch.getIndexesChangedByRef().toArray()[0]);
-		assertEquals(new Integer(2), ch.getIndexesChangedByRef().toArray()[1]);
-
-		assertEquals(1, ch.getRemovedIndexes().size());
-		assertEquals(new Integer(2), ch.getRemovedIndexes().toArray()[0]);
-		assertTrue(ch.mustSendAll());
-
-		ch.doneHandling();
 		lst.get(1).getChangesImmutableAndPrepareForReset().doneHandling();
 
 		lst.get(1).put("test1", "test1");
-		assertEquals(1, ch.getIndexesWithContentUpdates().size());
-		assertEquals(0, ch.getIndexesChangedByRef().size());
 
-		assertEquals(new Integer(1), ch.getIndexesWithContentUpdates().toArray()[0]);
+		opSeq = ch.getGranularUpdatesKeeper().getEquivalentSequenceOfOperations();
+		assertTrue(changed[0]);
+		assertEquals(1, opSeq.length);
+		assertGranularOpIs(1, 1, ArrayOperation.CHANGE, ChangeAwareList.GRANULAR_UPDATE_OP, opSeq[0]);
 
 		assertEquals(3, lst.changeHandlers.size());
+
+		ch.doneHandling();
+		lst.get(1).getChangesImmutableAndPrepareForReset().doneHandling();
+	}
+
+	public static void assertGranularOpIs(int startIndex, int endIndex, int opType, Set<String> columnNames, ArrayOperation opSeq)
+	{
+		assertEquals("startIndex check", startIndex, opSeq.startIndex);
+		assertEquals("endIndex check", endIndex, opSeq.endIndex);
+		assertEquals("opType check", opType, opSeq.type);
+		assertEquals("columnName check", columnNames, opSeq.columnNames);
 	}
 
 	@Test
@@ -187,51 +138,127 @@ public class ListTest
 		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
 		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
 		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
-		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
 
 		ChangeAwareList<ChangeAwareMap<String, Object>, Object>.Changes ch = lst.getChangesImmutableAndPrepareForReset();
-		assertEquals(5, ch.getAddedIndexes().size());
 		assertTrue(changed[0]);
+		ArrayOperation[] opSeq = ch.getGranularUpdatesKeeper().getEquivalentSequenceOfOperations();
+		assertEquals(1, opSeq.length);
+		assertGranularOpIs(0, 3, ArrayOperation.INSERT, null, opSeq[0]);
 
 		ch.doneHandling();
 		changed[0] = false;
 
-		assertEquals(0, ch.getIndexesChangedByRef().size());
-		assertEquals(0, ch.getIndexesWithContentUpdates().size());
 		lst.get(0).put("test", "test");
 		ch = lst.getChangesImmutableAndPrepareForReset();
-		assertEquals(0, ch.getIndexesChangedByRef().size());
-		assertEquals(1, ch.getIndexesWithContentUpdates().size());
-
-		assertEquals(new Integer(0), ch.getIndexesWithContentUpdates().toArray()[0]);
+		opSeq = ch.getGranularUpdatesKeeper().getEquivalentSequenceOfOperations();
+		assertTrue(changed[0]);
+		assertEquals(1, opSeq.length);
+		assertGranularOpIs(0, 0, ArrayOperation.CHANGE, ChangeAwareList.GRANULAR_UPDATE_OP, opSeq[0]);
 
 		ch.doneHandling();
+		changed[0] = false;
 
+		// now simulate a splice with shift of elements
 		lst.set(1, lst.get(2));
 		lst.set(2, lst.get(3));
-		lst.remove(2);
+		lst.remove(3);
 		lst.get(1).put("test1", "test123");
+
 		ch = lst.getChangesImmutableAndPrepareForReset();
-
-		assertEquals(2, ch.getIndexesChangedByRef().size());
-		assertEquals(0, ch.getIndexesWithContentUpdates().size());
-		assertEquals(new Integer(1), ch.getIndexesChangedByRef().toArray()[0]);
-		assertEquals(new Integer(2), ch.getIndexesChangedByRef().toArray()[1]);
-
-		assertEquals(1, ch.getRemovedIndexes().size());
-		assertEquals(new Integer(2), ch.getRemovedIndexes().toArray()[0]);
-		assertTrue(ch.mustSendAll());
+		assertTrue(changed[0]);
+		assertFalse(ch.mustSendAll());
+		opSeq = ch.getGranularUpdatesKeeper().getEquivalentSequenceOfOperations();
+		assertEquals(2, opSeq.length);
+		assertGranularOpIs(1, 1, ArrayOperation.DELETE, null, opSeq[0]);
+		assertGranularOpIs(1, 2, ArrayOperation.CHANGE, null, opSeq[1]);
 
 		ch.doneHandling();
+		changed[0] = false;
 		lst.get(1).getChangesImmutableAndPrepareForReset().doneHandling();
 
 		lst.get(1).put("test1", "test1");
-		assertEquals(1, ch.getIndexesWithContentUpdates().size());
-		assertEquals(0, ch.getIndexesChangedByRef().size());
+		assertTrue(changed[0]);
+		opSeq = ch.getGranularUpdatesKeeper().getEquivalentSequenceOfOperations();
+		assertEquals(1, opSeq.length);
+		assertGranularOpIs(1, 1, ArrayOperation.CHANGE, ChangeAwareList.GRANULAR_UPDATE_OP, opSeq[0]);
 
-		assertEquals(new Integer(1), ch.getIndexesWithContentUpdates().toArray()[0]);
+		assertEquals(3, lst.changeHandlers.size());
 
-		assertEquals(4, lst.changeHandlers.size());
+		ch.doneHandling();
+		lst.get(1).getChangesImmutableAndPrepareForReset().doneHandling();
+	}
+
+	@Test
+	public void spliceTestMiddleOfListPlusEndOfList() throws Exception
+	{
+		ChangeAwareList<ChangeAwareMap<String, Object>, Object> lst = new ChangeAwareList<ChangeAwareMap<String, Object>, Object>(
+			new ArrayList<ChangeAwareMap<String, Object>>());
+
+		final boolean[] changed = new boolean[1];
+		IChangeListener listener = new IChangeListener()
+		{
+			@Override
+			public void valueChanged()
+			{
+				changed[0] = true;
+			}
+		};
+		lst.attachToBaseObject(listener, null);
+		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
+		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
+		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
+		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
+		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
+
+		ChangeAwareList<ChangeAwareMap<String, Object>, Object>.Changes ch = lst.getChangesImmutableAndPrepareForReset();
+		ArrayOperation[] opSeq = ch.getGranularUpdatesKeeper().getEquivalentSequenceOfOperations();
+		assertTrue(changed[0]);
+		assertEquals(1, opSeq.length);
+		assertGranularOpIs(0, 4, ArrayOperation.INSERT, null, opSeq[0]);
+
+		ch.doneHandling();
+		changed[0] = false;
+
+		lst.get(0).put("test", "test");
+		ch = lst.getChangesImmutableAndPrepareForReset();
+		opSeq = ch.getGranularUpdatesKeeper().getEquivalentSequenceOfOperations();
+		assertTrue(changed[0]);
+		assertEquals(1, opSeq.length);
+		assertGranularOpIs(0, 0, ArrayOperation.CHANGE, ChangeAwareList.GRANULAR_UPDATE_OP, opSeq[0]);
+
+		ch.doneHandling();
+		changed[0] = false;
+
+		// simulate a splice with shift of elements in the middle followed by an add (splice at the end) + some change ops in between
+		lst.get(4).put("test1", "test007");
+		lst.set(2, lst.get(3));
+		lst.set(3, lst.get(4));
+		lst.remove(4);
+		lst.get(1).put("test1", "test123");
+		lst.add(new ChangeAwareMap<String, Object>(new HashMap<String, String>(), null, getDummyCustomObjectPD()));
+		ch = lst.getChangesImmutableAndPrepareForReset();
+
+		assertFalse(ch.mustSendAll());
+		opSeq = ch.getGranularUpdatesKeeper().getEquivalentSequenceOfOperations();
+		assertTrue(changed[0]);
+		assertEquals(2, opSeq.length);
+		assertGranularOpIs(1, 1, ArrayOperation.CHANGE, ChangeAwareList.GRANULAR_UPDATE_OP, opSeq[0]);
+		assertGranularOpIs(2, 4, ArrayOperation.CHANGE, null, opSeq[1]);
+
+		ch.doneHandling();
+		changed[0] = false;
+		lst.get(1).getChangesImmutableAndPrepareForReset().doneHandling();
+
+		lst.get(1).put("test1", "test1");
+		opSeq = ch.getGranularUpdatesKeeper().getEquivalentSequenceOfOperations();
+		assertTrue(changed[0]);
+		assertEquals(1, opSeq.length);
+		assertGranularOpIs(1, 1, ArrayOperation.CHANGE, ChangeAwareList.GRANULAR_UPDATE_OP, opSeq[0]);
+
+		assertEquals(5, lst.changeHandlers.size());
+
+		ch.doneHandling();
+		lst.get(1).getChangesImmutableAndPrepareForReset().doneHandling();
 	}
 
 	private PropertyDescription getDummyCustomObjectPD()
@@ -277,13 +304,14 @@ public class ListTest
 
 		ch = lst.getChangesImmutableAndPrepareForReset();
 		ch.doneHandling();
+		changed[0] = false;
 
 		lst.get(1).put("test1", "test1");
 
-		assertEquals(1, ch.getIndexesWithContentUpdates().size());
-		assertEquals(0, ch.getIndexesChangedByRef().size());
-		assertEquals(new Integer(1), ch.getIndexesWithContentUpdates().toArray()[0]);
-
+		ArrayOperation[] opSeq = ch.getGranularUpdatesKeeper().getEquivalentSequenceOfOperations();
+		assertTrue(changed[0]);
+		assertEquals(1, opSeq.length);
+		assertGranularOpIs(1, 1, ArrayOperation.CHANGE, ChangeAwareList.GRANULAR_UPDATE_OP, opSeq[0]);
 	}
 
 	/*

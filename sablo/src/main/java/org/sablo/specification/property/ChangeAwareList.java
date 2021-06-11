@@ -320,9 +320,9 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		WT tmp = getWrappedBaseListForReadOnly().set(index, value);
 		if (tmp != value)
 		{
+			if (markChanged) changes.markElementChangedByRef(index);
 			detachIfNeeded(index, tmp, false);
 			attachToBaseObjectIfNeeded(index, value, false);
-			if (markChanged) changes.markElementChangedByRef(index);
 		}
 
 		return tmp;
@@ -563,8 +563,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			public void remove()
 			{
 				it.remove();
-				detachIfNeeded(i, getWrappedBaseList().get(i), true);
 				changes.markElementRemoved(i);
+				detachIfNeeded(i, getWrappedBaseList().get(i), true);
 				i--;
 			}
 		};
@@ -586,8 +586,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	public boolean add(ET e)
 	{
 		boolean tmp = baseList.add(e);
-		attachToBaseObjectIfNeeded(baseList.size() - 1, getWrappedBaseList().get(baseList.size() - 1), false);
 		changes.markElementInserted(baseList.size() - 1);
+		attachToBaseObjectIfNeeded(baseList.size() - 1, getWrappedBaseList().get(baseList.size() - 1), false);
 		return tmp;
 	}
 
@@ -599,8 +599,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		{
 			WT oldWrappedValue = getWrappedBaseList().get(idx);
 			baseList.remove(idx);
-			detachIfNeeded(idx, oldWrappedValue, true);
 			changes.markElementRemoved(idx);
+			detachIfNeeded(idx, oldWrappedValue, true);
 			return true;
 		}
 		return false;
@@ -666,10 +666,10 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	@Override
 	public void clear()
 	{
-		int size = baseList.size();
-		for (int i = size - 1; i >= 0; i--)
+		int initialSize = baseList.size();
+		for (int i = initialSize - 1; i >= 0; i--)
 			remove(i);
-		if (size > 0) changes.markAllChanged();
+		if (initialSize > 0) changes.markAllChanged();
 	}
 
 	@Override
@@ -687,9 +687,9 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 
 		if (oldWV != newWV)
 		{
+			changes.markElementChangedByRef(index);
 			detachIfNeeded(index, oldWV, false);
 			attachToBaseObjectIfNeeded(index, newWV, false);
-			changes.markElementChangedByRef(index);
 		}
 		return tmp;
 	}
@@ -698,8 +698,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	public void add(int index, ET element)
 	{
 		baseList.add(index, element);
-		attachToBaseObjectIfNeeded(index, getWrappedBaseList().get(index), true);
 		changes.markElementInserted(index);
+		attachToBaseObjectIfNeeded(index, getWrappedBaseList().get(index), true);
 	}
 
 	@Override
@@ -707,8 +707,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	{
 		WT oldWV = getWrappedBaseList().get(index);
 		ET tmp = baseList.remove(index);
-		detachIfNeeded(index, oldWV, true);
 		changes.markElementRemoved(index);
+		detachIfNeeded(index, oldWV, true);
 		return tmp;
 	}
 
@@ -793,8 +793,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		{
 			int i = it.previousIndex() + 1;
 			it.remove();
-			detachIfNeeded(i, getWrappedBaseList().get(i), true);
 			changes.markElementRemoved(i);
+			detachIfNeeded(i, getWrappedBaseList().get(i), true);
 		}
 
 		@Override
@@ -807,9 +807,9 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 
 			if (oldWV != newWV)
 			{
+				changes.markElementChangedByRef(i);
 				detachIfNeeded(i, oldWV, false);
 				attachToBaseObjectIfNeeded(i, newWV, false);
-				changes.markElementChangedByRef(i);
 			}
 		}
 
@@ -818,8 +818,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		{
 			int i = it.nextIndex();
 			it.add(e);
-			attachToBaseObjectIfNeeded(i, getWrappedBaseList().get(i), true);
 			changes.markElementInserted(i);
+			attachToBaseObjectIfNeeded(i, getWrappedBaseList().get(i), true);
 		}
 	}
 

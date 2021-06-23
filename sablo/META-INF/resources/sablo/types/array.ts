@@ -47,9 +47,14 @@ namespace sablo.propertyTypes {
     }
     
     class CustomArrayType implements sablo.IType<CustomArrayValue> {
+        static readonly GRANULAR_UPDATES = "g";
+        static readonly GRANULAR_UPDATE_DATA = "d";
+        static readonly OP_ARRAY_START_END_TYPE = "op";
+        static readonly CHANGED = 0;
+        static readonly INSERT = 1;
+        static readonly DELETE = 2;    
+
         static readonly UPDATES = "u";
-        static readonly REMOVES = "r";
-        static readonly ADDITIONS = "a";
         static readonly INDEX = "i";
         static readonly VALUE = "v";
         static readonly CONTENT_VERSION = "vEr"; // server side sync to make sure we don't end up granular updating something that has changed meanwhile server-side
@@ -89,7 +94,7 @@ namespace sablo.propertyTypes {
                             }
                         }
                     }
-                } else if (serverJSONValue && (serverJSONValue[CustomArrayType.UPDATES] || serverJSONValue[CustomArrayType.REMOVES] || serverJSONValue[CustomArrayType.ADDITIONS])) {
+                } else if (serverJSONValue && serverJSONValue[CustomArrayType.GRANULAR_UPDATES]) {
                     // granular updates received;
                     const internalState = currentClientValue[this.sabloConverters.INTERNAL_IMPL];
 
@@ -99,61 +104,72 @@ namespace sablo.propertyTypes {
                     // if something changed browser-side, increasing the content version thus not matching next expected version,
                     // we ignore this update and expect a fresh full copy of the array from the server (currently server value is leading/has priority because not all server side values might support being recreated from client values)
                     if (internalState[CustomArrayType.CONTENT_VERSION] == serverJSONValue[CustomArrayType.CONTENT_VERSION]) {
-                        if (serverJSONValue[CustomArrayType.REMOVES])
-                        {
-                            const removes = serverJSONValue[CustomArrayType.REMOVES];
+                        let i: number;
+                        for (const granularOp of serverJSONValue[CustomArrayType.GRANULAR_UPDATES]) {
+                            const startIndex_endIndex_opType = granularOp[CustomArrayType.OP_ARRAY_START_END_TYPE]; // it's an array of 3 elements in the order given in name
+                            const startIndex = startIndex_endIndex_opType[0];
+                            const endIndex = startIndex_endIndex_opType[1];
+                            const opType = startIndex_endIndex_opType[2];
                             
-                            for (const i in removes)
-                            {
-                                const idx = removes[i];
-                                // shift left by 1 all dynamicTypes after to idx as we are going to delete one idx
-                                for (let idxToShift = idx + 1; idxToShift < currentClientValue.length; idxToShift++)
-                                    if (internalState.dynamicPropertyTypesHolder["" + idxToShift]) {
-                                        internalState.dynamicPropertyTypesHolder["" + (idxToShift - 1)] = internalState.dynamicPropertyTypesHolder["" + idxToShift];
-                                        delete internalState.dynamicPropertyTypesHolder["" + idxToShift];
-                                    } else delete internalState.dynamicPropertyTypesHolder["" + (idxToShift - 1)];
-                                
-                                currentClientValue.splice(idx, 1);
-                            }
-                        }
-                        if (serverJSONValue[CustomArrayType.ADDITIONS])
-                        {
-                            const additions = serverJSONValue[CustomArrayType.ADDITIONS];
-                            for (const i in additions) {
-                                const element = additions[i];
-                                const idx = element[CustomArrayType.INDEX];
-                                let val = element[CustomArrayType.VALUE];
-
-                                // shift right by 1 all dynamicTypes after or equal to idx as we are going to insert a new value
-                                for (let idxToShift = currentClientValue.length - 1; idxToShift >= idx; idxToShift++)
-                                    if (internalState.dynamicPropertyTypesHolder["" + idxToShift]) {
-                                        internalState.dynamicPropertyTypesHolder["" + (idxToShift + 1)] = internalState.dynamicPropertyTypesHolder["" + idxToShift];
-                                        delete internalState.dynamicPropertyTypesHolder["" + idxToShift];
-                                    } else delete internalState.dynamicPropertyTypesHolder["" + (idxToShift + 1)];
+                            if (opType === CustomArrayType.CHANGED) {
+                                const changedData = granularOp[CustomArrayType.GRANULAR_UPDATE_DATA];
+                                for (i = startIndex; i <= endIndex; i++) {
+                                    const relIdx = i - startIndex;
+                
+                                    // apply the conversions, update value and kept conversion info for changed indexes
+                                    currentClientValue[i] = this.sabloConverters.convertFromServerToClient(changedData[relIdx], this.staticElementType,
+                                                                currentClientValue[i], internalState.dynamicPropertyTypesHolder, "" + i, componentScope, elemPropertyContext);
                                     
-                                val = this.sabloConverters.convertFromServerToClient(val, this.staticElementType, currentClientValue[idx],
-                                        internalState.dynamicPropertyTypesHolder, "" + idx, componentScope, elemPropertyContext);
-                                currentClientValue.splice(idx, 0, val);
-
-                                if (val && val[this.sabloConverters.INTERNAL_IMPL] && val[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
-                                    val[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier(this.getChangeNotifier(currentClientValue, idx));
+                                    if (currentClientValue[i] && currentClientValue[i][this.sabloConverters.INTERNAL_IMPL] && currentClientValue[i][this.sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
+                                        // child is able to handle it's own change mechanism
+                                        currentClientValue[i][this.sabloConverters.INTERNAL_IMPL].setChangeNotifier(this.getChangeNotifier(currentClientValue, i));
+                                    }
                                 }
-                            }
-                        }
-                        if (serverJSONValue[CustomArrayType.UPDATES])
-                        {
-                            const updates = serverJSONValue[CustomArrayType.UPDATES];
-                            for (const i in updates) {
-                                const update = updates[i];
-                                const idx = update[CustomArrayType.INDEX];
-                                let val = update[CustomArrayType.VALUE];
+                            } else if (opType === CustomArrayType.INSERT) {
+                                const insertedData = granularOp[CustomArrayType.GRANULAR_UPDATE_DATA];
+                                const numberOfInsertedRows = insertedData.length;
+                
+                                // shift right by "numberOfInsertedRows" all dynamicTypes after or equal to idx as we are going to insert new values there
+                                for (let idxToShift = currentClientValue.length - 1; idxToShift >= startIndex; idxToShift--)
+                                    if (internalState.dynamicPropertyTypesHolder["" + idxToShift]) {
+                                        internalState.dynamicPropertyTypesHolder["" + (idxToShift + numberOfInsertedRows)] = internalState.dynamicPropertyTypesHolder["" + idxToShift];
+                                        delete internalState.dynamicPropertyTypesHolder["" + idxToShift];
+                                    } else delete internalState.dynamicPropertyTypesHolder["" + (idxToShift + numberOfInsertedRows)];
 
-                                currentClientValue[idx] = val = this.sabloConverters.convertFromServerToClient(val, this.staticElementType, currentClientValue[idx],
-                                        internalState.dynamicPropertyTypesHolder, "" + idx, componentScope, elemPropertyContext);
+                                // apply conversions
+                
+                                for (i = numberOfInsertedRows - 1; i >= 0 ; i--) {
+                                    const addedRow = this.sabloConverters.convertFromServerToClient(insertedData[i], this.staticElementType, undefined, 
+                                                    internalState.dynamicPropertyTypesHolder, "" + (startIndex + i), componentScope, elemPropertyContext);
+                                    currentClientValue.splice(startIndex, 0, addedRow);
+                                }
 
-                                if (val && val[this.sabloConverters.INTERNAL_IMPL] && val[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
-                                    // child is able to handle it's own change mechanism
-                                    val[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier(this.getChangeNotifier(currentClientValue, idx));
+                                // update any affected change notifiers
+                                for (i = startIndex; i < currentClientValue.length; i++) {
+                                    if (currentClientValue[i] && currentClientValue[i][this.sabloConverters.INTERNAL_IMPL] && currentClientValue[i][this.sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
+                                        // child is able to handle it's own change mechanism
+                                        currentClientValue[i][this.sabloConverters.INTERNAL_IMPL].setChangeNotifier(this.getChangeNotifier(currentClientValue, i));
+                                    }
+                                }
+                            } else if (opType === CustomArrayType.DELETE) {
+                                const numberOfDeletedRows = endIndex - startIndex + 1;
+                                
+                                // shift left by "numberOfDeletedRows" all dynamicTypes after "startIndex + numberOfDeletedRows" as we are going to delete that interval
+                                for (let idxToShift = startIndex + numberOfDeletedRows; idxToShift < currentClientValue.length; idxToShift++)
+                                    if (internalState.dynamicPropertyTypesHolder["" + idxToShift]) {
+                                        internalState.dynamicPropertyTypesHolder["" + (idxToShift - numberOfDeletedRows)] = internalState.dynamicPropertyTypesHolder["" + idxToShift];
+                                        delete internalState.dynamicPropertyTypesHolder["" + idxToShift];
+                                    } else delete internalState.dynamicPropertyTypesHolder["" + (idxToShift - numberOfDeletedRows)];
+                                    
+                                // now delete/shift actual array contents
+                                currentClientValue.splice(startIndex, numberOfDeletedRows);
+
+                                // update any affected change notifiers
+                                for (i = startIndex; i < currentClientValue.length; i++) {
+                                    if (currentClientValue[i] && currentClientValue[i][this.sabloConverters.INTERNAL_IMPL] && currentClientValue[i][this.sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
+                                        // child is able to handle it's own change mechanism
+                                        currentClientValue[i][this.sabloConverters.INTERNAL_IMPL].setChangeNotifier(this.getChangeNotifier(currentClientValue, i));
+                                    }
                                 }
                             }
                         }

@@ -59,13 +59,13 @@ public class WebsocketSessionManager
 		}
 	});
 
-	private static volatile boolean stop = false;
+	private static volatile boolean pingEndpointsThreadShouldStop = false;
 	private final static Thread pingEndpointsThread = new Thread(new Runnable()
 	{
 		@Override
 		public void run()
 		{
-			while (!stop)
+			while (!pingEndpointsThreadShouldStop)
 			{
 				for (IWebsocketSession session : wsSessions.values())
 				{
@@ -270,7 +270,7 @@ public class WebsocketSessionManager
 
 	public static void destroy()
 	{
-		stop = true;
+		pingEndpointsThreadShouldStop = true;
 		closeAllSessions();
 		pingEndpointsThread.interrupt();
 		expiredThreadPool.shutdown();

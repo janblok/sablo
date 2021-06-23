@@ -39,6 +39,9 @@ import org.sablo.IWebObjectContext;
 public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 {
 
+	public static final Set<String> GRANULAR_UPDATE_OP = new HashSet<>();
+	private static final Set<String> FULL_UPDATE_BY_REF_OP = null; // do not change the value; it needs to be null to work well with ArrayGranularChangeKeeper impl.
+
 	// TODO this class should keep a kind of pks to avoid a scenario where server and browser get modified at the same time
 	// and a granular update ends up doing incorrect modifications (as it's being applied in wrong place); for now we just drop
 	// the browser changes when this happens through the 'version' mechanism
@@ -103,7 +106,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	}
 
 	/**
-	 * Gets the current changes (in immutable mode). PLEASE MAKE SURE TO call {@link Changes#doneHandling()} once you are done handling the changes and will not longer use the returned reference.<br/><br/>
+	 * Gets the current changes (in immutable mode). PLEASE MAKE SURE TO call {@link Changes#doneHandling()} once you are done handling the changes and will no longer use the returned reference.<br/><br/>
 	 * The idea is that if change aware list receives new updates while the changes are in immutable mode (so before doneHandling is called which means someone is still reading/iterating on them in toJSON probably),
 	 * the changes object used by the map will switch to another reference to keep what this method returns immutable; but in order to not recreate changes all the time, once {@link Changes#doneHandling()} will
 	 * be called, changes object will exit "immutable mode" and will be cleared/prepared for reuse.
@@ -148,13 +151,16 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	public class Changes implements IChangeSetter
 	{
 
-		private final Set<Integer> indexesWithContentUpdates = new HashSet<Integer>();
-		private final Set<Integer> indexesChangedByRef = new HashSet<Integer>();
-		private final List<Integer> removedIndexes = new ArrayList<Integer>();
-		private final List<Integer> addedIndexes = new ArrayList<Integer>();
+		private final ArrayGranularChangeKeeper granularUpdatesKeeper = new ArrayGranularChangeKeeper();
+
 		private boolean allChanged;
 
 		private boolean immutableMode = false;
+
+		public Changes()
+		{
+			clearChanges();
+		}
 
 		private void startImmutableMode()
 		{
@@ -168,22 +174,15 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			clearChanges();
 		}
 
-		public Set<Integer> getIndexesChangedByRef()
+		public ArrayGranularChangeKeeper getGranularUpdatesKeeper()
 		{
-			return indexesChangedByRef;
-		}
-
-		public Set<Integer> getIndexesWithContentUpdates()
-		{
-			return indexesWithContentUpdates;
+			return granularUpdatesKeeper;
 		}
 
 		public boolean mustSendAll()
 		{
-			int totalChanges = addedIndexes.size() + removedIndexes.size() + indexesWithContentUpdates.size() + indexesChangedByRef.size();
-			//we should send all if allChanged is true or if we have more types of changes
-			return allChanged || !(totalChanges == indexesWithContentUpdates.size() + indexesChangedByRef.size() || totalChanges == addedIndexes.size() ||
-				totalChanges == removedIndexes.size());
+			// we should send all if allChanged is true or if we have more types of changes that are not compatible with easily being sent to client //TODO this could be improved further to allow granular updates for all things that are just changes in indexes
+			return allChanged;
 		}
 
 		private void changeInstanceIfCurrentlyImmutable()
@@ -197,31 +196,20 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			}
 		}
 
-		public List<Integer> getRemovedIndexes()
-		{
-			return removedIndexes;
-		}
-
-		public List<Integer> getAddedIndexes()
-		{
-			return addedIndexes;
-		}
-
 		private void clearChanges()
 		{
 			allChanged = false;
-			indexesWithContentUpdates.clear();
-			indexesChangedByRef.clear();
-			removedIndexes.clear();
-			addedIndexes.clear();
+			granularUpdatesKeeper.reset(0, ChangeAwareList.this.size() - 1);
 		}
 
 		protected void markElementContentsUpdated(int i)
 		{
 			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
 
-			if (!changes.addedIndexes.contains(Integer.valueOf(i)) && !changes.indexesChangedByRef.contains(Integer.valueOf(i)) &&
-				changes.indexesWithContentUpdates.add(Integer.valueOf(i)) && !changes.allChanged && changeMonitor != null)
+			boolean hadViewportChanges = changes.granularUpdatesKeeper.hasChanges();
+			changes.granularUpdatesKeeper.processOperation(new ArrayOperation(i, i, ArrayOperation.CHANGE, GRANULAR_UPDATE_OP));
+
+			if (!hadViewportChanges && !changes.allChanged && changeMonitor != null)
 				changeMonitor.valueChanged();
 		}
 
@@ -229,28 +217,32 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		{
 			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
 
-			if (!changes.addedIndexes.contains(Integer.valueOf(i)) && changes.indexesChangedByRef.add(Integer.valueOf(i)))
-			{
-				// so it was now added to 'indexesChangedByRef'
-				if (!changes.allChanged && !changes.indexesWithContentUpdates.contains(Integer.valueOf(i)) &&
-					changeMonitor != null) changeMonitor.valueChanged();
-				else changes.indexesWithContentUpdates.remove(Integer.valueOf(i)); // remove it from 'indexesWithContentUpdates' if present - as that element will be sent fully now
-			}
+			boolean hadViewportChanges = changes.granularUpdatesKeeper.hasChanges();
+			changes.granularUpdatesKeeper.processOperation(new ArrayOperation(i, i, ArrayOperation.CHANGE, FULL_UPDATE_BY_REF_OP));
+
+			if (!hadViewportChanges && !changes.allChanged && changeMonitor != null)
+				changeMonitor.valueChanged();
 		}
 
 		private void markElementRemoved(int i)
 		{
 			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
 
-			if (changes.removedIndexes.add(Integer.valueOf(i)) && !changes.allChanged && changeMonitor != null)
+			boolean hadViewportChanges = changes.granularUpdatesKeeper.hasChanges();
+			changes.granularUpdatesKeeper.processOperation(new ArrayOperation(i, i, ArrayOperation.DELETE));
+
+			if (!hadViewportChanges && !changes.allChanged && changeMonitor != null)
 				changeMonitor.valueChanged();
 		}
 
-		private void markElementAdded(int i)
+		private void markElementInserted(int i)
 		{
 			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
 
-			if (changes.addedIndexes.add(Integer.valueOf(i)) && !changes.allChanged && changeMonitor != null)
+			boolean hadViewportChanges = changes.granularUpdatesKeeper.hasChanges();
+			changes.granularUpdatesKeeper.processOperation(new ArrayOperation(i, i, ArrayOperation.INSERT));
+
+			if (!hadViewportChanges && !changes.allChanged && changeMonitor != null)
 				changeMonitor.valueChanged();
 		}
 
@@ -260,13 +252,13 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 
 			boolean alreadyCh = changes.allChanged;
 			changes.allChanged = true;
-			if (!alreadyCh && changes.indexesWithContentUpdates.size() == 0 && changes.indexesChangedByRef.size() == 0 &&
+			if (!alreadyCh && !changes.granularUpdatesKeeper.hasChanges() &&
 				changeMonitor != null) changeMonitor.valueChanged();
 		}
 
 		protected boolean isChanged()
 		{
-			return (allChanged || indexesChangedByRef.size() > 0 || indexesWithContentUpdates.size() > 0 || removedIndexes.size() > 0);
+			return (allChanged || changes.granularUpdatesKeeper.hasChanges());
 		}
 
 	}
@@ -309,9 +301,9 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		WT tmp = getWrappedBaseListForReadOnly().set(index, value);
 		if (tmp != value)
 		{
+			if (markChanged) changes.markElementChangedByRef(index);
 			detachIfNeeded(index, tmp, false);
 			attachToBaseObjectIfNeeded(index, value, false);
-			if (markChanged) changes.markElementChangedByRef(index);
 		}
 
 		return tmp;
@@ -552,8 +544,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 			public void remove()
 			{
 				it.remove();
-				detachIfNeeded(i, getWrappedBaseList().get(i), true);
 				changes.markElementRemoved(i);
+				detachIfNeeded(i, getWrappedBaseList().get(i), true);
 				i--;
 			}
 		};
@@ -575,8 +567,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	public boolean add(ET e)
 	{
 		boolean tmp = baseList.add(e);
+		changes.markElementInserted(baseList.size() - 1);
 		attachToBaseObjectIfNeeded(baseList.size() - 1, getWrappedBaseList().get(baseList.size() - 1), false);
-		changes.markElementAdded(baseList.size() - 1);
 		return tmp;
 	}
 
@@ -588,8 +580,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		{
 			WT oldWrappedValue = getWrappedBaseList().get(idx);
 			baseList.remove(idx);
-			detachIfNeeded(idx, oldWrappedValue, true);
 			changes.markElementRemoved(idx);
+			detachIfNeeded(idx, oldWrappedValue, true);
 			return true;
 		}
 		return false;
@@ -655,10 +647,10 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	@Override
 	public void clear()
 	{
-		int size = baseList.size();
-		for (int i = size - 1; i >= 0; i--)
+		int initialSize = baseList.size();
+		for (int i = initialSize - 1; i >= 0; i--)
 			remove(i);
-		if (size > 0) changes.markAllChanged();
+		if (initialSize > 0) changes.markAllChanged();
 	}
 
 	@Override
@@ -676,9 +668,9 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 
 		if (oldWV != newWV)
 		{
+			changes.markElementChangedByRef(index);
 			detachIfNeeded(index, oldWV, false);
 			attachToBaseObjectIfNeeded(index, newWV, false);
-			changes.markElementChangedByRef(index);
 		}
 		return tmp;
 	}
@@ -687,8 +679,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	public void add(int index, ET element)
 	{
 		baseList.add(index, element);
+		changes.markElementInserted(index);
 		attachToBaseObjectIfNeeded(index, getWrappedBaseList().get(index), true);
-		changes.markElementAdded(index);
 	}
 
 	@Override
@@ -696,8 +688,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 	{
 		WT oldWV = getWrappedBaseList().get(index);
 		ET tmp = baseList.remove(index);
-		detachIfNeeded(index, oldWV, true);
 		changes.markElementRemoved(index);
+		detachIfNeeded(index, oldWV, true);
 		return tmp;
 	}
 
@@ -782,8 +774,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		{
 			int i = it.previousIndex() + 1;
 			it.remove();
-			detachIfNeeded(i, getWrappedBaseList().get(i), true);
 			changes.markElementRemoved(i);
+			detachIfNeeded(i, getWrappedBaseList().get(i), true);
 		}
 
 		@Override
@@ -796,9 +788,9 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 
 			if (oldWV != newWV)
 			{
+				changes.markElementChangedByRef(i);
 				detachIfNeeded(i, oldWV, false);
 				attachToBaseObjectIfNeeded(i, newWV, false);
-				changes.markElementChangedByRef(i);
 			}
 		}
 
@@ -807,8 +799,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		{
 			int i = it.nextIndex();
 			it.add(e);
+			changes.markElementInserted(i);
 			attachToBaseObjectIfNeeded(i, getWrappedBaseList().get(i), true);
-			changes.markElementAdded(i);
 		}
 	}
 

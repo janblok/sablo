@@ -18,7 +18,6 @@ package org.sablo.specification.property;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 import org.json.JSONArray;
@@ -48,13 +47,13 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 
 	protected static final String CONTENT_VERSION = "vEr";
 
-	protected static final String CHANGE_TYPE_UPDATES = "u";
-	protected static final String CHANGE_TYPE_BY_REF = "x";
-	protected static final String CHANGE_TYPE_REMOVES = "r";
-	protected static final String CHANGE_TYPE_ADDITIONS = "a";
+	protected static final String GRANULAR_UPDATES = "g";
+	protected static final String GRANULAR_UPDATE_DATA = "d";
+	protected static final String OP_ARRAY_START_END_TYPE = "op";
 
 	protected static final String INDEX = "i";
 	protected static final String VALUE = "v";
+	protected static final String CHANGE_TYPE_UPDATES = "u";
 	protected static final String INITIALIZE = "in";
 	protected static final String NO_OP = "n";
 
@@ -393,33 +392,16 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 				}
 				writer.endArray();
 			}
-			else if (changes.getIndexesWithContentUpdates().size() > 0 || changes.getIndexesChangedByRef().size() > 0 ||
-				changes.getRemovedIndexes().size() > 0 || changes.getAddedIndexes().size() > 0)
+			else if (changes.getGranularUpdatesKeeper().hasChanges())
 			{
-				// else write changed indexes / granular update:
+				// write changes / granular updates
 				writer.key(CONTENT_VERSION).value(changeAwareList.getListContentVersion());
 
-				if (changes.getRemovedIndexes().size() > 0)
-				{
-					writer.key(CHANGE_TYPE_REMOVES).array();
-					for (Integer idx : changes.getRemovedIndexes())
-					{
-						writer.value(idx);
-					}
-					writer.endArray();
-				}
-				if (changes.getAddedIndexes().size() > 0)
-				{
-					writeValues(writer, dataConverterContext, changes.getAddedIndexes(), wrappedBaseListReadOnly, CHANGE_TYPE_ADDITIONS);
-				}
-				if (changes.getIndexesChangedByRef().size() > 0)
-				{
-					writeValues(writer, dataConverterContext, changes.getIndexesChangedByRef(), wrappedBaseListReadOnly, CHANGE_TYPE_BY_REF);
-				}
-				if (changes.getIndexesWithContentUpdates().size() > 0)
-				{
-					writeValues(writer, dataConverterContext, changes.getIndexesWithContentUpdates(), wrappedBaseListReadOnly, CHANGE_TYPE_UPDATES);
-				}
+				ArrayOperation[] granularOperations = changes.getGranularUpdatesKeeper().getEquivalentSequenceOfOperations();
+				writer.key(GRANULAR_UPDATES).array();
+				for (ArrayOperation op : granularOperations)
+					addGranularOperation(writer, op, wrappedBaseListReadOnly, dataConverterContext);
+				writer.endArray();
 			}
 			else
 			{
@@ -435,27 +417,39 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 		return writer;
 	}
 
-	private void writeValues(JSONWriter writer, IBrowserConverterContext dataConverterContext, Collection<Integer> changes, List<WT> wrappedBaseListReadOnly,
-		String changeType)
+	private void addGranularOperation(JSONWriter w, ArrayOperation op, List<WT> wrappedBaseListReadOnly, IBrowserConverterContext dataConverterContext)
 	{
-		writer.key(changeType == CHANGE_TYPE_BY_REF ? CHANGE_TYPE_UPDATES : changeType).array(); // client doesn't care if it was a full or contents change - it only needs to know it was an update
-		int i = 0;
-		for (Integer idx : changes)
+// new code
+		w.object();
+
+		w.key(OP_ARRAY_START_END_TYPE).array()
+			.value(Integer.valueOf(op.startIndex))
+			.value(Integer.valueOf(op.endIndex))
+			.value(Integer.valueOf(op.type))
+			.endArray();
+
+		// write actual data if necessary
+		if (op.type != ArrayOperation.DELETE)
 		{
-			writer.object().key(INDEX).value(idx);
-			if (changeType == CHANGE_TYPE_UPDATES)
+			// inserts and updates have to write new data to JSON
+			w.key(GRANULAR_UPDATE_DATA).array();
+
+			for (int i = op.startIndex; i <= op.endIndex; i++)
 			{
-				JSONUtils.changesToBrowserJSONValue(writer, VALUE, wrappedBaseListReadOnly.get(idx.intValue()), getCustomJSONTypeDefinition(),
-					dataConverterContext);
+				if (op.type == ArrayOperation.CHANGE && ChangeAwareList.GRANULAR_UPDATE_OP.equals(op.columnNames))
+				{
+					JSONUtils.changesToBrowserJSONValue(w, null, wrappedBaseListReadOnly.get(i), getCustomJSONTypeDefinition(),
+						dataConverterContext);
+				}
+				else // this has to be a change-by-reference or an insert - both should send the full value of that element
+				{
+					JSONUtils.toBrowserJSONFullValue(w, null, wrappedBaseListReadOnly.get(i), getCustomJSONTypeDefinition(),
+						dataConverterContext);
+				}
 			}
-			else // this has to be CHANGE_TYPE_ADDITIONS or CHANGE_TYPE_BY_REF - both should sent full value of that element
-			{
-				JSONUtils.toBrowserJSONFullValue(writer, VALUE, wrappedBaseListReadOnly.get(idx.intValue()), getCustomJSONTypeDefinition(),
-					dataConverterContext);
-			}
-			writer.endObject();
+			w.endArray();
 		}
-		writer.endArray();
+		w.endObject();
 	}
 
 	@Override

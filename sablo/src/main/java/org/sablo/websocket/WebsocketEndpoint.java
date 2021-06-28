@@ -147,6 +147,13 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		}
 		IWebsocketSession wsSession = WebsocketSessionManager.getOrCreateSession(endpointType, httpSession, clientnr, true);
 
+		if (wsSession == null)
+		{
+			// illegal state, no more session make sure the client is closed
+			closeSession();
+			log.info(getClass().getName() + ": no websocket session anymore, shouldn't happen, hanging editors browsers?");
+			return;
+		}
 		CurrentWindow.set(window = wsSession.getOrCreateWindow(windowNr, windowName));
 
 		messageLogger = wsSession.getMessageLogger(window);

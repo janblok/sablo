@@ -351,7 +351,8 @@ class WebSpecReader
 		list.add(p.getReader());
 		PackageSpecification<WebObjectSpecification> webObjectPackageSpecification = p.getWebObjectDescriptions(attributeName,
 			defaultComponentPropertiesProvider);
-		if (!cachedDescriptions.containsKey(webObjectPackageSpecification.getPackageName()))
+		if (webObjectPackageSpecification.getSpecifications().size() > 0 &&
+				!cachedDescriptions.containsKey(webObjectPackageSpecification.getPackageName()))
 		{
 			cachedDescriptions.put(webObjectPackageSpecification.getPackageName(), webObjectPackageSpecification);
 			Map<String, WebObjectSpecification> webComponentDescriptions = webObjectPackageSpecification.getSpecifications();

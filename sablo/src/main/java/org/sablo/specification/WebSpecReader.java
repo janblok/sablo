@@ -43,9 +43,11 @@ class WebSpecReader
 {
 	private static final Logger log = LoggerFactory.getLogger(WebSpecReader.class.getCanonicalName());
 
-	private final Map<String, PackageSpecification<WebObjectSpecification>> cachedDescriptions = new HashMap<>();
-	private final Map<String, PackageSpecification<WebLayoutSpecification>> cachedLayoutDescriptions = new TreeMap<>();
-	private final Map<String, WebObjectSpecification> allWebObjectSpecifications = new HashMap<>();
+	private final Map<String, PackageSpecification<WebObjectSpecification>> cachedComponentOrServiceDescriptions = new HashMap<>(); // component, services NOT layouts
+	private final Map<String, PackageSpecification<WebLayoutSpecification>> cachedLayoutDescriptions = new TreeMap<>(); // only for layouts
+
+	private final Map<String, WebObjectSpecification> allWebObjectSpecifications = new HashMap<>(); // this map does not includes layouts
+	private final Map<String, WebLayoutSpecification> allLayoutSpecifications = new HashMap<>(); // this map does not includes layouts
 	private final Map<String, List<IPackageReader>> allPackages = new HashMap<>();
 	private final Set<String> packagesWithGloballyDefinedTypes = new HashSet<>(); // packageNames of packages that have globally defined types
 	private final IDefaultComponentPropertiesProvider defaultComponentPropertiesProvider;
@@ -82,9 +84,10 @@ class WebSpecReader
 		{
 			lastLoadTimestamp = System.currentTimeMillis();
 
-			cachedDescriptions.clear();
+			cachedComponentOrServiceDescriptions.clear();
 			cachedLayoutDescriptions.clear();
 			allWebObjectSpecifications.clear();
+			allLayoutSpecifications.clear();
 			allPackages.clear();
 			packagesWithGloballyDefinedTypes.clear();
 			List<Package> packages = new ArrayList<>();
@@ -107,7 +110,10 @@ class WebSpecReader
 		}
 
 		specReloadSubject.fireWebObjectSpecificationReloaded();
-		specReloadSubject.removeOtherSpecReloadListeners(allWebObjectSpecifications.keySet());
+
+		HashSet<String> allSpecs = new HashSet<>(allWebObjectSpecifications.keySet());
+		allSpecs.addAll(allLayoutSpecifications.keySet());
+		specReloadSubject.removeOtherSpecReloadListeners(allSpecs);
 
 		specProviderState = null;
 	}
@@ -150,10 +156,19 @@ class WebSpecReader
 					}
 
 					// unload package
-					cachedLayoutDescriptions.remove(packageNameToRemove);
 					packagesWithGloballyDefinedTypes.remove(packageNameToRemove);
-					PackageSpecification<WebObjectSpecification> removedPackageSpecs = cachedDescriptions.remove(packageNameToRemove);
-					if (removedPackageSpecs != null) for (String specName : removedPackageSpecs.getSpecifications().keySet())
+
+					PackageSpecification<WebLayoutSpecification> removedLayoutPackageSpecs = cachedLayoutDescriptions.remove(packageNameToRemove); // layouts
+					if (removedLayoutPackageSpecs != null)
+						for (String specName : removedLayoutPackageSpecs.getSpecifications().keySet())
+					{
+						allLayoutSpecifications.remove(specName);
+						removedOrReloadedSpecs.add(specName);
+					}
+					PackageSpecification< ? extends WebObjectSpecification> removedWebObjectPackageSpecs = cachedComponentOrServiceDescriptions
+						.remove(packageNameToRemove); // components/services
+					if (removedWebObjectPackageSpecs != null)
+						for (String specName : removedWebObjectPackageSpecs.getSpecifications().keySet())
 					{
 						allWebObjectSpecifications.remove(specName);
 						removedOrReloadedSpecs.add(specName);
@@ -225,7 +240,10 @@ class WebSpecReader
 		if (shouldStillFireReloadListeners)
 		{
 			specReloadSubject.fireWebObjectSpecificationReloaded(removedOrReloadedSpecs);
-			specReloadSubject.removeOtherSpecReloadListeners(allWebObjectSpecifications.keySet());
+
+			HashSet<String> allSpecs = new HashSet<>(allWebObjectSpecifications.keySet());
+			allSpecs.addAll(allLayoutSpecifications.keySet());
+			specReloadSubject.removeOtherSpecReloadListeners(allSpecs);
 		}
 	}
 
@@ -281,16 +299,7 @@ class WebSpecReader
 			}
 			catch (Exception e)
 			{
-				log.error("Cannot read web component specs from package: " + p.getName(), e); //$NON-NLS-1$
-			}
-			try
-			{
-				PackageSpecification<WebLayoutSpecification> layoutDescriptions = p.getLayoutDescriptions();
-				if (layoutDescriptions.getSpecifications().size() > 0) cachedLayoutDescriptions.put(p.getPackageName(), layoutDescriptions);
-			}
-			catch (Exception e)
-			{
-				log.error("Cannot read web layout specs from package: " + p.getName(), e); //$NON-NLS-1$
+				log.error("Cannot read web component/service or layout specs from package: " + p.getName(), e); //$NON-NLS-1$
 			}
 		}
 	}
@@ -339,20 +348,43 @@ class WebSpecReader
 			}
 		}
 		list.add(p.getReader());
+
+		// cache component or service specs if available
 		PackageSpecification<WebObjectSpecification> webComponentPackageSpecification = p.getWebObjectDescriptions(attributeName,
 			defaultComponentPropertiesProvider);
 		if (webComponentPackageSpecification.getSpecifications().size() > 0 &&
-			!cachedDescriptions.containsKey(webComponentPackageSpecification.getPackageName()))
+			!cachedComponentOrServiceDescriptions.containsKey(webComponentPackageSpecification.getPackageName()))
 		{
-			cachedDescriptions.put(webComponentPackageSpecification.getPackageName(), webComponentPackageSpecification);
+			cachedComponentOrServiceDescriptions.put(webComponentPackageSpecification.getPackageName(), webComponentPackageSpecification);
 			Map<String, WebObjectSpecification> webComponentDescriptions = webComponentPackageSpecification.getSpecifications();
 			for (WebObjectSpecification desc : webComponentDescriptions.values())
 			{
-				WebObjectSpecification old = allWebObjectSpecifications.put(desc.getName(), desc);
+				WebObjectSpecification old = allWebObjectSpecifications.put(desc.getName(), desc); // TODO should we check against allLayoutSpecifications as well?
 				if (old != null)
 				{
-					String s = "Duplicate web object definition found; name: " + old.getName() + ". Packages: " + old.getPackageName() + " and " +
-						desc.getPackageName() + ".";
+					String s = "Duplicate web object definition found; name: " + old.getName() + ". One is in package '" + old.getPackageName() +
+						"' and another in package '" +
+						desc.getPackageName() + "'.";
+					log.error(s);
+					p.getReader().reportError(desc.getSpecURL().toString(), new DuplicateEntityException(s));
+				}
+			}
+		}
+
+		// cache layout specs if available
+		PackageSpecification<WebLayoutSpecification> layoutPackageSpecification = p.getLayoutDescriptions();
+		if (layoutPackageSpecification.getSpecifications().size() > 0 &&
+			!cachedLayoutDescriptions.containsKey(layoutPackageSpecification.getPackageName()))
+		{
+			cachedLayoutDescriptions.put(layoutPackageSpecification.getPackageName(), layoutPackageSpecification);
+			Map<String, WebLayoutSpecification> layoutDescriptions = layoutPackageSpecification.getSpecifications();
+			for (WebLayoutSpecification desc : layoutDescriptions.values())
+			{
+				WebObjectSpecification old = allLayoutSpecifications.put(desc.getName(), desc); // TODO should we check against allWebObjectSpecifications as well?
+				if (old != null)
+				{
+					String s = "Duplicate layout definition found; name: " + old.getName() + ". One is in package '" + old.getPackageName() +
+						"' and one in package '" + desc.getPackageName() + "'.";
 					log.error(s);
 					p.getReader().reportError(desc.getSpecURL().toString(), new DuplicateEntityException(s));
 				}
@@ -367,7 +399,8 @@ class WebSpecReader
 	{
 		if (specProviderState == null)
 		{
-			specProviderState = new SpecProviderState(cachedDescriptions, cachedLayoutDescriptions, allWebObjectSpecifications, packageReaders);
+			specProviderState = new SpecProviderState(cachedComponentOrServiceDescriptions, cachedLayoutDescriptions, allWebObjectSpecifications,
+				packageReaders);
 		}
 		return specProviderState;
 	}

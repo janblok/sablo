@@ -503,8 +503,8 @@ public class Package
 		{
 			try
 			{
-				String packageDisplayname = Package.getPackageName(getManifest());
-				if (packageDisplayname != null) return packageDisplayname;
+				String packageName = Package.getPackageName(getManifest());
+				if (packageName != null) return packageName;
 			}
 			catch (Exception e)
 			{

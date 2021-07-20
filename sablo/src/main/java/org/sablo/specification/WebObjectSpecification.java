@@ -105,7 +105,7 @@ public class WebObjectSpecification extends PropertyDescription
 	private final String icon;
 	private final String packageName;
 	private final JSONArray keywords;
-	private final JSONObject ng2Config;
+	private final NG2Config ng2Config;
 
 	private Map<String, IPropertyType< ? >> foundTypes;
 
@@ -154,7 +154,7 @@ public class WebObjectSpecification extends PropertyDescription
 		this.libraries = libs != null ? libs : new JSONArray();
 		this.foundTypes = new HashMap<>();
 		this.keywords = keywords != null ? keywords : new JSONArray();
-		this.ng2Config = ng2Config != null ? ng2Config : new JSONObject();
+		this.ng2Config = new NG2Config(ng2Config != null ? ng2Config : new JSONObject());
 	}
 
 	protected String scriptifyNameIfNeeded(String name, String packageType)
@@ -370,10 +370,10 @@ public class WebObjectSpecification extends PropertyDescription
 			try
 			{
 				URL serverScript = reader.getUrlForPath(json.getString("serverscript").substring(packageName.length()));
-				if (spec.ng2Config != null && spec.ng2Config.has("dependencies") && !spec.ng2Config.getJSONObject("dependencies").isNull("serverscript"))
+				if (spec.getNG2Config().getDependencies().getServerscript() != null)
 				{
 					spec.setServerScript(serverScript,
-						reader.getUrlForPath(spec.ng2Config.getJSONObject("dependencies").optString("serverscript").substring(packageName.length())));
+						reader.getUrlForPath(spec.getNG2Config().getDependencies().getServerscript().substring(packageName.length())));
 				}
 				else
 				{
@@ -853,7 +853,7 @@ public class WebObjectSpecification extends PropertyDescription
 		return keywords;
 	}
 
-	public JSONObject getNG2Config()
+	public NG2Config getNG2Config()
 	{
 		return ng2Config;
 	}

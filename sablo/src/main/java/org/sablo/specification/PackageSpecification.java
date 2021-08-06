@@ -33,6 +33,7 @@ public class PackageSpecification<T extends WebObjectSpecification>
 	private static final String CSS_DESIGN_LIBS = "CSS-DesignLibs";
 	private static final String CSS_CLIENT_LIBS = "CSS-ClientLibs";
 	private static final String NG2_CSS_CLIENT_LIBS = "NG2-CSS-ClientLibs";
+	private static final String NG2_CSS_DESIGN_LIBS = "NG2-CSS-DesignLibs";
 	private static final String NG2_MODULE = "NG2-Module";
 	private static final String ENTRY_POINT = "Entry-Point";
 	private static final String NPM_PACKAGE_NANE = "NPM-PackageName";
@@ -47,6 +48,7 @@ public class PackageSpecification<T extends WebObjectSpecification>
 	private final List<String> cssClientLibrary;
 	private final List<String> cssDesignLibrary;
 	private final List<String> ng2CssClientLibrary;
+	private final List<String> ng2CssDesignLibrary;
 	private final List<String> jsClientLibrary;
 	private final List<String> jsDesignLibrary;
 	private final Map<String, T> specifications;
@@ -68,6 +70,7 @@ public class PackageSpecification<T extends WebObjectSpecification>
 			this.cssClientLibrary = getAttributeValue(attributes, CSS_CLIENT_LIBS);
 			this.cssDesignLibrary = getAttributeValue(attributes, CSS_DESIGN_LIBS);
 			this.ng2CssClientLibrary = getAttributeValue(attributes, NG2_CSS_CLIENT_LIBS);
+			this.ng2CssDesignLibrary = getAttributeValue(attributes, NG2_CSS_DESIGN_LIBS);
 			this.jsClientLibrary = getAttributeValue(attributes, JS_CLIENT_LIBS);
 			this.jsDesignLibrary = getAttributeValue(attributes, JS_DESIGN_LIBS);
 		}
@@ -77,6 +80,7 @@ public class PackageSpecification<T extends WebObjectSpecification>
 			this.cssClientLibrary = null;
 			this.cssDesignLibrary = null;
 			this.ng2CssClientLibrary = null;
+			this.ng2CssDesignLibrary = null;
 			this.jsClientLibrary = null;
 			this.jsDesignLibrary = null;
 			this.npmName = null;
@@ -150,11 +154,19 @@ public class PackageSpecification<T extends WebObjectSpecification>
 	}
 
 	/**
-	 * @return the ng2CssDesignLibrary
+	 * @return the ng2CssLibrary
 	 */
 	public List<String> getNg2CssLibrary()
 	{
 		return ng2CssClientLibrary;
+	}
+
+	/**
+	 * @return the ng2CssDesignLibrary
+	 */
+	public List<String> getNg2CssDesignLibrary()
+	{
+		return ng2CssDesignLibrary;
 	}
 
 	public List<String> getJsDesignLibrary()

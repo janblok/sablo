@@ -24,8 +24,8 @@ Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ClassPath: .
 Bundle-Vendor: Servoy
 Bundle-ActivationPolicy: lazy
-Import-Package: javax.servlet,
- javax.servlet.http,
+Import-Package: javax.servlet;version="[4.0.0,5.0.0)",
+ javax.servlet.http;version="[4.0.0,5.0.0)",
  javax.websocket;version="1.1.0",
  javax.websocket.server;version="1.1.0",
  org.json

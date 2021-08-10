@@ -320,6 +320,9 @@ class WebSpecReader
 				File pResource = p.getReader().getResource();
 				File oldPackageResource = oldPackage.getResource();
 
+				String packageBundleVersion = p.getReader().getVersion();
+				String oldPackageBundleVersion = oldPackage.getVersion();
+
 				// if we have duplicate packages, and one is a project (its resource is a folder)
 				// and the other one is a file (zip), then just use the project, and skip the error
 				boolean isPackageConflict = true;
@@ -331,6 +334,10 @@ class WebSpecReader
 						isPackageConflict = false;
 					}
 					else if (oldPackageResource.isDirectory() && pResource.isFile())
+					{
+						isPackageConflict = false;
+					}
+					else if (packageBundleVersion.equalsIgnoreCase(oldPackageBundleVersion))
 					{
 						isPackageConflict = false;
 					}

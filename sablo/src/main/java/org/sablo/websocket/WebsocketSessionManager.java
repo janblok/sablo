@@ -332,11 +332,12 @@ public class WebsocketSessionManager
 					{
 						try
 						{
+							Thread.currentThread().setName(Thread.currentThread().getName() + ": " + session.getSessionKey()); //$NON-NLS-1$
 							session.sessionExpired();
 						}
 						catch (Exception e)
 						{
-							log.error("Error expiring session " + session.getSessionKey(), e);
+							log.error("Error expiring session " + session.getSessionKey(), e); //$NON-NLS-1$
 						}
 
 						try
@@ -345,7 +346,7 @@ public class WebsocketSessionManager
 						}
 						catch (Exception e)
 						{
-							log.error("Error disposing expired session " + session.getSessionKey(), e);
+							log.error("Error disposing expired session " + session.getSessionKey(), e); //$NON-NLS-1$
 						}
 					}
 				}

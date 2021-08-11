@@ -17,6 +17,7 @@
 package org.sablo.eventthread;
 
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.Future;
 
 import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.IWebsocketSession;
@@ -204,5 +205,16 @@ public class Event
 			window = createWebsocketSessionWindows();
 		}
 		return window;
+	}
+
+	/**
+	 * @return
+	 */
+	public void destroy()
+	{
+		if (runnable instanceof Future)
+		{
+			((Future< ? >)runnable).cancel(true);
+		}
 	}
 }

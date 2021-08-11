@@ -88,6 +88,11 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		{
 			dispatch(EVENT_LEVEL_DEFAULT, NO_TIMEOUT);
 		}
+		if (events.size() > 0)
+		{
+			// make sure all events that are still left, are able to destroy/cancel itself
+			events.forEach(event -> event.destroy());
+		}
 	}
 
 	private void dispatch(int minEventLevelToDispatch, long endMillis)

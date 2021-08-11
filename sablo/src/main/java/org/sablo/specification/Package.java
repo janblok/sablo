@@ -477,6 +477,22 @@ public class Package
 		{
 			return null;
 		}
+
+		@Override
+		public int hashCode()
+		{
+			return resourcePath.hashCode();
+		}
+
+		@Override
+		public boolean equals(Object obj)
+		{
+			if (obj instanceof JarServletContextReader)
+			{
+				return resourcePath.equals(((JarServletContextReader)obj).resourcePath);
+			}
+			return false;
+		}
 	}
 
 
@@ -654,6 +670,22 @@ public class Package
 		}
 
 		@Override
+		public int hashCode()
+		{
+			return file.hashCode();
+		}
+
+		@Override
+		public boolean equals(Object obj)
+		{
+			if (obj instanceof ZipPackageReader)
+			{
+				return file.equals(((ZipPackageReader)obj).file);
+			}
+			return false;
+		}
+
+		@Override
 		public String toString()
 		{
 			return "ZipPackage: " + file;
@@ -815,6 +847,22 @@ public class Package
 		public File getResource()
 		{
 			return dir;
+		}
+
+		@Override
+		public int hashCode()
+		{
+			return dir.hashCode();
+		}
+
+		@Override
+		public boolean equals(Object obj)
+		{
+			if (obj instanceof DirPackageReader)
+			{
+				return dir.equals(((DirPackageReader)obj).dir);
+			}
+			return false;
 		}
 	}
 
@@ -979,6 +1027,27 @@ public class Package
 			return null;
 		}
 
+		@Override
+		public int hashCode()
+		{
+			return urlOfManifest.hashCode();
+		}
+
+		@Override
+		public boolean equals(Object obj)
+		{
+			if (obj instanceof WarURLPackageReader)
+			{
+				return urlOfManifest.equals(((WarURLPackageReader)obj).urlOfManifest);
+			}
+			return false;
+		}
+
+		@Override
+		public String toString()
+		{
+			return "WarURLPackage: " + urlOfManifest;
+		}
 	}
 
 	@Override

@@ -269,13 +269,18 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 			{
 				if (executor == null)
 				{
-					Thread thread = new Thread(executor = createEventDispatcher(), "Executor,uuid:" + sessionKey);
+					Thread thread = new Thread(executor = createEventDispatcher(), getDispatcherThreadName());
 					thread.setDaemon(true);
 					thread.start();
 				}
 			}
 		}
 		return executor;
+	}
+
+	protected String getDispatcherThreadName()
+	{
+		return "Executor,uuid:" + sessionKey; //$NON-NLS-1$
 	}
 
 	/**

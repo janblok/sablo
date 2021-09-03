@@ -115,7 +115,7 @@ public class ListTest
 		assertEquals("startIndex check", startIndex, opSeq.startIndex);
 		assertEquals("endIndex check", endIndex, opSeq.endIndex);
 		assertEquals("opType check", opType, opSeq.type);
-		assertEquals("columnName check", columnNames, opSeq.columnNames);
+		assertEquals("columnName check", columnNames, opSeq.cellNames);
 	}
 
 	@Test

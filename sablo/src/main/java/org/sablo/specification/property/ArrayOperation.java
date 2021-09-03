@@ -32,28 +32,28 @@ public class ArrayOperation
 	public final int type;
 
 	/**
-	 * In case of rows with column, this is null if it's a whole row, and non-null if only one or more columns of the row will be in this change/row data.<br/>
+	 * In case of rows with column/cells, this is null if it's a whole row, and non-null if only one or more cells of the row will be in this change/row data.<br/>
 	 * In case of simple arrays, this is null if the array item if fully changed by ref, or something else - content depends on who uses this class - if that array item is just partially changed.
 	 */
-	public final Set<String> columnNames;
+	public final Set<String> cellNames;
 
 	public ArrayOperation(int startIndex, int endIndex, int type)
 	{
 		this(startIndex, endIndex, type, null);
 	}
 
-	public ArrayOperation(int startIndex, int endIndex, int type, Set<String> columnNames)
+	public ArrayOperation(int startIndex, int endIndex, int type, Set<String> cellNames)
 	{
 		this.startIndex = startIndex;
 		this.endIndex = endIndex;
 		this.type = type;
-		this.columnNames = columnNames;
+		this.cellNames = cellNames;
 	}
 
 	@Override
 	public String toString()
 	{
-		return "ArrayOperation [startIndex=" + startIndex + ", endIndex=" + endIndex + ", type=" + type + ", columnName=" + columnNames + "]";
+		return "ArrayOperation [startIndex=" + startIndex + ", endIndex=" + endIndex + ", type=" + type + ", cellNames=" + cellNames + "]";
 	}
 
 }

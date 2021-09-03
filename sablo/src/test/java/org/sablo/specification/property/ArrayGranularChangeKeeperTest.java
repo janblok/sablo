@@ -52,7 +52,7 @@ public class ArrayGranularChangeKeeperTest
 		assertEquals(type, equivalentOps.type);
 		assertEquals(startIdx, equivalentOps.startIndex);
 		assertEquals(endIdx, equivalentOps.endIndex);
-		assertEquals(columnNames, equivalentOps.columnNames);
+		assertEquals(columnNames, equivalentOps.cellNames);
 	}
 
 	@Test

@@ -447,7 +447,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object> 
 			for (int i = op.startIndex; i <= op.endIndex; i++)
 			{
 				arrayConversionMarkers.pushNode(String.valueOf(i - op.startIndex));
-				if (op.type == ArrayOperation.CHANGE && ChangeAwareList.GRANULAR_UPDATE_OP.equals(op.columnNames))
+				if (op.type == ArrayOperation.CHANGE && ChangeAwareList.GRANULAR_UPDATE_OP.equals(op.cellNames))
 				{
 					JSONUtils.changesToBrowserJSONValue(w, null, wrappedBaseListReadOnly.get(i), getCustomJSONTypeDefinition(),
 						arrayConversionMarkers, dataConverterContext);

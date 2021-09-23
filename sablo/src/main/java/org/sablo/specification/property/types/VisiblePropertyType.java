@@ -53,7 +53,7 @@ public class VisiblePropertyType extends DefaultPropertyType<Boolean>
 			return ProtectedConfig.DEFAULTBLOCKING_FALSE;
 		}
 
-		return new ProtectedConfig(ForentriesConfig.parse(json), false);
+		return new ProtectedConfig(ForentriesConfig.parse(json), false, true);
 	}
 
 	@Override

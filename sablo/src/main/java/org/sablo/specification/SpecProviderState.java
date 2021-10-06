@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.sablo.specification.Package.IPackageReader;
@@ -36,6 +37,8 @@ import org.sablo.specification.Package.IPackageReader;
  */
 public class SpecProviderState
 {
+	private static final String DIR_PACKAGE = "DirPackage"; //$NON-NLS-1$
+	private static final String ZIP_PACKAGE = "ZipPackage"; //$NON-NLS-1$
 	private final Map<String, PackageSpecification<WebObjectSpecification>> cachedComponentOrServiceDescriptions;
 	private final Map<String, PackageSpecification<WebLayoutSpecification>> cachedLayoutDescriptions;
 	private final Map<String, WebObjectSpecification> allWebObjectSpecifications;
@@ -113,6 +116,25 @@ public class SpecProviderState
 			if (reader.getPackageName().equals(packageName)) return reader;
 		}
 		return null;
+	}
+
+	/**
+	 * This is a package reader for WPM. When a package is installed as a ZIP
+	 * and also added as a reference then the reference package has priority.
+	 * @param packageName the packageName
+	 * @return the
+	 */
+	public IPackageReader getPackageReaderForWpm(String packageName)
+	{
+		Optional<IPackageReader> dirPackageReader = packageReaders.stream()
+			.filter(p -> p.getPackageName().equals(packageName) && p.toString().contains(DIR_PACKAGE))
+			.findFirst();
+
+		Optional<IPackageReader> zipPackageReader = packageReaders.stream()
+			.filter(p -> p.getPackageName().equals(packageName) && p.toString().contains(ZIP_PACKAGE))
+			.findFirst();
+
+		return dirPackageReader.isPresent() ? dirPackageReader.get() : zipPackageReader.isPresent() ? zipPackageReader.get() : null;
 	}
 
 	public String getPackageType(String packageName)

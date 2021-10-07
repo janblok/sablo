@@ -18,6 +18,7 @@ package org.sablo;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -314,14 +315,47 @@ public abstract class BaseWebObject implements IWebObjectContext
 	 */
 	public final Object executeEvent(String eventType, Object[] args) throws Exception
 	{
-		checkProtection(eventType);
+		WebObjectFunctionDefinition handler = getSpecification().getHandler(eventType);
+		try
+		{
+			checkProtection(eventType);
+		}
+		catch (IllegalChangeFromClientException e)
+		{
+			checkIfFunctionAccessIsAllowedDisregardingProtection(handler, e);
+		}
 
 		// test if this is a private handler, should not be callable from a client
-		WebObjectFunctionDefinition handler = getSpecification().getHandler(eventType);
 		if (handler != null && handler.isPrivate()) throw new IllegalAccessException(
 			"Event " + eventType + " is called from the client, but it is a private event of " + this + " with spec " + specification);
 
 		return doExecuteEvent(eventType, args);
+	}
+
+	protected void checkIfFunctionAccessIsAllowedDisregardingProtection(WebObjectFunctionDefinition functionDef, IllegalChangeFromClientException e)
+	{
+		boolean rethrow = true;
+		if (functionDef != null)
+		{
+			String allowAccess = functionDef.getAllowAccess();
+			if (allowAccess != null)
+			{
+				List<String> allowAccessProperties = Arrays.asList(allowAccess.split(","));
+				Iterator<String> iterator = allowAccessProperties.iterator();
+				while (iterator.hasNext())
+				{
+					if (iterator.next().equals(e.getBlockedByProperty()))
+					{
+						rethrow = false;
+						break;
+					}
+				}
+			}
+		}
+		if (rethrow)
+		{
+			throw e;
+		}
 	}
 
 	protected Object doExecuteEvent(String eventType, Object[] args) throws Exception

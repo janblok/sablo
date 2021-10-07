@@ -165,6 +165,15 @@ public class WebComponent extends BaseWebObject
 	 */
 	public Object invokeApi(WebObjectFunctionDefinition apiFunction, Object[] args)
 	{
+		try
+		{
+			checkProtection(apiFunction.getName());
+		}
+		catch (IllegalChangeFromClientException e)
+		{
+			checkIfFunctionAccessIsAllowedDisregardingProtection(apiFunction, e);
+		}
+
 		return CurrentWindow.get().invokeApi(this, apiFunction, args, getParameterTypes(apiFunction));
 	}
 

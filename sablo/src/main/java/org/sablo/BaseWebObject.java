@@ -426,21 +426,13 @@ public abstract class BaseWebObject implements IWebObjectContext
 
 				if (Boolean.valueOf(blockingOn).equals(getProperty(prop.getName())))
 				{
-					if (config instanceof ProtectedConfig)
+					if (config instanceof ProtectedConfig && ((ProtectedConfig)config).getForEntries() != null)
 					{
-						if (!((ProtectedConfig)config).getBlockingChanges())
+						Collection<String> forEntries = (((ProtectedConfig)config).getForEntries()).getEntries();
+						if (forEntries != null && forEntries.size() > 0 && (property == null || !forEntries.contains(property)))
 						{
-							// don't block changes;
+							// specific enable-property, not for this property
 							continue;
-						}
-						if (((ProtectedConfig)config).getForEntries() != null)
-						{
-							Collection<String> forEntries = (((ProtectedConfig)config).getForEntries()).getEntries();
-							if (forEntries != null && forEntries.size() > 0 && (property == null || !forEntries.contains(property)))
-							{
-								// specific enable-property, not for this property
-								continue;
-							}
 						}
 					}
 					// general protected property or specific for this property

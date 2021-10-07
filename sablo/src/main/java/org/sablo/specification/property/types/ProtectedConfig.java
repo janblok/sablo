@@ -28,20 +28,17 @@ import org.json.JSONObject;
  */
 public class ProtectedConfig
 {
-	public static final ProtectedConfig DEFAULTBLOCKING_TRUE = new ProtectedConfig(ForentriesConfig.DEFAULT, true, true);
-	public static final ProtectedConfig DEFAULTBLOCKING_FALSE = new ProtectedConfig(ForentriesConfig.DEFAULT, false, true);
+	public static final ProtectedConfig DEFAULTBLOCKING_TRUE = new ProtectedConfig(ForentriesConfig.DEFAULT, true);
+	public static final ProtectedConfig DEFAULTBLOCKING_FALSE = new ProtectedConfig(ForentriesConfig.DEFAULT, false);
 
 	private final ForentriesConfig forEntries;
 
 	private final boolean blockingOn;
 
-	private final boolean blockingChanges;
-
-	protected ProtectedConfig(ForentriesConfig forEntries, boolean blockingOn, boolean blockingChanges)
+	protected ProtectedConfig(ForentriesConfig forEntries, boolean blockingOn)
 	{
 		this.forEntries = forEntries;
 		this.blockingOn = blockingOn;
-		this.blockingChanges = blockingChanges;
 	}
 
 	/**
@@ -60,11 +57,6 @@ public class ProtectedConfig
 		return blockingOn;
 	}
 
-	public boolean getBlockingChanges()
-	{
-		return blockingChanges;
-	}
-
 	/**
 	 * @param json
 	 * @return
@@ -76,8 +68,6 @@ public class ProtectedConfig
 			return defaultBlockingOn ? DEFAULTBLOCKING_TRUE : DEFAULTBLOCKING_FALSE;
 		}
 
-		return new ProtectedConfig(ForentriesConfig.parse(json),
-			json.has("blockingOn") ? json.optBoolean("blockingOn", defaultBlockingOn) : defaultBlockingOn,
-			json.has("blockingChanges") ? json.optBoolean("blockingChanges", true) : true);
+		return new ProtectedConfig(ForentriesConfig.parse(json), json.has("blockingOn") ? json.optBoolean("blockingOn", defaultBlockingOn) : defaultBlockingOn);
 	}
 }

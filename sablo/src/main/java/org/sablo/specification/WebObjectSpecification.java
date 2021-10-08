@@ -122,6 +122,8 @@ public class WebObjectSpecification extends PropertyDescription
 
 	private URL definitionURL;
 
+	private URL docFileURL;
+
 	private final String preview;
 
 	private boolean supportsGrouping;
@@ -383,6 +385,21 @@ public class WebObjectSpecification extends PropertyDescription
 			catch (MalformedURLException e)
 			{
 				log.error("Error getting serverscript", e);
+			}
+		}
+		if (json.has("doc"))
+		{
+			try
+			{
+				URL docURL = reader.getUrlForPath(json.getString("doc").substring(packageName.length()));
+				if (docURL != null)
+				{
+					spec.setDocFileURL(docURL);
+				}
+			}
+			catch (MalformedURLException e)
+			{
+				log.error("Error getting doc file", e);
 			}
 		}
 		//handlers
@@ -814,6 +831,16 @@ public class WebObjectSpecification extends PropertyDescription
 	public URL getDefinitionURL()
 	{
 		return definitionURL;
+	}
+
+	public void setDocFileURL(URL docFileURL)
+	{
+		this.docFileURL = docFileURL;
+	}
+
+	public URL getDocFileURL()
+	{
+		return docFileURL;
 	}
 
 	public void setSupportGrouping(boolean supportsGrouping)

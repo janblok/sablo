@@ -444,8 +444,6 @@ public class WebObjectSpecification extends PropertyDescription
 	private static WebObjectFunctionDefinition parseFunctionDefinition(WebObjectSpecification spec, JSONObject api, String func) throws JSONException
 	{
 		WebObjectFunctionDefinition def = new WebObjectFunctionDefinition(func);
-		def.setPropertyDescription(
-			new PropertyDescriptionBuilder().withName(func).withType(TypesRegistry.getType(FunctionPropertyType.TYPE_NAME)).withConfig(api.get(func)).build());
 		if (api.get(func) instanceof JSONObject)
 		{
 			JSONObject jsonDef = api.getJSONObject(func);
@@ -558,6 +556,9 @@ public class WebObjectSpecification extends PropertyDescription
 			}
 			if (customConfiguration != null) def.setCustomConfigOptions(customConfiguration);
 		}
+		def.setPropertyDescription(
+			new PropertyDescriptionBuilder().withName(func).withType(TypesRegistry.getType(FunctionPropertyType.TYPE_NAME)).withConfig(api.get(func))
+				.withDeprecated(def.getDeprecated()).build());
 		return def;
 	}
 

@@ -332,7 +332,7 @@ public class WebsocketSessionManager
 					{
 						try
 						{
-							Thread.currentThread().setName(Thread.currentThread().getName() + ": " + session.getSessionKey()); //$NON-NLS-1$
+							Thread.currentThread().setName("Sablo Session closer: " + session.getSessionKey()); //$NON-NLS-1$
 							session.sessionExpired();
 						}
 						catch (Exception e)

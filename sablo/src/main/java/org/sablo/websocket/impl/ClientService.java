@@ -141,13 +141,17 @@ public class ClientService extends BaseWebObject implements IClientService
 	{
 		// we have a list of properties available; create a suitable wrapper PropertyDescription that has the
 		// param indexes as child PropertyDescriptions
-		PropertyDescription parameterTypes = null;
 		WebObjectFunctionDefinition apiFunc = specification.getApiFunction(functionName);
 		if (apiFunc != null)
 		{
-			parameterTypes = BaseWebObject.getParameterTypes(apiFunc);
+			return BaseWebObject.getParameterTypes(apiFunc);
 		}
-		return parameterTypes;
+		apiFunc = specification.getInternalApiFunction(functionName);
+		if (apiFunc != null)
+		{
+			return BaseWebObject.getParameterTypes(apiFunc);
+		}
+		return null;
 	}
 
 	/**

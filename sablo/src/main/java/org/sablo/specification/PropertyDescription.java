@@ -60,6 +60,7 @@ public class PropertyDescription
 	private final PushToServerEnum pushToServer;
 	private final JSONObject tags;
 	private String deprecated = null;
+	private String documentation;
 
 	//case of nested type
 	private final Map<String, PropertyDescription> properties;
@@ -116,6 +117,7 @@ public class PropertyDescription
 			this.optional = optional;
 			this.deprecated = deprecated;
 		}
+		setDocumentation((String)getTag(DOCUMENTATION_TAG_FOR_PROP_OR_KEY_FOR_HANDLERS));
 	}
 
 	/**
@@ -481,7 +483,12 @@ public class PropertyDescription
 
 	public String getDocumentation()
 	{
-		return (String)getTag(DOCUMENTATION_TAG_FOR_PROP_OR_KEY_FOR_HANDLERS);
+		return documentation;
+	}
+
+	public void setDocumentation(String documentation)
+	{
+		this.documentation = documentation;
 	}
 
 }

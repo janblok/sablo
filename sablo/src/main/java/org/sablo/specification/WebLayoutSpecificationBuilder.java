@@ -26,6 +26,6 @@ public class WebLayoutSpecificationBuilder extends AbstractWebLayoutSpecificatio
 	public WebLayoutSpecification build()
 	{
 		return new WebLayoutSpecification(name, packageName, getDisplayname(), categoryName, icon, preview, definition, config, topContainer, allowedChildren,
-			excludedChildren, designStyleClass, layout, properties, deprecated);
+			excludedChildren, designStyleClass, layout, properties, deprecated, directives);
 	}
 }

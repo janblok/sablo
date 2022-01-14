@@ -187,6 +187,8 @@ public interface IWindow
 	void sendChanges() throws IOException;
 
 
+	void addToChanges(Map<String, Object> change);
+
 	/**
 	 *
 	 */

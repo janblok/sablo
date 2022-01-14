@@ -296,8 +296,12 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 
 		currentServiceCallDone = false
 		currentServiceCallWaiting = times.length
-		currentServiceCallTimeouts = times.map(function(t) { return setTimeout(callServiceCallbacksWhenDone, t) })
-		return promise.then(markServiceCallDone, markServiceCallFailed)
+		currentServiceCallTimeouts = times.map(function(t) { return setTimeout(callServiceCallbacksWhenDone, t) });
+		return Object.defineProperty(promise.then(markServiceCallDone, markServiceCallFailed), "requestInfo", {
+			set(value) {
+				promise.requestInfo = value;
+			}
+		});
 	}
 
 	function callService(serviceName:string, methodName:string, argsObject, async?:boolean) {

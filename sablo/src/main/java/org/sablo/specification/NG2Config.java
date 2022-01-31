@@ -41,6 +41,11 @@ public class NG2Config
 		return new Dependencies(this.json.optJSONObject("dependencies"));
 	}
 
+	public Assets getAssets()
+	{
+		return new Assets(this.json.optJSONArray("assets"));
+	}
+
 	/**
 	 * @return
 	 */

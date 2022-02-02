@@ -132,6 +132,9 @@ public class SpecProviderState
 
 		Optional<IPackageReader> zipPackageReader = packageReaders.stream()
 			.filter(p -> p.getPackageName().equals(packageName) && p.toString().contains(ZIP_PACKAGE))
+			// in case there are more then one packageReader for the same package (that is an error and should not happen)
+			// make sure we always return the same one, as 'packageReaders' does not guarantee they are always in the same order
+			.sorted((p1, p2) -> p1.getResource().getAbsolutePath().compareTo(p2.getResource().getAbsolutePath()))
 			.findFirst();
 
 		return dirPackageReader.isPresent() ? dirPackageReader.get() : zipPackageReader.isPresent() ? zipPackageReader.get() : null;

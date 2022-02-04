@@ -16,8 +16,7 @@
 
 package org.sablo.specification;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -49,13 +48,13 @@ public class Dependencies
 	/**
 	 * @return
 	 */
-	public List<String> getCssLibrary()
+	public Set<CssLib> getCssLibrary()
 	{
 		if (json != null && json.has("csslibrary"))
 		{
 			JSONArray jsonArray = json.getJSONArray("csslibrary");
-			ArrayList<String> lst = new ArrayList<>(jsonArray.length());
-			jsonArray.forEach(item -> lst.add((String)item));
+			CssLibSet lst = new CssLibSet();
+			jsonArray.forEach(item -> lst.add(new CssLib((String)item)));
 			return lst;
 		}
 		return null;

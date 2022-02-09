@@ -62,6 +62,22 @@ public class WebObjectSpecification extends PropertyDescription
 
 	public final static String PUSH_TO_SERVER_KEY = "pushToServer";
 
+	/**
+	 * Key for a function definition in the .spec file.
+	 *
+	 * The value is a (descriptions copied from wiki) string or array of strings
+	 *
+	 * In case of a tag for a property in the .spec file, this tag can define if an edit (sent from browser to server) of this property is allowed
+	 * even if properties such as "visible" or "enabled" (of the component or parent form) are false. By default, if the visibility of a component
+	 * or its parent form is false, Servoy doesn't allow the modification (coming from browser) of any other property (it blocks it and logs it on
+	 * server). With this tag you can say for a property that changing it should be allowed even in these situations; for example on "size" property
+	 * you could say: I allow it for "visible"; or for both: ["visible", "enable"]
+	 *
+	 * In case of usage for an API in the .spec file it will allow a call from client to server even in some unexpected situations.
+	 * By default, server side calls coming from client are ignored if the component or the parent form is not visible (anymore). For example, a call to a server
+	 * side function when switching to a new form, to do some cleanup, might get blocked. To still allow these calls, you should add "allowaccess" : "visible"
+	 * to the function definition in the .spec file.
+	 */
 	public final static String ALLOW_ACCESS = "allowaccess";
 
 	public enum PushToServerEnum

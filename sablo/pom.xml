@@ -23,7 +23,7 @@
 
 	<url>http://maven.apache.org</url>
 	<properties>
-		<tycho.version>2.5.0</tycho.version>
+		<tycho.version>2.6.0</tycho.version>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<jenkins.javascript_tests.reportsDirectory>target/protractor-reports</jenkins.javascript_tests.reportsDirectory>
@@ -123,7 +123,7 @@
 									<goal>install-node-and-npm</goal>
 								</goals>
 								<configuration>
-									<nodeVersion>v16.13.0</nodeVersion>
+									<nodeVersion>v16.14.0</nodeVersion>
 								</configuration>
 							</execution>
 

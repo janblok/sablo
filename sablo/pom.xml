@@ -22,8 +22,8 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<jenkins.javascript_tests.reportsDirectory>target/protractor-reports</jenkins.javascript_tests.reportsDirectory>
-		<eclipse.url>http://download.eclipse.org/eclipse/updates/4.14/</eclipse.url>
-		<servoy-shiplibs.url>http://developer.servoy.com/p2_repository/ship_plugins/2019.12/</servoy-shiplibs.url>
+		<eclipse.url>https://download.eclipse.org/eclipse/updates/4.14/</eclipse.url>
+		<servoy-shiplibs.url>https://developer.servoy.com/p2_repository/ship_plugins/2019.12/</servoy-shiplibs.url>
 	</properties>
 
 	<repositories>

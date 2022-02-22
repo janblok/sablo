@@ -127,7 +127,7 @@ public class WebLayoutSpecification extends WebObjectSpecification
 				json.optString("designStyleClass"))
 			.withLayout(json.optString("layout", null)).withProperties(properties).withDeprecated(
 				json.optString("deprecated", null))
-			.withDiretives(directives)
+			.withDirectives(directives)
 			.build();
 
 		if (json.has("attributes"))

@@ -62,7 +62,7 @@ abstract class AbstractWebLayoutSpecificationBuilder<B extends AbstractWebLayout
 		return getThis();
 	}
 
-	public B withDiretives(List<String> directives)
+	public B withDirectives(List<String> directives)
 	{
 		this.directives = directives;
 		return getThis();

@@ -248,7 +248,7 @@ public class WebsocketSessionWindows implements IWindow
 	}
 
 	@Override
-	public void addToChanges(Map<String, Object> change)
+	public void setResultToSendToClientForPendingClientToServerAPICall(Map<String, Object> change)
 	{
 		// ignore
 	}

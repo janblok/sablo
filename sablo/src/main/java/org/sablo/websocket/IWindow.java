@@ -41,35 +41,20 @@ public interface IWindow
 
 	/**
 	 * Get the websocket sessioninvoke
-	 * @return
 	 */
 	IWebsocketSession getSession();
 
-	/**
-	 * @param endpoint
-	 */
 	void setEndpoint(IWebsocketEndpoint endpoint);
 
 	/**
 	 * Get the websocket endpoint for this window.
-	 * @return
 	 */
 	IWebsocketEndpoint getEndpoint();
 
-	/**
-	 * @param formName
-	 * @return
-	 */
 	Container getForm(String formName);
 
-	/**
-	 * @return the currentFormUrl
-	 */
 	String getCurrentFormUrl();
 
-	/**
-	 * @param currentFormUrl the currentFormUrl to set
-	 */
 	void setCurrentFormUrl(String currentFormUrl);
 
 	/**
@@ -174,28 +159,22 @@ public interface IWindow
 	 */
 	public long getLastPingTime();
 
-
-	/**
-	 *
-	 */
 	void dispose();
 
-
-	/**
-	 *
-	 */
 	void sendChanges() throws IOException;
 
-
-	void addToChanges(Map<String, Object> change);
-
 	/**
+	 * When client side calls an API from client to server and expects an result (through a defer/promise), we want to send that result together with
+	 * any other changes that that API call generated server side and that need to be sent. So that they arrive in the same request to the client.<br/><br/>
 	 *
+	 * Some (client side) components need this result to arrive in the same message in order to ignore some incomming changes from server (if they were the ones
+	 * that requested them for example).
+	 *
+	 * But do register the result here to be sent later - when all changes that happened as a result of this request are sent.
 	 */
+	void setResultToSendToClientForPendingClientToServerAPICall(Map<String, Object> change);
+
 	void onOpen(Map<String, List<String>> requestParams);
 
-	/**
-	 * @return
-	 */
 	int getNextMessageNumber();
 }

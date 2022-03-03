@@ -217,7 +217,11 @@ webSocketModule.factory('$webSocket',
 	let handleMessage = function(message) {
 		let obj
 		let responseValue
+
         let oldFTEAIMWH = functionsToExecuteAfterIncommingMessageWasHandled; // normally this will always be null here; but in some browsers (FF) an alert on window can make these calls nest unexpectedly; so oldFTEAIMWH avoids exceptions in those cases as well - as we do not restore to null but to old when nesting happens
+        let oldRequestInfo = currentRequestInfo; // same as for the oldFTEAIMWH comment above - to handle that tricky nesting scenario
+
+        currentRequestInfo = undefined;
 		functionsToExecuteAfterIncommingMessageWasHandled = [];
 		let hideIndicatorCounter = 0;
 
@@ -369,12 +373,13 @@ webSocketModule.factory('$webSocket',
 					sendMessageObject(response);
 				});
 			}
-			// data got back from the server
+
+            // got the return value for a client-to-server call (that has a defer/waiting promise) back from the server
 			if (obj.cmsgid) { // response to event
 				let deferredEvent = deferredEvents[obj.cmsgid];
 				if (deferredEvent != null && angular.isDefined(deferredEvent)) {
 					if (obj.exception) {
-						// something went wrong
+                        // something went wrong
 						if (obj[$sabloConverters.TYPES_KEY] && obj[$sabloConverters.TYPES_KEY].exception) {
 							obj.exception = $sabloConverters.convertFromServerToClient(obj.exception, obj[$sabloConverters.TYPES_KEY].exception, undefined, undefined, undefined)
 						}
@@ -409,12 +414,13 @@ webSocketModule.factory('$webSocket',
 				sendMessageObject(response);
 			}
 		} finally {
-			currentRequestInfo = undefined;
 			let err;
 			let scopesToDigest = new ScopeSet();
 
 			let toExecuteAfterIncommingMessageWasHandled = functionsToExecuteAfterIncommingMessageWasHandled;
+
             functionsToExecuteAfterIncommingMessageWasHandled = oldFTEAIMWH; // clear/restore this before calling just in the unlikely case that some handlers want to add more such tasks (and we don't want to loose those but rather execute them right away)
+			currentRequestInfo = oldRequestInfo;
 			
 			for (let i = 0; i < toExecuteAfterIncommingMessageWasHandled.length; i++) {
 				try {

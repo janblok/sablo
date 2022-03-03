@@ -455,7 +455,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 										{
 											responseToSend = getResponseToSend(msgId, error, null, false);
 										}
-										getWindow().addToChanges(responseToSend);
+										getWindow().setResultToSendToClientForPendingClientToServerAPICall(responseToSend);
 										getWindow().sendChanges();
 									}
 									catch (IOException e)

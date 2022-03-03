@@ -104,7 +104,7 @@ public class BaseWindow implements IWindow
 
 	private String currentFormUrl;
 
-	private Map<String, Object> changeToSend;
+	private Map<String, Object> resultToSendToClientForPendingClientToServerAPICall;
 
 	public BaseWindow(IWebsocketSession session, int nr, String name)
 	{
@@ -515,7 +515,8 @@ public class BaseWindow implements IWindow
 	protected boolean sendMessageInternal(IToJSONWriter<IBrowserConverterContext> dataWriter, IToJSONConverter<IBrowserConverterContext> converter,
 		Integer smsgidOptional) throws IOException
 	{
-		if (dataWriter == null && serviceCalls.size() == 0 && delayedOrAsyncComponentApiCalls.size() == 0 && this.changeToSend == null) return false;
+		if (dataWriter == null && serviceCalls.size() == 0 && delayedOrAsyncComponentApiCalls.size() == 0 &&
+			this.resultToSendToClientForPendingClientToServerAPICall == null) return false;
 
 		if (getEndpoint() == null)
 		{
@@ -602,12 +603,12 @@ public class BaseWindow implements IWindow
 				}
 			}
 
-			if (changeToSend != null)
+			if (resultToSendToClientForPendingClientToServerAPICall != null)
 			{
 				hasContentToSend = true;
-				PropertyDescription dataTypes = (PropertyDescription)changeToSend.remove("dataTypes"); //$NON-NLS-1$
+				PropertyDescription dataTypes = (PropertyDescription)resultToSendToClientForPendingClientToServerAPICall.remove("dataTypes"); //$NON-NLS-1$
 
-				JSONUtils.writeDataWithConversions(FullValueToJSONConverter.INSTANCE, w, changeToSend, dataTypes,
+				JSONUtils.writeDataWithConversions(FullValueToJSONConverter.INSTANCE, w, resultToSendToClientForPendingClientToServerAPICall, dataTypes,
 					BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER);
 			}
 
@@ -622,7 +623,7 @@ public class BaseWindow implements IWindow
 
 				sendMessageText(w.toString());
 				serviceCalls.clear();
-				changeToSend = null;
+				resultToSendToClientForPendingClientToServerAPICall = null;
 			}
 
 			hasContentToSend = checkForAndSendAnyUnexpectedRemainingChangesOfDataWriter(dataWriter, converter) || hasContentToSend;
@@ -736,9 +737,9 @@ public class BaseWindow implements IWindow
 		ep.sendText(getNextMessageNumber(), text);
 	}
 
-	public void addToChanges(Map<String, Object> change)
+	public void setResultToSendToClientForPendingClientToServerAPICall(Map<String, Object> resultForApiCall)
 	{
-		this.changeToSend = change;
+		this.resultToSendToClientForPendingClientToServerAPICall = resultForApiCall;
 	}
 
 	public void sendChanges() throws IOException

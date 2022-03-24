@@ -36,7 +36,6 @@ abstract class AbstractWebObjectSpecificationBuilder<B extends AbstractWebObject
 	protected JSONArray libraries;
 	protected JSONArray keywords;
 	protected JSONObject ng2Config;
-	protected String styleVariantCategory;
 
 	public B withPackageName(String packageName)
 	{
@@ -64,12 +63,6 @@ abstract class AbstractWebObjectSpecificationBuilder<B extends AbstractWebObject
 	public B withCategoryName(String categoryName)
 	{
 		this.categoryName = categoryName;
-		return getThis();
-	}
-
-	public B withStyleVariantCategory(String styleVariantCategory)
-	{
-		this.styleVariantCategory = styleVariantCategory;
 		return getThis();
 	}
 

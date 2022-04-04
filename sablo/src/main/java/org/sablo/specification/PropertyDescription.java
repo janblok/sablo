@@ -483,7 +483,14 @@ public class PropertyDescription
 
 	public String getDocumentation()
 	{
-		return documentation;
+		return getDocumentation(true);
+	}
+
+	public String getDocumentation(boolean addDeprecationInfoIfAvailable)
+	{
+		if (addDeprecationInfoIfAvailable) return (isDeprecated()
+			? "<b>@deprecated</b>: " + getDeprecatedMessage() + (documentation != null ? "<br/><br/>" + documentation : "") : documentation); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		else return documentation;
 	}
 
 	public void setDocumentation(String documentation)

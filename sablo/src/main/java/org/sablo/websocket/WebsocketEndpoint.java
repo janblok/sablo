@@ -172,11 +172,11 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 					{
 						if (messageLogger != null) messageLogger.endPointStarted(session);
 						win.onOpen(session.getRequestParameterMap());
+						onStart();
 						if (session != null && session.isOpen())
 						{
 							wsSession.onOpen(session.getRequestParameterMap());
 						}
-						onStart();
 					}
 				}
 			});

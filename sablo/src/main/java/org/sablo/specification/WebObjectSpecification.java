@@ -377,7 +377,7 @@ public class WebObjectSpecification extends PropertyDescription
 			reader != null ? reader.getPackageType() : null).withDisplayName(json.optString("displayName", null)).withCategoryName(
 				json.optString("categoryName", null))
 			.withIcon(json.optString("icon", null)).withPreview(json.optString("preview", null)).withDefinition(
-				json.getString("definition"))
+				json.optString("definition", null))
 			.withLibraries(json.optJSONArray("libraries")).withProperties(properties).withName(
 				json.getString("name"))
 			.withDeprecated(json.optString("deprecated", null)).withKeywords(json.optJSONArray("keywords")).withNG2Config(json.optJSONObject("ng2Config"))

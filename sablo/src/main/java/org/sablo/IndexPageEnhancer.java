@@ -172,7 +172,10 @@ public class IndexPageEnhancer
 
 					if (supportGrouping == null || spec.supportGrouping() == supportGrouping.booleanValue())
 					{
-						allJSContributions.add(spec.getDefinition());
+						if (spec.getDefinition() != null)
+						{
+							allJSContributions.add(spec.getDefinition());
+						}
 					}
 					mergeLibs(allLibraries, spec.getLibraries(), supportGrouping);
 				}

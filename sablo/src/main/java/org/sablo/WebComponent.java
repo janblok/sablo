@@ -149,7 +149,6 @@ public class WebComponent extends BaseWebObject
 		WebObjectFunctionDefinition apiFunction = specification.getApiFunction(apiFunctionName);
 		if (apiFunction != null)
 		{
-			apiFunction.setDelayUntilFormLoads(true);
 			return invokeApi(apiFunction, args);
 		}
 		return null;

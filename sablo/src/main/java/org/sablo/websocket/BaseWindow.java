@@ -608,8 +608,21 @@ public class BaseWindow implements IWindow
 				hasContentToSend = true;
 				PropertyDescription dataTypes = (PropertyDescription)resultToSendToClientForPendingClientToServerAPICall.remove("dataTypes"); //$NON-NLS-1$
 
-				JSONUtils.writeDataWithConversions(FullValueToJSONConverter.INSTANCE, w, resultToSendToClientForPendingClientToServerAPICall, dataTypes,
-					BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER);
+				if (hasContentToSend)
+				{
+					DataConversion conversions = JSONUtils.writeDataWithoutConversions(FullValueToJSONConverter.INSTANCE, w,
+						resultToSendToClientForPendingClientToServerAPICall, dataTypes,
+						BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER);
+					if (!conversions.getConversions().isEmpty())
+					{
+						clientDataConversions.getConversions().putAll(conversions.getConversions());
+					}
+				}
+				else
+				{
+					JSONUtils.writeDataWithConversions(FullValueToJSONConverter.INSTANCE, w, resultToSendToClientForPendingClientToServerAPICall, dataTypes,
+						BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER);
+				}
 			}
 
 			if (hasContentToSend)

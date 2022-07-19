@@ -92,15 +92,6 @@ public class JSONUtils
 		return writer;
 	}
 
-	public static <ContextT> DataConversion writeDataWithoutConversions(IToJSONConverter<ContextT> converter, JSONWriter writer, Map<String, ? > data,
-		PropertyDescription dataTypes, ContextT contextObject) throws JSONException
-	{
-		DataConversion dataConversion = new DataConversion();
-		writeData(converter, writer, data, dataTypes, dataConversion, contextObject);
-
-		return dataConversion;
-	}
-
 	public static <ContextT> DataConversion writeData(IToJSONConverter<ContextT> converter, JSONWriter writer, Map<String, ? > data,
 		PropertyDescription dataTypes, DataConversion dataConversion, ContextT contextObject) throws JSONException
 	{

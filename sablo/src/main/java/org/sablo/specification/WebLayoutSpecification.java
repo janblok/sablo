@@ -162,7 +162,7 @@ public class WebLayoutSpecification extends WebObjectSpecification
 		Object configObject, boolean topContainer, List<String> allowedChildren, List<String> excludedChildren, String designStyleClass, String layout,
 		Map<String, PropertyDescription> properties, String deprecated, List<String> directives)
 	{
-		super(name, packageName, IPackageReader.WEB_LAYOUT, displayName, categoryName, icon, preview, definition, null, configObject, properties, deprecated,
+		super(name, packageName, IPackageReader.WEB_LAYOUT, displayName, categoryName, null, icon, preview, definition, null, configObject, properties, deprecated,
 			null, null);
 		this.topContainer = topContainer;
 		this.allowedChildren = allowedChildren;

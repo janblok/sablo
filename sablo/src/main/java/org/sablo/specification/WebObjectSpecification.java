@@ -120,6 +120,11 @@ public class WebObjectSpecification extends PropertyDescription
 	private final String categoryName;
 	private final String icon;
 	private final String packageName;
+
+	/** One can define in his solution a bunch of styling variants (collections of css classes) for a component; some standard class collection variants can be made based on styling category of component
+	    (label/button/input/etc) */
+	private final String styleVariantCategory;
+
 	private final JSONArray keywords;
 	private final NG2Config ng2Config;
 
@@ -150,14 +155,18 @@ public class WebObjectSpecification extends PropertyDescription
 	 * @param packageType one of {@link IPackageReader#WEB_SERVICE}, {@link IPackageReader#WEB_COMPONENT} and {@link IPackageReader#WEB_LAYOUT}.
 	 */
 
-	protected WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
+	protected WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String styleVariantCategory,
+		String icon, String preview,
 		String definition, JSONArray libs, JSONArray keywords, JSONObject ng2Config)
 	{
-		this(name, packageName, packageType, displayName, categoryName, icon, preview, definition, libs, null, null, null, keywords, ng2Config);
+		this(name, packageName, packageType, displayName, categoryName, styleVariantCategory, icon, preview, definition, libs, null, null, null, keywords,
+			ng2Config);
 	}
 
 
-	WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
+	WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String styleVariantCategory,
+		String icon,
+		String preview,
 		String definition, JSONArray libs, Object configObject, Map<String, PropertyDescription> properties, String deprecated, JSONArray keywords,
 		JSONObject ng2Config)
 	{
@@ -166,6 +175,7 @@ public class WebObjectSpecification extends PropertyDescription
 		this.packageName = packageName;
 		this.displayName = displayName;
 		this.categoryName = categoryName;
+		this.styleVariantCategory = styleVariantCategory;
 		this.icon = icon;
 		this.preview = preview;
 		this.definition = definition;
@@ -376,6 +386,7 @@ public class WebObjectSpecification extends PropertyDescription
 		WebObjectSpecification spec = new WebObjectSpecificationBuilder().withPackageName(packageName).withPackageType(
 			reader != null ? reader.getPackageType() : null).withDisplayName(json.optString("displayName", null)).withCategoryName(
 				json.optString("categoryName", null))
+			.withStyleVariantCategory(json.optString("styleVariantCategory", null))
 			.withIcon(json.optString("icon", null)).withPreview(json.optString("preview", null)).withDefinition(
 				json.optString("definition", null))
 			.withLibraries(json.optJSONArray("libraries")).withProperties(properties).withName(
@@ -901,4 +912,11 @@ public class WebObjectSpecification extends PropertyDescription
 	{
 		return ng2Config;
 	}
+
+
+	public String getStyleVariantCategory()
+	{
+		return styleVariantCategory;
+	}
+
 }

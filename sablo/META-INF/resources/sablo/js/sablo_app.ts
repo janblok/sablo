@@ -148,11 +148,11 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 
 	var getComponentPropertyChange = function(now: any, prev: any, typeOfProperty: sablo.IType<any>, propertyName: string,
 			scope: angular.IScope, propertyContext: sablo.IPropertyContext, changeNotifierGenerator: sablo.PropertyChangeNotifierGeneratorFunction) {
-		var changes = {}
-		if (!propertyName) throw new Error("propertyName should not be null here!");
+		const changes = {};
+		if (!propertyName) throw new Error('propertyName should not be null here!');
 		changes[propertyName] = $sabloConverters.convertFromClientToServer(now, typeOfProperty, prev, scope, propertyContext);
-		
-        // set/update change notifier just in case a new full value was set into a smart property type that needs a changeNotifier for that specific property 
+
+        // set/update change notifier just in case a new full value was set into a smart property type that needs a changeNotifier for that specific property
 		setChangeNotifierIfSmartProperty(now, propertyName, changeNotifierGenerator);
 		
 		return changes;
@@ -238,9 +238,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 			componentSpecName: string /*to access static client side types of comp*/, dynamicPropertyTypesHolder: object /*some types decide at runtime the type needed on client - for example dataprovider type could send date, and we keep that info here*/,
 			componentScope: angular.IScope) {
 
-		let componentSpec:sablo.IWebObjectSpecification = $typesRegistry.getComponentSpecification(componentSpecName); // get static client side types for this component - if it has any 
+		const componentSpec:sablo.IWebObjectSpecification = $typesRegistry.getComponentSpecification(componentSpecName); // get static client side types for this component - if it has any 
 		const propertyContextCreator = new sablo.typesRegistry.RootPropertyContextCreator(
-				(propertyName: string) => { return beanModel ? beanModel[propertyName] : undefined },
+				(propertyName: string) => ( beanModel ? beanModel[propertyName] : undefined ),
 				componentSpec);
 
 		// apply the new values and client side type conversions
@@ -433,8 +433,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 				
 				if (msg.call) {
                     // this is a component API call; execute it
-					// {"call":{"form":"product","element":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}, // optionally "viewIndex":1 
-					// }
+					// {"call":{"form":"product","element":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}, // optionally "viewIndex":1 }
 					var call = msg.call;
 
 					if ($log.debugEnabled) $log.debug("sbl * Received API call from server: '" + call.api + "' to form " + call.form + ", component " + (call.propertyPath ? call.propertyPath : call.bean));
@@ -571,17 +570,17 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 					if (newFormProperties) {
 						// currently what server side sends for the form itself doesn't need client side conversions 
 						if (!formModel['']) formModel[''] = {};
-						for (var p in newFormProperties) {
+						for (const p in newFormProperties) {
 							formModel[''][p] = newFormProperties[p];
 						}
 					}
 
-					var watchesRemoved = formState.removeWatches ? formState.removeWatches(newFormData) : false;
+					const watchesRemoved = formState.removeWatches ? formState.removeWatches(newFormData) : false;
 					try {
-						for (var beanname in newFormData) {
+						for (const beanname in newFormData) {
 							// copy over the changes, skip for form properties (beanname empty)
 							if (beanname != '') {
-								var beanDynamicTypesHolder = $sabloUtils.getOrCreateInDepthProperty(formStatesDynamicClientSideTypes, formname, beanname);
+								const beanDynamicTypesHolder = $sabloUtils.getOrCreateInDepthProperty(formStatesDynamicClientSideTypes, formname, beanname);
 								applyBeanData(formModel[beanname], newFormData[beanname], formState.properties.designSize,
 										getChangeNotifierGenerator(formname, beanname), formState.componentSpecNames[beanname], beanDynamicTypesHolder,
 										formState.getScope ? formState.getScope() : undefined);

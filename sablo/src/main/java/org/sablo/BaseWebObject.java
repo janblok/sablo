@@ -312,7 +312,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 	 */
 	public final Object executeEvent(String eventType, Object[] args) throws Exception
 	{
-		checkProtection(eventType);
+		checkForProtectedPropertiesThatMightBlockUpdatesOn(eventType);
 
 		// test if this is a private handler, should not be callable from a client
 		WebObjectFunctionDefinition handler = getSpecification().getHandler(eventType);
@@ -406,7 +406,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 	 *
 	 * @throws IllegalChangeFromClientException when property is protected
 	 */
-	protected void checkProtection(String property)
+	protected void checkForProtectedPropertiesThatMightBlockUpdatesOn(String property)
 	{
 		for (PropertyDescription prop : specification.getProperties().values())
 		{
@@ -444,12 +444,12 @@ public abstract class BaseWebObject implements IWebObjectContext
 	}
 
 	/**
-	 * Check if the property is protected, i.e. it cannot be set from the client.
+	 * Check if the property is protected from browser updates by push-to-server or by the fact that it is a "protecting" prop. itself, i.e. it cannot be set from the client.
 	 *
 	 * @param propName
 	 * @throws IllegalChangeFromClientException when property is protected
 	 */
-	protected void checkForProtectedProperty(String propName)
+	protected void checkThatPushToServerAllowsUpdatesOn(String propName)
 	{
 		List<PropertyDescription> propertyPath = specification.getPropertyPath(propName);
 		PushToServerEnum computedPushToServer = null;
@@ -733,11 +733,11 @@ public abstract class BaseWebObject implements IWebObjectContext
 	 *
 	 * @throws IllegalChangeFromClientException when modification is denied.
 	 */
-	public final void checkPropertyProtection(String propertyName)
+	public final void checkThatPropertyAllowsUpdateFromClient(String propertyName)
 	{
-		checkProtection(propertyName);
+		checkForProtectedPropertiesThatMightBlockUpdatesOn(propertyName);
 
-		checkForProtectedProperty(propertyName);
+		checkThatPushToServerAllowsUpdatesOn(propertyName);
 	}
 
 	/**
@@ -752,7 +752,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 	{
 		try
 		{
-			checkPropertyProtection(propertyName);
+			checkThatPropertyAllowsUpdateFromClient(propertyName);
 		}
 		catch (IllegalChangeFromClientException e)
 		{

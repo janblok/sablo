@@ -297,7 +297,10 @@ public class ObjectPropertyType extends DefaultPropertyType<Object> implements
 		if (valueAndType != null)
 		{
 			writer.value(valueAndType);
-			return valueAndType.getClientSideType(); // should we always return here OBJECT_TYPE_JSON_STRING instead? maybe foundset or other types that work with IPropertyConverterForBrowserWithDynamicClientType would compress better the types then, but that would also mean that all such object client-side values would be iterated on at least one level, even if they don't actually need a client-side conversion; it's just an optimisation q., both approaces should work correctly
+			return valueAndType.getClientSideType(); // should we always return here OBJECT_TYPE_JSON_STRING instead? maybe foundset or other types that 
+			// work with IPropertyConverterForBrowserWithDynamicClientType would compress better the types then, but that would also mean that all such
+			// object client-side values would be iterated on at least one level, even if they don't actually need a client-side conversion; it's just
+			// an optimization q., both approaches should work correctly
 		}
 		return null;
 	}

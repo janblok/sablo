@@ -382,7 +382,6 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 
 			if (changes.mustSendAll() || fullValue)
 			{
-				// send all (currently we don't support granular updates for add/remove but we could in the future)
 				writer.key(CONTENT_VERSION).value(changeAwareList.increaseContentVersion());
 
 				writer.key(VALUE).array();
@@ -461,7 +460,10 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 	@Override
 	public boolean writeClientSideTypeName(JSONWriter w, String keyToAddTo, PropertyDescription pd)
 	{
-		// writes ["JSON_arr", type] or ["JSON_arr", [type, elementPushToServer]] if the element declared a pushToServer value in spec file (through "elementConfig")
+		// writes either
+		// ["JSON_arr", type]
+		// or
+		// ["JSON_arr", { t: type, s: elementPushToServer}] if the element declared a pushToServer value in spec file (through "elementConfig")
 		JSONUtils.addKeyIfPresent(w, keyToAddTo);
 
 		w.array().value(TYPE_NAME);

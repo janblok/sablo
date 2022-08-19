@@ -12,18 +12,18 @@ angular.module('custom_json_object_property', ['webSocketModule', '$typesRegistr
 namespace sablo.propertyTypes {
 
 	export class CustomObjectTypeFactory implements sablo.ITypeFactory<CustomObjectValue> {
-		
+
 		private customTypesBySpecName: {
 			[webObjectSpecName: string]: {
 				[customTypeName: string]: CustomObjectType
 			}
 		} = {};
-		
+
 		constructor(private readonly typesRegistry: sablo.ITypesRegistryForTypeFactories,
 				private readonly logger: sablo.ILogService,
 				private readonly sabloConverters: sablo.ISabloConverters,
 				private readonly sabloUtils: sablo.ISabloUtils) {}
-		
+
 		getOrCreateSpecificType(specificTypeInfo: string, webObjectSpecName: string): CustomObjectType {
 			const customTypesForThisSpec = this.customTypesBySpecName[webObjectSpecName];
 			if (customTypesForThisSpec) {
@@ -35,7 +35,7 @@ namespace sablo.propertyTypes {
 				return undefined;
 			}
 		}
-		
+
 		registerDetails(details: sablo.typesRegistry.ICustomTypesFromServer, webObjectSpecName: string) {
 			// ok we got the custom types section of a .spec file in details; do it similarly to what we do server-side:
 			//   - first create empty shells for all custom types (because they might need to reference each other)
@@ -59,11 +59,11 @@ namespace sablo.propertyTypes {
 				customTypesForThisSpec[customTypeName].setPropertyDescriptions(properties);
 			}
 		}
-	
+
 	}
-	
+
 	class CustomObjectType implements sablo.IType<CustomObjectValue> {
-		
+
     	static readonly UPDATES = "u";
     	static readonly KEY = "k";
     	static readonly VALUE = "v";
@@ -79,7 +79,7 @@ namespace sablo.propertyTypes {
 		setPropertyDescriptions(propertyDescriptions: { [propertyName: string]: sablo.IPropertyDescription } ): void {
 			this.propertyDescriptions = propertyDescriptions;
 		}
-		
+
 		private getStaticPropertyType(propertyName: string) {
 			return this.propertyDescriptions[propertyName]?.getPropertyType();
 		}
@@ -89,13 +89,13 @@ namespace sablo.propertyTypes {
 			if (!propType) propType = internalState.dynamicPropertyTypesHolder[propertyName];
 			return propType;
 		}
-		
+
         fromServerToClient(serverJSONValue: any, currentClientValue: CustomObjectValue, componentScope: angular.IScope, propertyContext: sablo.IPropertyContext): CustomObjectValue {
 			let newValue: CustomObjectValue = currentClientValue;
 
 			// remove old watches and, at the end create new ones to avoid old watches getting triggered by server side change
 			this.removeAllWatches(currentClientValue);
-			
+
 			try
 			{
 				if (serverJSONValue && serverJSONValue[CustomObjectType.VALUE]) {
@@ -103,14 +103,14 @@ namespace sablo.propertyTypes {
 					newValue = serverJSONValue[CustomObjectType.VALUE];
 					this.initializeNewValue(newValue, serverJSONValue[CustomObjectType.CONTENT_VERSION], propertyContext?.getPushToServerCalculatedValue());
 					const internalState = newValue[this.sabloConverters.INTERNAL_IMPL];
-						
+
 					const propertyContextCreator = new sablo.typesRegistry.ChildPropertyContextCreator(
 							this.getCustomObjectPropertyContextGetter(newValue, propertyContext),
 							this.propertyDescriptions, propertyContext?.getPushToServerCalculatedValue());
-					
+
 					for (const c in newValue) {
 						let elem = newValue[c];
-						
+
 						// if it is a typed prop. use the type to convert it, if it is a dynamic type prop (for example dataprovider of type date) do the same and store the type
 						newValue[c] = elem = this.sabloConverters.convertFromServerToClient(elem, this.getStaticPropertyType(c), currentClientValue ? currentClientValue[c] : undefined,
 								internalState.dynamicPropertyTypesHolder, c, componentScope, propertyContextCreator.withPushToServerFor(c));
@@ -123,16 +123,15 @@ namespace sablo.propertyTypes {
 				} else if (serverJSONValue && serverJSONValue[CustomObjectType.UPDATES]) {
 					// granular updates received;
 					const internalState = currentClientValue[this.sabloConverters.INTERNAL_IMPL];
-		            
+
                     internalState.calculatedPushToServerOfWholeProp = propertyContext?.getPushToServerCalculatedValue(); // for example if a custom object value is initially received through a return value from server side api/handler call and not as a normal model property and then the component/service assigns it to model, the push to server of it might have changed; use the one received here as arg
 		            if (!internalState.calculatedPushToServerOfWholeProp) internalState.calculatedPushToServerOfWholeProp = sablo.typesRegistry.PushToServerEnum.reject;
-
 
 					// if something changed browser-side, increasing the content version thus not matching next expected version,
 					// we ignore this update and expect a fresh full copy of the object from the server (currently server value is leading/has priority because not all server side values might support being recreated from client values)
 					if (internalState[CustomObjectType.CONTENT_VERSION] == serverJSONValue[CustomObjectType.CONTENT_VERSION]) {
 						const updates = serverJSONValue[CustomObjectType.UPDATES];
-						
+
 						const propertyContextCreator = new sablo.typesRegistry.ChildPropertyContextCreator(
 								this.getCustomObjectPropertyContextGetter(currentClientValue, propertyContext),
 								this.propertyDescriptions, propertyContext?.getPushToServerCalculatedValue());
@@ -161,12 +160,12 @@ namespace sablo.propertyTypes {
 				this.addBackWatches(newValue, componentScope);
 			}
 
-			return newValue;        	
+			return newValue;
         }
-        
+
         fromClientToServer(newClientData: any, oldClientData: CustomObjectValue, scope: angular.IScope, propertyContext: sablo.IPropertyContext): any {
         	let internalState: any;
-        	
+
         	if (newClientData) {
                 if (!(internalState = newClientData[this.sabloConverters.INTERNAL_IMPL])) {
             		// this can happen when a new obj. value was set completely in browser
@@ -176,9 +175,9 @@ namespace sablo.propertyTypes {
             		              oldClientData[this.sabloConverters.INTERNAL_IMPL][CustomObjectType.CONTENT_VERSION] : 0,
             		              propertyContext?.getPushToServerCalculatedValue());
                     if (oldClientData && oldClientData[this.sabloConverters.INTERNAL_IMPL]) this.removeAllWatches(oldClientData);
-    
+
             		internalState = newClientData[this.sabloConverters.INTERNAL_IMPL];
-            		
+
             		// mark it to be fully sent to server as well below
     				internalState.allChanged = true;
         	    } else {
@@ -186,7 +185,7 @@ namespace sablo.propertyTypes {
                     if (!internalState.calculatedPushToServerOfWholeProp) internalState.calculatedPushToServerOfWholeProp = sablo.typesRegistry.PushToServerEnum.reject;
                 }
         	}
-        	
+
 			const propertyContextCreator = new sablo.typesRegistry.ChildPropertyContextCreator(
 					this.getCustomObjectPropertyContextGetter(newClientData, propertyContext),
 					this.propertyDescriptions, propertyContext?.getPushToServerCalculatedValue());
@@ -203,23 +202,23 @@ namespace sablo.propertyTypes {
 							if (CustomObjectType.angularAutoAddedKeys.indexOf(key) !== -1) continue;
 
 							const val = newClientData[key];
-							
-							toBeSentObj[key] = this.sabloConverters.convertFromClientToServer(val, this.getPropertyType(internalState, key), oldClientData ? oldClientData[key] : undefined, scope, propertyContextCreator.withPushToServerFor(key));
-							
+
+							toBeSentObj[key] = this.sabloConverters.convertFromClientToServer(val, this.getPropertyType(internalState, key), undefined, scope, propertyContextCreator.withPushToServerFor(key));
+
 							// if it's a nested obj/array or other smart prop that just got smart in convertFromClientToServer, attach the change notifier
                             if (val && val[this.sabloConverters.INTERNAL_IMPL] && val[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier)
                                 val[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier(this.getChangeNotifier(newClientData, key));
-                                
+
 							if (sablo.typesRegistry.PushToServerUtils.combineWithChildStatic(internalState.calculatedPushToServerOfWholeProp, this.propertyDescriptions[key]?.getPropertyDeclaredPushToServer())
 							     === sablo.typesRegistry.PushToServerEnum.reject) delete toBeSentObj[key]; // don't send to server pushToServer reject keys
 						}
-						
+
                         // now add watches/change notifiers to the new full value if needed (now all children are converted and made smart themselves if necessary so addBackWatches can make the distinction between smart and dumb correctly)
                         this.addBackWatches(newClientData, scope);
-						
+
 						internalState.allChanged = false;
 						internalState.changedKeysOldValues = {};
-						
+
 						if (internalState.calculatedPushToServerOfWholeProp === sablo.typesRegistry.PushToServerEnum.reject)
 						{
                             // if whole value is reject, don't sent anything
@@ -237,29 +236,20 @@ namespace sablo.propertyTypes {
 
 							let changed = (newVal !== oldVal);
 							if (!changed) {
-								if (internalState.elUnwatch[key]) {
-									// it's a dumb value - watched; see if it really changed acording to sablo rules
-									if (oldVal !== newVal) {
-										if (typeof newVal == "object") {
-											if (this.sabloUtils.isChanged(newVal, oldVal, this.getPropertyType(internalState, key))) {
-												changed = true;
-											}
-										} else {
-											changed = true;
-										}
-									}
-								} else changed = newVal && newVal[this.sabloConverters.INTERNAL_IMPL].isChanged(); // must be smart value then; same reference as checked above; so ask it if it changed
+								if (!internalState.elUnwatch[key]) {
+									changed = newVal && newVal[this.sabloConverters.INTERNAL_IMPL] && newVal[this.sabloConverters.INTERNAL_IMPL].isChanged && newVal[this.sabloConverters.INTERNAL_IMPL].isChanged(); // must be smart value then; same reference as checked above; so ask it if it changed
+								} // else it's a dumb value; but old and new are the same reference so there are no changes
 							}
 
 							if (changed) {
 								const ch = {};
 								ch[CustomObjectType.KEY] = key;
-								
+
                                 let wasSmartBeforeConversion = (newVal && newVal[this.sabloConverters.INTERNAL_IMPL] && newVal[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier);
                                 ch[CustomObjectType.VALUE] = this.sabloConverters.convertFromClientToServer(newVal, this.getPropertyType(internalState, key), oldVal, scope, propertyContextCreator.withPushToServerFor(key));
                                 if (!wasSmartBeforeConversion && (newVal && newVal[this.sabloConverters.INTERNAL_IMPL] && newVal[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier))
                                     newVal[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier(this.getChangeNotifier(newClientData, key)); // if it was a new object/array set in this key, which was initialized by convertFromClientToServer call above, do add the change notifier to it
-                                     
+
 								changedElements.push(ch);
 							}
 						}
@@ -273,14 +263,14 @@ namespace sablo.propertyTypes {
 					return x;
 				}
 			}
-			
+
 			return newClientData;
 		}
-        
+
         updateAngularScope(clientValue: CustomObjectValue, componentScope: angular.IScope): void {
 			this.removeAllWatches(clientValue);
 			if (componentScope) this.addBackWatches(clientValue, componentScope);
-			
+
 			if (clientValue) {
 				const internalState = clientValue[this.sabloConverters.INTERNAL_IMPL];
 				if (internalState) {
@@ -302,7 +292,7 @@ namespace sablo.propertyTypes {
     			internalState.notifier();
     		}
     	}
-    	
+
     	private watchDumbElementForChanges(propertyValue: CustomObjectValue, key: string, componentScope: angular.IScope, deep: boolean): () => void  {
     		// if elements are primitives or anyway not something that wants control over changes, just add an in-depth watch
     		return componentScope.$watch(function() {
@@ -341,7 +331,7 @@ namespace sablo.propertyTypes {
 			internalState.allChanged = false;
 			internalState.dynamicPropertyTypesHolder = {};
     	}
-    	
+
     	private removeAllWatches(value: CustomObjectValue): void {
     		if (value != null && angular.isDefined(value)) {
     			const iS = value[this.sabloConverters.INTERNAL_IMPL];
@@ -379,7 +369,7 @@ namespace sablo.propertyTypes {
     				// get changed completely by reference
     				internalState.objStructureUnwatch = componentScope.$watchCollection(function() { return value; }, (newWVal, oldWVal) => {
     					if (newWVal === oldWVal) return;
-					
+
 						// search for differences between properties of the old and new objects
 						let changed = false;
 
@@ -393,7 +383,7 @@ namespace sablo.propertyTypes {
 
 							if ((idx = tmp.indexOf(key)) != -1) {
 								tmp.splice(idx, 1); // this will be dealt with here; remove it from tmp
-								
+
 								// key in both old and new; check for difference in value
 								if (newWVal[key] !== oldWVal[key] && oldWVal[key] && oldWVal[key][this.sabloConverters.INTERNAL_IMPL] && oldWVal[key][this.sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
                                     oldWVal[key][this.sabloConverters.INTERNAL_IMPL].setChangeNotifier(undefined);
@@ -433,7 +423,7 @@ namespace sablo.propertyTypes {
 								changed = true;
 								internalState.changedKeysOldValues[key] = undefined;
 							}
-							
+
 							// if new value is smart we have to give it the according change notifier; if it's 'dumb' and it was not watched before add a 'dumb' watch on it
 							if (newWVal[key] && newWVal[key][this.sabloConverters.INTERNAL_IMPL] && newWVal[key][this.sabloConverters.INTERNAL_IMPL].setChangeNotifier)
 								newWVal[key][this.sabloConverters.INTERNAL_IMPL].setChangeNotifier(this.getChangeNotifier(newWVal, key));
@@ -444,7 +434,7 @@ namespace sablo.propertyTypes {
     			}
     		}
     	}
-    	
+
     	private getCustomObjectPropertyContextGetter(customObjectValue: CustomObjectValue, parentPropertyContext: sablo.IPropertyContext): sablo.IPropertyContextGetterMethod {
     		// property context that we pass here should search first in the current custom object value and only fallback to "parentPropertyContext" if needed
     		return function (propertyName) {
@@ -452,12 +442,12 @@ namespace sablo.propertyTypes {
     			else return parentPropertyContext ? parentPropertyContext.getProperty(propertyName) : undefined; // fall back to parent object nesting context
     		}
     	}
-    	
+
     	// ------------------------------------------------------
 	}
 	
 	interface CustomObjectValue {
-		
+
 	}
 
 }

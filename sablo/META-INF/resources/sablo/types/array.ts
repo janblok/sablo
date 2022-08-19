@@ -5,26 +5,25 @@ angular.module('custom_json_array_property', ['webSocketModule', '$typesRegistry
 //CustomJSONArray type ------------------------------------------
 .run(function ($sabloConverters: sablo.ISabloConverters, $sabloUtils: sablo.ISabloUtils, $typesRegistry: sablo.ITypesRegistryForTypeFactories, $log: sablo.ILogService) {
     const TYPE_FACTORY_NAME = 'JSON_arr';
-    $typesRegistry.getTypeFactoryRegistry().contributeTypeFactory(TYPE_FACTORY_NAME, new sablo.propertyTypes.CustomArrayTypeFactory($typesRegistry, $log, $sabloConverters, $sabloUtils));
+    $typesRegistry.getTypeFactoryRegistry().contributeTypeFactory(TYPE_FACTORY_NAME, new sablo.propertyTypes.CustomArrayTypeFactory($typesRegistry, $sabloConverters, $sabloUtils));
 });
 
 
 namespace sablo.propertyTypes {
 
     export class CustomArrayTypeFactory implements sablo.ITypeFactory<CustomArrayValue> {
-        
+
         private customArrayTypes: Map<sablo.IType<any>, Map<IPushToServerEnum, CustomArrayType>> = new Map(); // allows any keys, even undefined
-        
+
         constructor(private readonly typesRegistry: sablo.ITypesRegistryForTypeFactories,
-                private readonly logger: sablo.ILogService,
                 private readonly sabloConverters: sablo.ISabloConverters,
                 private readonly sabloUtils: sablo.ISabloUtils) {}
-        
-        getOrCreateSpecificType(specificElementInfo: ITypeFromServer | { t: ITypeFromServer, s: PushToServerEnumValue }, webObjectSpecName: string): CustomArrayType {
-            var elementTypeWithNoPushToServer = (specificElementInfo instanceof Array || typeof specificElementInfo == "string") || specificElementInfo === null;
+
+        getOrCreateSpecificType(specificElementInfo: ITypeFromServer | { t: ITypeFromServer; s: PushToServerEnumValue }, webObjectSpecName: string): CustomArrayType {
+            const elementTypeWithNoPushToServer = (specificElementInfo instanceof Array || typeof specificElementInfo == "string") || specificElementInfo === null;
             const elementTypeFromSrv: ITypeFromServer = (elementTypeWithNoPushToServer) ? specificElementInfo as ITypeFromServer : (specificElementInfo as { t: ITypeFromServer, s: PushToServerEnumValue }).t;
             const pushToServer: IPushToServerEnum = (elementTypeWithNoPushToServer) ? undefined : sablo.typesRegistry.PushToServerEnum.valueOf((specificElementInfo as { t: ITypeFromServer, s: PushToServerEnumValue }).s);
-            
+
             let staticElementType = (elementTypeFromSrv ? this.typesRegistry.processTypeFromServer(elementTypeFromSrv, webObjectSpecName) : undefined); // a custom array could have an element type that is not a client side type; but it still needs to be an array type
             let cachedArraysByType = this.customArrayTypes.get(staticElementType);
             if (!cachedArraysByType) {
@@ -36,16 +35,16 @@ namespace sablo.propertyTypes {
                 cachedArraysByTypeAndPushToServerOnElem = new CustomArrayType(staticElementType, pushToServer, this.sabloConverters, this.sabloUtils);
                 cachedArraysByType.set(pushToServer, cachedArraysByTypeAndPushToServerOnElem);
             }
-                
+
             return cachedArraysByTypeAndPushToServerOnElem;
         }
-        
+
         registerDetails(details: sablo.typesRegistry.ICustomTypesFromServer, webObjectSpecName: string) {
             // arrays don't need to pre-register stuff
         }
-    
+
     }
-    
+
     class CustomArrayType implements sablo.IType<CustomArrayValue> {
         static readonly GRANULAR_UPDATES = "g";
         static readonly GRANULAR_UPDATE_DATA = "d";
@@ -59,11 +58,11 @@ namespace sablo.propertyTypes {
         static readonly VALUE = "v";
         static readonly CONTENT_VERSION = "vEr"; // server side sync to make sure we don't end up granular updating something that has changed meanwhile server-side
         static readonly NO_OP = "n";
-        
+
         constructor(private readonly staticElementType: sablo.IType<any>,
                 private readonly pushToServerForElements: IPushToServerEnum,
                 private readonly sabloConverters: sablo.ISabloConverters, private readonly sabloUtils: sablo.ISabloUtils) {}
-        
+
         fromServerToClient(serverJSONValue: any, currentClientValue: CustomArrayValue, componentScope: angular.IScope, propertyContext: sablo.IPropertyContext): CustomArrayValue {
             let newValue = currentClientValue;
 
@@ -110,16 +109,16 @@ namespace sablo.propertyTypes {
                             const startIndex = startIndex_endIndex_opType[0];
                             const endIndex = startIndex_endIndex_opType[1];
                             const opType = startIndex_endIndex_opType[2];
-                            
+
                             if (opType === CustomArrayType.CHANGED) {
                                 const changedData = granularOp[CustomArrayType.GRANULAR_UPDATE_DATA];
                                 for (i = startIndex; i <= endIndex; i++) {
                                     const relIdx = i - startIndex;
-                
+
                                     // apply the conversions, update value and kept conversion info for changed indexes
                                     currentClientValue[i] = this.sabloConverters.convertFromServerToClient(changedData[relIdx], this.staticElementType,
                                                                 currentClientValue[i], internalState.dynamicPropertyTypesHolder, "" + i, componentScope, elemPropertyContext);
-                                    
+
                                     if (currentClientValue[i] && currentClientValue[i][this.sabloConverters.INTERNAL_IMPL] && currentClientValue[i][this.sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
                                         // child is able to handle it's own change mechanism
                                         currentClientValue[i][this.sabloConverters.INTERNAL_IMPL].setChangeNotifier(this.getChangeNotifier(currentClientValue, i));
@@ -128,7 +127,7 @@ namespace sablo.propertyTypes {
                             } else if (opType === CustomArrayType.INSERT) {
                                 const insertedData = granularOp[CustomArrayType.GRANULAR_UPDATE_DATA];
                                 const numberOfInsertedRows = insertedData.length;
-                
+
                                 // shift right by "numberOfInsertedRows" all dynamicTypes after or equal to idx as we are going to insert new values there
                                 for (let idxToShift = currentClientValue.length - 1; idxToShift >= startIndex; idxToShift--)
                                     if (internalState.dynamicPropertyTypesHolder["" + idxToShift]) {
@@ -137,9 +136,8 @@ namespace sablo.propertyTypes {
                                     } else delete internalState.dynamicPropertyTypesHolder["" + (idxToShift + numberOfInsertedRows)];
 
                                 // apply conversions
-                
                                 for (i = numberOfInsertedRows - 1; i >= 0 ; i--) {
-                                    const addedRow = this.sabloConverters.convertFromServerToClient(insertedData[i], this.staticElementType, undefined, 
+                                    const addedRow = this.sabloConverters.convertFromServerToClient(insertedData[i], this.staticElementType, undefined,
                                                     internalState.dynamicPropertyTypesHolder, "" + (startIndex + i), componentScope, elemPropertyContext);
                                     currentClientValue.splice(startIndex, 0, addedRow);
                                 }
@@ -153,7 +151,7 @@ namespace sablo.propertyTypes {
                                 }
                             } else if (opType === CustomArrayType.DELETE) {
                                 const numberOfDeletedRows = endIndex - startIndex + 1;
-                                
+
                                 // shift left by "numberOfDeletedRows" all dynamicTypes after "startIndex + numberOfDeletedRows" as we are going to delete that interval
                                 for (let idxToShift = startIndex + numberOfDeletedRows; idxToShift < currentClientValue.length; idxToShift++)
                                     if (internalState.dynamicPropertyTypesHolder["" + idxToShift]) {
@@ -215,7 +213,7 @@ namespace sablo.propertyTypes {
                     if (!internalState.calculatedPushToServerOfWholeProp) internalState.calculatedPushToServerOfWholeProp = sablo.typesRegistry.PushToServerEnum.reject;
                 }
             }
-            
+
             if (newClientData) {
                 if (internalState.isChanged()) {
                     const changes = {};
@@ -227,8 +225,9 @@ namespace sablo.propertyTypes {
                         const toBeSentArray = changes[CustomArrayType.VALUE] = [];
                         for (let idx = 0; idx < newClientData.length; idx++) {
                             const val = newClientData[idx];
-                            const converted = this.sabloConverters.convertFromClientToServer(val, this.getElementType(internalState, idx), oldClientData ? oldClientData[idx] : undefined, scope, elemPropertyContext);
-                            
+                            // TODO how do we tell child to send all not just what granular changes it might know it has as well? because here we do want to send the full array; TiNG (NG2) knows how to do this
+                            const converted = this.sabloConverters.convertFromClientToServer(val, this.getElementType(internalState, idx), undefined, scope, elemPropertyContext);
+
                             // if it's a nested obj/array or other smart prop that just got smart in convertFromClientToServer, attach the change notifier
                             if (val && val[this.sabloConverters.INTERNAL_IMPL] && val[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier)
                                 val[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier(this.getChangeNotifier(newClientData, idx));
@@ -236,11 +235,11 @@ namespace sablo.propertyTypes {
                             // do not send to server if elem pushToServer is reject
                             if (!elemPropertyContext || elemPropertyContext.getPushToServerCalculatedValue().value > sablo.typesRegistry.PushToServerEnum.reject.value) toBeSentArray[idx] = converted;
                         }
-                        
+
                         // now add watches/change notifiers to the new full value if needed (now all children are converted and made smart themselves if necessary so addBackWatches can make the distinction between smart and dumb correctly)
                         this.removeAllWatches(newClientData); // in case this was not an actual full new value but an existing array in which elements were added/removed and then it does have watches
                         this.addBackWatches(newClientData, scope);
-                
+
                         internalState.allChanged = false;
                         internalState.changedIndexesOldValues = {};
                         if (internalState.calculatedPushToServerOfWholeProp === sablo.typesRegistry.PushToServerEnum.reject)
@@ -259,30 +258,23 @@ namespace sablo.propertyTypes {
                             const oldVal = internalState.changedIndexesOldValues[idx];
 
                             let changed = (newVal !== oldVal);
+
                             if (!changed) {
-                                if (internalState.elUnwatch[idx]) {
-                                    // it's a dumb value - watched; see if it really changed according to sablo rules
-                                    if (oldVal !== newVal) {
-                                        if (typeof newVal == "object") {
-                                            if (this.sabloUtils.isChanged(newVal, oldVal, internalState.conversionInfo[idx])) {
-                                                changed = true;
-                                            }
-                                        } else {
-                                            changed = true;
-                                        }
-                                    }
-                                } else changed = newVal && newVal[this.sabloConverters.INTERNAL_IMPL].isChanged(); // must be smart value then; same reference as checked above; so ask it if it changed
+                                if (!internalState.elUnwatch[idx]) {
+                                    	// must be a smart value then; same reference as checked above; so ask it if it changed
+                                    changed = newVal && newVal[this.sabloConverters.INTERNAL_IMPL] && newVal[this.sabloConverters.INTERNAL_IMPL].isChanged && newVal[this.sabloConverters.INTERNAL_IMPL].isChanged();
+                                } // else it's a dumb value - with the same ref; no changes then
                             }
 
                             if (changed) {
                                 const ch = {};
                                 ch[CustomArrayType.INDEX] = idx;
                                 
-                                let wasSmartBefore = (newVal && newVal[this.sabloConverters.INTERNAL_IMPL] && newVal[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier);
+                                let wasSmartBeforeConversion = (newVal && newVal[this.sabloConverters.INTERNAL_IMPL] && newVal[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier);
                                 ch[CustomArrayType.VALUE] = this.sabloConverters.convertFromClientToServer(newVal, this.getElementType(internalState, idx), oldVal, scope, elemPropertyContext);
-                                if (!wasSmartBefore && (newVal && newVal[this.sabloConverters.INTERNAL_IMPL] && newVal[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier))
+                                if (!wasSmartBeforeConversion && (newVal && newVal[this.sabloConverters.INTERNAL_IMPL] && newVal[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier))
                                     newVal[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier(this.getChangeNotifier(newClientData, Number.parseInt(idx))); // if it was a new object/array set at this index which was initialized by convertFromClientToServer call, do add the change notifier to it 
-                                
+
                                 changedElements.push(ch);
                             }
                         }
@@ -299,7 +291,7 @@ namespace sablo.propertyTypes {
 
             return newClientData;
         }
-        
+
         updateAngularScope(clientValue: CustomArrayValue, componentScope: angular.IScope): void {
             this.removeAllWatches(clientValue);
             if (componentScope) this.addBackWatches(clientValue, componentScope);
@@ -315,7 +307,7 @@ namespace sablo.propertyTypes {
                 }
             }
         }
-    
+
         // ------------------------------------------------------------------------------
 
         private getChangeNotifier(propertyValue: any, idx: number) {
@@ -325,7 +317,7 @@ namespace sablo.propertyTypes {
                 internalState.changeNotifier();
             }
         }
-    
+
         private watchDumbElementForChanges(propertyValue: CustomArrayValue, idx: number, componentScope: angular.IScope, deep: boolean): () => void  {
             // if elements are primitives or anyway not something that wants control over changes, just add an in-depth watch
             return componentScope.$watch(function() {
@@ -338,7 +330,7 @@ namespace sablo.propertyTypes {
                 internalState.changeNotifier();
             }, deep);
         }
-    
+
         /** Initializes internal state on a new array value */
         private initializeNewValue(newValue: any, contentVersion: number, pushToServerCalculatedValue: sablo.typesRegistry.PushToServerEnum) {
             this.sabloConverters.prepareInternalState(newValue); 
@@ -353,19 +345,18 @@ namespace sablo.propertyTypes {
             }
             internalState.isChanged = function() {
                 let hasChanges = internalState.allChanged;
-                if (!hasChanges) for (const x in internalState.changedIndexesOldValues) { hasChanges = true; break; }
+                if (!hasChanges) for (const _x in internalState.changedIndexesOldValues) { hasChanges = true; break; }
                 return hasChanges;
             }
 
             // private impl
             internalState.modelUnwatch = [];
             internalState.arrayStructureUnwatch = null;
-            internalState.conversionInfo = [];
             internalState.changedIndexesOldValues = {};
             internalState.allChanged = false;
             internalState.dynamicPropertyTypesHolder = {};
         }
-    
+
         private removeAllWatches(value: CustomArrayValue): void {
             if (value != null && angular.isDefined(value)) {
                 const iS = value[this.sabloConverters.INTERNAL_IMPL];
@@ -379,15 +370,15 @@ namespace sablo.propertyTypes {
                 }
             }
         }
-    
+
         private addBackWatches(value: CustomArrayValue, componentScope: angular.IScope): void {
             if (value) {
                 const internalState = value[this.sabloConverters.INTERNAL_IMPL];
                 internalState.elUnwatch = {};
-                
+
                 const elementCalculatedPushToServer = sablo.typesRegistry.PushToServerUtils.combineWithChildStatic(internalState.calculatedPushToServerOfWholeProp,
                         this.pushToServerForElements);
-                
+
                 // add shallow/deep watches as needed
                 if (componentScope) {
                     for (let c = 0; c < value.length; c++) {
@@ -398,12 +389,12 @@ namespace sablo.propertyTypes {
                         } // else if it's a smart value and the pushToServer is shallow or deep we must shallow watch it (it will manage it's own contents but we still must watch for reference changes);
                         // but that is done below in a $watchCollection
                     }
-    
+
                     // watch for add/remove and such operations on array; this is helpful also when 'smart' child values (that have .setChangeNotifier)
                     // get changed completely by reference, so int IS NOT JUST FOR DUMB/REFERENCE changes if pushToServer >= shallow but also for updating the .setChangeNotifier on smart values
                     internalState.arrayStructureUnwatch = componentScope.$watchCollection(function() { return value; }, (newWVal, oldWVal) => {
                         if (newWVal === oldWVal) return;
-    
+
                         let fullChangeWasAlreadySentDueToLengthChange: boolean = false;
                         if (newWVal.length !== oldWVal.length) {
                             // that watch funct. always returns the same reference "return value"; but length could differ old and new
@@ -428,14 +419,14 @@ namespace sablo.propertyTypes {
                                 if (oldElWasSmart) {
                                     oldEl[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier(undefined);
                                 }
-                                
+
                                 if (!fullChangeWasAlreadySentDueToLengthChange && elementCalculatedPushToServer.value >= sablo.typesRegistry.PushToServerEnum.shallow.value && oldElWasSmart) {
                                     // we only need to handle this for old smart element values,
                                     // as the others will be handled by the separate 'dumb' watches
                                     referencesChanged = true;
                                     internalState.changedIndexesOldValues[j] = oldEl;
                                 }
-                                
+
                                 const newElIsSmart = newEl && newEl[this.sabloConverters.INTERNAL_IMPL] && newEl[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier;
                                 if (newElIsSmart) {
                                     if (!oldElWasSmart) {
@@ -462,6 +453,7 @@ namespace sablo.propertyTypes {
     }
 
     interface CustomArrayValue extends Array<any> {
-        
+
     }
+
 }

@@ -101,16 +101,16 @@ public class WebComponent extends BaseWebObject
 	}
 
 	@Override
-	protected void checkProtection(String eventType)
+	protected void checkForProtectedPropertiesThatMightBlockUpdatesOn(String eventType)
 	{
-		super.checkProtection(eventType);
+		super.checkForProtectedPropertiesThatMightBlockUpdatesOn(eventType);
 
 		// Check if container is not protected or invisible
 		if (parent != null)
 		{
 			try
 			{
-				parent.checkProtection(null);
+				parent.checkForProtectedPropertiesThatMightBlockUpdatesOn(null);
 			}
 			catch (IllegalChangeFromClientException e)
 			{

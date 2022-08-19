@@ -248,7 +248,7 @@ public class JSONUtils
 		return getClientSideTypeJSONString((IPropertyWithClientSideConversions< ? >)pd.getType(), pd);
 	}
 
-	public static EmbeddableJSONWriter getClientSideTypeJSONString(IPropertyWithClientSideConversions type, PropertyDescription pd)
+	public static EmbeddableJSONWriter getClientSideTypeJSONString(IPropertyWithClientSideConversions< ? > type, PropertyDescription pd)
 	{
 		EmbeddableJSONWriter ejw = new EmbeddableJSONWriter(true);
 		return type.writeClientSideTypeName(ejw, null, pd) ? ejw : null;

@@ -57,7 +57,7 @@ public class UnchangedInterval
 	 * More columns could be added to "changedColumnName" later.<br/><br/>
 	 *
 	 * See {@link #UnchangedInterval(int, int, int, int)} for other params.
-	 * @param columnNames the names of columns that actually did change (the rest remaining unchanged).
+	 * @param cellNames the names of columns that actually did change (the rest remaining unchanged).
 	 */
 	public UnchangedInterval(int initialStartIndex, int initialEndIndex, int newStartIndex, int newEndIndex, Set<String> changedColumns)
 	{
@@ -126,7 +126,7 @@ public class UnchangedInterval
 		if (intersectionSize > 0)
 		{
 			UnchangedInterval newInterval;
-			boolean isPartialChange = (changeOperation.columnNames != null);
+			boolean isPartialChange = (changeOperation.cellNames != null);
 			boolean needsToBeSplit = true;
 
 			if (intersectionStart == newStartIndex)
@@ -143,12 +143,12 @@ public class UnchangedInterval
 					if (changedColumnNames != null)
 					{
 						newIntervalChangedColumns = new HashSet<>(changedColumnNames);
-						newIntervalChangedColumns.addAll(changeOperation.columnNames);
+						newIntervalChangedColumns.addAll(changeOperation.cellNames);
 
 						// it doesn't need to be split if no new columns are changed after the new operation on intersection
 						needsToBeSplit = (changedColumnNames.size() < newIntervalChangedColumns.size());
 					}
-					else newIntervalChangedColumns = changeOperation.columnNames;
+					else newIntervalChangedColumns = changeOperation.cellNames;
 
 					if (needsToBeSplit)
 					{
@@ -186,12 +186,12 @@ public class UnchangedInterval
 					if (changedColumnNames != null)
 					{
 						newIntervalChangedColumns = new HashSet<>(changedColumnNames);
-						newIntervalChangedColumns.addAll(changeOperation.columnNames);
+						newIntervalChangedColumns.addAll(changeOperation.cellNames);
 
 						// it doesn't need to be split if no new columns are changed after the new operation on intersection
 						needsToBeSplit = (changedColumnNames.size() < newIntervalChangedColumns.size());
 					}
-					else newIntervalChangedColumns = changeOperation.columnNames;
+					else newIntervalChangedColumns = changeOperation.cellNames;
 
 					if (needsToBeSplit)
 					{
@@ -225,12 +225,12 @@ public class UnchangedInterval
 					if (changedColumnNames != null)
 					{
 						newIntervalChangedColumns = new HashSet<>(changedColumnNames);
-						newIntervalChangedColumns.addAll(changeOperation.columnNames);
+						newIntervalChangedColumns.addAll(changeOperation.cellNames);
 
 						// it doesn't need to be split if no new columns are changed after the new operation on intersection
 						needsToBeSplit = (changedColumnNames.size() < newIntervalChangedColumns.size());
 					}
-					else newIntervalChangedColumns = changeOperation.columnNames;
+					else newIntervalChangedColumns = changeOperation.cellNames;
 
 					if (needsToBeSplit)
 					{
@@ -385,9 +385,9 @@ public class UnchangedInterval
 				? equivalentSequenceOfOperations.get(equivalentSequenceOfOperations.size() - 1) : null;
 
 			if (previouslyGeneratedEquivalentOp != null && previouslyGeneratedEquivalentOp.type == ArrayOperation.CHANGE &&
-				previouslyGeneratedEquivalentOp.columnNames != null &&
-				changedColumnNames.size() == previouslyGeneratedEquivalentOp.columnNames.size() &&
-				changedColumnNames.containsAll(previouslyGeneratedEquivalentOp.columnNames) && getNewStart() == previouslyGeneratedEquivalentOp.endIndex + 1)
+				previouslyGeneratedEquivalentOp.cellNames != null &&
+				changedColumnNames.size() == previouslyGeneratedEquivalentOp.cellNames.size() &&
+				changedColumnNames.containsAll(previouslyGeneratedEquivalentOp.cellNames) && getNewStart() == previouslyGeneratedEquivalentOp.endIndex + 1)
 			{
 				// previous is also a partial change; they have also the same column names and are one-after-the-other (unchanged intervals can make this happen
 				// if there is a sequence of ops that adds changed columns to a part of the viewport, then to another consecutive part and end up being the same columns in the end)
@@ -395,7 +395,7 @@ public class UnchangedInterval
 				// so it is really a change on multiple indexes with the same columns on each index; we just need to correct the end index of previous op
 				equivalentSequenceOfOperations.remove(equivalentSequenceOfOperations.size() - 1);
 				equivalentSequenceOfOperations.add(new ArrayOperation(previouslyGeneratedEquivalentOp.startIndex,
-					getNewEnd(), previouslyGeneratedEquivalentOp.type, previouslyGeneratedEquivalentOp.columnNames));
+					getNewEnd(), previouslyGeneratedEquivalentOp.type, previouslyGeneratedEquivalentOp.cellNames));
 			}
 			else equivalentSequenceOfOperations.add(new ArrayOperation(getNewStart(), getNewEnd(), ArrayOperation.CHANGE, changedColumnNames));
 		} // else nothing to add here; this is just for partially changed intervals; completely unchanged intervals generate no changes of course

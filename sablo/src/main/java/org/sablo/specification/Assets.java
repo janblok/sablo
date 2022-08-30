@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Servoy BV
+ * Copyright (C) 2022 Servoy BV
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,35 @@
 
 package org.sablo.specification;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.json.JSONArray;
+
 /**
  * @author lvostinar
  *
  */
-public class WebLayoutSpecificationBuilder extends AbstractWebLayoutSpecificationBuilder<WebLayoutSpecificationBuilder, WebLayoutSpecification>
+public class Assets
 {
-	@Override
-	public WebLayoutSpecification build()
+	private final JSONArray jsonArray;
+
+	/**
+	 * @param json can be null
+	 */
+	public Assets(JSONArray jsonArray)
 	{
-		return new WebLayoutSpecification(name, packageName, getDisplayname(), categoryName, icon, preview, definition, config, topContainer, allowedChildren,
-			excludedChildren, designStyleClass, layout, properties, deprecated, directives);
+		this.jsonArray = jsonArray;
+	}
+
+	public List<String> getAssetsList()
+	{
+		if (this.jsonArray != null)
+		{
+			List<String> assetsList = new ArrayList<String>();
+			this.jsonArray.forEach(asset -> assetsList.add(asset.toString()));
+			return assetsList;
+		}
+		return null;
 	}
 }

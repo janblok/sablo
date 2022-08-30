@@ -18,6 +18,7 @@ package org.sablo;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -312,14 +313,47 @@ public abstract class BaseWebObject implements IWebObjectContext
 	 */
 	public final Object executeEvent(String eventType, Object[] args) throws Exception
 	{
-		checkForProtectedPropertiesThatMightBlockUpdatesOn(eventType);
+		WebObjectFunctionDefinition handler = getSpecification().getHandler(eventType);
+		try
+		{
+			checkForProtectedPropertiesThatMightBlockUpdatesOn(eventType);
+		}
+		catch (IllegalChangeFromClientException e)
+		{
+			checkIfFunctionAccessIsAllowedDisregardingProtection(handler, e);
+		}
 
 		// test if this is a private handler, should not be callable from a client
-		WebObjectFunctionDefinition handler = getSpecification().getHandler(eventType);
 		if (handler != null && handler.isPrivate()) throw new IllegalAccessException(
 			"Event " + eventType + " is called from the client, but it is a private event of " + this + " with spec " + specification);
 
 		return doExecuteEvent(eventType, args);
+	}
+
+	protected void checkIfFunctionAccessIsAllowedDisregardingProtection(WebObjectFunctionDefinition functionDef, IllegalChangeFromClientException e)
+	{
+		boolean rethrow = true;
+		if (functionDef != null)
+		{
+			String allowAccess = functionDef.getAllowAccess();
+			if (allowAccess != null)
+			{
+				List<String> allowAccessProperties = Arrays.asList(allowAccess.split(","));
+				Iterator<String> iterator = allowAccessProperties.iterator();
+				while (iterator.hasNext())
+				{
+					if (iterator.next().equals(e.getBlockedByProperty()))
+					{
+						rethrow = false;
+						break;
+					}
+				}
+			}
+		}
+		if (rethrow)
+		{
+			throw e;
+		}
 	}
 
 	protected Object doExecuteEvent(String eventType, Object[] args) throws Exception
@@ -769,29 +803,33 @@ public abstract class BaseWebObject implements IWebObjectContext
 		PropertyDescription pd = getPropertyDescription(propertyName);
 		if (pd != null)
 		{
-			Object allowEditTag = pd.getTag(WebObjectSpecification.ALLOW_ACCESS);
-			// allowEditTag is either a String or an array of Strings representing 'blocked by' property name(s) that should not block the given property (the spec makes specific exceptions in the property itself for the other props. that should not block it)
-			if (allowEditTag instanceof JSONArray)
+			if (propertyValue != null && pd.getType() instanceof IGranularProtectionChecker)
 			{
-				Iterator<Object> iterator = ((JSONArray)allowEditTag).iterator();
-				while (iterator.hasNext())
+				rethrow = !((IGranularProtectionChecker<Object>)pd.getType()).allowPush(propertyValue, getProperty(propertyName), e);
+			}
+			else
+			{
+				Object allowEditTag = pd.getTag(WebObjectSpecification.ALLOW_ACCESS);
+				// allowEditTag is either a String or an array of Strings representing 'blocked by' property name(s) that should not block the given property (the spec makes specific exceptions in the property itself for the other props. that should not block it)
+				if (allowEditTag instanceof JSONArray)
 				{
-					if (iterator.next().equals(e.getBlockedByProperty()))
+					Iterator<Object> iterator = ((JSONArray)allowEditTag).iterator();
+					while (iterator.hasNext())
 					{
-						rethrow = false;
-						break;
+						if (iterator.next().equals(e.getBlockedByProperty()))
+						{
+							rethrow = false;
+							break;
+						}
 					}
 				}
-			}
-			else if (allowEditTag instanceof String && allowEditTag.equals(e.getBlockedByProperty()))
-			{
-				rethrow = false;
+				else if (allowEditTag instanceof String && allowEditTag.equals(e.getBlockedByProperty()))
+				{
+					rethrow = false;
+				}
 			}
 		}
-		if (rethrow && propertyValue != null && pd.getType() instanceof IGranularProtectionChecker)
-		{
-			rethrow = !((IGranularProtectionChecker<Object>)pd.getType()).allowPush(propertyValue, getProperty(propertyName));
-		}
+
 		if (rethrow)
 		{
 			e.setData(propertyValue);

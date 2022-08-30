@@ -30,6 +30,7 @@ abstract class AbstractWebLayoutSpecificationBuilder<B extends AbstractWebLayout
 	protected List<String> allowedChildren;
 	protected String designStyleClass;
 	protected List<String> excludedChildren;
+	protected List<String> directives;
 
 	public B withTopContainer(boolean topContainer)
 	{
@@ -58,6 +59,12 @@ abstract class AbstractWebLayoutSpecificationBuilder<B extends AbstractWebLayout
 	public B withExcludedChildren(List<String> excludedChildren)
 	{
 		this.excludedChildren = excludedChildren;
+		return getThis();
+	}
+
+	public B withDirectives(List<String> directives)
+	{
+		this.directives = directives;
 		return getThis();
 	}
 }

@@ -100,6 +100,8 @@ public class BaseWindow implements IWindow
 
 	private final ClientSideWindowState clientSideState = createClientSideWindowState();
 
+	private Map<String, Object> resultToSendToClientForPendingClientToServerAPICall;
+
 	public BaseWindow(IWebsocketSession session, int nr, String name)
 	{
 		this.session = session;
@@ -508,7 +510,8 @@ public class BaseWindow implements IWindow
 	protected boolean sendMessageInternal(IToJSONWriter<IBrowserConverterContext> dataWriter, IToJSONConverter<IBrowserConverterContext> converter,
 		Integer smsgidOptional) throws IOException
 	{
-		if (dataWriter == null && serviceCalls.size() == 0 && componentApiCalls.size() == 0) return false;
+		if (dataWriter == null && serviceCalls.size() == 0 && componentApiCalls.size() == 0 &&
+			this.resultToSendToClientForPendingClientToServerAPICall == null) return false;
 
 		if (getEndpoint() == null)
 		{
@@ -567,6 +570,15 @@ public class BaseWindow implements IWindow
 				}
 			}
 
+			if (resultToSendToClientForPendingClientToServerAPICall != null)
+			{
+				hasContentToSend = true;
+				PropertyDescription dataTypes = (PropertyDescription)resultToSendToClientForPendingClientToServerAPICall.remove("dataTypes"); //$NON-NLS-1$
+
+				JSONUtils.writeData(FullValueToJSONConverter.INSTANCE, w, resultToSendToClientForPendingClientToServerAPICall, dataTypes,
+					BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER);
+			}
+
 			if (hasContentToSend)
 			{
 				if (smsgidOptional != null)
@@ -577,6 +589,7 @@ public class BaseWindow implements IWindow
 
 				sendMessageText(w.toString());
 				serviceCalls.clear();
+				resultToSendToClientForPendingClientToServerAPICall = null;
 			}
 
 			hasContentToSend = checkForAndSendAnyUnexpectedRemainingChangesOfDataWriter(dataWriter, converter) || hasContentToSend;
@@ -681,6 +694,11 @@ public class BaseWindow implements IWindow
 			throw new IOException("Endpoint was closed"); //$NON-NLS-1$
 		}
 		ep.sendText(getNextMessageNumber(), text);
+	}
+
+	public void setResultToSendToClientForPendingClientToServerAPICall(Map<String, Object> resultForApiCall)
+	{
+		this.resultToSendToClientForPendingClientToServerAPICall = resultForApiCall;
 	}
 
 	public void sendChanges() throws IOException

@@ -418,7 +418,6 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 
 	private void addGranularOperation(JSONWriter w, ArrayOperation op, List<WT> wrappedBaseListReadOnly, IBrowserConverterContext dataConverterContext)
 	{
-// new code
 		w.object();
 
 		w.key(OP_ARRAY_START_END_TYPE).array()
@@ -435,7 +434,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 
 			for (int i = op.startIndex; i <= op.endIndex; i++)
 			{
-				if (op.type == ArrayOperation.CHANGE && ChangeAwareList.GRANULAR_UPDATE_OP.equals(op.columnNames))
+				if (op.type == ArrayOperation.CHANGE && ChangeAwareList.GRANULAR_UPDATE_OP.equals(op.cellNames))
 				{
 					JSONUtils.changesToBrowserJSONValue(w, null, wrappedBaseListReadOnly.get(i), getCustomJSONTypeDefinition(),
 						dataConverterContext);

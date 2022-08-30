@@ -132,6 +132,8 @@ webSocketModule.factory('$propertyWatchUtils', function ($typesRegistry: sablo.I
 	
 	let functionsToExecuteAfterIncommingMessageWasHandled: Array<{scopeHint: angular.IScope, task: () => Array<angular.IScope>}> = undefined;
 
+	let currentRequestInfo = undefined
+
 	let getNextMessageId = function() {
 		return nextMessageId++;
 	};
@@ -200,7 +202,11 @@ webSocketModule.factory('$propertyWatchUtils', function ($typesRegistry: sablo.I
 	let handleMessage = function(message) {
 		let obj;
 		let responseValue;
+
         let oldFTEAIMWH = functionsToExecuteAfterIncommingMessageWasHandled; // normally this will always be null here; but in some browsers (FF) an alert on window can make these calls nest unexpectedly; so oldFTEAIMWH avoids exceptions in those cases as well - as we do not restore to null but to old when nesting happens
+        let oldRequestInfo = currentRequestInfo; // same as for the oldFTEAIMWH comment above - to handle that tricky nesting scenario
+
+        currentRequestInfo = undefined;
 		functionsToExecuteAfterIncommingMessageWasHandled = [];
 		let hideIndicatorCounter = 0;
 
@@ -226,6 +232,10 @@ webSocketModule.factory('$propertyWatchUtils', function ($typesRegistry: sablo.I
 			
 			if ($log.debugLevel === $log.SPAM) $log.debug("sbl * message.data (parsed) = " + JSON.stringify(obj, null, "  "));
 
+			if(obj.cmsgid && deferredEvents[obj.cmsgid] && deferredEvents[obj.cmsgid].promise) {
+				currentRequestInfo = deferredEvents[obj.cmsgid].promise.requestInfo;
+			}
+ 
 			let responseValueType: sablo.IType<any>;
 			
 			if (obj.serviceApis) {
@@ -252,26 +262,6 @@ webSocketModule.factory('$propertyWatchUtils', function ($typesRegistry: sablo.I
 						}
 					}
 				}
-			}
-
-			// data got back from the server
-			if (obj.cmsgid) { // response to event
-				let deferredEvent = deferredEvents[obj.cmsgid];
-				if (deferredEvent != null && angular.isDefined(deferredEvent)) {
-					if (obj.exception) {
-						// something went wrong
-						// do a default conversion although I doubt it will do anything (don't think server will send client side type for exceptions)
-						obj.exception = $sabloConverters.convertFromServerToClient(obj.exception, undefined, undefined, undefined, undefined, undefined, undefined);
-						deferredEvent.reject(obj.exception);
-                        $rootScope.$applyAsync(); // not sure that this is needed at all here but it is meant to replace (by making sure a root digest is called) a very old sync $apply that was used here for the reject; it would error out because of that in firefox where an $apply might happen on top of another $apply then in some situations (alerts combined with sync calls to and from server); and that is not allowed by angular 
-					} else {
-						deferredEvent.resolve(obj.ret); // if it's a handler/server side api call that expects a return value, any type conversions should be done in code triggered by this resolve (in calling code)
-                        $rootScope.$applyAsync(); // not sure that this is needed at all here but it is meant to replace (by making sure a root digest is called) a very old sync $apply that was used here for the resolve; it would error out because of that in firefox where an $apply might happen on top of another $apply then in some situations (alerts combined with sync calls to and from server); and that is not allowed by angular 
-					}
-				} else $log.warn("Response to an unknown handler call dismissed; can happen (normal) if a handler call gets interrupted by a full browser refresh.");
-				delete deferredEvents[obj.cmsgid];
-				$sabloTestability.testEvents();
-				$sabloLoadingIndicator.hideLoading();
 			}
 
 			// message
@@ -388,6 +378,26 @@ webSocketModule.factory('$propertyWatchUtils', function ($typesRegistry: sablo.I
 					sendMessageObject(response);
 				});
 			}
+
+            // got the return value for a client-to-server call (that has a defer/waiting promise) back from the server
+			if (obj.cmsgid) { // response to event
+				let deferredEvent = deferredEvents[obj.cmsgid];
+				if (deferredEvent != null && angular.isDefined(deferredEvent)) {
+					if (obj.exception) {
+                        // something went wrong
+						// do a default conversion although I doubt it will do anything (don't think server will send client side type for exceptions)
+						obj.exception = $sabloConverters.convertFromServerToClient(obj.exception, undefined, undefined, undefined, undefined, undefined, undefined);
+						deferredEvent.reject(obj.exception);
+                        $rootScope.$applyAsync(); // not sure that this is needed at all here but it is meant to replace (by making sure a root digest is called) a very old sync $apply that was used here for the reject; it would error out because of that in firefox where an $apply might happen on top of another $apply then in some situations (alerts combined with sync calls to and from server); and that is not allowed by angular 
+					} else {
+						deferredEvent.resolve(obj.ret);
+                        $rootScope.$applyAsync(); // not sure that this is needed at all here but it is meant to replace (by making sure a root digest is called) a very old sync $apply that was used here for the resolve; it would error out because of that in firefox where an $apply might happen on top of another $apply then in some situations (alerts combined with sync calls to and from server); and that is not allowed by angular 
+					}
+				} else $log.warn("Response to an unknown handler call dismissed; can happen (normal) if a handler call gets interrupted by a full browser refresh.");
+				delete deferredEvents[obj.cmsgid];
+				$sabloTestability.testEvents();
+				$sabloLoadingIndicator.hideLoading();
+			}			
 		} catch (e) {
 			$log.error("Error (follows below) in parsing/processing this message: " + message.data);
 			$log.error(e);
@@ -409,7 +419,9 @@ webSocketModule.factory('$propertyWatchUtils', function ($typesRegistry: sablo.I
 			let scopesToDigest = new ScopeSet();
 
 			let toExecuteAfterIncommingMessageWasHandled = functionsToExecuteAfterIncommingMessageWasHandled;
+
             functionsToExecuteAfterIncommingMessageWasHandled = oldFTEAIMWH; // clear/restore this before calling just in the unlikely case that some handlers want to add more such tasks (and we don't want to loose those but rather execute them right away)
+			currentRequestInfo = oldRequestInfo;
 			
 			for (let i = 0; i < toExecuteAfterIncommingMessageWasHandled.length; i++) {
 				try {
@@ -782,7 +794,11 @@ webSocketModule.factory('$propertyWatchUtils', function ($typesRegistry: sablo.I
 		getPathname: getPathname,
 		
 		setQueryString: setQueryString,
-		getQueryString: getQueryString	
+		getQueryString: getQueryString,
+
+		getCurrentRequestInfo: function() {
+			return currentRequestInfo;
+		}
 	};
 }).factory("$services", function($rootScope, $sabloConverters: sablo.ISabloConverters, $sabloUtils: sablo.ISabloUtils, $propertyWatchUtils: sablo.IPropertyWatchUtils,
 		$log: sablo.ILogService, $typesRegistry: sablo.ITypesRegistry, $pushToServerUtils: sablo.IPushToServerUtils) {

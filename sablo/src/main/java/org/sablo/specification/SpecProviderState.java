@@ -21,8 +21,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.sablo.specification.Package.IPackageReader;
@@ -35,31 +37,42 @@ import org.sablo.specification.Package.IPackageReader;
  */
 public class SpecProviderState
 {
-	private final Map<String, PackageSpecification<WebObjectSpecification>> cachedDescriptions;
+	private static final String DIR_PACKAGE = "DirPackage"; //$NON-NLS-1$
+	private static final String ZIP_PACKAGE = "ZipPackage"; //$NON-NLS-1$
+	private final Map<String, PackageSpecification<WebObjectSpecification>> cachedComponentOrServiceDescriptions;
 	private final Map<String, PackageSpecification<WebLayoutSpecification>> cachedLayoutDescriptions;
 	private final Map<String, WebObjectSpecification> allWebObjectSpecifications;
 	private final List<IPackageReader> packageReaders;
 
-	public SpecProviderState(Map<String, PackageSpecification<WebObjectSpecification>> cachedDescriptions,
+	public SpecProviderState(Map<String, PackageSpecification<WebObjectSpecification>> cachedComponentOrServiceDescriptions,
 		Map<String, PackageSpecification<WebLayoutSpecification>> cachedLayoutDescriptions, Map<String, WebObjectSpecification> allWebObjectSpecifications,
 		List<IPackageReader> packageReaders)
 	{
-		this.cachedDescriptions = Collections.unmodifiableMap(new HashMap<>(cachedDescriptions));
+		this.cachedComponentOrServiceDescriptions = Collections.unmodifiableMap(new HashMap<>(cachedComponentOrServiceDescriptions));
 		this.cachedLayoutDescriptions = Collections.unmodifiableMap(new HashMap<>(cachedLayoutDescriptions));
 		this.allWebObjectSpecifications = Collections.unmodifiableMap(new HashMap<>(allWebObjectSpecifications));
 		this.packageReaders = Collections.unmodifiableList(new ArrayList<>(packageReaders));
 	}
 
+	/**
+	 * Works only for service/component specs, not for layouts.
+	 */
 	public synchronized WebObjectSpecification getWebObjectSpecification(String webObjectTypeName)
 	{
 		return allWebObjectSpecifications.get(webObjectTypeName);
 	}
 
+	/**
+	 * Returns only component/service package specifications; not layout specifications.
+	 */
 	public synchronized Map<String, PackageSpecification<WebObjectSpecification>> getWebObjectSpecifications()
 	{
 		return cachedDescriptions;
 	}
 
+	/**
+	 * Returns only component/service specs, not layouts.
+	 */
 	public synchronized WebObjectSpecification[] getAllWebObjectSpecifications()
 	{
 		return allWebObjectSpecifications.values().toArray(new WebObjectSpecification[allWebObjectSpecifications.size()]);
@@ -105,6 +118,28 @@ public class SpecProviderState
 		return null;
 	}
 
+	/**
+	 * This is a package reader for WPM. When a package is installed as a ZIP
+	 * and also added as a reference then the reference package has priority.
+	 * @param packageName the packageName
+	 * @return the
+	 */
+	public IPackageReader getPackageReaderForWpm(String packageName)
+	{
+		Optional<IPackageReader> dirPackageReader = packageReaders.stream()
+			.filter(p -> p.getPackageName().equals(packageName) && p.toString().contains(DIR_PACKAGE))
+			.findFirst();
+
+		Optional<IPackageReader> zipPackageReader = packageReaders.stream()
+			.filter(p -> p.getPackageName().equals(packageName) && p.toString().contains(ZIP_PACKAGE))
+			// in case there are more then one packageReader for the same package (that is an error and should not happen)
+			// make sure we always return the same one, as 'packageReaders' does not guarantee they are always in the same order
+			.sorted((p1, p2) -> p1.getResource().getAbsolutePath().compareTo(p2.getResource().getAbsolutePath()))
+			.findFirst();
+
+		return dirPackageReader.isPresent() ? dirPackageReader.get() : zipPackageReader.isPresent() ? zipPackageReader.get() : null;
+	}
+
 	public String getPackageType(String packageName)
 	{
 		IPackageReader packageReader = getPackageReader(packageName);
@@ -116,6 +151,9 @@ public class SpecProviderState
 		return getPackagesToDisplayNames().get(packageName);
 	}
 
+	/**
+	 * Returns only component/service package names. NOT layout package names.
+	 */
 	public Collection<String> getPackageNames()
 	{
 		return getWebObjectSpecifications().keySet();
@@ -141,9 +179,13 @@ public class SpecProviderState
 
 	public IPackageReader[] getAllPackageReaders()
 	{
-		Set<String> packageNames = getWebObjectSpecifications().keySet();
+		// not sure why we don't return here simply packageReaders.toArray(new IPackageReader[packageReaders.size()]) ... maybe we won't want to return
+		// readers for packages that don't have any components/services/layouts in them? in which case getWebObjectSpecifications and getLayoutSpecifications would not contain them...
+
+		Set<String> packageNames = new HashSet<>(getWebObjectSpecifications().keySet()); // components/services
+		packageNames.addAll(getLayoutSpecifications().keySet()); // layouts
+
 		List<IPackageReader> readers = new ArrayList<>();
-		int i = 0;
 		for (String name : packageNames)
 		{
 			for (IPackageReader reader : packageReaders)

@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  */
 public class EnabledSabloValue
 {
-	private final Logger log = LoggerFactory.getLogger(EnabledSabloValue.class.getCanonicalName());
+	private static final Logger log = LoggerFactory.getLogger(EnabledSabloValue.class.getCanonicalName());
 
 	protected boolean value;
 	protected final IWrappingContext context;

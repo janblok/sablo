@@ -36,7 +36,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.sablo.specification.PackageSpecification;
+import org.sablo.specification.SpecProviderState;
 import org.sablo.specification.WebComponentSpecProvider;
+import org.sablo.specification.WebLayoutSpecification;
 import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.WebServiceSpecProvider;
 import org.sablo.util.TextUtils;
@@ -141,11 +143,15 @@ public class IndexPageEnhancer
 		ArrayList<String> allJSContributions = new ArrayList<String>();
 
 		LinkedHashMap<String, JSONObject> allLibraries = new LinkedHashMap<>();
-		Collection<PackageSpecification<WebObjectSpecification>> webComponentPackagesDescriptions = new ArrayList<PackageSpecification<WebObjectSpecification>>();
-		webComponentPackagesDescriptions.addAll(WebComponentSpecProvider.getSpecProviderState().getWebObjectSpecifications().values());
+		Collection<PackageSpecification< ? extends WebObjectSpecification>> webComponentPackagesDescriptions = new ArrayList<>();
+		SpecProviderState componentSpecProviderState = WebComponentSpecProvider.getSpecProviderState();
+
+		Collection<PackageSpecification<WebLayoutSpecification>> layoutPackageSpecifications;
+		webComponentPackagesDescriptions.addAll(layoutPackageSpecifications = componentSpecProviderState.getLayoutSpecifications().values());
+		webComponentPackagesDescriptions.addAll(componentSpecProviderState.getWebObjectSpecifications().values());
 		webComponentPackagesDescriptions.addAll(WebServiceSpecProvider.getSpecProviderState().getWebObjectSpecifications().values());
 
-		for (PackageSpecification<WebObjectSpecification> packageDesc : webComponentPackagesDescriptions)
+		for (PackageSpecification< ? extends WebObjectSpecification> packageDesc : webComponentPackagesDescriptions)
 		{
 			if (exportedPackages != null && !exportedPackages.contains(packageDesc.getPackageName())) continue;
 			if (packageDesc.getCssClientLibrary() != null)
@@ -157,15 +163,21 @@ public class IndexPageEnhancer
 				mergeLibs(allLibraries, packageLibsToJSON(packageDesc.getJsClientLibrary(), "text/javascript"), supportGrouping);
 			}
 
-			for (WebObjectSpecification spec : packageDesc.getSpecifications().values())
+			if (!layoutPackageSpecifications.contains(packageDesc)) // don't try to group layout spec. definitions as those would be json files not js files...
 			{
-				if (exportedWebObjects != null && !exportedWebObjects.contains(spec.getName())) continue;
-
-				if (supportGrouping == null || spec.supportGrouping() == supportGrouping.booleanValue())
+				for (WebObjectSpecification spec : packageDesc.getSpecifications().values())
 				{
-					allJSContributions.add(spec.getDefinition());
+					if (exportedWebObjects != null && !exportedWebObjects.contains(spec.getName())) continue;
+
+					if (supportGrouping == null || spec.supportGrouping() == supportGrouping.booleanValue())
+					{
+						if (spec.getDefinition() != null)
+						{
+							allJSContributions.add(spec.getDefinition());
+						}
+					}
+					mergeLibs(allLibraries, spec.getLibraries(), supportGrouping);
 				}
-				mergeLibs(allLibraries, spec.getLibraries(), supportGrouping);
 			}
 		}
 

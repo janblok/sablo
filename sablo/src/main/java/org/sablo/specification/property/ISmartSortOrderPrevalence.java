@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Servoy BV
+ * Copyright (C) 2021 Servoy BV
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,16 @@
 
 package org.sablo.specification.property;
 
-import org.sablo.IllegalChangeFromClientException;
-
 /**
- * This interface is for property types to implement, types that want to allow property pushes even if the system says
- * that the push is not allowed because of enable of visibility protection.
+ * @author jcompager
+ * @since 2021.06
  *
- * @author jcompagner
- * @since 8.4
  */
-public interface IGranularProtectionChecker<T>
+public interface ISmartSortOrderPrevalence extends ISmartPropertyValue
 {
-	boolean allowPush(Object data, T currentValue, IllegalChangeFromClientException e);
+	/**
+	 * How lower the number how higher up (first i the list) it is sorted is when attach is called.
+	 * So if 1 smart value gives a 0 back and another a 1 that 0 is call attach on first.
+	 */
+	int getPrevalence();
 }

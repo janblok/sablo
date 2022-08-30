@@ -39,10 +39,7 @@ import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.PropertyDescriptionBuilder;
-import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.types.AggregatedPropertyType;
-import org.sablo.websocket.utils.JSONUtils;
-import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,7 +127,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 			List<String> connectNr = session.getRequestParameterMap().get(GetHttpSessionConfigurator.CONNECT_NR);
 			// this can happen when the server is restarted and the client reconnects the websocket
 			log.warn(
-				"Cannot find httpsession for websocket session, server restarted or client was suspended by the browser/os and did a websocekt reconnect after the client was already destroyed at the server? clientnr=" +
+				"Cannot find httpsession for websocket session, server restarted or client was suspended by the browser/os and did a websocket reconnect after the client was already destroyed at the server? clientnr=" +
 					clntnr + ", winnr=" + winnr + ", winname=" + winname +
 					", connectnr: " + connectNr);
 			cancelSession(CLOSE_REASON_CLIENT_OUT_OF_SYNC);
@@ -175,11 +172,11 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 					{
 						if (messageLogger != null) messageLogger.endPointStarted(session);
 						win.onOpen(session.getRequestParameterMap());
+						onStart();
 						if (session != null && session.isOpen())
 						{
 							wsSession.onOpen(session.getRequestParameterMap());
 						}
-						onStart();
 					}
 				}
 			});
@@ -442,7 +439,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 								{
 									try
 									{
-										getWindow().sendChanges();
+										Map<String, Object> responseToSend = null;
 										if (error == null)
 										{
 											Object resultObject = result;
@@ -452,12 +449,14 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 												resultObject = ((TypedData< ? >)result).content;
 												objectType = ((TypedData< ? >)result).contentType;
 											}
-											sendResponse(msgId, resultObject, objectType, true);
+											responseToSend = getResponseToSend(msgId, resultObject, objectType, true);
 										}
 										else
 										{
-											sendResponse(msgId, error, null, false);
+											responseToSend = getResponseToSend(msgId, error, null, false);
 										}
+										getWindow().setResultToSendToClientForPendingClientToServerAPICall(responseToSend);
+										getWindow().sendChanges();
 									}
 									catch (IOException e)
 									{
@@ -528,7 +527,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 
 	}
 
-	protected void sendResponse(Object msgId, Object object, PropertyDescription objectType, boolean success) throws IOException
+	protected Map<String, Object> getResponseToSend(Object msgId, Object object, PropertyDescription objectType, boolean success) throws IOException
 	{
 		Map<String, Object> data = new HashMap<>();
 		String key = success ? "ret" : "exception";
@@ -538,17 +537,9 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 		if (objectType != null)
 		{
 			dataTypes = AggregatedPropertyType.newAggregatedPropertyBuilder().withProperty(key, objectType);
+			data.put("dataTypes", dataTypes.build());
 		}
-
-		try
-		{
-			sendText(window.getNextMessageNumber(), JSONUtils.writeData(FullValueToJSONConverter.INSTANCE, data, dataTypes != null ? dataTypes.build() : null,
-				BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER));
-		}
-		catch (JSONException e)
-		{
-			throw new IOException(e);
-		}
+		return data;
 	}
 
 	public void sendText(int messageNumber, String text) throws IOException

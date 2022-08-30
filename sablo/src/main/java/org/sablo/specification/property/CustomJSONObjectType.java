@@ -231,7 +231,8 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 								{
 									if (!angularAutoAddedKeysToIgnore.contains(key)) log.warn("Property (" + pd + ") of '" +
 										(dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
-										"'. Cannot set property '" + key + "' of custom JSON Object as it's type is undefined. Update JSON: " + newJSONValue);
+										"'. Cannot set property '" + key + "' of custom JSON Object '" + getName() + "' as it's type is undefined. Update JSON: " +
+											newJSONValue);
 								}
 							}
 							if (someUpdateAccessDenied) previousChangeAwareMap.getChangeSetter().markAllChanged();
@@ -361,7 +362,8 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 			}
 			else
 			{
-				if (!angularAutoAddedKeysToIgnore.contains(key)) log.warn("Cannot set property '" + key + "' of custom JSON Object as it's type is undefined.");
+				if (!angularAutoAddedKeysToIgnore.contains(key))
+					log.warn("Cannot set property '" + key + "' of custom JSON Object '" + getName() + "' as it's type is undefined.");
 			}
 		}
 

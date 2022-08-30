@@ -137,6 +137,7 @@ public class ClientService extends BaseWebObject implements IClientService
 	protected List<PropertyDescription> getParameterTypes(String functionName)
 	{
 		WebObjectFunctionDefinition apiFunc = specification.getApiFunction(functionName);
+		if (apiFunc == null) apiFunc = specification.getInternalApiFunction(functionName);
 		return (apiFunc != null) ? apiFunc.getParameters() : null;
 	}
 

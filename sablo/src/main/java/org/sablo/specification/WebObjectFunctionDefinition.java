@@ -249,6 +249,11 @@ public class WebObjectFunctionDefinition
 		this.deprecated = deprecated;
 	}
 
+	public String getDeprecated()
+	{
+		return this.deprecated;
+	}
+
 	public boolean isDeprecated()
 	{
 		return deprecated != null && !"false".equalsIgnoreCase(deprecated.trim());

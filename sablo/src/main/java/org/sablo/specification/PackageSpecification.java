@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
@@ -33,6 +34,7 @@ public class PackageSpecification<T extends WebObjectSpecification>
 	private static final String CSS_DESIGN_LIBS = "CSS-DesignLibs";
 	private static final String CSS_CLIENT_LIBS = "CSS-ClientLibs";
 	private static final String NG2_CSS_CLIENT_LIBS = "NG2-CSS-ClientLibs";
+	private static final String NG2_CSS_DESIGN_LIBS = "NG2-CSS-DesignLibs";
 	private static final String NG2_MODULE = "NG2-Module";
 	private static final String ENTRY_POINT = "Entry-Point";
 	private static final String NPM_PACKAGE_NANE = "NPM-PackageName";
@@ -46,7 +48,8 @@ public class PackageSpecification<T extends WebObjectSpecification>
 	private final String entryPoint;
 	private final List<String> cssClientLibrary;
 	private final List<String> cssDesignLibrary;
-	private final List<String> ng2CssClientLibrary;
+	private final CssLibSet ng2CssClientLibrary;
+	private final List<String> ng2CssDesignLibrary;
 	private final List<String> jsClientLibrary;
 	private final List<String> jsDesignLibrary;
 	private final Map<String, T> specifications;
@@ -67,7 +70,8 @@ public class PackageSpecification<T extends WebObjectSpecification>
 			this.entryPoint = attributes.getValue(ENTRY_POINT);
 			this.cssClientLibrary = getAttributeValue(attributes, CSS_CLIENT_LIBS);
 			this.cssDesignLibrary = getAttributeValue(attributes, CSS_DESIGN_LIBS);
-			this.ng2CssClientLibrary = getAttributeValue(attributes, NG2_CSS_CLIENT_LIBS);
+			this.ng2CssClientLibrary = getCssLibAttributeValue(attributes, NG2_CSS_CLIENT_LIBS);
+			this.ng2CssDesignLibrary = getAttributeValue(attributes, NG2_CSS_DESIGN_LIBS);
 			this.jsClientLibrary = getAttributeValue(attributes, JS_CLIENT_LIBS);
 			this.jsDesignLibrary = getAttributeValue(attributes, JS_DESIGN_LIBS);
 		}
@@ -77,6 +81,7 @@ public class PackageSpecification<T extends WebObjectSpecification>
 			this.cssClientLibrary = null;
 			this.cssDesignLibrary = null;
 			this.ng2CssClientLibrary = null;
+			this.ng2CssDesignLibrary = null;
 			this.jsClientLibrary = null;
 			this.jsDesignLibrary = null;
 			this.npmName = null;
@@ -90,6 +95,22 @@ public class PackageSpecification<T extends WebObjectSpecification>
 		if (value != null)
 		{
 			return Arrays.asList(value.split(","));
+		}
+		return null;
+	}
+
+	private CssLibSet getCssLibAttributeValue(Attributes mainAttrs, String attributeName)
+	{
+		String value = mainAttrs.getValue(attributeName);
+		if (value != null)
+		{
+			CssLibSet set = new CssLibSet();
+			String[] libs = value.split(",");
+			for (String lib : libs)
+			{
+				set.add(new CssLib(lib));
+			}
+			return set;
 		}
 		return null;
 	}
@@ -150,11 +171,19 @@ public class PackageSpecification<T extends WebObjectSpecification>
 	}
 
 	/**
-	 * @return the ng2CssDesignLibrary
+	 * @return the ng2CssLibrary
 	 */
-	public List<String> getNg2CssLibrary()
+	public Set<CssLib> getNg2CssLibrary()
 	{
 		return ng2CssClientLibrary;
+	}
+
+	/**
+	 * @return the ng2CssDesignLibrary
+	 */
+	public List<String> getNg2CssDesignLibrary()
+	{
+		return ng2CssDesignLibrary;
 	}
 
 	public List<String> getJsDesignLibrary()

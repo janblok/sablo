@@ -18,6 +18,7 @@ package org.sablo.eventthread;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import org.json.JSONException;
 import org.json.JSONWriter;
@@ -245,5 +246,11 @@ public class WebsocketSessionWindows implements IWindow
 		{
 			window.sendChanges();
 		}
+	}
+
+	@Override
+	public void setResultToSendToClientForPendingClientToServerAPICall(Map<String, Object> change)
+	{
+		// ignore
 	}
 }

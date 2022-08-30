@@ -17,6 +17,7 @@ package org.sablo.specification.property.types;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -43,7 +44,7 @@ public class TypesRegistry
 
 	private static Map<String, IPropertyType< ? >> types = new HashMap<>();
 	private static Map<String, IPropertyTypeFactory< ? , ? >> typeFactories = new HashMap<>();
-	private static Map<Class< ? >, IClassPropertyType< ? >> typesByClass = new HashMap<>();
+	private static Map<Class< ? >, IClassPropertyType< ? >> typesByClass = new LinkedHashMap<>(30);
 
 
 	static

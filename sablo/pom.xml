@@ -6,7 +6,7 @@
 		<maven>3.6.0</maven>
 	</prerequisites>
 	<groupId>org.sablo</groupId>
-	<version>2021.9.0.3700_rc</version>
+	<version>2022.12.0.3820_rc</version>
 	<artifactId>sablo</artifactId>
 	<packaging>eclipse-plugin</packaging>
 	<name>Sablo Core</name>
@@ -14,14 +14,20 @@
 		<name>Servoy</name>
 		<url>servoy.com</url>
 	</organization>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>tycho-snapshots</id>
+			<url>https://repo.eclipse.org/content/repositories/tycho-snapshots/</url>
+		</pluginRepository>
+	</pluginRepositories>
 
 	<url>http://maven.apache.org</url>
 	<properties>
-		<tycho.version>2.3.0</tycho.version>
+		<tycho.version>2.6.0</tycho.version>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<jenkins.javascript_tests.reportsDirectory>target/protractor-reports</jenkins.javascript_tests.reportsDirectory>
-        <test.script>test</test.script>
+		<test.script>test</test.script>
 	</properties>
 
     <repositories>
@@ -81,7 +87,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-surefire-plugin</artifactId>
-						<version>3.0.0-M3</version>
+						<version>3.0.0-M5</version>
 				        <configuration>
 				            <trimStackTrace>false</trimStackTrace>
 				        </configuration>
@@ -128,7 +134,7 @@
 									<goal>install-node-and-npm</goal>
 								</goals>
 								<configuration>
-									<nodeVersion>v16.2.0</nodeVersion>
+									<nodeVersion>v16.15.1</nodeVersion>
 								</configuration>
 							</execution>
 
@@ -224,19 +230,6 @@
 						<version>${tycho.version}</version>
 					</plugin>
 					<plugin>
-						<groupId>org.eclipse.tycho.extras</groupId>
-						<artifactId>tycho-pack200a-plugin</artifactId>
-						<version>${tycho.version}</version>
-						<executions>
-							<execution>
-								<id>pack200-normalize</id>
-								<goals>
-									<goal>normalize</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-jarsigner-plugin</artifactId>
 						<version>3.0.0</version>
@@ -245,19 +238,6 @@
 								<id>sign</id>
 								<goals>
 									<goal>sign</goal>
-								</goals>
-							</execution>
-						</executions>
-					</plugin>
-					<plugin>
-						<groupId>org.eclipse.tycho.extras</groupId>
-						<artifactId>tycho-pack200b-plugin</artifactId>
-						<version>${tycho.version}</version>
-						<executions>
-							<execution>
-								<id>pack200-pack</id>
-								<goals>
-									<goal>pack</goal>
 								</goals>
 							</execution>
 						</executions>

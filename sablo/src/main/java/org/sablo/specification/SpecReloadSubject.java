@@ -38,16 +38,16 @@ public class SpecReloadSubject
 	public static interface ISpecReloadListener
 	{
 		/**
-		 * If the component's or service's specification was reloaded or removed.
+		 * If the component's, service's or layout's specification was reloaded or removed.
 		 */
 		void webObjectSpecificationReloaded();
 	}
 
 	/**
-	 * Adds a listener that gets notified when a specific component or service specification gets reloaded or removed.
+	 * Adds a listener that gets notified when a specific component, service or layout specification gets reloaded or removed.
 	 * If it gets removed, the listener will be cleared as well after begin triggered.
 	 *
-	 * @param specName the name of the component/service to listen to for reloads.
+	 * @param specName the name of the component/service/layout to listen to for reloads.
 	 */
 	public void addSpecReloadListener(String specName, ISpecReloadListener specReloadListener)
 	{

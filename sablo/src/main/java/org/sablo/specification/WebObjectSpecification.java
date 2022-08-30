@@ -62,6 +62,22 @@ public class WebObjectSpecification extends PropertyDescription
 
 	public final static String PUSH_TO_SERVER_KEY = "pushToServer";
 
+	/**
+	 * Key for a function definition in the .spec file.
+	 *
+	 * The value is a (descriptions copied from wiki) string or array of strings
+	 *
+	 * In case of a tag for a property in the .spec file, this tag can define if an edit (sent from browser to server) of this property is allowed
+	 * even if properties such as "visible" or "enabled" (of the component or parent form) are false. By default, if the visibility of a component
+	 * or its parent form is false, Servoy doesn't allow the modification (coming from browser) of any other property (it blocks it and logs it on
+	 * server). With this tag you can say for a property that changing it should be allowed even in these situations; for example on "size" property
+	 * you could say: I allow it for "visible"; or for both: ["visible", "enable"]
+	 *
+	 * In case of usage for an API in the .spec file it will allow a call from client to server even in some unexpected situations.
+	 * By default, server side calls coming from client are ignored if the component or the parent form is not visible (anymore). For example, a call to a server
+	 * side function when switching to a new form, to do some cleanup, might get blocked. To still allow these calls, you should add "allowaccess" : "visible"
+	 * to the function definition in the .spec file.
+	 */
 	public final static String ALLOW_ACCESS = "allowaccess";
 
 	public enum PushToServerEnum
@@ -153,7 +169,7 @@ public class WebObjectSpecification extends PropertyDescription
 	private final String icon;
 	private final String packageName;
 	private final JSONArray keywords;
-	private final JSONObject ng2Config;
+	private final NG2Config ng2Config;
 
 	private Map<String, ICustomType< ? >> foundTypes;
 
@@ -169,6 +185,8 @@ public class WebObjectSpecification extends PropertyDescription
 	private URL specURL;
 
 	private URL definitionURL;
+
+	private URL docFileURL;
 
 	private final String preview;
 
@@ -202,7 +220,7 @@ public class WebObjectSpecification extends PropertyDescription
 		this.libraries = libs != null ? libs : new JSONArray();
 		this.foundTypes = new HashMap<>();
 		this.keywords = keywords != null ? keywords : new JSONArray();
-		this.ng2Config = ng2Config != null ? ng2Config : new JSONObject();
+		this.ng2Config = new NG2Config(ng2Config != null ? ng2Config : new JSONObject());
 	}
 
 	protected String scriptifyNameIfNeeded(String name, String packageType)
@@ -407,7 +425,7 @@ public class WebObjectSpecification extends PropertyDescription
 			reader != null ? reader.getPackageType() : null).withDisplayName(json.optString("displayName", null)).withCategoryName(
 				json.optString("categoryName", null))
 			.withIcon(json.optString("icon", null)).withPreview(json.optString("preview", null)).withDefinition(
-				json.getString("definition"))
+				json.optString("definition", null))
 			.withLibraries(json.optJSONArray("libraries")).withProperties(properties).withName(
 				json.getString("name"))
 			.withDeprecated(json.optString("deprecated", null)).withKeywords(json.optJSONArray("keywords")).withNG2Config(json.optJSONObject("ng2Config"))
@@ -418,10 +436,10 @@ public class WebObjectSpecification extends PropertyDescription
 			try
 			{
 				URL serverScript = reader.getUrlForPath(json.getString("serverscript").substring(packageName.length()));
-				if (spec.ng2Config != null && spec.ng2Config.has("dependencies") && !spec.ng2Config.getJSONObject("dependencies").isNull("serverscript"))
+				if (spec.getNG2Config().getDependencies().getServerscript() != null)
 				{
 					spec.setServerScript(serverScript,
-						reader.getUrlForPath(spec.ng2Config.getJSONObject("dependencies").optString("serverscript").substring(packageName.length())));
+						reader.getUrlForPath(spec.getNG2Config().getDependencies().getServerscript().substring(packageName.length())));
 				}
 				else
 				{
@@ -431,6 +449,21 @@ public class WebObjectSpecification extends PropertyDescription
 			catch (MalformedURLException e)
 			{
 				log.error("Error getting serverscript", e);
+			}
+		}
+		if (json.has("doc"))
+		{
+			try
+			{
+				URL docURL = reader.getUrlForPath(json.getString("doc").substring(packageName.length()));
+				if (docURL != null)
+				{
+					spec.setDocFileURL(docURL);
+				}
+			}
+			catch (MalformedURLException e)
+			{
+				log.error("Error getting doc file", e);
 			}
 		}
 		//handlers
@@ -475,8 +508,6 @@ public class WebObjectSpecification extends PropertyDescription
 	private static WebObjectFunctionDefinition parseFunctionDefinition(WebObjectSpecification spec, JSONObject api, String func) throws JSONException
 	{
 		WebObjectFunctionDefinition def = new WebObjectFunctionDefinition(func);
-		def.setPropertyDescription(
-			new PropertyDescriptionBuilder().withName(func).withType(TypesRegistry.getType(FunctionPropertyType.TYPE_NAME)).withConfig(api.get(func)).build());
 		if (api.get(func) instanceof JSONObject)
 		{
 			JSONObject jsonDef = api.getJSONObject(func);
@@ -589,6 +620,9 @@ public class WebObjectSpecification extends PropertyDescription
 			}
 			if (customConfiguration != null) def.setCustomConfigOptions(customConfiguration);
 		}
+		def.setPropertyDescription(
+			new PropertyDescriptionBuilder().withName(func).withType(TypesRegistry.getType(FunctionPropertyType.TYPE_NAME)).withConfig(api.get(func))
+				.withDeprecated(def.getDeprecated()).build());
 		return def;
 	}
 
@@ -864,6 +898,16 @@ public class WebObjectSpecification extends PropertyDescription
 		return definitionURL;
 	}
 
+	public void setDocFileURL(URL docFileURL)
+	{
+		this.docFileURL = docFileURL;
+	}
+
+	public URL getDocFileURL()
+	{
+		return docFileURL;
+	}
+
 	public void setSupportGrouping(boolean supportsGrouping)
 	{
 		this.supportsGrouping = supportsGrouping;
@@ -901,7 +945,7 @@ public class WebObjectSpecification extends PropertyDescription
 		return keywords;
 	}
 
-	public JSONObject getNG2Config()
+	public NG2Config getNG2Config()
 	{
 		return ng2Config;
 	}

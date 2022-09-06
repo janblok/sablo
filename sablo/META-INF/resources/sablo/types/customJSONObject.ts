@@ -129,7 +129,9 @@ namespace sablo.propertyTypes {
 
 					// if something changed browser-side, increasing the content version thus not matching next expected version,
 					// we ignore this update and expect a fresh full copy of the object from the server (currently server value is leading/has priority because not all server side values might support being recreated from client values)
-					if (internalState[CustomObjectType.CONTENT_VERSION] == serverJSONValue[CustomObjectType.CONTENT_VERSION]) {
+					if (internalState[CustomObjectType.CONTENT_VERSION] <= serverJSONValue[CustomObjectType.CONTENT_VERSION]) {
+                        internalState[CustomObjectType.CONTENT_VERSION] = serverJSONValue[CustomObjectType.CONTENT_VERSION]; // if we assume that versions are in sync even if it is < not just = (workaround for SVYX-431), update it client side so the any change sent to server works (normally it should always be === here)
+
 						const updates = serverJSONValue[CustomObjectType.UPDATES];
 
 						const propertyContextCreator = new sablo.typesRegistry.ChildPropertyContextCreator(
@@ -236,7 +238,7 @@ namespace sablo.propertyTypes {
 
 							let changed = (newVal !== oldVal);
 							if (!changed) {
-								if (!internalState.elUnwatch[key]) {
+								if (!internalState.elUnwatch || !internalState.elUnwatch[key]) {
 									changed = newVal && newVal[this.sabloConverters.INTERNAL_IMPL] && newVal[this.sabloConverters.INTERNAL_IMPL].isChanged && newVal[this.sabloConverters.INTERNAL_IMPL].isChanged(); // must be smart value then; same reference as checked above; so ask it if it changed
 								} // else it's a dumb value; but old and new are the same reference so there are no changes
 							}
@@ -289,7 +291,7 @@ namespace sablo.propertyTypes {
     		return () => {
     			const internalState = propertyValue[this.sabloConverters.INTERNAL_IMPL];
     			internalState.changedKeysOldValues[key] = propertyValue[key];
-    			internalState.notifier();
+    			if (internalState.notifier) internalState.notifier();
     		}
     	}
 
@@ -302,7 +304,7 @@ namespace sablo.propertyTypes {
 
     			const internalState = propertyValue[this.sabloConverters.INTERNAL_IMPL];
     			internalState.changedKeysOldValues[key] = oldvalue;
-    			internalState.notifier();
+    			if (internalState.notifier) internalState.notifier();
     		}, deep);
     	}
 
@@ -429,7 +431,7 @@ namespace sablo.propertyTypes {
 								newWVal[key][this.sabloConverters.INTERNAL_IMPL].setChangeNotifier(this.getChangeNotifier(newWVal, key));
 							else if (childPropCalculatedPushToServer.value >= sablo.typesRegistry.PushToServerEnum.shallow.value) internalState.elUnwatch[key] = this.watchDumbElementForChanges(newWVal, key, componentScope, childPropCalculatedPushToServer == sablo.typesRegistry.PushToServerEnum.shallow ? false : true); // either deep or shallow because the if above checks that it is at least shallow
 						}
-						if (changed) internalState.notifier();
+						if (changed && internalState.notifier) internalState.notifier();
     				});
     			}
     		}

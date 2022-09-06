@@ -102,7 +102,8 @@ namespace sablo.propertyTypes {
 
                     // if something changed browser-side, increasing the content version thus not matching next expected version,
                     // we ignore this update and expect a fresh full copy of the array from the server (currently server value is leading/has priority because not all server side values might support being recreated from client values)
-                    if (internalState[CustomArrayType.CONTENT_VERSION] == serverJSONValue[CustomArrayType.CONTENT_VERSION]) {
+                    if (internalState[CustomArrayType.CONTENT_VERSION] <= serverJSONValue[CustomArrayType.CONTENT_VERSION]) {
+                        internalState[CustomArrayType.CONTENT_VERSION] = serverJSONValue[CustomArrayType.CONTENT_VERSION]; // if we assume that versions are in sync even if it is < not just = (workaround for SVYX-431), update it client side so the any change sent to server works (normally it should always be === here)
                         let i: number;
                         for (const granularOp of serverJSONValue[CustomArrayType.GRANULAR_UPDATES]) {
                             const startIndex_endIndex_opType = granularOp[CustomArrayType.OP_ARRAY_START_END_TYPE]; // it's an array of 3 elements in the order given in name
@@ -260,8 +261,8 @@ namespace sablo.propertyTypes {
                             let changed = (newVal !== oldVal);
 
                             if (!changed) {
-                                if (!internalState.elUnwatch[idx]) {
-                                    	// must be a smart value then; same reference as checked above; so ask it if it changed
+                                if (!internalState.elUnwatch || !internalState.elUnwatch[idx]) {
+                                	// must be a smart value then; same reference as checked above; so ask it if it changed
                                     changed = newVal && newVal[this.sabloConverters.INTERNAL_IMPL] && newVal[this.sabloConverters.INTERNAL_IMPL].isChanged && newVal[this.sabloConverters.INTERNAL_IMPL].isChanged();
                                 } // else it's a dumb value - with the same ref; no changes then
                             }
@@ -314,7 +315,7 @@ namespace sablo.propertyTypes {
             return () => {
                 const internalState = propertyValue[this.sabloConverters.INTERNAL_IMPL];
                 internalState.changedIndexesOldValues[idx] = propertyValue[idx];
-                internalState.changeNotifier();
+                if (internalState.changeNotifier) internalState.changeNotifier();
             }
         }
 
@@ -327,7 +328,7 @@ namespace sablo.propertyTypes {
                 const internalState = propertyValue[this.sabloConverters.INTERNAL_IMPL];
                 
                 internalState.changedIndexesOldValues[idx] = oldvalue;
-                internalState.changeNotifier();
+                if (internalState.changeNotifier) internalState.changeNotifier();
             }, deep);
         }
 
@@ -404,7 +405,7 @@ namespace sablo.propertyTypes {
                                 
                                 fullChangeWasAlreadySentDueToLengthChange = true;
                                 
-                                internalState.changeNotifier();
+                                if (internalState.changeNotifier) internalState.changeNotifier();
                             }
                         }
 
@@ -445,7 +446,7 @@ namespace sablo.propertyTypes {
                             }
                         }
 
-                        if (referencesChanged) internalState.changeNotifier();
+                        if (referencesChanged && internalState.changeNotifier) internalState.changeNotifier();
                     });
                 }
             }

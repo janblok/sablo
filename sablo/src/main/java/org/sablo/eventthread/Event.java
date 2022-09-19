@@ -207,9 +207,6 @@ public class Event
 		return window;
 	}
 
-	/**
-	 * @return
-	 */
 	public void destroy()
 	{
 		if (runnable instanceof Future)

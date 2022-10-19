@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
 import org.sablo.websocket.IWebsocketSession;
@@ -88,10 +89,14 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		{
 			dispatch(EVENT_LEVEL_DEFAULT, NO_TIMEOUT);
 		}
-		if (events.size() > 0)
+
+		synchronized (events)
 		{
-			// make sure all events that are still left, are able to destroy/cancel itself
-			events.forEach(event -> event.destroy());
+			if (events.size() > 0)
+			{
+				// make sure that we cancel all events that are still left (and are able to be destroyed/cancelled)
+				events.forEach(event -> event.destroy());
+			}
 		}
 	}
 
@@ -186,20 +191,33 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 	{
 		synchronized (events)
 		{
-			events.add(createEvent(event, eventLevel));
-			events.notifyAll();
-			// non-blocking
-//			while (!(event.isExecuted() || event.isSuspended() || event.isExecutingInBackground()))
-//			{
-//				try
+			if (!exit)
+			{
+				events.add(createEvent(event, eventLevel));
+				events.notifyAll();
+				// non-blocking
+//				while (!(event.isExecuted() || event.isSuspended() || event.isExecutingInBackground()))
 //				{
-//					events.wait();
+//					try
+//					{
+//						events.wait();
+//					}
+//					catch (InterruptedException e)
+//					{
+//						Debug.error(e);
+//					}
 //				}
-//				catch (InterruptedException e)
-//				{
-//					Debug.error(e);
-//				}
-//			}
+			}
+			else
+			{
+				// someone already destroyed this client/client's thread/event dispatcher; so it is likely that the new "event" is also a request to shut-down the client,
+				// maybe from the "Sablo Session closer" thread (but shutdown already happened meanwhile); so do cancel the event if possible - so that it doesn't block
+				// forever if it's a Future that some other thread is waiting for
+				if (event instanceof Future)
+				{
+					((Future< ? >)event).cancel(true);
+				}
+			}
 		}
 	}
 

@@ -681,7 +681,13 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 			}
 			delete formState.resolving;
 			formState.resolved = true;
-			if (!formState.initializing) formState.addWatches(); // so it already got initial data a while ago - restore watches then
+			if (!formState.initializing) {
+				formState.addWatches(); // so it already got initial data a while ago - restore watches then
+				if (deferredFormStatesWithData[formName]) {
+					if (typeof (formState) !== 'undefined') deferredFormStatesWithData[formName].resolve(formState);
+					delete deferredFormStatesWithData[formName];
+				}
+			}
 			if (deferredFormStates[formName]) {
 				if (typeof (formState) !== 'undefined') deferredFormStates[formName].resolve(formState);
 				delete deferredFormStates[formName];

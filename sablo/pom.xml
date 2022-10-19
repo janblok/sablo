@@ -23,9 +23,9 @@
 
 	<url>http://maven.apache.org</url>
 	<properties>
-		<tycho.version>2.6.0</tycho.version>
-		<maven.compiler.source>1.8</maven.compiler.source>
-		<maven.compiler.target>1.8</maven.compiler.target>
+		<tycho.version>2.7.5</tycho.version>
+		<maven.compiler.source>17</maven.compiler.source>
+		<maven.compiler.target>17</maven.compiler.target>
 		<jenkins.javascript_tests.reportsDirectory>target/protractor-reports</jenkins.javascript_tests.reportsDirectory>
 		<test.script>test</test.script>
 	</properties>
@@ -79,7 +79,7 @@
 						<configuration>
 							<toolchains>
 								<jdk>
-									<id>JavaSE-1.8</id>
+									<id>JavaSE-17</id>
 								</jdk>
 							</toolchains>
 						</configuration>

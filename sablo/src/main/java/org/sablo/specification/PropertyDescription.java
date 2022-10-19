@@ -121,7 +121,7 @@ public class PropertyDescription
 	}
 
 	/**
-	 * Returns all properties in thie property description that are of given type.<br/>
+	 * Returns all properties in this property description that are of given type.<br/>
 	 * Includes all yielding types that can yield to given type.
 	 * @see #getProperties(IPropertyType, boolean)
 	 */

@@ -67,7 +67,7 @@ public class SpecProviderState
 	 */
 	public synchronized Map<String, PackageSpecification<WebObjectSpecification>> getWebObjectSpecifications()
 	{
-		return cachedDescriptions;
+		return cachedComponentOrServiceDescriptions;
 	}
 
 	/**

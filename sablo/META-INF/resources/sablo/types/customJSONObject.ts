@@ -205,7 +205,12 @@ namespace sablo.propertyTypes {
 
 							const val = newClientData[key];
 
-							toBeSentObj[key] = this.sabloConverters.convertFromClientToServer(val, this.getPropertyType(internalState, key), undefined, scope, propertyContextCreator.withPushToServerFor(key));
+                            // tell child to send all as well, not just what granular changes it might know it has because this is a full-value-to-server
+                            // this is a bit of a hack because .allChanged might mean something or not for the "val"'s internal state - depending on what type it is; titanium ng2 code is a bit better here
+                            if (val && val[this.sabloConverters.INTERNAL_IMPL]) val[this.sabloConverters.INTERNAL_IMPL].allChanged = true;
+
+							toBeSentObj[key] = this.sabloConverters.convertFromClientToServer(val, this.getPropertyType(internalState, key),
+							     oldClientData ? oldClientData[key] : undefined, scope, propertyContextCreator.withPushToServerFor(key));
 
 							// if it's a nested obj/array or other smart prop that just got smart in convertFromClientToServer, attach the change notifier
                             if (val && val[this.sabloConverters.INTERNAL_IMPL] && val[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier)

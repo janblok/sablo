@@ -226,8 +226,13 @@ namespace sablo.propertyTypes {
                         const toBeSentArray = changes[CustomArrayType.VALUE] = [];
                         for (let idx = 0; idx < newClientData.length; idx++) {
                             const val = newClientData[idx];
-                            // TODO how do we tell child to send all not just what granular changes it might know it has as well? because here we do want to send the full array; TiNG (NG2) knows how to do this
-                            const converted = this.sabloConverters.convertFromClientToServer(val, this.getElementType(internalState, idx), undefined, scope, elemPropertyContext);
+                            
+                            // tell child to send all as well, not just what granular changes it might know it has because this is a full-value-to-server
+                            // this is a bit of a hack because .allChanged might mean something or not for the "val"'s internal state - depending on what type it is; titanium ng2 code is a bit better here
+                            if (val && val[this.sabloConverters.INTERNAL_IMPL]) val[this.sabloConverters.INTERNAL_IMPL].allChanged = true;
+
+                            const converted = this.sabloConverters.convertFromClientToServer(val, this.getElementType(internalState, idx),
+                                oldClientData ? oldClientData[idx] : undefined, scope, elemPropertyContext);
 
                             // if it's a nested obj/array or other smart prop that just got smart in convertFromClientToServer, attach the change notifier
                             if (val && val[this.sabloConverters.INTERNAL_IMPL] && val[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier)

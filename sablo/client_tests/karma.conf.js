@@ -26,7 +26,8 @@ module.exports = function(config){
       require('karma-chrome-launcher'),
       require('@chiragrupani/karma-chromium-edge-launcher'),
       require('karma-coverage'),
-      require('karma-junit-reporter')
+      require('karma-junit-reporter'),
+      require('karma-firefox-launcher')
     ],
     singleRun: true,
     //singleRun: false,

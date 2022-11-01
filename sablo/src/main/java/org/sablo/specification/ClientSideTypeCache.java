@@ -43,6 +43,7 @@ public class ClientSideTypeCache
 	private static final String HANDLERS_KEY = "h";
 	private static final String APIS_KEY = "a";
 	private static final String RETURN_VAL_KEY = "r";
+	private static final String IGNORE_BLOCK_DUPLICATE_EVENTS = "iBDE";
 	public static final String PROPERTY_TYPE = "t";
 	public static final String PROPERTY_PUSH_TO_SERVER_VALUE = "s";
 
@@ -108,6 +109,7 @@ public class ClientSideTypeCache
 	 *     "ha": {                                                  // handlers
 	 *         "handler1": {
 	 *             "r": "foundsetRef",                              // return value of handler if it's a converting client side type
+	 *             "iDE": true,                                     // "ignoreNGBlockDuplicateEvents" flag from spec. - if the handler is supposed to ignore the blocking of duplicates - when that is enabled via client or ui properties of component
 	 *             0: "date", 3: ["JSON_obj", "ct2"], ...           // any handler arguments with client side conversion types (by arg no.)
 	 *         },
 	 *         ...
@@ -212,6 +214,18 @@ public class ClientSideTypeCache
 				((IPropertyWithClientSideConversions< ? >)paramType.getType()).writeClientSideTypeName(clientSideTypesJSON, String.valueOf(i), paramType);
 			}
 		}
+
+		if (function.shouldIgnoreNGBlockDuplicateEvents())
+		{
+			if (!somethingFromFuncWasWritten)
+			{
+				if (!parentObjectStartWasAlreadyWritten) clientSideTypesJSON.key(addAsObjectWithKey).object();
+				somethingFromFuncWasWritten = true;
+				clientSideTypesJSON.key(functionName).object();
+			}
+			clientSideTypesJSON.key(IGNORE_BLOCK_DUPLICATE_EVENTS).value(true);
+		}
+
 		if (somethingFromFuncWasWritten) clientSideTypesJSON.endObject();
 
 		return somethingFromFuncWasWritten || parentObjectStartWasAlreadyWritten;

@@ -30,6 +30,8 @@ import org.json.JSONObject;
 @SuppressWarnings("nls")
 public class WebObjectFunctionDefinition
 {
+	// TODO we could split this class into a callable API function class and an event handler function class - so that it is clear what is used in either case
+	// for example 'delayUntilFormLoads' is only for API functions while 'ignoreNGBlockDuplicateEvents' is only useful for handlers...
 
 	private final String name;
 	private final List<PropertyDescription> parameters = new ArrayList<>();

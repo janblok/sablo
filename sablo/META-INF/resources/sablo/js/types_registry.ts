@@ -2,9 +2,9 @@
 /// <reference path="../../../../typings/sablo/sablo.d.ts" />
 
 angular.module('$typesRegistry', [])
-.factory('$typesRegistry', function($log: sablo.ILogService, $rootScope: angular.IScope) {
+.factory('$typesRegistry', function($log: sablo.ILogService) {
 
-    return new sablo.typesRegistry.TypesRegistry($log, $rootScope);
+    return new sablo.typesRegistry.TypesRegistry($log);
     
 })
 .factory('$pushToServerUtils', function() {
@@ -30,7 +30,7 @@ namespace sablo.typesRegistry {
         private types: ObjectOfIType = {}; // simple (don't need a factory to create more specific sub-types) global types that need client-side conversion
         private disablePushToServerWatches: boolean = false; // only needed by Servoy form desiner - it will block all push to server watch creation
 
-        constructor(private readonly logger: sablo.ILogService, private readonly $rootScope: angular.IScope) {}
+        constructor(private readonly logger: sablo.ILogService) {}
 
         getTypeFactoryRegistry(): ITypeFactoryRegistry  {
             return this.typeFactoryRegistry;
@@ -128,7 +128,7 @@ namespace sablo.typesRegistry {
             if (webObjectSpecificationFromServer.ftd) this.processFactoryTypeDetails(webObjectSpecificationFromServer.ftd, webObjectSpecName);
 
             let properties: ObjectOfIPropertyDescription;
-            let handlers: ObjectOfIWebObjectFunctions;
+            let handlers: ObjectOfIEventHandlerFunctions;
             let apiFunctions: ObjectOfIWebObjectFunctions;
 
             // properties
@@ -143,7 +143,7 @@ namespace sablo.typesRegistry {
             if (webObjectSpecificationFromServer.h) {
                 handlers = {};
                 for (const handlerName in webObjectSpecificationFromServer.h) {
-                    handlers[handlerName] = this.processFunction(webObjectSpecificationFromServer.h[handlerName], webObjectSpecName);
+                    handlers[handlerName] = this.processEventHandler(webObjectSpecificationFromServer.h[handlerName], webObjectSpecName);
                 }
             }
 
@@ -151,7 +151,7 @@ namespace sablo.typesRegistry {
             if (webObjectSpecificationFromServer.a) {
                 apiFunctions = {};
                 for (const apiFunctionName in webObjectSpecificationFromServer.a) {
-                    apiFunctions[apiFunctionName] = this.processFunction(webObjectSpecificationFromServer.a[apiFunctionName], webObjectSpecName);
+                    apiFunctions[apiFunctionName] = this.processApiFunction(webObjectSpecificationFromServer.a[apiFunctionName], webObjectSpecName);
                 }
             }
 
@@ -169,7 +169,17 @@ namespace sablo.typesRegistry {
             }
         }
 
-        private processFunction(functionFromServer: IWebObjectFunctionFromServer, webObjectSpecName: string): IWebObjectFunction {
+        private processEventHandler(functionFromServer: IEventHandlerFromServer, webObjectSpecName: string): IEventHandler {
+            const retTypeAndArgTypes = this.processFunction(functionFromServer, webObjectSpecName);
+            return new WebObjectEventHandler(retTypeAndArgTypes[0], retTypeAndArgTypes[1], functionFromServer.iBDE);
+        }
+
+        private processApiFunction(functionFromServer: IWebObjectFunctionFromServer, webObjectSpecName: string): IWebObjectFunction {
+            const retTypeAndArgTypes = this.processFunction(functionFromServer, webObjectSpecName);
+            return new WebObjectFunction(retTypeAndArgTypes[0], retTypeAndArgTypes[1]);
+        }
+
+        private processFunction(functionFromServer: IWebObjectFunctionFromServer, webObjectSpecName: string): [IType<any>, ObjectOfITypeWithNumberKeys] {
             let returnType: IType<any>;
             let argumentTypes: ObjectOfITypeWithNumberKeys;
 
@@ -180,9 +190,8 @@ namespace sablo.typesRegistry {
                     argumentTypes[argIdx] = this.processTypeFromServer(functionFromServer[argIdx], webObjectSpecName);
                 }
             }
-            return new WebObjectFunction(returnType, argumentTypes);
+            return [returnType, argumentTypes];
         }
-
     }
 
     export class RootPropertyContextCreator implements IPropertyContextCreator {
@@ -289,6 +298,7 @@ namespace sablo.typesRegistry {
 
     type ObjectOfIPropertyDescription = { [key: string]: IPropertyDescription }
     type ObjectOfIWebObjectFunctions = { [key: string]: IWebObjectFunction }
+    type ObjectOfIEventHandlerFunctions = { [key: string]: IEventHandler }
 
     class PropertyDescription implements IPropertyDescription {
 
@@ -346,13 +356,25 @@ namespace sablo.typesRegistry {
 
     class WebObjectFunction implements IWebObjectFunction {
 
-        constructor (
+        constructor(
                 readonly returnType?: IType<any>,
                 private readonly argumentTypes?: ObjectOfITypeWithNumberKeys,
             ) {}
 
         getArgumentType(argumentIdx: number): IType<any> {
             return this.argumentTypes ? this.argumentTypes[argumentIdx] : undefined;
+        }
+
+    }
+
+    class WebObjectEventHandler extends WebObjectFunction implements IEventHandler {
+
+        constructor(
+                returnType?: IType<any>,
+                argumentTypes?: ObjectOfITypeWithNumberKeys,
+                readonly ignoreNGBlockDuplicateEvents?: boolean
+        ) {
+            super(returnType, argumentTypes);
         }
 
     }
@@ -368,7 +390,7 @@ namespace sablo.typesRegistry {
              ftd?: IFactoryTypeDetails; // this will be the custom type details from spec something like { "JSON_obj": ICustomTypesFromServer}}
 
              /** any handlers */
-             h?: IWebObjectFunctionsFromServer;
+             h?: IEventHandlersFromServer;
 
              /** any api functions */
              a?: IWebObjectFunctionsFromServer;
@@ -392,13 +414,22 @@ namespace sablo.typesRegistry {
         [propertyName: string]: sablo.IPropertyDescriptionFromServer;
     }
 
+    interface IEventHandlersFromServer {
+        [name: string]: IEventHandlerFromServer;
+    }
+
     interface IWebObjectFunctionsFromServer {
         [name: string]: IWebObjectFunctionFromServer;
     }
 
+    interface IEventHandlerFromServer extends IWebObjectFunctionFromServer {
+        /** "ignoreNGBlockDuplicateEvents" flag from spec. - if the handler is supposed to ignore the blocking of duplicates - when that is enabled via client or ui properties of component */
+        iBDE?: boolean;
+    }
+
     interface IWebObjectFunctionFromServer {
         /** return value of api/handler call if it's a converting client side type */
-        r: ITypeFromServer;
+        r?: ITypeFromServer;
         /** any api/handler call arguments with client side conversion types (by arg no.)  */
         [argumentIdx: number]: ITypeFromServer;
     }

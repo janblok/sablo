@@ -802,10 +802,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 							         undefined, undefined, undefined, undefined, $sabloUtils.PROPERTY_CONTEXT_FOR_INCOMMING_ARGS_AND_RETURN_VALUES);							
 						});
 					};
-					if(hasFormStateWithData(formName)) {
+					if (hasFormStateWithData(formName)) {
 						return onFunction(formStates[formName]);
-					}
-					else {
+					} else {
 						return getFormStateWithData(formName).then(function(formState) {
 								return onFunction(formState);
 							},

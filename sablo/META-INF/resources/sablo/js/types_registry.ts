@@ -185,7 +185,7 @@ namespace sablo.typesRegistry {
 
             if (functionFromServer.r) returnType = this.processTypeFromServer(functionFromServer.r, webObjectSpecName);
             for (const argIdx in functionFromServer) {
-                if (argIdx != "r") {
+                if (argIdx !== 'r' && argIdx !== 'iBDE') {
                     if (!argumentTypes) argumentTypes = {};
                     argumentTypes[argIdx] = this.processTypeFromServer(functionFromServer[argIdx], webObjectSpecName);
                 }

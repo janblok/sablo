@@ -236,9 +236,9 @@ public class BaseWindow implements IWindow
 		// so we need to send everything that is needed in the browser for this window
 		try
 		{
-			sendUsedServicesCurrentState();
 			sendWindowNr();
 			clientSideState.handleFreshBrowserWindowConnected();
+			sendUsedServicesCurrentState();
 		}
 		catch (IOException e)
 		{
@@ -1067,10 +1067,8 @@ public class BaseWindow implements IWindow
 		boolean hasPendingDelayedCalls = false;
 		if (componentApiCalls.size() > 0)
 		{
-			Iterator<ComponentCall> it = componentApiCalls.iterator();
-			while (it.hasNext())
+			for (ComponentCall delayedCall : componentApiCalls)
 			{
-				ComponentCall delayedCall = it.next();
 				if (delayedCall.delayUntilFormLoads && formContainer == delayedCall.formContainer)
 				{
 					hasPendingDelayedCalls = true;

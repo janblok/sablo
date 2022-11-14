@@ -222,25 +222,16 @@ public class WebObjectFunctionDefinition
 		this.preDataServiceCall = preDataServiceCall;
 	}
 
-	/**
-	 * @return the applyFirst
-	 */
 	public boolean isPreDataServiceCall()
 	{
 		return preDataServiceCall;
 	}
 
-	/**
-	 * @param boolean1
-	 */
 	public void setPrivate(boolean priv)
 	{
 		this.priv = priv;
 	}
 
-	/**
-	 * @return the priv
-	 */
 	public boolean isPrivate()
 	{
 		return priv;

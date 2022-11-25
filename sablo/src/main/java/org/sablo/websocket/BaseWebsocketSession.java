@@ -269,9 +269,13 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 			{
 				if (executor == null)
 				{
-					Thread thread = new Thread(executor = createEventDispatcher(), getDispatcherThreadName());
-					thread.setDaemon(true);
-					thread.start();
+					executor = createEventDispatcher();
+					if (executor != null)
+					{
+						Thread thread = new Thread(executor, getDispatcherThreadName());
+						thread.setDaemon(true);
+						thread.start();
+					}
 				}
 			}
 		}

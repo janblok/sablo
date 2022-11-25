@@ -248,9 +248,9 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 	{
 		if (window != null)
 		{
-			if (window.getSession() != null)
+			IEventDispatcher eventDispatcher = window.getSession() == null ? null : window.getSession().getEventDispatcher();
+			if (eventDispatcher != null)
 			{
-				final IEventDispatcher eventDispatcher = window.getSession().getEventDispatcher();
 				for (final Integer pendingMessageId : pendingMessages.keySet())
 				{
 					eventDispatcher.addEvent(new Runnable()
@@ -278,8 +278,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 			}
 			else
 			{
-				// this should never happen; window.getSession() can never be null (session is a final field in BaseWindow that is always initialized with non-null values)
-				// (I didn't comment out the if/else though because all this goes through interfaces that don't guarantee that...)
+				// When we have a session without client no need to run events. This can happen when we get requests for a non-existing soluti
 				unbindWindow();
 			}
 

@@ -378,18 +378,13 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 			ChangeAwareList<ET, WT>.Changes changes = changeAwareList.getChangesImmutableAndPrepareForReset();
 
 			List<WT> wrappedBaseListReadOnly = changeAwareList.getWrappedBaseListForReadOnly();
-			writer.object();
+			writer.object(); // curly brace :)
 
 			if (changes.mustSendAll() || fullValue)
 			{
-				writer.key(CONTENT_VERSION).value(changeAwareList.increaseContentVersion());
-
-				writer.key(VALUE).array();
-				for (WT element : wrappedBaseListReadOnly)
-				{
-					toJSONConverterForFullValue.toJSONValue(writer, null, element, getCustomJSONTypeDefinition(), dataConverterContext);
-				}
-				writer.endArray();
+				sendFullArrayValueExceptCurlyBraces(writer, changeAwareList.increaseContentVersion(), wrappedBaseListReadOnly, toJSONConverterForFullValue,
+					dataConverterContext,
+					getCustomJSONTypeDefinition());
 			}
 			else if (changes.getGranularUpdatesKeeper().hasChanges())
 			{
@@ -414,6 +409,20 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 			writer.value(JSONObject.NULL); // TODO how to handle null values which have no version info (special watches/complete array set from client)? if null is on server and something is set on client or the other way around?
 		}
 		return writer;
+	}
+
+	public static <TY> void sendFullArrayValueExceptCurlyBraces(JSONWriter writer, int contentVersion, List<TY> listToWrite,
+		IToJSONConverter<IBrowserConverterContext> toJSONConverterForFullValue,
+		IBrowserConverterContext dataConverterContext, PropertyDescription elementPD)
+	{
+		writer.key(CONTENT_VERSION).value(contentVersion);
+
+		writer.key(VALUE).array();
+		for (TY element : listToWrite)
+		{
+			toJSONConverterForFullValue.toJSONValue(writer, null, element, elementPD, dataConverterContext);
+		}
+		writer.endArray();
 	}
 
 	private void addGranularOperation(JSONWriter w, ArrayOperation op, List<WT> wrappedBaseListReadOnly, IBrowserConverterContext dataConverterContext)
@@ -463,10 +472,16 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 		// ["JSON_arr", type]
 		// or
 		// ["JSON_arr", { t: type, s: elementPushToServer}] if the element declared a pushToServer value in spec file (through "elementConfig")
+		writeCustomArrayClientSideType(w, keyToAddTo, getCustomJSONTypeDefinition());
+
+		return true;
+	}
+
+	public static void writeCustomArrayClientSideType(JSONWriter w, String keyToAddTo, PropertyDescription elementPD)
+	{
 		JSONUtils.addKeyIfPresent(w, keyToAddTo);
 
 		w.array().value(TYPE_NAME);
-		PropertyDescription elementPD = getCustomJSONTypeDefinition();
 		if (elementPD.getPushToServerAsDeclaredInSpecFile() != null) w.object().key(ClientSideTypeCache.PROPERTY_TYPE);
 		if (elementPD.getType() instanceof IPropertyWithClientSideConversions< ? >)
 		{
@@ -484,8 +499,6 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 			w.endObject();
 		}
 		w.endArray();
-
-		return true;
 	}
 
 }

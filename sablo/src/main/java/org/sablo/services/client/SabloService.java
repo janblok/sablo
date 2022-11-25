@@ -17,9 +17,8 @@
 package org.sablo.services.client;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
+import org.sablo.specification.FunctionParameters;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.PropertyDescriptionBuilder;
 import org.sablo.specification.property.types.BooleanPropertyType;
@@ -59,10 +58,10 @@ public class SabloService
 
 	public void resolveDeferedEvent(int defid, boolean success, Object argument, PropertyDescription argumentPD)
 	{
-		List<PropertyDescription> paramTypes = null;
+		FunctionParameters paramTypes = null;
 		if (argumentPD != null)
 		{
-			paramTypes = new ArrayList<>(3);
+			paramTypes = new FunctionParameters(3);
 			paramTypes.add(defidPD);
 			paramTypes.add(argumentPD);
 			paramTypes.add(successPD);

@@ -16,6 +16,8 @@
 
 package org.sablo.specification.property;
 
+import java.util.List;
+
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.types.IPropertyTypeFactory;
 
@@ -23,10 +25,11 @@ import org.sablo.specification.property.types.IPropertyTypeFactory;
  * @author lvostinar
  *
  */
-public class CustomVariableArgsTypeFactory implements IPropertyTypeFactory<PropertyDescription, Object>
+public class CustomVariableArgsTypeFactory implements IPropertyTypeFactory<PropertyDescription, List< ? >>
 {
+
 	@Override
-	public IAdjustablePropertyType<Object> createType(PropertyDescription definition)
+	public IAdjustablePropertyType<List< ? >> createType(PropertyDescription definition)
 	{
 		return new CustomVariableArgsType(definition);
 	}
@@ -34,6 +37,7 @@ public class CustomVariableArgsTypeFactory implements IPropertyTypeFactory<Prope
 	@Override
 	public String toString()
 	{
-		return "Default Sablo custom variable arguments type factory.";
+		return "Default Sablo custom variable arguments type factory."; //$NON-NLS-1$
 	}
+
 }

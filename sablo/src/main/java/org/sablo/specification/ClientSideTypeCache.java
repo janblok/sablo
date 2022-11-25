@@ -19,7 +19,6 @@ package org.sablo.specification;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -199,10 +198,10 @@ public class ClientSideTypeCache
 			((IPropertyWithClientSideConversions< ? >)funcRetType.getType()).writeClientSideTypeName(clientSideTypesJSON, RETURN_VAL_KEY, funcRetType);
 		}
 
-		List<PropertyDescription> parameters = function.getParameters();
-		for (int i = 0; i < parameters.size(); i++)
+		IFunctionParameters parameters = function.getParameters();
+		for (int i = 0; i < parameters.getDefinedArgsCount(); i++)
 		{
-			PropertyDescription paramType = parameters.get(i);
+			PropertyDescription paramType = parameters.getParameterDefinition(i);
 			if (paramType != null && paramType.getType() instanceof IPropertyWithClientSideConversions< ? >)
 			{
 				if (!somethingFromFuncWasWritten)

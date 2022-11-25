@@ -16,13 +16,12 @@
 package org.sablo.websocket.impl;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.json.JSONException;
 import org.json.JSONStringer;
 import org.json.JSONWriter;
 import org.sablo.BaseWebObject;
-import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.IFunctionParameters;
 import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
@@ -134,11 +133,11 @@ public class ClientService extends BaseWebObject implements IClientService
 		CurrentWindow.get().executeAsyncNowServiceCall(this, functionName, arguments, getParameterTypes(functionName));
 	}
 
-	protected List<PropertyDescription> getParameterTypes(String functionName)
+	protected IFunctionParameters getParameterTypes(String functionName)
 	{
 		WebObjectFunctionDefinition apiFunc = specification.getApiFunction(functionName);
 		if (apiFunc == null) apiFunc = specification.getInternalApiFunction(functionName);
-		return (apiFunc != null) ? apiFunc.getParameters() : null;
+		return apiFunc != null ? apiFunc.getParameters() : null;
 	}
 
 	/**

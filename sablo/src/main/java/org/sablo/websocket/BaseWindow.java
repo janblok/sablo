@@ -38,12 +38,12 @@ import org.json.JSONStringer;
 import org.json.JSONWriter;
 import org.sablo.Container;
 import org.sablo.WebComponent;
+import org.sablo.specification.IFunctionParameters;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.PropertyDescriptionBuilder;
 import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.sablo.specification.property.BrowserConverterContext;
-import org.sablo.specification.property.CustomVariableArgsType;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.util.DebugFriendlyJSONStringer;
@@ -739,15 +739,15 @@ public class BaseWindow implements IWindow
 	public Object executeServiceCall(IClientService clientService, String functionName, Object[] arguments, WebObjectFunctionDefinition apiFunction,
 		IToJSONWriter<IBrowserConverterContext> pendingChangesWriter, boolean blockEventProcessing) throws IOException
 	{
-		List<PropertyDescription> argumentTypes = (apiFunction != null ? apiFunction.getParameters() : null);
-		if (argumentTypes != null && argumentTypes.size() == 0) argumentTypes = null;
+		IFunctionParameters argumentTypes = (apiFunction != null ? apiFunction.getParameters() : null);
+		if (argumentTypes != null && argumentTypes.getDefinedArgsCount() == 0) argumentTypes = null;
 
 		addServiceCall(clientService, functionName, arguments, argumentTypes);
 		return executeCall(clientService, functionName, arguments, pendingChangesWriter, blockEventProcessing, true);
 	}
 
 	@Override
-	public void executeAsyncNowServiceCall(IClientService clientService, String functionName, Object[] arguments, List<PropertyDescription> argumentTypes)
+	public void executeAsyncNowServiceCall(IClientService clientService, String functionName, Object[] arguments, IFunctionParameters argumentTypes)
 	{
 		try
 		{
@@ -822,12 +822,12 @@ public class BaseWindow implements IWindow
 	}
 
 	@Override
-	public void executeAsyncServiceCall(IClientService clientService, String functionName, Object[] arguments, List<PropertyDescription> argumentTypes)
+	public void executeAsyncServiceCall(IClientService clientService, String functionName, Object[] arguments, IFunctionParameters argumentTypes)
 	{
 		addServiceCall(clientService, functionName, arguments, argumentTypes);
 	}
 
-	private ServiceCall createServiceCall(IClientService clientService, String functionName, Object[] arguments, List<PropertyDescription> argumentTypes)
+	private ServiceCall createServiceCall(IClientService clientService, String functionName, Object[] arguments, IFunctionParameters argumentTypes)
 	{
 		WebObjectFunctionDefinition handler = clientService.getSpecification().getApiFunction(functionName);
 		return new ServiceCall(clientService, functionName, processVarArgsIfNeeded(arguments, argumentTypes), argumentTypes,
@@ -848,28 +848,24 @@ public class BaseWindow implements IWindow
 			formContainer);
 	}
 
-	private Object[] processVarArgsIfNeeded(Object[] arguments, List<PropertyDescription> argumentTypes)
+	private Object[] processVarArgsIfNeeded(Object[] arguments, IFunctionParameters parameters)
 	{
-		if (argumentTypes != null && argumentTypes.size() > 0)
+		if (parameters != null && arguments.length > parameters.getDefinedArgsCount() && parameters.isVarArgs())
 		{
-			int typesNumber = argumentTypes.size();
-			PropertyDescription pd = argumentTypes.get(typesNumber - 1);
-			if (pd.getType() instanceof CustomVariableArgsType && arguments.length > typesNumber)
+			int definedArgsCount = parameters.getDefinedArgsCount();
+			// handle variable args
+			List<Object> varArgs = new ArrayList<Object>();
+			for (int i = definedArgsCount - 1; i < arguments.length; i++)
 			{
-				// handle variable args
-				List<Object> varArgs = new ArrayList<Object>();
-				for (int i = typesNumber - 1; i < arguments.length; i++)
-				{
-					varArgs.add(arguments[i]);
-				}
-				arguments[typesNumber - 1] = varArgs;
-				arguments = Arrays.copyOf(arguments, typesNumber);
+				varArgs.add(arguments[i]);
 			}
+			arguments[definedArgsCount - 1] = varArgs;
+			arguments = Arrays.copyOf(arguments, definedArgsCount);
 		}
 		return arguments;
 	}
 
-	private void addServiceCall(IClientService clientService, String functionName, Object[] arguments, List<PropertyDescription> argumentTypes)
+	private void addServiceCall(IClientService clientService, String functionName, Object[] arguments, IFunctionParameters argumentTypes)
 	{
 		serviceCalls.add(createServiceCall(clientService, functionName, arguments, argumentTypes));
 	}
@@ -961,7 +957,7 @@ public class BaseWindow implements IWindow
 		{
 			ComponentCall call = createComponentCall(receiver, apiFunction, arguments, callContributions, delayedCall,
 				delayedCall ? getFormContainer(receiver) : null);
-			addDelayedOrAsyncComponentCall(apiFunction, call, receiver, delayedCall);
+			addDelayedOrAsyncComponentCall(apiFunction, call);
 		}
 		else if (isAsyncNowApiCall(apiFunction))
 		{
@@ -1043,8 +1039,7 @@ public class BaseWindow implements IWindow
 		return null;
 	}
 
-	protected void addDelayedOrAsyncComponentCall(final WebObjectFunctionDefinition apiFunction, ComponentCall call, WebComponent component,
-		boolean isDelayedCall)
+	protected void addDelayedOrAsyncComponentCall(final WebObjectFunctionDefinition apiFunction, ComponentCall call)
 	{
 		if (apiFunction.shouldDiscardPreviouslyQueuedSimilarCalls())
 		{
@@ -1105,11 +1100,11 @@ public class BaseWindow implements IWindow
 		private final IClientService clientService;
 		private final String functionName;
 		private final Object[] arguments;
-		private final List<PropertyDescription> argumentTypes;
+		private final IFunctionParameters argumentTypes;
 		private final boolean preDataServiceCall;
 
 		public ServiceCall(IClientService clientService, String functionName, Object[] arguments,
-			List<PropertyDescription> argumentTypes, boolean preDataServiceCall)
+			IFunctionParameters argumentTypes, boolean preDataServiceCall)
 		{
 			this.clientService = clientService;
 			this.functionName = functionName;
@@ -1134,7 +1129,7 @@ public class BaseWindow implements IWindow
 				for (int i = 0; i < arguments.length; i++)
 				{
 					FullValueToJSONConverter.INSTANCE.toJSONValue(w, null, arguments[i],
-						argumentTypes != null && i < argumentTypes.size() ? argumentTypes.get(i) : null,
+						argumentTypes != null ? argumentTypes.getParameterDefinition(i) : null,
 						new BrowserConverterContext((ClientService)clientService, PushToServerEnum.allow));
 				}
 				w.endArray();
@@ -1183,11 +1178,11 @@ public class BaseWindow implements IWindow
 			if (arguments != null && arguments.length > 0)
 			{
 				w.key(API_KEY_ARGS).array();
-				List<PropertyDescription> argumentTypes = apiFunction.getParameters();
+				IFunctionParameters argumentTypes = apiFunction.getParameters();
 				for (int i = 0; i < arguments.length; i++)
 				{
 					FullValueToJSONConverter.INSTANCE.toJSONValue(w, null, arguments[i],
-						argumentTypes != null && i < argumentTypes.size() ? argumentTypes.get(i) : null,
+						argumentTypes != null ? argumentTypes.getParameterDefinition(i) : null,
 						new BrowserConverterContext(component, PushToServerEnum.allow));
 				}
 				w.endArray();

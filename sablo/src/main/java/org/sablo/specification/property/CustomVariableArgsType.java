@@ -25,14 +25,19 @@ import org.sablo.util.ValueReference;
 import org.sablo.websocket.utils.JSONUtils;
 
 /**
- *  Type for what in spec files you see like 'mytype...'.
+ *  Type for what in spec files you see like 'mytype...'. Can only be used currently for arguments in case of Rhino (solution or comp.
+ *  server side scripting) calls to client-side apis.
+ *
+ *  This type actually impersonates a client-side custom array - so that we don't need a client side impl. for it as well.
  *
  * @author lvostinar
  *
  */
-public class CustomVariableArgsType extends CustomJSONPropertyType<Object> implements IAdjustablePropertyType<Object>, IConvertedPropertyType<Object>
+public class CustomVariableArgsType extends CustomJSONPropertyType<List< ? >>
+	implements IAdjustablePropertyType<List< ? >>, IConvertedPropertyType<List< ? >>, IPropertyWithClientSideConversions<List< ? >>
 {
-	public static final String TYPE_NAME = "var_args";
+
+	public static final String TYPE_NAME = "var_args"; //$NON-NLS-1$
 
 	public CustomVariableArgsType(PropertyDescription definition)
 	{
@@ -45,7 +50,7 @@ public class CustomVariableArgsType extends CustomJSONPropertyType<Object> imple
 	}
 
 	@Override
-	public Object fromJSON(Object newJSONValue, Object previousSabloValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext,
+	public List< ? > fromJSON(Object newJSONValue, List< ? > previousSabloValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext,
 		ValueReference<Boolean> returnValueAdjustedIncommingValue)
 	{
 		// not needed for now; this type is currently used just for passing a variable number of parameters to client (component and service apis)
@@ -53,24 +58,24 @@ public class CustomVariableArgsType extends CustomJSONPropertyType<Object> imple
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, Object sabloValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
+	public JSONWriter toJSON(JSONWriter writer, String key, List< ? > sabloValue, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
 		throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
-		writer.array();
-		if (sabloValue instanceof List)
-		{
-			for (Object element : ((List)sabloValue))
-			{
-				JSONUtils.FullValueToJSONConverter.INSTANCE.toJSONValue(writer, null, element, getCustomJSONTypeDefinition(),
-					dataConverterContext);
-			}
-		}
-		else
-		{
-			JSONUtils.FullValueToJSONConverter.INSTANCE.toJSONValue(writer, null, sabloValue, getCustomJSONTypeDefinition(), dataConverterContext);
-		}
-		writer.endArray();
+
+		writer.object(); // curly brace :)
+		CustomJSONArrayType.sendFullArrayValueExceptCurlyBraces(writer, 1, (List< ? >)sabloValue, JSONUtils.FullValueToJSONConverter.INSTANCE,
+			dataConverterContext, getCustomJSONTypeDefinition());
+		writer.endObject();
+
 		return writer;
 	}
+
+	@Override
+	public boolean writeClientSideTypeName(JSONWriter w, String keyToAddTo, PropertyDescription pd)
+	{
+		CustomJSONArrayType.writeCustomArrayClientSideType(w, keyToAddTo, getCustomJSONTypeDefinition());
+		return true;
+	}
+
 }

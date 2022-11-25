@@ -24,7 +24,7 @@ import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.Container;
 import org.sablo.WebComponent;
-import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.IFunctionParameters;
 import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.websocket.IClientService;
@@ -157,7 +157,7 @@ public class WebsocketSessionWindows implements IWindow
 	}
 
 	@Override
-	public void executeAsyncServiceCall(IClientService clientService, String functionName, Object[] arguments, List<PropertyDescription> argumentTypes)
+	public void executeAsyncServiceCall(IClientService clientService, String functionName, Object[] arguments, IFunctionParameters argumentTypes)
 	{
 		for (IWindow window : session.getWindows())
 		{
@@ -166,7 +166,7 @@ public class WebsocketSessionWindows implements IWindow
 	}
 
 	@Override
-	public void executeAsyncNowServiceCall(IClientService clientService, String functionName, Object[] arguments, List<PropertyDescription> argumentTypes)
+	public void executeAsyncNowServiceCall(IClientService clientService, String functionName, Object[] arguments, IFunctionParameters argumentTypes)
 	{
 		for (IWindow window : session.getWindows())
 		{

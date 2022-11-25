@@ -23,7 +23,7 @@ import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.Container;
 import org.sablo.WebComponent;
-import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.IFunctionParameters;
 import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
@@ -94,7 +94,7 @@ public interface IWindow
 	 * @param arguments the arguments to be passed to the service's function call.
 	 * @param argumentTypes the types of arguments passed; can be null (the types are used for correct 'to JSON' conversion for websocket traffic).
 	 */
-	void executeAsyncServiceCall(IClientService clientService, String functionName, Object[] arguments, List<PropertyDescription> argumentTypes);
+	void executeAsyncServiceCall(IClientService clientService, String functionName, Object[] arguments, IFunctionParameters argumentTypes);
 
 	/**
 	 * Execute a (client/browser) async-now method; such methods are to be executed right away but do not wait for a return value.
@@ -104,7 +104,7 @@ public interface IWindow
 	 * @param arguments the arguments to be passed to the service's function call.
 	 * @param argumentTypes the types of arguments passed; can be null (the types are used for correct 'to JSON' conversion for websocket traffic).
 	 */
-	void executeAsyncNowServiceCall(IClientService clientService, String functionName, Object[] arguments, List<PropertyDescription> argumentTypes);
+	void executeAsyncNowServiceCall(IClientService clientService, String functionName, Object[] arguments, IFunctionParameters argumentTypes);
 
 	/**
 	 * Execute a (client/browser) service call asynchronously and returns the resulting value.

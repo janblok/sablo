@@ -16,10 +16,6 @@
 
 package org.sablo.specification;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.json.JSONObject;
 
 /**
@@ -34,7 +30,7 @@ public class WebObjectFunctionDefinition
 	// for example 'delayUntilFormLoads' is only for API functions while 'ignoreNGBlockDuplicateEvents' is only useful for handlers...
 
 	private final String name;
-	private final List<PropertyDescription> parameters = new ArrayList<>();
+	private final FunctionParameters parameters = new FunctionParameters();
 	private PropertyDescription returnType;
 	private JSONObject customConfigOptions;
 	private String documentation;
@@ -66,9 +62,9 @@ public class WebObjectFunctionDefinition
 		parameters.add(parameter);
 	}
 
-	public List<PropertyDescription> getParameters()
+	public IFunctionParameters getParameters()
 	{
-		return Collections.unmodifiableList(parameters);
+		return parameters;
 	}
 
 	public void setReturnType(PropertyDescription returnType)

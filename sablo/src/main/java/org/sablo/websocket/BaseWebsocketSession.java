@@ -50,6 +50,9 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BaseWebsocketSession implements IWebsocketSession, IChangeListener
 {
+	protected static final Logger SHUTDOWNLOGGER = LoggerFactory.getLogger("SHUTDOWNLOGGER"); //$NON-NLS-1$
+
+
 	private static final String PROPERTY_WINDOW_TIMEOUT = "sablo.window.timeout.secs";
 	public static final String DEFAULT_WINDOW_TIMEOUT = "60";
 	private static Long windowTimeout;
@@ -313,6 +316,8 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	@Override
 	public final void dispose()
 	{
+		SHUTDOWNLOGGER.debug("Disposing websocket session for client: " + getSessionKey()); //$NON-NLS-1$
+
 		onDispose();
 
 		disposeHandlersSubject.callHandlers();
@@ -339,10 +344,15 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 			{
 				if (executor != null)
 				{
+					SHUTDOWNLOGGER.debug("Executor destroyed in dispose for client: " + getSessionKey()); //$NON-NLS-1$
 					executor.destroy();
 					executor = null;
 				}
 			}
+		}
+		else
+		{
+			SHUTDOWNLOGGER.debug("Executor was already destroyed in dispose for client: " + getSessionKey()); //$NON-NLS-1$
 		}
 
 		servicesByName.clear();

@@ -322,4 +322,14 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		addEmptyEvent();
 	}
 
+	@Override
+	public void interruptEventThread()
+	{
+		Thread t = scriptThread;
+		if (t != null)
+		{
+			t.interrupt();
+		}
+	}
+
 }

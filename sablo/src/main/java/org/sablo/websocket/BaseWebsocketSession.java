@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -64,7 +63,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	private final List<ObjectReference<IWindow>> windows = new CopyOnWriteArrayList<>();
 
 	private final WebsocketSessionKey sessionKey;
-	private volatile IEventDispatcher executor;
+	protected volatile IEventDispatcher executor;
 
 	private final AtomicInteger handlingEvent = new AtomicInteger(0);
 
@@ -180,10 +179,8 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		List<IWindow> inactiveWindows = new ArrayList<>();
 		//do global non active cleanup
 		long currentTime = System.currentTimeMillis();
-		Iterator<ObjectReference<IWindow>> iterator = windows.iterator();
-		while (iterator.hasNext())
+		for (ObjectReference<IWindow> ref : windows)
 		{
-			ObjectReference<IWindow> ref = iterator.next();
 			long timeout = getWindowTimeout() * 1000;
 			long lastTime = ref.getObject().getLastPingTime();
 			if (lastTime == 0)

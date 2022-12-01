@@ -322,4 +322,23 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		addEmptyEvent();
 	}
 
+	@Override
+	public String interruptEventThread()
+	{
+		Thread t = scriptThread;
+		if (t != null)
+		{
+			StringBuilder sb = new StringBuilder();
+			StackTraceElement[] stackTrace = t.getStackTrace();
+			for (StackTraceElement stackTraceElement : stackTrace)
+			{
+				sb.append(stackTraceElement);
+				sb.append('\n');
+			}
+			t.interrupt();
+			return sb.toString();
+		}
+		return "";
+	}
+
 }

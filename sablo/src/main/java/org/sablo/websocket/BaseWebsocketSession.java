@@ -272,7 +272,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 					Thread thread = new Thread(executor = createEventDispatcher(), getDispatcherThreadName());
 					thread.setDaemon(true);
 					thread.start();
-					SHUTDOWNLOGGER.debug("Executor created  in for client: " + getSessionKey()); //$NON-NLS-1$
+					if (SHUTDOWNLOGGER.isDebugEnabled()) SHUTDOWNLOGGER.debug("Executor created  in for client: " + getSessionKey()); //$NON-NLS-1$
 				}
 			}
 		}
@@ -317,7 +317,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	@Override
 	public final void dispose()
 	{
-		SHUTDOWNLOGGER.debug("Disposing websocket session for client: " + getSessionKey()); //$NON-NLS-1$
+		if (SHUTDOWNLOGGER.isDebugEnabled()) SHUTDOWNLOGGER.debug("Disposing websocket session for client: " + getSessionKey()); //$NON-NLS-1$
 
 		onDispose();
 
@@ -345,7 +345,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 			{
 				if (executor != null)
 				{
-					SHUTDOWNLOGGER.debug("Executor destroyed in dispose for client: " + getSessionKey()); //$NON-NLS-1$
+					if (SHUTDOWNLOGGER.isDebugEnabled()) SHUTDOWNLOGGER.debug("Executor destroyed in dispose for client: " + getSessionKey()); //$NON-NLS-1$
 					executor.destroy();
 					executor = null;
 				}
@@ -353,7 +353,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		}
 		else
 		{
-			SHUTDOWNLOGGER.debug("Executor was already destroyed in dispose for client: " + getSessionKey()); //$NON-NLS-1$
+			if (SHUTDOWNLOGGER.isDebugEnabled()) SHUTDOWNLOGGER.debug("Executor was already destroyed in dispose for client: " + getSessionKey()); //$NON-NLS-1$
 		}
 
 		servicesByName.clear();

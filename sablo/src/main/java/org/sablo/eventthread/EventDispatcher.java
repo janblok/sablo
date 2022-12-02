@@ -146,7 +146,14 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		}
 		catch (Throwable t)
 		{
-			handleException(event, t);
+			try
+			{
+				handleException(event, t);
+			}
+			catch (Throwable t2)
+			{
+				log.error("Handle exception error", t2);
+			}
 		}
 	}
 

@@ -37,9 +37,6 @@ import org.json.JSONObject;
 import org.sablo.IllegalChangeFromClientException;
 import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
-import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.PropertyDescriptionBuilder;
-import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -438,23 +435,15 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 								{
 									try
 									{
-										Map<String, Object> responseToSend = null;
-										if (error == null)
-										{
-											Object resultObject = result;
-											PropertyDescription objectType = null;
-											if (result instanceof TypedData)
-											{
-												resultObject = ((TypedData< ? >)result).content;
-												objectType = ((TypedData< ? >)result).contentType;
-											}
-											responseToSend = getResponseToSend(msgId, resultObject, objectType, true);
-										}
-										else
-										{
-											responseToSend = getResponseToSend(msgId, error, null, false);
-										}
-										getWindow().setResultToSendToClientForPendingClientToServerAPICall(responseToSend);
+										ClientToServerCallReturnValue retValForWhenResultsAreSentBackToClient;
+										if (result instanceof ClientToServerCallReturnValue)
+											retValForWhenResultsAreSentBackToClient = ((ClientToServerCallReturnValue)result);
+										else retValForWhenResultsAreSentBackToClient = new ClientToServerCallReturnValue(error == null ? result : error, null,
+											null, error == null);
+
+										retValForWhenResultsAreSentBackToClient.cmsgid = msgId;
+										getWindow().setClientToServerCallReturnValueForChanges(retValForWhenResultsAreSentBackToClient);
+
 										getWindow().sendChanges();
 									}
 									catch (IOException e)
@@ -524,21 +513,6 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 			CurrentWindow.set(null);
 		}
 
-	}
-
-	protected Map<String, Object> getResponseToSend(Object msgId, Object object, PropertyDescription objectType, boolean success) throws IOException
-	{
-		Map<String, Object> data = new HashMap<>();
-		String key = success ? "ret" : "exception";
-		data.put(key, object);
-		data.put("cmsgid", msgId);
-		PropertyDescriptionBuilder dataTypes = null;
-		if (objectType != null)
-		{
-			dataTypes = AggregatedPropertyType.newAggregatedPropertyBuilder().withProperty(key, objectType);
-			data.put("dataTypes", dataTypes.build());
-		}
-		return data;
 	}
 
 	public void sendText(int messageNumber, String text) throws IOException

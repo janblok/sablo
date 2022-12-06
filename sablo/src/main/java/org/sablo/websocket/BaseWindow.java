@@ -104,7 +104,7 @@ public class BaseWindow implements IWindow
 
 	private String currentFormUrl;
 
-	private Map<String, Object> changeToSend;
+	private ClientToServerCallReturnValue clientToServerCallReturnValue;
 
 	public BaseWindow(IWebsocketSession session, int nr, String name)
 	{
@@ -515,7 +515,8 @@ public class BaseWindow implements IWindow
 	protected boolean sendMessageInternal(IToJSONWriter<IBrowserConverterContext> dataWriter, IToJSONConverter<IBrowserConverterContext> converter,
 		Integer smsgidOptional) throws IOException
 	{
-		if (dataWriter == null && serviceCalls.size() == 0 && delayedOrAsyncComponentApiCalls.size() == 0 && this.changeToSend == null) return false;
+		if (dataWriter == null && serviceCalls.size() == 0 && delayedOrAsyncComponentApiCalls.size() == 0 && this.clientToServerCallReturnValue == null)
+			return false;
 
 		if (getEndpoint() == null)
 		{
@@ -602,13 +603,19 @@ public class BaseWindow implements IWindow
 				}
 			}
 
-			if (changeToSend != null)
+			if (clientToServerCallReturnValue != null)
 			{
 				hasContentToSend = true;
-				PropertyDescription dataTypes = (PropertyDescription)changeToSend.remove("dataTypes"); //$NON-NLS-1$
 
-				JSONUtils.writeDataWithConversions(FullValueToJSONConverter.INSTANCE, w, changeToSend, dataTypes,
-					BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER);
+				w.key("cmsgid").value(clientToServerCallReturnValue.cmsgid);
+
+				String retValOrErrorKey = clientToServerCallReturnValue.success ? "ret" : "exception";
+
+				clientDataConversions.pushNode(retValOrErrorKey);
+				converter.toJSONValue(w, retValOrErrorKey, clientToServerCallReturnValue.retValOrErrorMessage, clientToServerCallReturnValue.returnType,
+					clientDataConversions,
+					clientToServerCallReturnValue.converterContextForReturnValue);
+				clientDataConversions.popNode();
 			}
 
 			if (hasContentToSend)
@@ -622,7 +629,7 @@ public class BaseWindow implements IWindow
 
 				sendMessageText(w.toString());
 				serviceCalls.clear();
-				changeToSend = null;
+				clientToServerCallReturnValue = null;
 			}
 
 			hasContentToSend = checkForAndSendAnyUnexpectedRemainingChangesOfDataWriter(dataWriter, converter) || hasContentToSend;
@@ -736,9 +743,9 @@ public class BaseWindow implements IWindow
 		ep.sendText(getNextMessageNumber(), text);
 	}
 
-	public void addToChanges(Map<String, Object> change)
+	public void setClientToServerCallReturnValueForChanges(ClientToServerCallReturnValue clientToServerCallReturnValue)
 	{
-		this.changeToSend = change;
+		this.clientToServerCallReturnValue = clientToServerCallReturnValue;
 	}
 
 	public void sendChanges() throws IOException
@@ -1187,10 +1194,8 @@ public class BaseWindow implements IWindow
 		boolean hasPendingDelayedCalls = false;
 		if (delayedOrAsyncComponentApiCalls.size() > 0)
 		{
-			Iterator<Map<String, Object>> it = delayedOrAsyncComponentApiCalls.iterator();
-			while (it.hasNext())
+			for (Map<String, Object> delayedCall : delayedOrAsyncComponentApiCalls)
 			{
-				Map<String, Object> delayedCall = it.next();
 				if (((Boolean)delayedCall.get(API_KEY_DELAY_UNTIL_FORM_LOADS)).booleanValue() &&
 					formContainer == (Container)delayedCall.get(API_SERVER_ONLY_KEY_FORM_CONTAINER))
 				{

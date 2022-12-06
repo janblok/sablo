@@ -27,6 +27,7 @@ import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.websocket.utils.DataConversion;
+import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
 
@@ -40,14 +41,10 @@ public interface IWindow
 {
 
 	/**
-	 * Get the websocket sessioninvoke
-	 * @return
+	 * Get the websocket session.
 	 */
 	IWebsocketSession getSession();
 
-	/**
-	 * @param endpoint
-	 */
 	void setEndpoint(IWebsocketEndpoint endpoint);
 
 	/**
@@ -56,15 +53,8 @@ public interface IWindow
 	 */
 	IWebsocketEndpoint getEndpoint();
 
-	/**
-	 * @param formName
-	 * @return
-	 */
 	Container getForm(String formName);
 
-	/**
-	 * @return the currentFormUrl
-	 */
 	String getCurrentFormUrl();
 
 	/**
@@ -90,9 +80,6 @@ public interface IWindow
 
 	int getNr();
 
-	/**
-	 * @return
-	 */
 	String getName();
 
 	/**
@@ -175,27 +162,17 @@ public interface IWindow
 	public long getLastPingTime();
 
 
-	/**
-	 *
-	 */
 	void dispose();
 
 
-	/**
-	 *
-	 */
 	void sendChanges() throws IOException;
 
-
-	void addToChanges(Map<String, Object> change);
-
 	/**
-	 *
+	 * @param clientToServerCallReturnValue any value that can be written directly via {@link JSONUtils#defaultToJSONValue(IToJSONConverter, JSONWriter, String, Object, PropertyDescription, DataConversion, Object)}.
 	 */
+	void setClientToServerCallReturnValueForChanges(ClientToServerCallReturnValue clientToServerCallReturnValue);
+
 	void onOpen(Map<String, List<String>> requestParams);
 
-	/**
-	 * @return
-	 */
 	int getNextMessageNumber();
 }

@@ -27,6 +27,7 @@ import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.websocket.utils.DataConversion;
+import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
 
@@ -40,7 +41,7 @@ public interface IWindow
 {
 
 	/**
-	 * Get the websocket sessioninvoke
+	 * Get the websocket session.
 	 */
 	IWebsocketSession getSession();
 
@@ -75,9 +76,6 @@ public interface IWindow
 
 	int getNr();
 
-	/**
-	 * @return
-	 */
 	String getName();
 
 	/**
@@ -172,7 +170,7 @@ public interface IWindow
 	 *
 	 * But do register the result here to be sent later - when all changes that happened as a result of this request are sent.
 	 */
-	void setResultToSendToClientForPendingClientToServerAPICall(Map<String, Object> change);
+	void setClientToServerCallReturnValueForChanges(ClientToServerCallReturnValue clientToServerCallReturnValue);
 
 	void onOpen(Map<String, List<String>> requestParams);
 

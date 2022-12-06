@@ -275,7 +275,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 						Thread thread = new Thread(executor, getDispatcherThreadName());
 						thread.setDaemon(true);
 						thread.start();
-						if (SHUTDOWNLOGGER.isDebugEnabled()) SHUTDOWNLOGGER.debug("Executor created  in for client: " + getSessionKey()); //$NON-NLS-1$
+						if (SHUTDOWNLOGGER.isDebugEnabled()) SHUTDOWNLOGGER.debug("Executor created for client: " + getSessionKey()); //$NON-NLS-1$
 					}
 				}
 			}

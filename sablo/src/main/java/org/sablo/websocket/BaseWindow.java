@@ -392,13 +392,13 @@ public class BaseWindow implements IWindow
 	}
 
 	@Override
-	public void registerContainer(Container container)
+	public synchronized void registerContainer(Container container)
 	{
 		usedContainers.put(container, new Object());
 	}
 
 	@Override
-	public void unregisterContainer(Container container)
+	public synchronized void unregisterContainer(Container container)
 	{
 		usedContainers.remove(container);
 	}

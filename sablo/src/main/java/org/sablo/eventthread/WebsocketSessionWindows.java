@@ -18,7 +18,6 @@ package org.sablo.eventthread;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import org.json.JSONException;
 import org.json.JSONWriter;
@@ -27,6 +26,7 @@ import org.sablo.WebComponent;
 import org.sablo.specification.IFunctionParameters;
 import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.property.IBrowserConverterContext;
+import org.sablo.websocket.ClientToServerCallReturnValue;
 import org.sablo.websocket.IClientService;
 import org.sablo.websocket.IToJSONWriter;
 import org.sablo.websocket.IWebsocketEndpoint;
@@ -249,7 +249,7 @@ public class WebsocketSessionWindows implements IWindow
 	}
 
 	@Override
-	public void setResultToSendToClientForPendingClientToServerAPICall(Map<String, Object> change)
+	public void setClientToServerCallReturnValueForChanges(ClientToServerCallReturnValue clientToServerCallReturnValue)
 	{
 		// ignore
 	}

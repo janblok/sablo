@@ -146,7 +146,14 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		}
 		catch (Throwable t)
 		{
-			handleException(event, t);
+			try
+			{
+				handleException(event, t);
+			}
+			catch (Throwable t2)
+			{
+				log.error("Handle exception error", t2);
+			}
 		}
 	}
 
@@ -320,6 +327,25 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 	{
 		exit = true;
 		addEmptyEvent();
+	}
+
+	@Override
+	public String interruptEventThread()
+	{
+		Thread t = scriptThread;
+		if (t != null)
+		{
+			StringBuilder sb = new StringBuilder();
+			StackTraceElement[] stackTrace = t.getStackTrace();
+			for (StackTraceElement stackTraceElement : stackTrace)
+			{
+				sb.append(stackTraceElement);
+				sb.append('\n');
+			}
+			t.interrupt();
+			return sb.toString();
+		}
+		return "";
 	}
 
 }

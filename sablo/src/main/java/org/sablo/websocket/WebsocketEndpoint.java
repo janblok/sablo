@@ -37,9 +37,6 @@ import org.json.JSONObject;
 import org.sablo.IllegalChangeFromClientException;
 import org.sablo.eventthread.EventDispatcher;
 import org.sablo.eventthread.IEventDispatcher;
-import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.PropertyDescriptionBuilder;
-import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -248,9 +245,9 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 	{
 		if (window != null)
 		{
-			if (window.getSession() != null)
+			IEventDispatcher eventDispatcher = window.getSession() == null ? null : window.getSession().getEventDispatcher();
+			if (eventDispatcher != null)
 			{
-				final IEventDispatcher eventDispatcher = window.getSession().getEventDispatcher();
 				for (final Integer pendingMessageId : pendingMessages.keySet())
 				{
 					eventDispatcher.addEvent(new Runnable()
@@ -278,8 +275,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 			}
 			else
 			{
-				// this should never happen; window.getSession() can never be null (session is a final field in BaseWindow that is always initialized with non-null values)
-				// (I didn't comment out the if/else though because all this goes through interfaces that don't guarantee that...)
+				// When we have a session without client no need to run events. This can happen when we get requests for a non-existing soluti
 				unbindWindow();
 			}
 
@@ -439,23 +435,8 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 								{
 									try
 									{
-										Map<String, Object> responseToSend = null;
-										if (error == null)
-										{
-											Object resultObject = result;
-											PropertyDescription objectType = null;
-											if (result instanceof TypedData)
-											{
-												resultObject = ((TypedData< ? >)result).content;
-												objectType = ((TypedData< ? >)result).contentType;
-											}
-											responseToSend = getResponseToSend(msgId, resultObject, objectType, true);
-										}
-										else
-										{
-											responseToSend = getResponseToSend(msgId, error, null, false);
-										}
-										getWindow().setResultToSendToClientForPendingClientToServerAPICall(responseToSend);
+										getWindow().setClientToServerCallReturnValueForChanges(
+											new ClientToServerCallReturnValue(error == null ? result : error, error == null, msgId));
 										getWindow().sendChanges();
 									}
 									catch (IOException e)
@@ -525,21 +506,6 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 			CurrentWindow.set(null);
 		}
 
-	}
-
-	protected Map<String, Object> getResponseToSend(Object msgId, Object object, PropertyDescription objectType, boolean success) throws IOException
-	{
-		Map<String, Object> data = new HashMap<>();
-		String key = success ? "ret" : "exception";
-		data.put(key, object);
-		data.put("cmsgid", msgId);
-		PropertyDescriptionBuilder dataTypes = null;
-		if (objectType != null)
-		{
-			dataTypes = AggregatedPropertyType.newAggregatedPropertyBuilder().withProperty(key, objectType);
-			data.put("dataTypes", dataTypes.build());
-		}
-		return data;
 	}
 
 	public void sendText(int messageNumber, String text) throws IOException

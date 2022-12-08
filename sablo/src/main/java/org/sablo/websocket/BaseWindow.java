@@ -100,7 +100,7 @@ public class BaseWindow implements IWindow
 
 	private final ClientSideWindowState clientSideState = createClientSideWindowState();
 
-	private Map<String, Object> resultToSendToClientForPendingClientToServerAPICall;
+	private ClientToServerCallReturnValue clientToServerCallReturnValue;
 
 	public BaseWindow(IWebsocketSession session, int nr, String name)
 	{
@@ -511,7 +511,7 @@ public class BaseWindow implements IWindow
 		Integer smsgidOptional) throws IOException
 	{
 		if (dataWriter == null && serviceCalls.size() == 0 && componentApiCalls.size() == 0 &&
-			this.resultToSendToClientForPendingClientToServerAPICall == null) return false;
+			this.clientToServerCallReturnValue == null) return false;
 
 		if (getEndpoint() == null)
 		{
@@ -570,13 +570,13 @@ public class BaseWindow implements IWindow
 				}
 			}
 
-			if (resultToSendToClientForPendingClientToServerAPICall != null)
+			if (clientToServerCallReturnValue != null)
 			{
 				hasContentToSend = true;
-				PropertyDescription dataTypes = (PropertyDescription)resultToSendToClientForPendingClientToServerAPICall.remove("dataTypes"); //$NON-NLS-1$
-
-				JSONUtils.writeData(FullValueToJSONConverter.INSTANCE, w, resultToSendToClientForPendingClientToServerAPICall, dataTypes,
-					BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER);
+				w.key("cmsgid").value(clientToServerCallReturnValue.cmsgid);
+				JSONUtils.defaultToJSONValue(FullValueToJSONConverter.INSTANCE, w, clientToServerCallReturnValue.success ? "ret" : "exception",
+					clientToServerCallReturnValue.retValOrErrorMessage, // return value is already ready to be sent to client (via default conversion or it is already a JSONString (converted already), see IServerService.executeMethod javadoc)
+					null, BrowserConverterContext.NULL_WEB_OBJECT_WITH_NO_PUSH_TO_SERVER);
 			}
 
 			if (hasContentToSend)
@@ -589,7 +589,7 @@ public class BaseWindow implements IWindow
 
 				sendMessageText(w.toString());
 				serviceCalls.clear();
-				resultToSendToClientForPendingClientToServerAPICall = null;
+				clientToServerCallReturnValue = null;
 			}
 
 			hasContentToSend = checkForAndSendAnyUnexpectedRemainingChangesOfDataWriter(dataWriter, converter) || hasContentToSend;
@@ -696,9 +696,9 @@ public class BaseWindow implements IWindow
 		ep.sendText(getNextMessageNumber(), text);
 	}
 
-	public void setResultToSendToClientForPendingClientToServerAPICall(Map<String, Object> resultForApiCall)
+	public void setClientToServerCallReturnValueForChanges(ClientToServerCallReturnValue clientToServerCallReturnValue)
 	{
-		this.resultToSendToClientForPendingClientToServerAPICall = resultForApiCall;
+		this.clientToServerCallReturnValue = clientToServerCallReturnValue;
 	}
 
 	public void sendChanges() throws IOException

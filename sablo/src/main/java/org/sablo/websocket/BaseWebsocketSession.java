@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,6 +52,9 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class BaseWebsocketSession implements IWebsocketSession, IChangeListener
 {
+	protected static final Logger SHUTDOWNLOGGER = LoggerFactory.getLogger("SHUTDOWNLOGGER"); //$NON-NLS-1$
+
+
 	private static final String PROPERTY_WINDOW_TIMEOUT = "sablo.window.timeout.secs";
 	public static final String DEFAULT_WINDOW_TIMEOUT = "60";
 	private static Long windowTimeout;
@@ -66,7 +68,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	private final List<ObjectReference<IWindow>> windows = new CopyOnWriteArrayList<>();
 
 	private final WebsocketSessionKey sessionKey;
-	private volatile IEventDispatcher executor;
+	protected volatile IEventDispatcher executor;
 
 	private final AtomicInteger handlingEvent = new AtomicInteger(0);
 
@@ -182,10 +184,8 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 		List<IWindow> inactiveWindows = new ArrayList<>();
 		//do global non active cleanup
 		long currentTime = System.currentTimeMillis();
-		Iterator<ObjectReference<IWindow>> iterator = windows.iterator();
-		while (iterator.hasNext())
+		for (ObjectReference<IWindow> ref : windows)
 		{
-			ObjectReference<IWindow> ref = iterator.next();
 			long timeout = getWindowTimeout() * 1000;
 			long lastTime = ref.getObject().getLastPingTime();
 			if (lastTime == 0)
@@ -271,9 +271,14 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 			{
 				if (executor == null)
 				{
-					Thread thread = new Thread(executor = createEventDispatcher(), getDispatcherThreadName());
-					thread.setDaemon(true);
-					thread.start();
+					executor = createEventDispatcher();
+					if (executor != null)
+					{
+						Thread thread = new Thread(executor, getDispatcherThreadName());
+						thread.setDaemon(true);
+						thread.start();
+						if (SHUTDOWNLOGGER.isDebugEnabled()) SHUTDOWNLOGGER.debug("Executor created for client: " + getSessionKey()); //$NON-NLS-1$
+					}
 				}
 			}
 		}
@@ -318,6 +323,8 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	@Override
 	public final void dispose()
 	{
+		if (SHUTDOWNLOGGER.isDebugEnabled()) SHUTDOWNLOGGER.debug("Disposing websocket session for client: " + getSessionKey()); //$NON-NLS-1$
+
 		onDispose();
 
 		disposeHandlersSubject.callHandlers();
@@ -344,10 +351,15 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 			{
 				if (executor != null)
 				{
+					if (SHUTDOWNLOGGER.isDebugEnabled()) SHUTDOWNLOGGER.debug("Executor destroyed in dispose for client: " + getSessionKey()); //$NON-NLS-1$
 					executor.destroy();
 					executor = null;
 				}
 			}
+		}
+		else
+		{
+			if (SHUTDOWNLOGGER.isDebugEnabled()) SHUTDOWNLOGGER.debug("Executor was already destroyed in dispose for client: " + getSessionKey()); //$NON-NLS-1$
 		}
 
 		servicesByName.clear();

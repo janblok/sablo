@@ -17,17 +17,23 @@
 package org.sablo.websocket;
 
 import org.json.JSONObject;
+import org.json.JSONString;
+import org.sablo.websocket.utils.JSONUtils;
+import org.sablo.websocket.utils.JSONUtils.EmbeddableJSONWriter;
+import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
 
 /**
  * @author jcompagner
  */
 public interface IServerService
 {
+
 	/**
 	 * Execute a method requested from the browser client.
-	 * @param methodName
-	 * @param args
-	 * @return
+	 *
+	 * @return IMPORTANT: the return value should be a ready-to-send-to-client (JSON) value or a value that only needs to go through {@link JSONUtils#defaultToJSONValue(org.sablo.websocket.utils.JSONUtils.IToJSONConverter, org.json.JSONWriter, String, Object, org.sablo.specification.PropertyDescription, org.sablo.websocket.utils.DataConversion, Object)}
+	 * via the {@link FullValueToJSONConverter}. So it has to be some primitive, or something that only needs to undergo default conversion to client,  or, if a
+	 * specific conversion to client is needed, then this method needs to apply that conversion to the returned value and return a {@link JSONString} / {@link EmbeddableJSONWriter} (with true given to it's constructor) of the result of the conversion instead.
 	 */
 	public Object executeMethod(String methodName, JSONObject args) throws Exception;
 

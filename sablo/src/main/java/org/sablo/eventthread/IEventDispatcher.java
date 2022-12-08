@@ -128,4 +128,8 @@ public interface IEventDispatcher extends Runnable
 	 */
 	public void destroy();
 
+	/**
+	 * interrupts the event dispatch thread, and gives back the current stack that was interrupted
+	 */
+	public String interruptEventThread();
 }

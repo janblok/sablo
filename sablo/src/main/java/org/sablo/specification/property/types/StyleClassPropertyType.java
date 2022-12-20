@@ -26,7 +26,7 @@ public class StyleClassPropertyType extends DefaultPropertyType<String>
 	public static final StyleClassPropertyType INSTANCE = new StyleClassPropertyType();
 	public static final String TYPE_NAME = "styleclass";
 
-	private StyleClassPropertyType()
+	protected StyleClassPropertyType()
 	{
 	}
 

@@ -93,6 +93,10 @@ public abstract class Container extends WebComponent
 
 	public void clearComponents()
 	{
+		for (WebComponent component : components.values().toArray(new WebComponent[0]))
+		{
+			component.dispose();
+		}
 		components = new HashMap<>();
 	}
 
@@ -101,11 +105,6 @@ public abstract class Container extends WebComponent
 	{
 		super.dispose();
 		if (alreadyRegisteredToWindow != null) alreadyRegisteredToWindow.unregisterContainer(this);
-
-		for (WebComponent component : components.values().toArray(new WebComponent[0]))
-		{
-			component.dispose();
-		}
 		clearComponents();
 	}
 

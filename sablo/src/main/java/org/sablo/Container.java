@@ -92,6 +92,10 @@ public abstract class Container extends WebComponent
 
 	public void clearComponents()
 	{
+		for (WebComponent component : components.values().toArray(new WebComponent[0]))
+		{
+			component.dispose();
+		}
 		components = new HashMap<>();
 	}
 
@@ -99,10 +103,6 @@ public abstract class Container extends WebComponent
 	public void dispose()
 	{
 		super.dispose();
-		for (WebComponent component : components.values().toArray(new WebComponent[0]))
-		{
-			component.dispose();
-		}
 		clearComponents();
 	}
 

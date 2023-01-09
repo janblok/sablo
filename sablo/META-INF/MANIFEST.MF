@@ -16,8 +16,7 @@ Export-Package: org.sablo,
  org.sablo.websocket,
  org.sablo.websocket.impl,
  org.sablo.websocket.utils
-Require-Bundle: org.junit,
- slf4j.api
+Require-Bundle: org.junit
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ClassPath: .
 Bundle-Vendor: Servoy
@@ -27,7 +26,8 @@ Import-Package: javax.servlet;version="[4.0.0,5.0.0)",
  javax.websocket;version="1.1.0",
  javax.websocket.server;version="1.1.0",
  org.apache.commons.io;version="2.8.0",
- org.json
+ org.json,
+ org.slf4j;version="2.0.6"
 Automatic-Module-Name: sablo
 
 Name: /sablo/sabloService.spec

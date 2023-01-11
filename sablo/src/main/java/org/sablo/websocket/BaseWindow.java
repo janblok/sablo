@@ -743,6 +743,7 @@ public class BaseWindow implements IWindow
 		if (argumentTypes != null && argumentTypes.getDefinedArgsCount() == 0) argumentTypes = null;
 
 		addServiceCall(clientService, functionName, arguments, argumentTypes);
+		// the arguments giving here could be adjusted in the addServiceCalls to have a varargs List (suddenly arguments appear duplicate)
 		return executeCall(clientService, functionName, arguments, pendingChangesWriter, blockEventProcessing, true);
 	}
 
@@ -850,7 +851,7 @@ public class BaseWindow implements IWindow
 
 	private Object[] processVarArgsIfNeeded(Object[] arguments, IFunctionParameters parameters)
 	{
-		if (parameters != null && arguments.length > parameters.getDefinedArgsCount() && parameters.isVarArgs())
+		if (parameters != null && arguments.length >= parameters.getDefinedArgsCount() && parameters.isVarArgs())
 		{
 			int definedArgsCount = parameters.getDefinedArgsCount();
 			// handle variable args

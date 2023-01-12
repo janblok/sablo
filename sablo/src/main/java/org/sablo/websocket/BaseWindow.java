@@ -851,7 +851,7 @@ public class BaseWindow implements IWindow
 
 	private Object[] processVarArgsIfNeeded(Object[] arguments, IFunctionParameters parameters)
 	{
-		if (parameters != null && arguments.length >= parameters.getDefinedArgsCount() && parameters.isVarArgs())
+		if (parameters != null && arguments != null && arguments.length >= parameters.getDefinedArgsCount() && parameters.isVarArgs())
 		{
 			int definedArgsCount = parameters.getDefinedArgsCount();
 			// handle variable args

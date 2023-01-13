@@ -158,16 +158,15 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		return changes;
 	}
 
-	var getAllChanges = function(now: object, prev: object, dynamicTypes: object, scope: angular.IScope, propertyContextCreator: sablo.IPropertyContextCreator) {
-		var changes = {}
+	function getAllChanges(now: object, prev: object, dynamicTypes: object, scope: angular.IScope, propertyContextCreator: sablo.IPropertyContextCreator) {
+		const changes = {}
 		// first build up a list of all the properties both have.
-		var fulllist = $sabloUtils.getCombinedPropertyNames(now, prev);
-		var prop;
+		const fulllist = $sabloUtils.getCombinedPropertyNames(now, prev);
 
-		for (prop in fulllist) {
-			var changed;
+		for (const prop in fulllist) {
+			let changed: boolean;
 			if (prev && now) {
-				changed = $sabloUtils.isChanged(now[prop], prev[prop], dynamicTypes ? dynamicTypes[prop] : undefined)
+				changed = $sabloUtils.isChanged(now[prop], prev[prop], dynamicTypes?.[prop])
 			} else {
 				changed = true; // true if just one of them is undefined; both cannot be undefined at this point if we are already iterating on combined property names
 			}
@@ -176,8 +175,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 				changes[prop] = now[prop];
 			}
 		}
-		for (prop in changes) {
-			changes[prop] = $sabloConverters.convertFromClientToServer(changes[prop], dynamicTypes[prop], prev ? prev[prop] : undefined, scope, propertyContextCreator.withPushToServerFor(prop));
+		for (const prop in changes) {
+			changes[prop] = $sabloConverters.convertFromClientToServer(changes[prop], dynamicTypes?.[prop], prev ? prev[prop] : undefined, scope, propertyContextCreator.withPushToServerFor(prop));
 		}
 		return changes;
 	};

@@ -44,6 +44,8 @@ namespace sablo.propertyTypes {
         }
 
     }
+    
+    export function isCustomArrayType(typeToCheck: sablo.IType<any>) { return typeToCheck instanceof CustomArrayType; }
 
     class CustomArrayType implements sablo.IType<CustomArrayValue> {
         static readonly GRANULAR_UPDATES = "g";

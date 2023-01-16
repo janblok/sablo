@@ -62,6 +62,8 @@ namespace sablo.propertyTypes {
 
 	}
 
+    export function isCustomObjectType(typeToCheck: sablo.IType<any>) { return typeToCheck instanceof CustomObjectType; }
+
 	class CustomObjectType implements sablo.IType<CustomObjectValue> {
 
     	static readonly UPDATES = "u";

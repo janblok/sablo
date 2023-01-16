@@ -81,8 +81,23 @@ webSocketModule.factory('$propertyWatchUtils', function ($typesRegistry: sablo.I
 			}
 			for (const propertyName of Object.keys(pds)) {
 				const wf = getWatchFunction(propertyName);
-				const pushToServer = pds[propertyName].getPropertyPushToServer();
-				if (pushToServer.value >= sablo.typesRegistry.PushToServerEnum.shallow.value) unwatchF.push(scope.$watch(wf, getChangeFunction(propertyName, wf()), pushToServer == sablo.typesRegistry.PushToServerEnum.shallow ? false : true));
+				const pd: sablo.IPropertyDescription = pds[propertyName];
+				let pushToServer = pd.getPropertyPushToServer();
+
+				if (pushToServer == sablo.typesRegistry.PushToServerEnum.deep && 
+				        (sablo.propertyTypes.isCustomArrayType(pd.getPropertyType()) || sablo.propertyTypes.isCustomObjectType(pd.getPropertyType()))) {
+                    // the deep watch/pushToServer will propagate through custom array and custom object type impls. to child values (array elements or
+                    // object properties) anyway, so no need to add a deep watch on those, we only need to know if the reference has changed (shallow watch);
+                    // another problem if we use deep watch on those is that angular.copy() that is used then by $watch to give the old values of deep watches
+                    // will not copy over non-enumerable properties so the custom array/object's ___internalState will not be available; and that is needed
+                    // when a custom array or custom object changes by reference because it needs to know the version number from the internal state
+                    // to be able to send itself correctly to the server; shallow watches will just give the 'real' old object reference which is what is expected
+				    pushToServer = sablo.typesRegistry.PushToServerEnum.shallow;
+                }
+
+				if (pushToServer.value >= sablo.typesRegistry.PushToServerEnum.shallow.value) unwatchF.push(
+                    scope.$watch(wf, getChangeFunction(propertyName, wf()), pushToServer == sablo.typesRegistry.PushToServerEnum.shallow ? false : true)
+                );
 			}
 		}
 		

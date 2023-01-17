@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -339,10 +338,9 @@ public abstract class BaseWebObject implements IWebObjectContext
 			if (allowAccess != null)
 			{
 				List<String> allowAccessProperties = Arrays.asList(allowAccess.split(","));
-				Iterator<String> iterator = allowAccessProperties.iterator();
-				while (iterator.hasNext())
+				for (String element : allowAccessProperties)
 				{
-					if (iterator.next().equals(e.getBlockedByProperty()))
+					if (element.equals(e.getBlockedByProperty()))
 					{
 						rethrow = false;
 						break;
@@ -813,10 +811,9 @@ public abstract class BaseWebObject implements IWebObjectContext
 				// allowEditTag is either a String or an array of Strings representing 'blocked by' property name(s) that should not block the given property (the spec makes specific exceptions in the property itself for the other props. that should not block it)
 				if (allowEditTag instanceof JSONArray)
 				{
-					Iterator<Object> iterator = ((JSONArray)allowEditTag).iterator();
-					while (iterator.hasNext())
+					for (Object element : ((JSONArray)allowEditTag))
 					{
-						if (iterator.next().equals(e.getBlockedByProperty()))
+						if (element.equals(e.getBlockedByProperty()))
 						{
 							rethrow = false;
 							break;
@@ -1169,7 +1166,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 	@Override
 	public IWebObjectContext getParentContext()
 	{
-		return null;
+		return this;
 	}
 
 	@Override

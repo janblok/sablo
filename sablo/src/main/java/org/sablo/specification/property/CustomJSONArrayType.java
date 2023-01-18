@@ -308,6 +308,8 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 				try
 				{
 					ValueReference<Boolean> returnValueAdjustedIncommingValueForIndex = new ValueReference<Boolean>(Boolean.FALSE);
+                    // TODO although this is a full change, we give oldVal because client side does the same for some reason,
+                    // but normally both should use undefined/null for old value of elements as this is a full change; SVY-17854 is created for looking into this
 					list.add((WT)JSONUtils.fromJSON(oldVal, array.opt(i), getCustomJSONTypeDefinition(), elementDataConverterContext,
 						returnValueAdjustedIncommingValueForIndex));
 					if (returnValueAdjustedIncommingValueForIndex.value.booleanValue()) adjustedNewValueIndexes.add(i);

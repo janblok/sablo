@@ -235,6 +235,8 @@ namespace sablo.propertyTypes {
 
                             const converted = this.sabloConverters.convertFromClientToServer(val, this.getElementType(internalState, idx),
                                 oldClientData ? oldClientData[idx] : undefined, scope, elemPropertyContext);
+                            // TODO although this is a full change, we give oldClientData[idx] (oldvalue) because server side does the same for some reason,
+                            // but normally both should use undefined/null for old value of elements as this is a full change; SVY-17854 is created for looking into this
 
                             // if it's a nested obj/array or other smart prop that just got smart in convertFromClientToServer, attach the change notifier
                             if (val && val[this.sabloConverters.INTERNAL_IMPL] && val[this.sabloConverters.INTERNAL_IMPL].setChangeNotifier)

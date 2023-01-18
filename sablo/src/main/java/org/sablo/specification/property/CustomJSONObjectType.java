@@ -231,8 +231,9 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 								{
 									if (!angularAutoAddedKeysToIgnore.contains(key)) log.warn("Property (" + pd + ") of '" +
 										(dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
-										"'. Cannot set property '" + key + "' of custom JSON Object '" + getName() + "' as it's type is undefined. Update JSON: " +
-											newJSONValue);
+										"'. Cannot set property '" + key + "' of custom JSON Object '" + getName() +
+										"' as it's type is undefined. Update JSON: " +
+										newJSONValue);
 								}
 							}
 							if (someUpdateAccessDenied) previousChangeAwareMap.getChangeSetter().markAllChanged();
@@ -339,6 +340,8 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 					try
 					{
 						ValueReference<Boolean> returnValueAdjustedIncommingValueForKey = new ValueReference<Boolean>(Boolean.FALSE);
+                        // TODO although this is a full change, we give oldVal because client side does the same for some reason,
+                        // but normally both should use undefined/null for old value of subprops as this is a full change; SVY-17854 is created for looking into this
 						map.put(key, (WT)JSONUtils.fromJSON(oldVal, clientReceivedJSON.opt(key), getCustomJSONTypeDefinition().getProperty(key),
 							dataConverterContext == null ? null : dataConverterContext.newInstanceWithPushToServer(pushToServerComputedOfSubprop),
 							returnValueAdjustedIncommingValueForKey));

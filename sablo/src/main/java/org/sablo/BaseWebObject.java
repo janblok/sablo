@@ -498,7 +498,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 				{
 					// property is protected, i.e. it cannot be set from the client
 					throw new IllegalChangeFromClientException(null,
-						"Property '" + propertyPath.stream().limit(i + 1).map(pd -> pd.getName()) +
+						"Property '" + propertyPath.stream().limit(i + 1).map(pd -> pd.getName()).reduce(specification.getName(), (a, b) -> a + '.' + b) +
 							"' is a 'protecting' property itself so it can never be changed from client.",
 						getName(), propName);
 				}
@@ -508,7 +508,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 				{
 					// computed pushToServer not at least 'allow' on the prop. itself and parents; it should not be changed from the client
 					throw new IllegalChangeFromClientException(null,
-						"Property '" + propertyPath.stream().limit(i + 1).map(pd -> pd.getName()) +
+						"Property '" + propertyPath.stream().limit(i + 1).map(pd -> pd.getName()).reduce(specification.getName(), (a, b) -> a + '.' + b) +
 							"' has computed 'pushToServer' set to 'reject' so it cannot be changed from client.",
 						getName(), propName);
 				}

@@ -86,11 +86,12 @@ public class IllegalChangeFromClientException extends RuntimeException
 		StringBuilder sb = new StringBuilder("Change sent from client to server for property '").append(getBlockedProperty());
 		if (data != null)
 		{
-			sb.append(" with data '").append(data).append("'");
+			sb.append("' with data '").append(data);
 		}
 		String result = sb.append("' of component '").append(getComponentName()).append("' was denied ").append(
 			getBlockedByProperty() != null ? " (blocked by property named '" + getBlockedByProperty() + "')" : "").append(
-				".Block reason: " + getBlockReason()).toString();
+				".Block reason: " + getBlockReason())
+			.toString();
 		if (e != null)
 		{
 			result += ". Caused by: " + e.getMessage();

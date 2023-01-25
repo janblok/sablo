@@ -491,7 +491,8 @@ public abstract class BaseWebObject implements IWebObjectContext
 			PropertyDescription property = propertyPath.get(i);
 
 			if (i == 0) computedPushToServer = property != null ? property.getPushToServer() : PushToServerEnum.allow; // properties that are sent from browser but are not in spec will be converted to null later anyway in BaseWebObject.convertValueFromJSON()
-			else computedPushToServer = computedPushToServer.combineWithChild(property.getPushToServerAsDeclaredInSpecFile());
+			else computedPushToServer = computedPushToServer
+				.combineWithChild(property != null ? property.getPushToServerAsDeclaredInSpecFile() : PushToServerEnum.allow); // properties that are sent from browser but are not in spec will be converted to null later anyway in BaseWebObject.convertValueFromJSON()
 
 			if (property != null)
 			{

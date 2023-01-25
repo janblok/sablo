@@ -316,50 +316,74 @@ public class PropertyDescription
 	public List<PropertyDescription> getPropertyPath(String propname)
 	{
 		ArrayList<PropertyDescription> propertyPath = new ArrayList<PropertyDescription>();
+		getPropertyOrPropertyPathInternal(propname, propertyPath);
 
-		PropertyDescription childProp;
+		return propertyPath;
+	}
+
+	/**
+	 * The reason why this method has both a return value and a param that stuff is added to is to reuse code but not allocate arrays if caller only needs last segment.
+	 * So only one or the other will be used, not both! ArrayList will only be used if provided by caller.
+	 *
+	 * @param propertyPathToPopulateIfRequested if this is null, only the inner most PropertyDescription will be returned by this method (in case of nesting with . and []);
+	 * 									if it is != null, all PDs encountered in the way in case of nesting will be added to propertyPathToPopulate and return value will be null
+	 * @return see propertyPathToPopulate description above
+	 */
+	@SuppressWarnings("nls")
+	private PropertyDescription getPropertyOrPropertyPathInternal(String propName, ArrayList<PropertyDescription> propertyPathToPopulateIfRequested)
+	{
+		// TODO maybe it would be better to make code not need this method at all - and let the property
+		// types themselves handle nested prop code aspects that need this method, just like we do for toJSON, fromJSON etc. in nested custom array/obj types...
+
+		PropertyDescription innerMostPDifRequested = null; // return value in case propertyPathToPopulate == null (so caller only wants last PD, not an array of all PDs in case of nesting)
 		if (properties != null)
 		{
-			// so it's not an Array type PD (those don't have stuff in properties map); it must be either a custom object description or a web object specification
-			if (propname.startsWith(".")) propname = propname.substring(1); // in case of multiple nesting levels for example a[3].b, the ".b" part will end up here so we must ignore the first dot if present
+			// so it's not an Array type PD (those don't have stuff in PD properties map);
+			// it must be either a custom object PD's type custom definition or a web object specification
+			if (propName.startsWith(".")) propName = propName.substring(1); // in case of multiple nesting levels for example a[3].b, the ".b" part will end up here so we must ignore the first dot if present
 
-			childProp = properties.get(propname);
-			if (childProp == null)
+			PropertyDescription firstProp = properties.get(propName);
+			if (firstProp == null)
 			{
 				// see if a nested property was requested
-				int indexOfFirstDot = propname.indexOf('.');
-				int indexOfFirstOpenBracket = propname.indexOf('[');
+				int indexOfFirstDot = propName.indexOf('.');
+				int indexOfFirstOpenBracket = propName.indexOf('[');
 				if (indexOfFirstDot >= 0 || indexOfFirstOpenBracket >= 0)
 				{
 					int firstSeparatorIndex = Math.min(indexOfFirstDot >= 0 ? indexOfFirstDot : indexOfFirstOpenBracket,
 						indexOfFirstOpenBracket >= 0 ? indexOfFirstOpenBracket : indexOfFirstDot);
 
 					// this must be a custom type then;
-					String firstChildPropName = propname.substring(0, firstSeparatorIndex);
-					childProp = properties.get(firstChildPropName);
-					if (childProp != null) // so it wants to get a deeper nested PD; forward it to child PD to deal with it further
+					String firstChildPropName = propName.substring(0, firstSeparatorIndex);
+					firstProp = properties.get(firstChildPropName);
+
+					if (propertyPathToPopulateIfRequested != null) propertyPathToPopulateIfRequested.add(firstProp);
+					else innerMostPDifRequested = firstProp;
+
+					if (firstProp != null) // so it wants to get a deeper nested PD; forward it to child PD to deal with it further
 					{
 						// here it should (according to check above) always be that firstSeparatorIndex < propname.length()
-						propertyPath.add(childProp);
-						List<PropertyDescription> childPropertyPath = childProp.getPropertyPath(propname.substring(firstSeparatorIndex));
-						propertyPath.addAll(childPropertyPath.subList(0, childPropertyPath.size() - 1));
-						childProp = childPropertyPath.get(childPropertyPath.size() - 1);
+						innerMostPDifRequested = firstProp.getPropertyOrPropertyPathInternal(propName.substring(firstSeparatorIndex),
+							propertyPathToPopulateIfRequested);
 					}
 				}
+				else if (propertyPathToPopulateIfRequested != null) propertyPathToPopulateIfRequested.add(null);
 			}
+			else if (propertyPathToPopulateIfRequested != null) propertyPathToPopulateIfRequested.add(firstProp); // simple property - non nested
+			else innerMostPDifRequested = firstProp;
 		}
 		else if (type instanceof CustomJSONObjectType)
 		{
-			// if it's a custom object type use that to get child prop. def
-			childProp = ((CustomJSONPropertyType< ? >)type).getCustomJSONTypeDefinition().getProperty(propname);
+			innerMostPDifRequested = ((CustomJSONObjectType< ? , ? >)type).getCustomJSONTypeDefinition().getPropertyOrPropertyPathInternal(propName,
+				propertyPathToPopulateIfRequested);
 		}
 		else if (type instanceof CustomJSONArrayType)
 		{
 			// check that propname starts with an index
 			boolean ok = false;
 
-			int idxOfFirstOpenBracket = propname.indexOf("[");
-			int idxOfFirstCloseBracket = propname.indexOf("]");
+			int idxOfFirstOpenBracket = propName.indexOf("[");
+			int idxOfFirstCloseBracket = propName.indexOf("]");
 
 			if (idxOfFirstOpenBracket == 0)
 			{
@@ -368,7 +392,8 @@ public class PropertyDescription
 					// if it's an array then use the element prop. def; propname should be an index in this case
 					try
 					{
-						Integer.parseInt(propname.substring(idxOfFirstOpenBracket + 1, idxOfFirstCloseBracket));
+						// just check that the index is an int
+						Integer.parseInt(propName.substring(idxOfFirstOpenBracket + 1, idxOfFirstCloseBracket));
 						ok = true;
 					}
 					catch (NumberFormatException e)
@@ -379,25 +404,30 @@ public class PropertyDescription
 			}
 			if (ok)
 			{
-				childProp = ((CustomJSONPropertyType< ? >)type).getCustomJSONTypeDefinition();
-				if (idxOfFirstCloseBracket < propname.length() - 1) childProp = childProp.getProperty(propname.substring(idxOfFirstCloseBracket + 1)); // so it wants to get a deeper nested PD; forward it to element PD to deal with it further
+				PropertyDescription elemPD = ((CustomJSONPropertyType< ? >)type).getCustomJSONTypeDefinition();
+				if (propertyPathToPopulateIfRequested != null) propertyPathToPopulateIfRequested.add(elemPD);
+				else innerMostPDifRequested = elemPD;
+				// if "ok" is true that means idxOfFirstCloseBracket >= 1, see code above;
+				// continue looking inside the array's element if needed
+				if (idxOfFirstCloseBracket < propName.length() - 1)
+					innerMostPDifRequested = elemPD.getPropertyOrPropertyPathInternal(propName.substring(idxOfFirstCloseBracket + 1),
+						propertyPathToPopulateIfRequested);
 			}
 			else
 			{
-				log.debug("Property description get was called on an array type with propName that's not similar to [index] or []: " + propname);
-				childProp = null;
+				if (propertyPathToPopulateIfRequested != null) propertyPathToPopulateIfRequested.add(null);
+				log.debug("Property description get was called on an array type with propName that's not similar to [index] or []: " + propName + ". Path: " +
+					propertyPathToPopulateIfRequested);
 			}
 		}
-		else childProp = null;
+		else if (propertyPathToPopulateIfRequested != null) propertyPathToPopulateIfRequested.add(null);
 
-		propertyPath.add(childProp);
-		return propertyPath;
+		return innerMostPDifRequested;
 	}
 
 	public PropertyDescription getProperty(String propname)
 	{
-		List<PropertyDescription> propertyPath = getPropertyPath(propname);
-		return propertyPath.get(propertyPath.size() - 1);
+		return getPropertyOrPropertyPathInternal(propname, null);
 	}
 
 	public static class PDAndComputedPushToServer

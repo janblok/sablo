@@ -37,6 +37,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.PropertyDescription.PDAndComputedPushToServer;
 import org.sablo.specification.PropertyDescriptionBuilder;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebObjectFunctionDefinition;
@@ -1017,9 +1018,9 @@ public abstract class BaseWebObject implements IWebObjectContext
 	{
 		if (newJSONValue == JSONObject.NULL) newJSONValue = null;
 
-		PropertyDescription propertyDesc = specification.getProperty(propertyName);
-		Object value = propertyDesc != null ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDesc,
-			new BrowserConverterContext(this, propertyDesc.getPushToServer()), returnValueAdjustedIncommingValue) : null;
+		PDAndComputedPushToServer propertyDescAndPushToServer = specification.computePushToServerForPropertyPathAndGetPD(propertyName);
+		Object value = propertyDescAndPushToServer.pd != null ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDescAndPushToServer.pd,
+			new BrowserConverterContext(this, propertyDescAndPushToServer.pushToServer), returnValueAdjustedIncommingValue) : null;
 		return value;
 	}
 

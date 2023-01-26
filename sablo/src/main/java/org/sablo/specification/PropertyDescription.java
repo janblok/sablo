@@ -313,10 +313,19 @@ public class PropertyDescription
 		return optional;
 	}
 
-	public List<PropertyDescription> getPropertyPath(String propname)
+	/**
+	 * Generates a list of all PropertyDescriptions from root to the inner most element in case of a nested propertyName like "myArray[3].data" for example.
+	 * For simple property names the list will contain only that property's PD.
+	 *
+	 * It will return a 0-length array if the property was not found. All elements in the array are non-null.
+	 *
+	 * @param propertyName can be a simple property name like "myProperty" or a nested property name like "myArray[3].data".
+	 * @return see description above.
+	 */
+	public List<PropertyDescription> getPropertyPath(String propertyName)
 	{
 		ArrayList<PropertyDescription> propertyPath = new ArrayList<PropertyDescription>();
-		getPropertyOrPropertyPathInternal(propname, propertyPath);
+		getPropertyOrPropertyPathInternal(propertyName, propertyPath);
 
 		return propertyPath;
 	}
@@ -357,20 +366,24 @@ public class PropertyDescription
 					String firstChildPropName = propName.substring(0, firstSeparatorIndex);
 					firstProp = properties.get(firstChildPropName);
 
-					if (propertyPathToPopulateIfRequested != null) propertyPathToPopulateIfRequested.add(firstProp);
-					else innerMostPDifRequested = firstProp;
-
 					if (firstProp != null) // so it wants to get a deeper nested PD; forward it to child PD to deal with it further
 					{
+						if (propertyPathToPopulateIfRequested != null) propertyPathToPopulateIfRequested.add(firstProp);
+
 						// here it should (according to check above) always be that firstSeparatorIndex < propname.length()
 						innerMostPDifRequested = firstProp.getPropertyOrPropertyPathInternal(propName.substring(firstSeparatorIndex),
 							propertyPathToPopulateIfRequested);
 					}
+					else if (propertyPathToPopulateIfRequested != null) propertyPathToPopulateIfRequested.clear(); // not found
 				}
-				else if (propertyPathToPopulateIfRequested != null) propertyPathToPopulateIfRequested.add(null);
+				else if (propertyPathToPopulateIfRequested != null) propertyPathToPopulateIfRequested.clear(); // not found
 			}
-			else if (propertyPathToPopulateIfRequested != null) propertyPathToPopulateIfRequested.add(firstProp); // simple property - non nested
-			else innerMostPDifRequested = firstProp;
+			else
+			{
+				// simple property found - non nested
+				if (propertyPathToPopulateIfRequested != null) propertyPathToPopulateIfRequested.add(firstProp);
+				else innerMostPDifRequested = firstProp;
+			}
 		}
 		else if (type instanceof CustomJSONObjectType)
 		{
@@ -405,8 +418,10 @@ public class PropertyDescription
 			if (ok)
 			{
 				PropertyDescription elemPD = ((CustomJSONPropertyType< ? >)type).getCustomJSONTypeDefinition();
+
 				if (propertyPathToPopulateIfRequested != null) propertyPathToPopulateIfRequested.add(elemPD);
 				else innerMostPDifRequested = elemPD;
+
 				// if "ok" is true that means idxOfFirstCloseBracket >= 1, see code above;
 				// continue looking inside the array's element if needed
 				if (idxOfFirstCloseBracket < propName.length() - 1)
@@ -415,12 +430,12 @@ public class PropertyDescription
 			}
 			else
 			{
-				if (propertyPathToPopulateIfRequested != null) propertyPathToPopulateIfRequested.add(null);
+				if (propertyPathToPopulateIfRequested != null) propertyPathToPopulateIfRequested.clear(); // not found
 				log.debug("Property description get was called on an array type with propName that's not similar to [index] or []: " + propName + ". Path: " +
 					propertyPathToPopulateIfRequested);
 			}
 		}
-		else if (propertyPathToPopulateIfRequested != null) propertyPathToPopulateIfRequested.add(null);
+		else if (propertyPathToPopulateIfRequested != null) propertyPathToPopulateIfRequested.clear(); // not found
 
 		return innerMostPDifRequested;
 	}
@@ -452,7 +467,7 @@ public class PropertyDescription
 			computedPTS = computedPTS.combineWithChild(propertyPath.get(i).getPushToServerAsDeclaredInSpecFile()); // note that here we use getPushToServerAsDeclaredInSpecFile() which can return null as well; for root property we used getPushToServer()
 		}
 
-		return new PDAndComputedPushToServer(propertyPath.get(propertyPath.size() - 1), computedPTS);
+		return new PDAndComputedPushToServer(propertyPath.size() > 0 ? propertyPath.get(propertyPath.size() - 1) : null, computedPTS);
 	}
 
 	public Map<String, PropertyDescription> getProperties()

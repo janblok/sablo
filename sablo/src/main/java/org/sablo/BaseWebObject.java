@@ -479,7 +479,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 	/**
 	 * Check if the property is protected from browser updates by push-to-server or by the fact that it is a "protecting" prop. itself, i.e. it cannot be set from the client.
 	 *
-	 * @param propName
+	 * @param propName can be a simple property name string or a nested property name with '.' and '[]'.
 	 * @throws IllegalChangeFromClientException when property is protected
 	 */
 	protected void checkThatPushToServerAllowsUpdatesOn(String propName)
@@ -490,32 +490,29 @@ public abstract class BaseWebObject implements IWebObjectContext
 		{
 			PropertyDescription property = propertyPath.get(i);
 
-			if (i == 0) computedPushToServer = property != null ? property.getPushToServer() : PushToServerEnum.allow; // properties that are sent from browser but are not in spec will be converted to null later anyway in BaseWebObject.convertValueFromJSON()
-			else computedPushToServer = computedPushToServer
-				.combineWithChild(property != null ? property.getPushToServerAsDeclaredInSpecFile() : PushToServerEnum.allow); // properties that are sent from browser but are not in spec will be converted to null later anyway in BaseWebObject.convertValueFromJSON()
+			if (i == 0) computedPushToServer = property.getPushToServer();
+			else computedPushToServer = computedPushToServer.combineWithChild(property.getPushToServerAsDeclaredInSpecFile());
 
-			if (property != null)
+			if (property.getType().isProtecting())
 			{
-				if (property.getType().isProtecting())
-				{
-					// property is protected, i.e. it cannot be set from the client
-					throw new IllegalChangeFromClientException(null,
-						"Property '" + propertyPath.stream().limit(i + 1).map(pd -> pd.getName()).reduce(specification.getName(), (a, b) -> a + '.' + b) +
-							"' is a 'protecting' property itself so it can never be changed from client.",
-						getName(), propName);
-				}
+				// property is protected, i.e. it cannot be set from the client
+				throw new IllegalChangeFromClientException(null,
+					"Property '" + propertyPath.stream().limit(i + 1).map(pd -> pd.getName()).reduce(specification.getName(), (a, b) -> a + '.' + b) +
+						"' is a 'protecting' property itself so it can never be changed from client.",
+					getName(), propName);
+			}
 
-				if (PushToServerEnum.allow.compareTo(computedPushToServer) > 0 && (!(property.getType() instanceof IPushToServerSpecialType) ||
-					!((IPushToServerSpecialType)property.getType()).shouldAlwaysAllowIncommingJSON()))
-				{
-					// computed pushToServer not at least 'allow' on the prop. itself and parents; it should not be changed from the client
-					throw new IllegalChangeFromClientException(null,
-						"Property '" + propertyPath.stream().limit(i + 1).map(pd -> pd.getName()).reduce(specification.getName(), (a, b) -> a + '.' + b) +
-							"' has computed 'pushToServer' set to 'reject' so it cannot be changed from client.",
-						getName(), propName);
-				}
+			if (PushToServerEnum.allow.compareTo(computedPushToServer) > 0 && (!(property.getType() instanceof IPushToServerSpecialType) ||
+				!((IPushToServerSpecialType)property.getType()).shouldAlwaysAllowIncommingJSON()))
+			{
+				// computed pushToServer not at least 'allow' on the prop. itself and parents; it should not be changed from the client
+				throw new IllegalChangeFromClientException(null,
+					"Property '" + propertyPath.stream().limit(i + 1).map(pd -> pd.getName()).reduce(specification.getName(), (a, b) -> a + '.' + b) +
+						"' has computed 'pushToServer' set to 'reject' so it cannot be changed from client.",
+					getName(), propName);
 			}
 		}
+		// if propertyPath.size() == 0, so properties that are sent from browser but are not in spec will be converted to null later anyway in BaseWebObject.convertValueFromJSON() because PD is null
 	}
 
 	/**
@@ -1020,7 +1017,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 		if (newJSONValue == JSONObject.NULL) newJSONValue = null;
 
 		PDAndComputedPushToServer propertyDescAndPushToServer = specification.computePushToServerForPropertyPathAndGetPD(propertyName);
-		Object value = propertyDescAndPushToServer.pd != null ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDescAndPushToServer.pd,
+		Object value = (propertyDescAndPushToServer.pd != null) ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDescAndPushToServer.pd,
 			new BrowserConverterContext(this, propertyDescAndPushToServer.pushToServer), returnValueAdjustedIncommingValue) : null;
 		return value;
 	}

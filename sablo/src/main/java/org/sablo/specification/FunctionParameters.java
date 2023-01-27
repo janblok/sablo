@@ -56,6 +56,7 @@ public class FunctionParameters implements IFunctionParameters
 			PropertyDescription lastArg = parameters.size() > 0 ? parameters.get(parameters.size() - 1) : null;
 			if (lastArg != null && lastArg.getType() instanceof CustomVariableArgsType)
 				return ((CustomVariableArgsType)lastArg.getType()).getCustomJSONTypeDefinition();
+			else if (argIndex == parameters.size() - 1) return parameters.get(argIndex);
 			else return null;
 		}
 	}

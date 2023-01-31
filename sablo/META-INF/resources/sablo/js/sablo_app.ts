@@ -13,9 +13,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		$typesRegistry: sablo.ITypesRegistry) {
 
 	// close the connection to the server when application is unloaded
-	$window.addEventListener('unload', function(event) {
+	$window.addEventListener('beforeunload', function(event) {
         sessionStorage.removeItem('svy_session_lock');
-		$webSocket.disconnect();
+		//$webSocket.disconnect();
 	});
     
     if (sessionStorage.getItem('svy_session_lock')) {

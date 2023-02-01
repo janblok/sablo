@@ -171,7 +171,11 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		{
 			try
 			{
-				if (previousChangeAwareMap == null || clientReceivedJSON.getInt(CONTENT_VERSION) == previousChangeAwareMap.getListContentVersion())
+				if (previousChangeAwareMap == null || clientReceivedJSON.getInt(CONTENT_VERSION) == previousChangeAwareMap.getListContentVersion() ||
+					clientReceivedJSON.getInt(CONTENT_VERSION) == 0 /*
+																	 * full value change on client currently doesn't check server contentVersion because in some
+																	 * cases client or server will not have access to an old content version
+																	 */)
 				{
 					if (clientReceivedJSON.has(UPDATES))
 					{
@@ -317,7 +321,6 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 		List<String> adjustedNewValueKeys = new ArrayList<>();
 
 		Iterator<String> it = clientReceivedJSON.keys();
-		boolean someUpdateAccessDenied = false;
 		while (it.hasNext())
 		{
 			String key = it.next();
@@ -340,8 +343,8 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 					try
 					{
 						ValueReference<Boolean> returnValueAdjustedIncommingValueForKey = new ValueReference<Boolean>(Boolean.FALSE);
-                        // TODO although this is a full change, we give oldVal because client side does the same for some reason,
-                        // but normally both should use undefined/null for old value of subprops as this is a full change; SVY-17854 is created for looking into this
+						// TODO although this is a full change, we give oldVal because client side does the same for some reason,
+						// but normally both should use undefined/null for old value of subprops as this is a full change; SVY-17854 is created for looking into this
 						map.put(key, (WT)JSONUtils.fromJSON(oldVal, clientReceivedJSON.opt(key), getCustomJSONTypeDefinition().getProperty(key),
 							dataConverterContext == null ? null : dataConverterContext.newInstanceWithPushToServer(pushToServerComputedOfSubprop),
 							returnValueAdjustedIncommingValueForKey));
@@ -355,7 +358,7 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 				}
 				else
 				{
-					someUpdateAccessDenied = true;
+					adjustedNewValueKeys.add(key); // re-send the server value to client when an client to server change deny happened
 					log.error("Property (" + pd + "), subkey " + keyPD + " of '" +
 						(dataConverterContext != null ? dataConverterContext.getWebObject() : null) +
 						"' that doesn't define a suitable pushToServer value (allow/shallow/deep) tried to update custom object element value '" +
@@ -383,19 +386,11 @@ public class CustomJSONObjectType<ET, WT> extends CustomJSONPropertyType<Map<Str
 			newBaseMap = (Map<String, ET>)map; // in this case ET == WT
 		}
 
-		// TODO how to handle previous null value here; do we need to re-send to client or not (for example initially both client and server had values, at the same time server==null client sends full update); how do we know in case server version is unknown then
-		ChangeAwareMap<ET, WT> retVal = new ChangeAwareMap<ET, WT>(newBaseMap,
-			previousChangeAwareMap != null ? previousChangeAwareMap.increaseContentVersion() : 1,
+		ChangeAwareMap<ET, WT> retVal = new ChangeAwareMap<ET, WT>(newBaseMap, 1,
 			/* TODO we should have here access to webObjectContext ... and give ChangeAwareMap.getOrCreateComponentOrServiceExtension(webObjectContext); */null,
 			getCustomJSONTypeDefinition());
 
-		if (someUpdateAccessDenied)
-		{
-			if (previousChangeAwareMap != null) previousChangeAwareMap.getChangeSetter().markAllChanged();
-			else if (returnValueAdjustedIncommingValue != null) returnValueAdjustedIncommingValue.value = Boolean.TRUE;
-			// else no way to tell the system to re-send the server value to client when an client to server change deny happened
-		}
-		else for (String key : adjustedNewValueKeys)
+		for (String key : adjustedNewValueKeys)
 			retVal.getChangeSetter().markElementChangedByRef(key);
 
 		return retVal;

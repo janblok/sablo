@@ -268,7 +268,7 @@ public class WebComponentTest
 		// TODO also for custom types none existing properties should just be added? Like in the component itself?
 		// for now we don't allow it..
 		component.putBrowserProperty("atype",
-			new JSONObject("{\"vEr\":3,\"v\":{\"name\":\"YOURname\",\"notintype\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}}"));
+			new JSONObject("{\"vEr\":0,\"v\":{\"name\":\"YOURname\",\"notintype\":false,\"text\":\"test\",\"size\":{\"width\":10,\"height\":10}}}"));
 		properties = component.getRawPropertiesWithoutDefaults();
 		assertNotNull(properties.get("atype"));
 		assertSame(properties.get("atype"), component.getProperty("atype"));

@@ -201,30 +201,45 @@ namespace sablo.propertyTypes {
             let internalState;
             if (newClientData) {
                 if (!(internalState = newClientData[this.sabloConverters.INTERNAL_IMPL])) {
+                    if (oldClientData && oldClientData[this.sabloConverters.INTERNAL_IMPL]) this.removeAllWatches(oldClientData);
                     // this can happen when an array value was set completely in browser
                     // any 'smart' child elements will initialize in their fromClientToServer conversion;
                     // set it up, make it 'smart' and mark it as all changed to be sent to server...
-                    this.initializeNewValue(newClientData, oldClientData && oldClientData[this.sabloConverters.INTERNAL_IMPL] ?
-                              oldClientData[this.sabloConverters.INTERNAL_IMPL][CustomArrayType.CONTENT_VERSION] : 0,
-                              propertyContext?.getPushToServerCalculatedValue());
-                    if (oldClientData && oldClientData[this.sabloConverters.INTERNAL_IMPL]) this.removeAllWatches(oldClientData);
+                    this.initializeNewValue(newClientData, 1, propertyContext?.getPushToServerCalculatedValue());
                     internalState = newClientData[this.sabloConverters.INTERNAL_IMPL];
                     
                     internalState.allChanged = true;
-                } else {
-                    internalState.calculatedPushToServerOfWholeProp = propertyContext?.getPushToServerCalculatedValue(); // for example if a custom object value is initially received through a return value from server side api/handler call and not as a normal model property and then the component/service assigns it to model, the push to server of it might have changed; use the one received here as arg
-                    if (!internalState.calculatedPushToServerOfWholeProp) internalState.calculatedPushToServerOfWholeProp = sablo.typesRegistry.PushToServerEnum.reject;
-                }
+                } else if (newClientData !== oldClientData) {
+                    if (oldClientData && oldClientData[this.sabloConverters.INTERNAL_IMPL]) this.removeAllWatches(oldClientData);
+                    // if a different smart value from the browser is assigned to replace old value it is a full value change; also adjust the version to it's new location
+
+                    // clear old internal state and watches in order to re-initialize/start fresh in the new location (old watches would send change notif to wrong place)
+                    // we only need from the old internal state the dynamic types
+                    const previousNewValDynamicTypesHolder = internalState.dynamicPropertyTypesHolder;
+                    this.removeAllWatches(newClientData);
+                    delete newClientData[this.sabloConverters.INTERNAL_IMPL];
+
+                    this.initializeNewValue(newClientData, 1, propertyContext?.getPushToServerCalculatedValue());
+                    internalState = newClientData[this.sabloConverters.INTERNAL_IMPL];
+
+                    if (previousNewValDynamicTypesHolder) internalState.dynamicPropertyTypesHolder = previousNewValDynamicTypesHolder;
+                    internalState.allChanged = true;
+                } // else it's the same value as before
             }
 
             if (newClientData) {
                 if (internalState.isChanged()) {
                     const changes = {};
-                    changes[CustomArrayType.CONTENT_VERSION] = internalState[CustomArrayType.CONTENT_VERSION];
                     if (internalState.allChanged) {
-                        // structure might have changed; increase version number
-                        ++internalState[CustomArrayType.CONTENT_VERSION]; // we also increase the content version number - server will bump version number on full value update
                         // send all
+                        
+                        // we can't rely/use the contentVersion on ng2 impl. - and this means ng1 and server are adjusted as well, because, in case of a change-by-reference in an ng2 service followed
+                        // by a now deprecated ServoyPublicService.sendServiceChanges that did not have an oldPropertyValue argument, we sometimes do not have
+                        // access to the old contentVersion to be able to use it... so full change from client will ignore old contentVersion on client and on server
+                        // but that should not be a problem as those are meant more to ensure that granular updates don't happen on an wrong/obsolete value
+                        internalState[CustomArrayType.CONTENT_VERSION] = 1; // start fresh
+                        changes[CustomArrayType.CONTENT_VERSION] = 0; // server treats this as a "don't check server content version as it's a full new value from client"
+
                         const toBeSentArray = changes[CustomArrayType.VALUE] = [];
                         for (let idx = 0; idx < newClientData.length; idx++) {
                             const val = newClientData[idx];
@@ -262,6 +277,7 @@ namespace sablo.propertyTypes {
                         else return changes;
                     } else {
                         // send only changed indexes
+                        changes[CustomArrayType.CONTENT_VERSION] = internalState[CustomArrayType.CONTENT_VERSION];
                         const changedElements = changes[CustomArrayType.UPDATES] = [];
                         for (const idx in internalState.changedIndexesOldValues) {
                             const newVal = newClientData[idx];

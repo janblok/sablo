@@ -170,6 +170,7 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 
 		public void doneHandling()
 		{
+			// careful, this will/should get called on the old changes obj, if immutable mode resulted in a new changes object being created
 			immutableMode = false;
 			clearChanges();
 		}
@@ -380,10 +381,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		if (insert)
 		{
 			// an insert happened in array; update change handler indexes if needed
-			Iterator<IndexChangeListener> it = changeHandlers.iterator();
-			while (it.hasNext())
+			for (ChangeAwareList<ET, WT>.IndexChangeListener ch : changeHandlers)
 			{
-				IndexChangeListener ch = it.next();
 				if (ch.attachedToIdx >= i) ch.attachedToIdx++;
 			}
 		}
@@ -475,10 +474,8 @@ public class ChangeAwareList<ET, WT> implements List<ET>, ISmartPropertyValue
 		if (remove)
 		{
 			// other change handler indexes might need to be updated
-			Iterator<IndexChangeListener> it = changeHandlers.iterator();
-			while (it.hasNext())
+			for (ChangeAwareList<ET, WT>.IndexChangeListener ch : changeHandlers)
 			{
-				IndexChangeListener ch = it.next();
 				if (ch.attachedToIdx > idx) ch.attachedToIdx--;
 			}
 		}

@@ -161,7 +161,11 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 
 			try
 			{
-				if (previousChangeAwareList == null || clientReceivedJSON.getInt(CONTENT_VERSION) == previousChangeAwareList.getListContentVersion())
+				if (previousChangeAwareList == null || clientReceivedJSON.getInt(CONTENT_VERSION) == previousChangeAwareList.getListContentVersion() ||
+					clientReceivedJSON.getInt(CONTENT_VERSION) == 0 /*
+																	 * full value change on client currently doesn't check server contentVersion because in some
+																	 * cases client or server will not have access to an old content version
+																	 */)
 				{
 					IBrowserConverterContext elementDataConverterContext = dataConverterContext == null ? null
 						: dataConverterContext.newInstanceWithPushToServer(pushToServerComputedOnElements);
@@ -308,8 +312,8 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 				try
 				{
 					ValueReference<Boolean> returnValueAdjustedIncommingValueForIndex = new ValueReference<Boolean>(Boolean.FALSE);
-                    // TODO although this is a full change, we give oldVal because client side does the same for some reason,
-                    // but normally both should use undefined/null for old value of elements as this is a full change; SVY-17854 is created for looking into this
+					// TODO although this is a full change, we give oldVal because client side does the same for some reason,
+					// but normally both should use undefined/null for old value of elements as this is a full change; SVY-17854 is created for looking into this
 					list.add((WT)JSONUtils.fromJSON(oldVal, array.opt(i), getCustomJSONTypeDefinition(), elementDataConverterContext,
 						returnValueAdjustedIncommingValueForIndex));
 					if (returnValueAdjustedIncommingValueForIndex.value.booleanValue()) adjustedNewValueIndexes.add(i);
@@ -333,10 +337,7 @@ public class CustomJSONArrayType<ET, WT> extends CustomJSONPropertyType<Object>
 				newBaseList = (List<ET>)list; // in this case ET == WT
 			}
 
-			// TODO how to handle previous null value here; do we need to re-send to client or not (for example initially both client and server had values, at the same time server==null client sends full update); how do we know case server version is unknown then
-			ChangeAwareList<ET, WT> retVal = new ChangeAwareList<ET, WT>(newBaseList/* , dataConverterContext */,
-				previousChangeAwareList != null ? previousChangeAwareList.increaseContentVersion() : 1);
-
+			ChangeAwareList<ET, WT> retVal = new ChangeAwareList<ET, WT>(newBaseList/* , dataConverterContext */, 1);
 
 			for (Integer idx : adjustedNewValueIndexes)
 				retVal.getChangeSetter().markElementChangedByRef(idx.intValue());

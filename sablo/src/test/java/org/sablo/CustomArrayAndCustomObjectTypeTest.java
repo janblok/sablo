@@ -190,34 +190,34 @@ public class CustomArrayAndCustomObjectTypeTest extends Log4JToConsoleTest
 
 		// try to change whole thing... should not be blocked by array property
 		component.putBrowserProperty("types",
-			new JSONObject("{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}}," +
-				"{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"}}," +
-				"{\"vEr\":2,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}]}"));
+			new JSONObject("{\"vEr\":0,\"v\":[{\"vEr\":0,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}}," +
+				"{\"vEr\":0,\"v\":{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"}}," +
+				"{\"vEr\":0,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}]}"));
 		//	it should have changed because it's allowed to by spec
 		properties = component.getProperties();
 		msg = JSONUtils.writeDataAsFullToJSON(properties.content, properties.contentType, allowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"name\":\"test\",\"types\":{\"vEr\":4,\"v\":[{\"vEr\":4,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":4,\"v\":{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}]}}"),
+			"{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}]}}"),
 			new JSONObject(msg), true);
 
 		// try to update by setting one whole value of the array...
 		component.putBrowserProperty("types",
-			new JSONObject("{\"vEr\":4,\"u\":[ {\"i\":'1', 'v': {\"vEr\":4,\"v\":{\"name\":\"myname100\",\"active\":true,\"foreground\":\"#00ff00\"}}}]}"));
+			new JSONObject("{\"vEr\":2,\"u\":[ {\"i\":'1', 'v': {\"vEr\":0,\"v\":{\"name\":\"myname100\",\"active\":true,\"foreground\":\"#00ff00\"}}}]}"));
 		//	it should have changed because it's allowed to by spec
 		properties = component.getProperties();
 		msg = JSONUtils.writeDataAsFullToJSON(properties.content, properties.contentType, allowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"name\":\"test\",\"types\":{\"vEr\":5,\"v\":[{\"vEr\":5,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":6,\"v\":{\"name\":\"myname100\",\"active\":true,\"foreground\":\"#00ff00\"}},{\"vEr\":3,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}]}}"),
+			"{\"name\":\"test\",\"types\":{\"vEr\":3,\"v\":[{\"vEr\":3,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname100\",\"active\":true,\"foreground\":\"#00ff00\"}},{\"vEr\":3,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}]}}"),
 			new JSONObject(msg), true);
 
 		// try to update by updating one value of the array...
 		component.putBrowserProperty("types",
-			new JSONObject("{\"vEr\":5,\"u\":[ {\"i\":'1', 'v': {\"vEr\":6,\"u\":[{ k: 'name', v: 'some_modified_text' }]}}]}"));
+			new JSONObject("{\"vEr\":3,\"u\":[ {\"i\":'1', 'v': {\"vEr\":2,\"u\":[{ k: 'name', v: 'some_modified_text' }]}}]}"));
 		//	it should have changed because it's allowed to by spec
 		properties = component.getProperties();
 		msg = JSONUtils.writeDataAsFullToJSON(properties.content, properties.contentType, allowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"name\":\"test\",\"types\":{\"vEr\":6,\"v\":[{\"vEr\":6,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":7,\"v\":{\"name\":\"some_modified_text\",\"active\":true,\"foreground\":\"#00ff00\"}},{\"vEr\":4,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}]}}}"),
+			"{\"name\":\"test\",\"types\":{\"vEr\":4,\"v\":[{\"vEr\":4,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":3,\"v\":{\"name\":\"some_modified_text\",\"active\":true,\"foreground\":\"#00ff00\"}},{\"vEr\":4,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}]}}}"),
 			new JSONObject(msg), true);
 	}
 
@@ -259,27 +259,34 @@ public class CustomArrayAndCustomObjectTypeTest extends Log4JToConsoleTest
 			"{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":true,\"foreground\":\"#000000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"rejectedString\":\"aha\",\"active\":false,\"foreground\":\"#ffffff\"}}]}}"),
 			new JSONObject(msg), true);
 
-		// try to change whole thing... should not be blocked by array property
+		// try to change whole thing... should not be blocked by array property,
+		// but "rejectedString" sub-property should get blocked and object resent fully to client (so version 2)
 		component.putBrowserProperty("types",
 			new JSONObject(
-				"{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\",\"rejectedString\":\"or not\"}}," +
-					"{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"}}," +
-					"{\"vEr\":2,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}]}"));
+				"{\"vEr\":0,\"v\":[{\"vEr\":0,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\",\"rejectedString\":\"or not\"}}," +
+					"{\"vEr\":0,\"v\":{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"}}," +
+					"{\"vEr\":0,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}]}"));
 		//	it should have changed all except "rejectedString" subproperty because only that is allowed by spec
+		properties = component.getAndClearChanges();
+		msg = JSONUtils.writeData(ChangesToJSONConverter.INSTANCE, properties.content, properties.contentType, allowDataConverterContext);
+		assertEquals(new JSONObject(
+			"{\"types\":{\"vEr\":1,\"g\":[{\"op\":[0,0,0],\"d\":[{\"vEr\":1,\"u\":[{\"k\":\"rejectedString\",\"v\":null}]}]}]}}"),
+			new JSONObject(msg), true);
+		// also check new full value of properties
 		properties = component.getProperties();
 		msg = JSONUtils.writeDataAsFullToJSON(properties.content, properties.contentType, allowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"name\":\"test\",\"types\":{\"vEr\":4,\"v\":[{\"vEr\":4,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":4,\"v\":{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}]}}"),
+			"{\"name\":\"test\",\"types\":{\"vEr\":2,\"v\":[{\"vEr\":2,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"}},{\"vEr\":2,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}]}}"),
 			new JSONObject(msg), true);
 
 		// try to update by updating one "reject" value of the subprop...
 		component.putBrowserProperty("types",
-			new JSONObject("{\"vEr\":5,\"u\":[ {\"i\":'2', 'v': {\"vEr\":6,\"u\":[{ k: 'rejectedString', v: 'or not' }]}}]}"));
+			new JSONObject("{\"vEr\":2,\"u\":[ {\"i\":'2', 'v': {\"vEr\":2,\"u\":[{ k: 'rejectedString', v: 'or not' }]}}]}"));
 		//	it should NOT have changed because it's not allowed to by spec
 		properties = component.getProperties();
 		msg = JSONUtils.writeDataAsFullToJSON(properties.content, properties.contentType, allowDataConverterContext);
 		assertEquals(new JSONObject(
-			"{\"types\":{\"vEr\":5,\"v\":[{\"vEr\":5,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":5,\"v\":{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"}},{\"vEr\":3,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}]},\"name\":\"test\"}"),
+			"{\"types\":{\"vEr\":3,\"v\":[{\"vEr\":3,\"v\":{\"name\":\"myname\",\"active\":false,\"foreground\":\"#ff0000\"}},{\"vEr\":3,\"v\":{\"name\":\"myname2\",\"active\":true,\"foreground\":\"#ff0000\"}},{\"vEr\":3,\"v\":{\"name\":\"myname3\",\"active\":true,\"foreground\":null}}]},\"name\":\"test\"}"),
 			new JSONObject(msg), true);
 	}
 
@@ -349,18 +356,18 @@ public class CustomArrayAndCustomObjectTypeTest extends Log4JToConsoleTest
 		assertEquals(new JSONObject("{\"simpleArrayAllow\":{\"vEr\":2,\"v\":[1,2,3,4]},\"name\":\"test\"}"), new JSONObject(msg), true);
 
 		// try to change whole thing...
-		component.putBrowserProperty("simpleArrayAllow", new JSONObject("{\"vEr\":2,\"v\":[ 5, 4, 3, 2, 1 ]}"));
+		component.putBrowserProperty("simpleArrayAllow", new JSONObject("{\"vEr\":0,\"v\":[ 5, 4, 3, 2, 1 ]}"));
 		//	it should have changed because it's allowed to by spec
 		properties = component.getProperties();
 		msg = JSONUtils.writeDataAsFullToJSON(properties.content, properties.contentType, allowDataConverterContext);
-		assertEquals(new JSONObject("{\"simpleArrayAllow\":{\"vEr\":4,\"v\":[5,4,3,2,1]},\"name\":\"test\"}"), new JSONObject(msg), true);
+		assertEquals(new JSONObject("{\"simpleArrayAllow\":{\"vEr\":2,\"v\":[5,4,3,2,1]},\"name\":\"test\"}"), new JSONObject(msg), true);
 
 		// try to update by setting one subvalue in the array...
-		component.putBrowserProperty("simpleArrayAllow", new JSONObject("{\"vEr\":4,\"u\":[ {\"i\":'1', 'v': 150}]}"));
+		component.putBrowserProperty("simpleArrayAllow", new JSONObject("{\"vEr\":2,\"u\":[ {\"i\":'1', 'v': 150}]}"));
 		//	it should have changed because it's allowed to by spec
 		properties = component.getProperties();
 		msg = JSONUtils.writeDataAsFullToJSON(properties.content, properties.contentType, allowDataConverterContext);
-		assertEquals(new JSONObject("{\"simpleArrayAllow\":{\"vEr\":5,\"v\":[5,150,3,2,1]},\"name\":\"test\"}"), new JSONObject(msg), true);
+		assertEquals(new JSONObject("{\"simpleArrayAllow\":{\"vEr\":3,\"v\":[5,150,3,2,1]},\"name\":\"test\"}"), new JSONObject(msg), true);
 	}
 
 	@Test

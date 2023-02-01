@@ -153,6 +153,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 
 		public void doneHandling()
 		{
+			// careful, this will/should get called on the old changes obj, if immutable mode resulted in a new changes object being created
 			immutableMode = false;
 			clearChanges();
 		}

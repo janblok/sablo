@@ -300,21 +300,21 @@ describe("Test custom_object_property suite", function() {
             // not everything will be sent to server because of pushToServer reject
             expect(sabloConverters.convertFromClientToServer(realClientValue, pd.getPropertyType(), oldVal, $scope, propertyContext)).toEqual(
                 {
-                    vEr: 1, v: {
+                    vEr: 0, v: {
                         text: 'wholeNewText',
                         active: false,
                         customType: {
-                            vEr: 1, v: {
+                            vEr: 0, v: {
                                 christmasTree:
                                     false, yogi: 'bubu'
                             }
                         },
                         customTypeArray: {
-                            vEr: 1, v: [{ vEr: 1, v: { christmasTree: true } }, {
-                                vEr: 1, v: { tea: 'yes' }
+                            vEr: 0, v: [{ vEr: 0, v: { christmasTree: true } }, {
+                                vEr: 0, v: { tea: 'yes' }
                             }]
                         },
-                        customTypeArrayWithElReject: { vEr: 1, v: [] }
+                        customTypeArrayWithElReject: { vEr: 0, v: [] }
                     }
                 });
 
@@ -331,7 +331,7 @@ describe("Test custom_object_property suite", function() {
             expect(getAndClearNotified()).toEqual(true);
             expect(realClientValue[iS].isChanged()).toEqual(true);
             expect(sabloConverters.convertFromClientToServer(realClientValue, pd.getPropertyType(), realClientValue, $scope, propertyContext)).toEqual(
-                { vEr: 2, u: [{ k: 'customTypeArray', v: { vEr: 2, u: [{ i: '1', v: { vEr: 2, u: [{ k: 'tea', v: "no, thank you" }] } }] } }] }
+                { vEr: 1, u: [{ k: 'customTypeArray', v: { vEr: 1, u: [{ i: '1', v: { vEr: 1, u: [{ k: 'tea', v: "no, thank you" }] } }] } }] }
             );
             
             realClientValue.customType.hithere = "how are you today?";
@@ -339,7 +339,7 @@ describe("Test custom_object_property suite", function() {
             expect(getAndClearNotified()).toEqual(true);
             expect(realClientValue[iS].isChanged()).toEqual(true);
             expect(sabloConverters.convertFromClientToServer(realClientValue, pd.getPropertyType(), realClientValue, $scope, propertyContext)).toEqual(
-                { vEr: 2, u: [{ k: 'customType', v: { vEr: 2, u: [{ k: 'hithere', v: 'how are you today?' }] } }] }
+                { vEr: 1, u: [{ k: 'customType', v: { vEr: 1, u: [{ k: 'hithere', v: 'how are you today?' }] } }] }
             );
             
             realClientValue.customTypeArrayWithElReject[1].tea = "no, no";
@@ -357,7 +357,7 @@ describe("Test custom_object_property suite", function() {
             expect(getAndClearNotified()).toEqual(true);
             expect(realClientValue[iS].isChanged()).toEqual(true);
             expect(sabloConverters.convertFromClientToServer(realClientValue, pd.getPropertyType(), realClientValue, $scope, propertyContext)).toEqual(
-                { vEr: 2, u: [{ k: 'text', v: 'some_modified_text' }] }
+                { vEr: 1, u: [{ k: 'text', v: 'some_modified_text' }] }
             );
 
             // old key in custom object full new value with old val != null
@@ -365,12 +365,12 @@ describe("Test custom_object_property suite", function() {
             $scope.$digest();
             expect(getAndClearNotified()).toEqual(true);
             expect(realClientValue[iS].isChanged()).toEqual(true);
-            expect(sabloConverters.convertFromClientToServer(realClientValue, pd.getPropertyType(), oldVal, $scope, propertyContext)).toEqual(
+            expect(sabloConverters.convertFromClientToServer(realClientValue, pd.getPropertyType(), realClientValue, $scope, propertyContext)).toEqual(
                 {
-                    vEr: 2, u: [{
+                    vEr: 1, u: [{
                         k: 'customType',
                         v: {
-                            vEr: 2, v: { "happy holidays!": true, "ranger": "cartoons" }
+                            vEr: 0, v: { "happy holidays!": true, "ranger": "cartoons" }
                         }
                     }]
                 });
@@ -380,9 +380,9 @@ describe("Test custom_object_property suite", function() {
             $scope.$digest();
             expect(getAndClearNotified()).toEqual(true);
             expect(realClientValue[iS].isChanged()).toEqual(true);
-            expect(sabloConverters.convertFromClientToServer(realClientValue, pd.getPropertyType(), oldVal, $scope, propertyContext)).toEqual(
+            expect(sabloConverters.convertFromClientToServer(realClientValue, pd.getPropertyType(), realClientValue, $scope, propertyContext)).toEqual(
                 {
-                    vEr: 2, u: [{
+                    vEr: 1, u: [{
                         k: 'customType',
                         v: null
                     }]
@@ -393,9 +393,9 @@ describe("Test custom_object_property suite", function() {
             $scope.$digest();
             expect(getAndClearNotified()).toEqual(true);
             expect(realClientValue[iS].isChanged()).toEqual(true);
-            expect(sabloConverters.convertFromClientToServer(realClientValue, pd.getPropertyType(), oldVal, $scope, propertyContext)).toEqual(
+            expect(sabloConverters.convertFromClientToServer(realClientValue, pd.getPropertyType(), realClientValue, $scope, propertyContext)).toEqual(
                 {
-                    vEr: 2, u: [{
+                    vEr: 1, u: [{
                         k: 'customType',
                         v: {
                             vEr: 0, v: { "happy holidays!": true, "ranger": "cartoons" }
@@ -408,15 +408,15 @@ describe("Test custom_object_property suite", function() {
             $scope.$digest();
             expect(getAndClearNotified()).toEqual(true);
             expect(realClientValue[iS].isChanged()).toEqual(true);
-            expect(sabloConverters.convertFromClientToServer(realClientValue, pd.getPropertyType(), oldVal, $scope, propertyContext)).toEqual(
+            expect(sabloConverters.convertFromClientToServer(realClientValue, pd.getPropertyType(), realClientValue, $scope, propertyContext)).toEqual(
                 {
-                    vEr: 2, u: [{
+                    vEr: 1, u: [{
                         k: 'customTypeArray',
                         v: {
-                            vEr: 2,
+                            vEr: 1,
                             u: [{
                                 i: '0',
-                                v: { vEr: 2, v: { itsJanuaryAlready: "so out with the tree" } }
+                                v: { vEr: 0, v: { itsJanuaryAlready: "so out with the tree" } }
                             }]
                         }
                     }]

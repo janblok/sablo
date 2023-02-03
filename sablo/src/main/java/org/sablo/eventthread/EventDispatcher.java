@@ -152,14 +152,15 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 			}
 			catch (Throwable t2)
 			{
-				log.error("Handle exception error", t2);
+				log.error("[dispatch()] handleException raised a new error or runtime exception. Initial one was: ", t);
+				log.error("[dispatch()] handleException raised this new error or runtime exception: ", t2);
 			}
 		}
 	}
 
 	protected void handleException(Event event, Throwable t)
 	{
-		log.error("Exception in dispatch()", t);
+		log.error("[dispatch()] Exception happened in dispatch()", t);
 	}
 
 	@Override

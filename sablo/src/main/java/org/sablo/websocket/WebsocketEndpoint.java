@@ -560,7 +560,7 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 
 	public boolean hasSession()
 	{
-		return session != null;
+		return session != null && session.isOpen();
 	}
 
 	public long getLastPingTime()

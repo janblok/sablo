@@ -322,43 +322,47 @@ class WebSpecReader
 		list.add(p.getReader());
 
 		// cache component or service specs if available
-		PackageSpecification<WebObjectSpecification> webObjectPackageSpecification = p.getWebObjectDescriptions(attributeName,
-			defaultComponentPropertiesProvider);
-		if (webObjectPackageSpecification.getSpecifications().size() > 0 &&
-				!cachedComponentOrServiceDescriptions.containsKey(webObjectPackageSpecification.getPackageName()))
+		if (!cachedComponentOrServiceDescriptions.containsKey(p.getPackageName()))
 		{
-			cachedComponentOrServiceDescriptions.put(webObjectPackageSpecification.getPackageName(), webObjectPackageSpecification);
-			Map<String, WebObjectSpecification> webComponentDescriptions = webObjectPackageSpecification.getSpecifications();
-			for (WebObjectSpecification desc : webComponentDescriptions.values())
+			PackageSpecification<WebObjectSpecification> webObjectPackageSpecification = p.getWebObjectDescriptions(attributeName,
+				defaultComponentPropertiesProvider);
+			if (webObjectPackageSpecification.getSpecifications().size() > 0)
 			{
-				WebObjectSpecification old = allWebObjectSpecifications.put(desc.getName(), desc); // TODO should we check against allLayoutSpecifications as well?
-				if (old != null)
+				cachedComponentOrServiceDescriptions.put(webObjectPackageSpecification.getPackageName(), webObjectPackageSpecification);
+				Map<String, WebObjectSpecification> webComponentDescriptions = webObjectPackageSpecification.getSpecifications();
+				for (WebObjectSpecification desc : webComponentDescriptions.values())
 				{
-					String s = "Duplicate web object definition found; name: " + old.getName() + ". One is in package '" + old.getPackageName() +
-						"' and another in package '" +
-						desc.getPackageName() + "'.";
-					log.error(s);
-					p.getReader().reportError(desc.getSpecURL().toString(), new DuplicateEntityException(s));
+					WebObjectSpecification old = allWebObjectSpecifications.put(desc.getName(), desc); // TODO should we check against allLayoutSpecifications as well?
+					if (old != null)
+					{
+						String s = "Duplicate web object definition found; name: " + old.getName() + ". One is in package '" + old.getPackageName() +
+							"' and another in package '" +
+							desc.getPackageName() + "'.";
+						log.error(s);
+						p.getReader().reportError(desc.getSpecURL().toString(), new DuplicateEntityException(s));
+					}
 				}
 			}
 		}
 
 		// cache layout specs if available
-		PackageSpecification<WebLayoutSpecification> layoutPackageSpecification = p.getLayoutDescriptions();
-		if (layoutPackageSpecification.getSpecifications().size() > 0 &&
-			!cachedLayoutDescriptions.containsKey(layoutPackageSpecification.getPackageName()))
+		if (!cachedLayoutDescriptions.containsKey(p.getPackageName()))
 		{
-			cachedLayoutDescriptions.put(layoutPackageSpecification.getPackageName(), layoutPackageSpecification);
-			Map<String, WebLayoutSpecification> layoutDescriptions = layoutPackageSpecification.getSpecifications();
-			for (WebLayoutSpecification desc : layoutDescriptions.values())
+			PackageSpecification<WebLayoutSpecification> layoutPackageSpecification = p.getLayoutDescriptions();
+			if (layoutPackageSpecification.getSpecifications().size() > 0)
 			{
-				WebObjectSpecification old = allLayoutSpecifications.put(desc.getName(), desc); // TODO should we check against allWebObjectSpecifications as well?
-				if (old != null)
+				cachedLayoutDescriptions.put(layoutPackageSpecification.getPackageName(), layoutPackageSpecification);
+				Map<String, WebLayoutSpecification> layoutDescriptions = layoutPackageSpecification.getSpecifications();
+				for (WebLayoutSpecification desc : layoutDescriptions.values())
 				{
-					String s = "Duplicate layout definition found; name: " + old.getName() + ". One is in package '" + old.getPackageName() +
-						"' and one in package '" + desc.getPackageName() + "'.";
-					log.error(s);
-					p.getReader().reportError(desc.getSpecURL().toString(), new DuplicateEntityException(s));
+					WebObjectSpecification old = allLayoutSpecifications.put(desc.getName(), desc); // TODO should we check against allWebObjectSpecifications as well?
+					if (old != null)
+					{
+						String s = "Duplicate layout definition found; name: " + old.getName() + ". One is in package '" + old.getPackageName() +
+							"' and one in package '" + desc.getPackageName() + "'.";
+						log.error(s);
+						p.getReader().reportError(desc.getSpecURL().toString(), new DuplicateEntityException(s));
+					}
 				}
 			}
 		}

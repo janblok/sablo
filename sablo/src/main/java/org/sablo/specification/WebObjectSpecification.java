@@ -32,7 +32,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.sablo.specification.Package.IPackageReader;
 import org.sablo.specification.property.CustomJSONArrayType;
-import org.sablo.specification.property.CustomPropertyTypeResolver;
+import org.sablo.specification.property.CustomJSONObjectType;
 import org.sablo.specification.property.CustomVariableArgsType;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
@@ -671,7 +671,9 @@ public class WebObjectSpecification extends PropertyDescription
 			while (types.hasNext())
 			{
 				String name = types.next();
-				ICustomType< ? > wct = CustomPropertyTypeResolver.getInstance().resolveCustomPropertyType(specName != null ? (specName + "." + name) : name);
+				String typeName = specName != null ? (specName + "." + name) : name;
+				ICustomType< ? > wct = (CustomJSONObjectType< ? , ? >)TypesRegistry.createNewType(CustomJSONObjectType.TYPE_NAME, typeName);
+				wct.setCustomJSONDefinition(new PropertyDescriptionBuilder().withName(typeName).withType(wct).build());
 				foundTypes.put(name, wct);
 			}
 

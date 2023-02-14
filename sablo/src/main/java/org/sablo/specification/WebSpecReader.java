@@ -28,11 +28,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.sablo.specification.Package.DuplicateEntityException;
 import org.sablo.specification.Package.IPackageReader;
-import org.sablo.specification.property.types.TypesRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,7 +99,6 @@ class WebSpecReader
 			}
 			try
 			{
-				readGloballyDefinedTypes(packages);
 				cacheWebObjectSpecs(packages, null);
 			}
 			finally
@@ -203,18 +199,10 @@ class WebSpecReader
 				}
 				try
 				{
-					if (readGloballyDefinedTypes(packages))
+					if (cacheWebObjectSpecs(packages, removedOrReloadedSpecs)) // cache web objects
 					{
-						load(); // reload all because added packages have global types
+						load(); // reload all again because a package project replaced a zip project and it had global types
 						shouldStillFireReloadListeners = false;
-					}
-					else
-					{
-						if (cacheWebObjectSpecs(packages, removedOrReloadedSpecs)) // cache web objects
-						{
-							load(); // reload all again because a package project replaced a zip project and it had global types
-							shouldStillFireReloadListeners = false;
-						}
 					}
 				}
 				finally
@@ -259,52 +247,6 @@ class WebSpecReader
 		}
 
 		return false;
-	}
-
-	protected synchronized boolean readGloballyDefinedTypes(List<Package> packages)
-	{
-		// TODO THIS IS NOT CURRENTLY USED NOR MADE PUBLIC IN WIKI BUT IT IS READ IN CORRECTLY; STILL, GLOBAL TYPES WILL NOT CURRENTLY BE SENT TO CLIENT via
-		// org.sablo.websocket.ClientSideTypesState.handleFreshBrowserWindowConnected()
-		// If this becomes relevant again and clients want to be able to define global types we should send them to client as well via the method above (similar to how we send all types for services)
-
-		boolean globalTypesFound = false;
-		try
-		{
-			JSONObject typeContainer = new JSONObject();
-			JSONObject allGlobalTypesFromAllPackages = new JSONObject();
-			typeContainer.put(WebObjectSpecification.TYPES_KEY, allGlobalTypesFromAllPackages);
-
-			for (Package p : packages)
-			{
-				try
-				{
-					if (p.appendGlobalTypesJSON(allGlobalTypesFromAllPackages))
-					{
-						globalTypesFound = true;
-						packagesWithGloballyDefinedTypes.add(p.getPackageName());
-					}
-				}
-				catch (Exception e)
-				{
-					log.error("Cannot read globally defined types from package: " + p.getName(), e); //$NON-NLS-1$
-				}
-			}
-
-			try
-			{
-				TypesRegistry.addTypes(WebObjectSpecification.getTypes(typeContainer).values());
-			}
-			catch (Exception e)
-			{
-				log.error("Cannot parse flattened global types - from all web component packages.", e);
-			}
-		}
-		catch (JSONException e)
-		{
-			// should never happen
-			log.error("Error Creating a simple JSON object hierarchy while reading globally defined types...");
-		}
-		return globalTypesFound;
 	}
 
 	private boolean cacheWebObjectSpecs(List<Package> packages, List<String> removedOrReloadedSpecs)

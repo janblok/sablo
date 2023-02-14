@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -43,7 +42,6 @@ import javax.servlet.ServletContext;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +53,6 @@ import org.slf4j.LoggerFactory;
 public class Package
 {
 	private static final Logger log = LoggerFactory.getLogger(Package.class.getCanonicalName());
-	private static final String GLOBAL_TYPES_MANIFEST_ATTR = "Global-Types"; //$NON-NLS-1$
 	public static final String BUNDLE_SYMBOLIC_NAME = "Bundle-SymbolicName"; // for package name //$NON-NLS-1$
 	public static final String BUNDLE_NAME = "Bundle-Name"; // for package display name //$NON-NLS-1$
 	public static final String PACKAGE_TYPE = "Package-Type"; //$NON-NLS-1$
@@ -138,51 +135,6 @@ public class Package
 		return reader;
 	}
 
-
-	/**
-	 * Returns true if any globally defined types were appended.
-	 */
-	public boolean appendGlobalTypesJSON(JSONObject allGlobalTypesFromAllPackages) throws IOException
-	{
-		boolean globalTypesFound = false;
-		Manifest mf = reader.getManifest();
-
-		if (mf != null)
-		{
-			Attributes mainAttrs = mf.getMainAttributes();
-			if (mainAttrs != null)
-			{
-				String globalTypesSpecPath = mainAttrs.getValue(GLOBAL_TYPES_MANIFEST_ATTR);
-				if (globalTypesSpecPath != null)
-				{
-					try
-					{
-						String specfileContent = reader.readTextFile(globalTypesSpecPath, Charset.forName("UTF8")); // TODO: check encoding
-						if (specfileContent != null)
-						{
-							JSONObject json = new JSONObject(specfileContent);
-							Object types = json.get(WebObjectSpecification.TYPES_KEY);
-							if (types instanceof JSONObject)
-							{
-								Iterator<String> typesIt = ((JSONObject)types).keys();
-								while (typesIt.hasNext())
-								{
-									String key = typesIt.next();
-									allGlobalTypesFromAllPackages.put(key, ((JSONObject)types).get(key));
-									globalTypesFound = true;
-								}
-							}
-						}
-					}
-					catch (Exception e)
-					{
-						reader.reportError(globalTypesSpecPath, e);
-					}
-				}
-			}
-		}
-		return globalTypesFound;
-	}
 
 	public PackageSpecification<WebObjectSpecification> getWebObjectDescriptions(String attributeName,
 		IDefaultComponentPropertiesProvider defaultComponentPropertiesProvider) throws IOException

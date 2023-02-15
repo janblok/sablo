@@ -265,7 +265,12 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 
 	public final IEventDispatcher getEventDispatcher()
 	{
-		if (executor == null)
+		return getEventDispatcher(true);
+	}
+
+	public final IEventDispatcher getEventDispatcher(boolean create)
+	{
+		if (executor == null && create)
 		{
 			synchronized (this)
 			{

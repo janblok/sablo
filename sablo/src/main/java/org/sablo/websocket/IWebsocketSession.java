@@ -43,10 +43,20 @@ public interface IWebsocketSession
 
 	/**
 	 * Returns the event dispatcher, that should be a separate thread that processes all the events.
+	 * created one if there is no event dispatcher.
 	 *
 	 * @return
 	 */
 	IEventDispatcher getEventDispatcher();
+
+	/**
+	 * Returns the event dispatcher, that should be a separate thread that processes all the events.
+	 *
+	 * @param create Boolean to create one or not if there isn't a dispatcher yet.
+	 *
+	 * @return
+	 */
+	IEventDispatcher getEventDispatcher(boolean create);
 
 	/**
 	 * Can it still be used?

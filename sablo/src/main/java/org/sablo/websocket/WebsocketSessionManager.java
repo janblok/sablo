@@ -34,6 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import javax.servlet.http.HttpSession;
 import javax.websocket.CloseReason;
 
+import org.sablo.eventthread.IEventDispatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -333,6 +334,12 @@ public class WebsocketSessionManager
 						try
 						{
 							Thread.currentThread().setName("Sablo Session closer: " + session.getSessionKey()); //$NON-NLS-1$
+							if (!checkForWindowActivity)
+							{
+								// this is a force close, look if we can interrupt the event thread.
+								IEventDispatcher eventDispatcher = session.getEventDispatcher(false);
+								if (eventDispatcher != null) eventDispatcher.interruptEventThread();
+							}
 							session.sessionExpired();
 							Thread.currentThread().setName("Sablo Session closer"); //$NON-NLS-1$
 						}

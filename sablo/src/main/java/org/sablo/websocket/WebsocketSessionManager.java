@@ -17,6 +17,7 @@
 package org.sablo.websocket;
 
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -253,7 +254,15 @@ public class WebsocketSessionManager
 		AtomicInteger counter = (AtomicInteger)httpSession.getAttribute(attribute);
 		if (counter == null)
 		{
-			counter = new AtomicInteger();
+			counter = new AtomicInteger()
+			{
+				private void writeObject(ObjectOutputStream out) throws IOException
+				{
+					// if this is serialized also set the counter to 0, because clients can't be serialized or transfered over
+					set(0);
+					out.defaultWriteObject();
+				}
+			};
 			httpSession.setAttribute(attribute, counter);
 		}
 		return counter;

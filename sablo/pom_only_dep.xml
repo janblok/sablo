@@ -20,6 +20,13 @@
         <maven.compiler.target>17</maven.compiler.target>
         <log4j-version>2.19.0</log4j-version>
     </properties>
+    <repositories>
+        <repository>
+            <id>servoy_plugin</id>
+          <url>https://developer.servoy.com/mvn_repository/</url>
+      </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>org.slf4j</groupId>

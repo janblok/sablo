@@ -22,6 +22,8 @@
 	</pluginRepositories>
 
 	<url>http://maven.apache.org</url>
+	
+	<!-- IF updating dependecies, version or new jar, also update the pom_only_dep,xml -->
 	<properties>
 		<tycho.version>2.7.5</tycho.version>
 		<maven.compiler.source>17</maven.compiler.source>
@@ -265,7 +267,7 @@
 		</profile>
 	</profiles>
 
-
+<!-- IF updating dependecies, version or new jar, also update the pom_only_dep,xml -->
 	<dependencies>
         <dependency>
             <groupId>com.servoy</groupId>

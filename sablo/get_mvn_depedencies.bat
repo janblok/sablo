@@ -1,0 +1,1 @@
+mvn compile -f .\pom_only_dep.xml

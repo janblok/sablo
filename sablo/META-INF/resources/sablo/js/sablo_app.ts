@@ -26,30 +26,43 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 
     sessionStorage.setItem('svy_session_lock', '1');
 
+    var inLogCall = false;
 	var oldError = $window.console.error;
 	var oldLog = $window.console.log;
 	$window.console.log =  function(msg) {
 		try
 		{
 			oldLog.apply($window.console, arguments);
-			callService('consoleLogger', 'info', { message: msg }, true)
+			if (!inLogCall) {
+                inLogCall= true;
+                callService('consoleLogger', 'info', { message: msg }, true)
+		    }	
 		}
 		catch(e)
 		{
 			oldError.apply($window.console, [e]);
 		}
+		finally {
+            inLogCall = false;
+        }
 	}
 	
 	$window.console.error =  function(msg) {
 		try
 		{
 			oldError.apply($window.console, arguments);
-			callService('consoleLogger', 'error', { message: msg }, true)
+            if (!inLogCall) {
+                inLogCall= true;
+                callService('consoleLogger', 'error', { message: msg }, true)
+            }   
 		}
 		catch(e)
 		{
 			oldError.apply($window.console, [e]);
 		}
+        finally {
+            inLogCall = false;
+        }
 	}
 	
 	var oldWarn = $window.console.warn;
@@ -57,12 +70,18 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		try
 		{
 			oldWarn.apply($window.console, arguments);
-			callService('consoleLogger', 'warn', { message: msg }, true)
+            if (!inLogCall) {
+                inLogCall= true;
+                callService('consoleLogger', 'warn', { message: msg }, true)
+            }   
 		}
 		catch(e)
 		{
 			oldError.apply($window.console, [e]);
 		}
+        finally {
+            inLogCall = false;
+        }
 	}
 	
 	var oldInfo = $window.console.info;
@@ -70,12 +89,18 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		try
 		{
 			oldInfo.apply($window.console, arguments);
-			callService('consoleLogger', 'info', { message: msg }, true)
+            if (!inLogCall) {
+                inLogCall= true;
+	       		callService('consoleLogger', 'info', { message: msg }, true)
+            }   
 		}
 		catch(e)
 		{
 			oldError.apply($window.console, [e]);
 		}
+        finally {
+            inLogCall = false;
+        }
 	}
 	
 	var oldDebug = $window.console.debug;
@@ -83,12 +108,18 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		try
 		{
 			oldDebug.apply($window.console, arguments);
-			callService('consoleLogger', 'debug', { message: msg }, true)
+            if (!inLogCall) {
+                inLogCall= true;
+    			callService('consoleLogger', 'debug', { message: msg }, true)
+            }   
 		}
 		catch(e)
 		{
 			oldError.apply($window.console, [e]);
 		}
+        finally {
+            inLogCall = false;
+        }
 	}
 	
 	$window.onerror = function(message, source, lineno, colno, error) {

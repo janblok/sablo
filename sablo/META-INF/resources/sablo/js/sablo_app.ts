@@ -373,11 +373,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		currentServiceCallDone = false
 		currentServiceCallWaiting = times.length
 		currentServiceCallTimeouts = times.map(function(t) { return setTimeout(callServiceCallbacksWhenDone, t) });
-		return Object.defineProperty(promise.then(markServiceCallDone, markServiceCallFailed), "requestInfo", {
-			set(value) {
-				promise.requestInfo = value;
-			}
-		});
+
+		return $webSocket.wrapPromiseToPropagateCustomRequestInfoInternal(promise, promise.then(markServiceCallDone, markServiceCallFailed));
 	}
 
 	function callService(serviceName:string, methodName:string, argsObject, async?:boolean): angular.IPromise<any> {

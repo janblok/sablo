@@ -518,6 +518,15 @@ webSocketModule.factory('$propertyWatchUtils', function ($typesRegistry: sablo.I
 			pendingMessages.push(msg)
 		}
 	}
+	
+	let wrapPromiseToPropagateCustomRequestInfoInternal = function(originalPromise: any/*angular.IPromise<any>*/,
+	                                                           spawnedPromise: angular.IPromise<any>): angular.IPromise<any> {
+        return Object.defineProperty(spawnedPromise, "requestInfo", {
+            set(value) {
+                originalPromise.requestInfo = value;
+            }
+        });        
+    }
 
 	let callService = function(serviceName, methodName, argsObject, async) {
 		let cmd = {
@@ -813,7 +822,9 @@ webSocketModule.factory('$propertyWatchUtils', function ($typesRegistry: sablo.I
 
 		getCurrentRequestInfo: function() {
 			return currentRequestInfo;
-		}
+		},
+		
+		wrapPromiseToPropagateCustomRequestInfoInternal: wrapPromiseToPropagateCustomRequestInfoInternal
 	};
 }).factory("$services", function($rootScope, $sabloConverters: sablo.ISabloConverters, $sabloUtils: sablo.ISabloUtils, $propertyWatchUtils: sablo.IPropertyWatchUtils,
 		$log: sablo.ILogService, $typesRegistry: sablo.ITypesRegistry, $pushToServerUtils: sablo.IPushToServerUtils) {

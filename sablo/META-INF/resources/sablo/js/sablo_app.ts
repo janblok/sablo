@@ -812,7 +812,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		getExecutor: function(formName) {
 			return {
 				on: function(beanName, eventName, property/* this arg seems to never be used */, args, rowId) {
-					var onFunction = function(formState) {
+					var onFunction = function(formState, requestInfo) {
 						// this is onaction, onfocuslost which is really configured in the html so it really 
 						// is something that goes to the server
 						const componentSpec = $typesRegistry.getComponentSpecification($sabloUtils.getInDepthProperty(formState, "componentSpecNames", beanName));
@@ -824,20 +824,27 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 						}
 						var cmd = { formname: formName, beanname: beanName, event: eventName, args: newargs, changes: data }
 						if (rowId) cmd['rowId'] = rowId
-						return callService('formService', 'executeEvent', cmd, false).then((retVal) => {
+						
+						let promise = callService('formService', 'executeEvent', cmd, false);
+						if (requestInfo) (promise as any).requestInfo = requestInfo; // this arg is only set if it has to wait for a form state below
+
+						return $webSocket.wrapPromiseToPropagateCustomRequestInfoInternal(promise, promise.then((retVal) => {
 							return $sabloConverters.convertFromServerToClient(retVal, handlerSpec?.returnType,
-							         undefined, undefined, undefined, undefined, $sabloUtils.PROPERTY_CONTEXT_FOR_INCOMMING_ARGS_AND_RETURN_VALUES);							
-						});
+							         undefined, undefined, undefined, undefined, $sabloUtils.PROPERTY_CONTEXT_FOR_INCOMMING_ARGS_AND_RETURN_VALUES);
+						}));
 					};
 					if (hasFormStateWithData(formName)) {
-						return onFunction(formStates[formName]);
+						return onFunction(formStates[formName], undefined);
 					} else {
-						return getFormStateWithData(formName).then(function(formState) {
-								return onFunction(formState);
-							},
-							function(err) {
-								$log.error("Error getting form state: " + err);
-							});
+                        const requestInfoKeeper: { requestInfo?: any } = {};
+                        return $webSocket.wrapPromiseToPropagateCustomRequestInfoInternal(requestInfoKeeper,
+                            getFormStateWithData(formName).then(function(formState) {
+                                    return onFunction(formState, requestInfoKeeper.requestInfo);
+                                },
+                                function(err) {
+                                    $log.error("Error getting form state: " + err);
+                                })
+                        );
 					}
 				}
 			}

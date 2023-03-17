@@ -377,7 +377,7 @@ public class JSONUtils
 			throws JSONException, IllegalArgumentException
 		{
 			ValueReference<Boolean> typeDeterminedBasedOnClassOfValue = new ValueReference<Boolean>(Boolean.FALSE);
-			IPropertyConverterForBrowser convertingTypeToUse = findConvertingTypeToBrowser(value, valueType, context, typeDeterminedBasedOnClassOfValue);
+			IPropertyConverterForBrowser convertingTypeToUse = findConvertingTypeToBrowser(value, valueType, typeDeterminedBasedOnClassOfValue);
 			if (convertingTypeToUse != null)
 			{
 				try
@@ -416,17 +416,33 @@ public class JSONUtils
 		}
 
 		protected IPropertyConverterForBrowser< ? > findConvertingTypeToBrowser(Object value, PropertyDescription valueType,
-			IBrowserConverterContext context, ValueReference<Boolean> typeDeterminedBasedOnClassOfValue)
+			ValueReference<Boolean> typeDeterminedBasedOnClassOfValue)
 		{
 			if (value != null && valueType != null)
 			{
 				IPropertyType< ? > type = valueType.getType();
+
+				if (type instanceof ObjectPropertyType)
+				{
+					// for 'object' defined in .spec, which does implement IPropertyConverterForBrowser
+					// but it is just a default conversion actually, we will give precedence to
+					// any IClassPropertyType implementations
+					IPropertyConverterForBrowser< ? > classType = findClassPropertyType(value, typeDeterminedBasedOnClassOfValue);
+					if (classType != null) return classType;
+					// else go to next if and return the ObjectPropertyType
+				}
+
 				if (type instanceof IPropertyConverterForBrowser) // this includes IWrapperType
 				{
 					return (IPropertyConverterForBrowser< ? >)type;
 				}
 			}
 
+			return findClassPropertyType(value, typeDeterminedBasedOnClassOfValue);
+		}
+
+		private IPropertyConverterForBrowser< ? > findClassPropertyType(Object value, ValueReference<Boolean> typeDeterminedBasedOnClassOfValue)
+		{
 			// best-effort to still find a way to write data and convert if needed follows
 			IClassPropertyType< ? > classType = value == null ? null : TypesRegistry.getType(value.getClass());
 			if (classType != null)
@@ -462,7 +478,7 @@ public class JSONUtils
 			boolean returnOnlyDynamicTypes)
 		{
 			ValueReference<Boolean> typeDeterminedBasedOnClassOfValue = new ValueReference<Boolean>(Boolean.FALSE);
-			IPropertyType< ? > type = (IPropertyType< ? >)findConvertingTypeToBrowser(value, valueType, context, typeDeterminedBasedOnClassOfValue);
+			IPropertyType< ? > type = (IPropertyType< ? >)findConvertingTypeToBrowser(value, valueType, typeDeterminedBasedOnClassOfValue);
 
 			if (type instanceof IPropertyConverterForBrowserWithDynamicClientType)
 			{
@@ -555,7 +571,7 @@ public class JSONUtils
 			boolean returnOnlyDynamicTypes)
 		{
 			ValueReference<Boolean> typeDeterminedBasedOnClassOfValue = new ValueReference<Boolean>(Boolean.FALSE);
-			IPropertyType< ? > type = (IPropertyType< ? >)findConvertingTypeToBrowser(value, valueType, context, typeDeterminedBasedOnClassOfValue);
+			IPropertyType< ? > type = (IPropertyType< ? >)findConvertingTypeToBrowser(value, valueType, typeDeterminedBasedOnClassOfValue);
 
 			if (type instanceof ISupportsGranularUpdatesWithDynamicClientType)
 			{

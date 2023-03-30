@@ -370,6 +370,8 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	@Override
 	public void detach()
 	{
+		changeMonitor = null;
+
 		Map<String, WT> wrappedBaseList = getWrappedBaseMap();
 		for (java.util.Map.Entry<String, WT> e : wrappedBaseList.entrySet())
 		{
@@ -383,7 +385,6 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		}
 
 		webObjectContext = null;
-		changeMonitor = null;
 	}
 
 	// TODO currently here we use the wrapped value for ISmartPropertyValue, but BaseWebObject uses the unwrapped value; I think the BaseWebObject

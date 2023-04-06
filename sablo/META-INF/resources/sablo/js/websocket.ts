@@ -591,8 +591,8 @@ webSocketModule.factory('$propertyWatchUtils', function ($typesRegistry: sablo.I
 
 			lastHeartbeat = new Date().getTime();
 			heartbeatMonitor = $interval(function() {
-				if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Sending heartbeat... (" + new Date().getTime() + ")");
 				if (new Date().getTime() - lastHeartbeat >= 4000){
+    				if ($log.debugLevel === $log.SPAM) $log.debug("sbl * Sending heartbeat... (" + new Date().getTime() + ")");
 					websocket.send("P"); // ping
 					if (isConnected() && new Date().getTime() - lastHeartbeat > 8000) {
 						// no response within 8 seconds

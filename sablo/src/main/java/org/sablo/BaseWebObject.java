@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONString;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.PropertyDescription.PDAndComputedPushToServer;
@@ -60,6 +61,7 @@ import org.sablo.util.ValueReference;
 import org.sablo.websocket.TypedData;
 import org.sablo.websocket.TypedDataWithChangeInfo;
 import org.sablo.websocket.utils.JSONUtils;
+import org.sablo.websocket.utils.JSONUtils.EmbeddableJSONWriter;
 import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 import org.slf4j.Logger;
@@ -311,7 +313,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 	 * @return
 	 * @throws Exception
 	 */
-	public final Object executeEvent(String eventType, Object[] args) throws Exception
+	public final JSONString executeEvent(String eventType, Object[] args) throws Exception
 	{
 		WebObjectFunctionDefinition handler = getSpecification().getHandler(eventType);
 		try
@@ -327,7 +329,11 @@ public abstract class BaseWebObject implements IWebObjectContext
 		if (handler != null && handler.isPrivate()) throw new IllegalAccessException(
 			"Event " + eventType + " is called from the client, but it is a private event of " + this + " with spec " + specification);
 
-		return doExecuteEvent(eventType, args);
+		EmbeddableJSONWriter ejw = new EmbeddableJSONWriter(true);
+
+		FullValueToJSONConverter.INSTANCE.toJSONValue(ejw, null, doExecuteEvent(eventType, args), handler != null ? handler.getReturnType() : null,
+			new BrowserConverterContext(this, PushToServerEnum.reject));
+		return ejw;
 	}
 
 	protected void checkIfFunctionAccessIsAllowedDisregardingProtection(WebObjectFunctionDefinition functionDef, IllegalChangeFromClientException e)
@@ -363,7 +369,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 			log.warn("Unknown event '" + eventType + "' for component " + this);
 			return null;
 		}
-		return handler.executeEvent(args);
+		return handler.executeEvent(args); // FIXME here we know it's comming from client json?/sablo/java and returning to client json; see SVY-18096
 	}
 
 	public final boolean isVisible()

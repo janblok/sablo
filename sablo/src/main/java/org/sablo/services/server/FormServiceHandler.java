@@ -102,11 +102,7 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 	}
 
 
-	/**
-	 * @param args
-	 * @throws Exception
-	 */
-	protected Object executeEvent(JSONObject obj) throws Exception
+	protected JSONString executeEvent(JSONObject obj) throws Exception
 	{
 		String formName = obj.getString("formname");
 

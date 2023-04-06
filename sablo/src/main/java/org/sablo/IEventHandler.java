@@ -18,17 +18,13 @@ package org.sablo;
 
 /**
  * Handle events on web components.
- * 
+ *
  * @author rgansevles
  *
  */
 public interface IEventHandler
 {
 
-	/**
-	 * @param args
-	 * @return
-	 */
 	Object executeEvent(Object[] args) throws Exception;
 
 }

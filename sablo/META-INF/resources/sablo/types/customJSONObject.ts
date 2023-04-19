@@ -295,12 +295,17 @@ namespace sablo.propertyTypes {
 		}
 
         updateAngularScope(clientValue: CustomObjectValue, componentScope: angular.IScope): void {
+            // it is possible here that the clientValue exists but it is not initialized (no internal state)
+            // that can happen for example if properties in .spec are scope: private and pushToServer: reject (which is default pushToServer)
+            // and those properties are only assigned on client - so they never go through either fromServerToClient nor fromClientToServer
+
 			this.removeAllWatches(clientValue);
-			if (componentScope) this.addBackWatches(clientValue, componentScope);
 
 			if (clientValue) {
 				const internalState = clientValue[this.sabloConverters.INTERNAL_IMPL];
 				if (internalState) {
+        			if (componentScope) this.addBackWatches(clientValue, componentScope);
+
 					for (const key in clientValue) {
 						if (CustomObjectType.angularAutoAddedKeys.indexOf(key) !== -1) continue;
 						const propType = this.getPropertyType(internalState, key);

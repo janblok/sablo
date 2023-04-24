@@ -506,12 +506,12 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 							// convert args
 							(<any[]>call.args)?.forEach((val: any, i: number) =>  
 								call.args[i] = $sabloConverters.convertFromServerToClient(val,
-									apiFunctionsAndComponentSpec.componentSpec?.getApiFunction(call.api)?.getArgumentType(i),
+									apiFunctionsAndComponentSpec.componentSpec?.getApiFunction?.(call.api)?.getArgumentType(i),
 									undefined, undefined, undefined, undefined, $sabloUtils.PROPERTY_CONTEXT_FOR_INCOMMING_ARGS_AND_RETURN_VALUES)); // api args do not keep dynamic types, should not add watches or be relative to a property context; at least this is how it is now
 							
 							// call API and make sure return value is also converted - if the API returns a value or a promise
 							returnValue = $q.when(func.apply(apiFunctionsAndComponentSpec.funcs, call.args)).then(function(ret) {
-								return $sabloConverters.convertFromClientToServer(ret, apiFunctionsAndComponentSpec.componentSpec?.getApiFunction(call.api)?.returnType,
+								return $sabloConverters.convertFromClientToServer(ret, apiFunctionsAndComponentSpec.componentSpec?.getApiFunction?.(call.api)?.returnType,
 								            undefined, undefined, $sabloUtils.PROPERTY_CONTEXT_FOR_OUTGOING_ARGS_AND_RETURN_VALUES);
 							}, function(reason) {
 								// error

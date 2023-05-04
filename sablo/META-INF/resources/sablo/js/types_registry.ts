@@ -199,7 +199,9 @@ namespace sablo.typesRegistry {
         constructor(private readonly getProperty: IPropertyContextGetterMethod, private readonly webObjectSpec: IWebObjectSpecification) {}
 
         withPushToServerFor(rootPropertyName: string): PropertyContext {
-            return new PropertyContext(this.getProperty, this.webObjectSpec ? this.webObjectSpec.getPropertyPushToServer(rootPropertyName) : PushToServerEnum.reject); // getPropertyPushToServer not getPropertyDeclaredPushToServer
+            return new PropertyContext(this.getProperty,
+                this.webObjectSpec ? this.webObjectSpec.getPropertyPushToServer(rootPropertyName) : PushToServerEnum.reject, // getPropertyPushToServer not getPropertyDeclaredPushToServer
+                true);
         }
     }
 
@@ -207,16 +209,21 @@ namespace sablo.typesRegistry {
 
         constructor(private readonly getProperty: IPropertyContextGetterMethod,
                 private readonly propertyDescriptions: { [propName: string]: sablo.IPropertyDescription },
-                private readonly computedParentPushToServer: sablo.IPushToServerEnum) {}
+                private readonly computedParentPushToServer: sablo.IPushToServerEnum,
+                private readonly isInsideModel: boolean) {}
 
         withPushToServerFor(childPropertyName: string): PropertyContext {
-            return new PropertyContext(this.getProperty, PushToServerUtils.combineWithChildStatic(this.computedParentPushToServer, this.propertyDescriptions[childPropertyName]?.getPropertyDeclaredPushToServer())); // getPropertyDeclaredPushToServer not getPropertyPushToServer
+            return new PropertyContext(this.getProperty,
+                PushToServerUtils.combineWithChildStatic(this.computedParentPushToServer, this.propertyDescriptions[childPropertyName]?.getPropertyDeclaredPushToServer()), // getPropertyDeclaredPushToServer not getPropertyPushToServer
+                this.isInsideModel);
         }
     }
 
     export class PropertyContext implements IPropertyContext {
 
-        constructor(public readonly getProperty: IPropertyContextGetterMethod, private readonly pushToServerComputedValue: PushToServerEnum) {}
+        constructor(public readonly getProperty: IPropertyContextGetterMethod,
+            private readonly pushToServerComputedValue: PushToServerEnum,
+            public readonly isInsideModel: boolean) {}
 
         getPushToServerCalculatedValue(): PushToServerEnum { return this.pushToServerComputedValue; }
     }
@@ -274,8 +281,8 @@ namespace sablo.typesRegistry {
 
         public newChildPropertyContextCreator(getProperty: IPropertyContextGetterMethod,
                     propertyDescriptions: { [propName: string]: sablo.IPropertyDescription },
-                    computedParentPushToServer: sablo.IPushToServerEnum): IPropertyContextCreator {
-            return new ChildPropertyContextCreator(getProperty, propertyDescriptions, computedParentPushToServer);
+                    computedParentPushToServer: sablo.IPushToServerEnum, isInsideModel: boolean): IPropertyContextCreator {
+            return new ChildPropertyContextCreator(getProperty, propertyDescriptions, computedParentPushToServer, isInsideModel);
         }
 
     }

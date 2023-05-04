@@ -1192,11 +1192,11 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		// configure Date type but don't overwrite it when there is already a registered object.
 		$typesRegistry.registerGlobalType('Date', {
 			
-	        fromServerToClient(serverJSONValue: any, currentClientValue: Date, componentScope: angular.IScope, propertyContext: sablo.IPropertyContext): Date {
+	        fromServerToClient(serverJSONValue: any, _currentClientValue: Date, _componentScope: angular.IScope, _propertyContext: sablo.IPropertyContext): Date {
 				return typeof (serverJSONValue) === "number" ? new Date(serverJSONValue) : serverJSONValue;
 	        },
 	        
-	        fromClientToServer(newClientData: any, oldClientData: Date, scope: angular.IScope, propertyContext: sablo.IPropertyContext): any {
+	        fromClientToServer(newClientData: any, _oldClientData: Date, _scope: angular.IScope, _propertyContext: sablo.IPropertyContext): any {
 				if (newClientData === 0) return newClientData;
 				if (!newClientData) return null;
 
@@ -1207,7 +1207,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 				return r.getTime();
 	        },
 	        
-	        updateAngularScope(clientValue: Date, componentScope: angular.IScope): void {
+	        updateAngularScope(_clientValue: Date, _componentScope: angular.IScope): void {
 				// nothing to do here
 	        }
 	        

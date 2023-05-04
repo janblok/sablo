@@ -108,7 +108,7 @@ namespace sablo.propertyTypes {
 
 					const propertyContextCreator = new sablo.typesRegistry.ChildPropertyContextCreator(
 							this.getCustomObjectPropertyContextGetter(newValue, propertyContext),
-							this.propertyDescriptions, propertyContext?.getPushToServerCalculatedValue());
+							this.propertyDescriptions, propertyContext?.getPushToServerCalculatedValue(), propertyContext?.isInsideModel);
 
 					for (const c in newValue) {
 						let elem = newValue[c];
@@ -138,7 +138,7 @@ namespace sablo.propertyTypes {
 
 						const propertyContextCreator = new sablo.typesRegistry.ChildPropertyContextCreator(
 								this.getCustomObjectPropertyContextGetter(currentClientValue, propertyContext),
-								this.propertyDescriptions, propertyContext?.getPushToServerCalculatedValue());
+								this.propertyDescriptions, propertyContext?.getPushToServerCalculatedValue(), propertyContext?.isInsideModel);
 
 						for (const i in updates) {
 							const update = updates[i];
@@ -182,7 +182,7 @@ namespace sablo.propertyTypes {
 
             		// mark it to be fully sent to server as well below
     				internalState.allChanged = true;
-                } else if (newClientData !== oldClientData) {
+                } else if (propertyContext?.isInsideModel && newClientData !== oldClientData) {
                     if (oldClientData && oldClientData[this.sabloConverters.INTERNAL_IMPL]) this.removeAllWatches(oldClientData);
                     // if a different smart value from the browser is assigned to replace old value it is a full value change; also adjust the version to it's new location
 
@@ -197,12 +197,16 @@ namespace sablo.propertyTypes {
 
                     if (previousNewValDynamicTypesHolder) internalState.dynamicPropertyTypesHolder = previousNewValDynamicTypesHolder;
                     internalState.allChanged = true;
-                } // else it's the same value as before
+                } else {
+                    // else it's the same value as before or anyway an already initialized value (that is used maybe as and argument or return value to api calls/handlers) that can be used
+                    internalState = newClientData[this.sabloConverters.INTERNAL_IMPL];
+                    if (newClientData !== oldClientData) internalState.allChanged = true; // arg or return value to apis/calls? (see previous if branch)
+                }
         	}
 
 			const propertyContextCreator = new sablo.typesRegistry.ChildPropertyContextCreator(
 					this.getCustomObjectPropertyContextGetter(newClientData, propertyContext),
-					this.propertyDescriptions, propertyContext?.getPushToServerCalculatedValue());
+					this.propertyDescriptions, propertyContext?.getPushToServerCalculatedValue(), propertyContext?.isInsideModel);
 			if (newClientData) {
 				if (internalState.isChanged()) {
 					const changes = {};
@@ -213,8 +217,14 @@ namespace sablo.propertyTypes {
                         // by a now deprecated ServoyPublicService.sendServiceChanges that did not have an oldPropertyValue argument, we sometimes do not have
                         // access to the old contentVersion to be able to use it... so full change from client will ignore old contentVersion on client and on server
                         // but that should not be a problem as those are meant more to ensure that granular updates don't happen on an wrong/obsolete value
-                        internalState[CustomObjectType.CONTENT_VERSION] = 1; // start fresh
                         changes[CustomObjectType.CONTENT_VERSION] = 0; // server treats this as a "don't check server content version as it's a full new value from client"
+                        
+                        // we only reset client side contentVersion when sending full changes for model properties (so things that might have an equivalent on server);
+                        // (args and return values to api/handlers should not reset client side state version when being sent to server (there they will be
+                        // full new values anyway with no previous value - and not in sync with any client side value), because it is possible to send as argument or
+                        // return value a value that is also present in the model at the same time, in which case this full send as an arg/return value should not
+                        // alter client side version in the model - that version must remain unaltered, in sync with the server side version in the model)
+                        if (propertyContext?.isInsideModel) internalState[CustomObjectType.CONTENT_VERSION] = 1; // start fresh
                         
 						const toBeSentObj = changes[CustomObjectType.VALUE] = {};
 						for (const key in newClientData) {

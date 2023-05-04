@@ -879,10 +879,11 @@ webSocketModule.factory('$propertyWatchUtils', function ($typesRegistry: sablo.I
 			propertyType = serviceSpec?.getPropertyType(propertyName);
 		}
 		
-		const serviceScope = getServiceScope(servicename);
+		const serviceScope = getServiceScope(servicename); 
 		
 		changes[propertyName] = $sabloConverters.convertFromClientToServer(now, propertyType, prev,
 				serviceScope, {
+                    isInsideModel: true,
 					getProperty: (propertyN: string) => { return serviceScope.model ? serviceScope.model[propertyN] : undefined },
 					getPushToServerCalculatedValue: () => { return serviceSpec ? serviceSpec.getPropertyPushToServer(propertyName) : $pushToServerUtils.reject }
 				});
@@ -1151,11 +1152,13 @@ webSocketModule.factory('$propertyWatchUtils', function ($typesRegistry: sablo.I
 	let currentEventLevelForServer;
 	
     const PROPERTY_CONTEXT_FOR_INCOMMING_ARGS_AND_RETURN_VALUES:sablo.IPropertyContext = {
+        isInsideModel: false,
         getProperty: (propertyName: string): any  => { return undefined; }, // arguments/return values received from server in case of api calls/handlers are not properties of a component or service so can't return sibling properties 
         getPushToServerCalculatedValue: () => { return sablo.typesRegistry.PushToServerEnum.reject; }
     };
     
     const PROPERTY_CONTEXT_FOR_OUTGOING_ARGS_AND_RETURN_VALUES:sablo.IPropertyContext = {
+        isInsideModel: false,
         getProperty: (propertyName: string): any  => { return undefined; }, // arguments/return values sent to server in case of api calls/handlers are not properties of a component or service so can't return sibling properties
         getPushToServerCalculatedValue: () => { return sablo.typesRegistry.PushToServerEnum.allow; }
     };

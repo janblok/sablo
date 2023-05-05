@@ -82,7 +82,8 @@ describe("Test custom_object_property suite", function() {
             pd = compSpec.getPropertyDescription("customType");
             propertyContext = {
                 getProperty: function() { },
-                getPushToServerCalculatedValue: function() { return pd.getPropertyPushToServer(); } // property context says "reject" push to server on whole array
+                getPushToServerCalculatedValue: function() { return pd.getPropertyPushToServer(); }, // property context says "reject" push to server on whole array
+                isInsideModel: true
             };
 
             realClientValue = sabloConverters.convertFromServerToClient(serverValue, pd.getPropertyType(), undefined,
@@ -132,7 +133,8 @@ describe("Test custom_object_property suite", function() {
             pd = compSpec.getPropertyDescription("customType");
             propertyContext = {
                 getProperty: function() { },
-                getPushToServerCalculatedValue: function() { return pd.getPropertyPushToServer(); } // property context says "reject" push to server on whole array
+                getPushToServerCalculatedValue: function() { return pd.getPropertyPushToServer(); }, // property context says "reject" push to server on whole array
+                isInsideModel: true
             };
 
             realClientValue = sabloConverters.convertFromServerToClient(serverValue, pd.getPropertyType(), undefined,
@@ -218,7 +220,8 @@ describe("Test custom_object_property suite", function() {
             pd = compSpec.getPropertyDescription("octWithCustomTypeAllow");
             propertyContext = {
                 getProperty: function() { },
-                getPushToServerCalculatedValue: function() { return pd.getPropertyPushToServer(); } // property context says "reject" push to server on whole array
+                getPushToServerCalculatedValue: function() { return pd.getPropertyPushToServer(); }, // property context says "reject" push to server on whole array
+                isInsideModel: true
             };
 
             realClientValue = sabloConverters.convertFromServerToClient(serverValue, pd.getPropertyType(), undefined,

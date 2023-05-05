@@ -65,7 +65,8 @@ describe("Test array_custom_property suite", function() {
 			arrayType = typesRegistry.processTypeFromServer(["JSON_arr",null], null); // array of types that are not client side types with element config pushToServer not set
 			propertyContext = {
 			    getProperty: function() {},
-				getPushToServerCalculatedValue: function() { return pushToServerUtils.reject; } // property context says "reject" push to server on whole array
+				getPushToServerCalculatedValue: function() { return pushToServerUtils.reject; }, // property context says "reject" push to server on whole array
+				isInsideModel: true
 			};
 			
 			realClientValue = sabloConverters.convertFromServerToClient(
@@ -100,7 +101,8 @@ describe("Test array_custom_property suite", function() {
             arrayType = typesRegistry.processTypeFromServer(["JSON_arr", { t: null, s: 2 }], null); // array of types that are not client side types with element config pushToServer not set
             propertyContext = {
                 getProperty: function() {},
-                getPushToServerCalculatedValue: function() { return pushToServerUtils.allow; } // property context says "reject" push to server on whole array
+                getPushToServerCalculatedValue: function() { return pushToServerUtils.allow; }, // property context says "reject" push to server on whole array
+                isInsideModel: true
             };
             
             realClientValue = sabloConverters.convertFromServerToClient(
@@ -146,7 +148,8 @@ describe("Test array_custom_property suite", function() {
 			arrayType = typesRegistry.processTypeFromServer(["JSON_arr",null], null); // array of types that are not client side types with element config pushToServer not set
 			propertyContext = {
 			   			    getProperty: function() {},
-			   				getPushToServerCalculatedValue: function() { return pushToServerUtils.shallow; } // property context says "shallow" push to server on whole array
+			   				getPushToServerCalculatedValue: function() { return pushToServerUtils.shallow; }, // property context says "shallow" push to server on whole array
+                            isInsideModel: true
 			   			};
 
 			realClientValue = sabloConverters.convertFromServerToClient(

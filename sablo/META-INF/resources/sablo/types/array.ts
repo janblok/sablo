@@ -210,8 +210,10 @@ namespace sablo.propertyTypes {
                     this.initializeNewValue(newClientData, 1, propertyContext?.getPushToServerCalculatedValue());
                     internalState = newClientData[this.sabloConverters.INTERNAL_IMPL];
                     
-                    internalState.allChanged = true;
+                    if (propertyContext?.isInsideModel) internalState.allChanged = true;
                 } else if (propertyContext?.isInsideModel && newClientData !== oldClientData) {
+                    // the conversion happens for a value from the model (not handler/api arg or return value); and we see it as a change by ref
+
                     if (oldClientData && oldClientData[this.sabloConverters.INTERNAL_IMPL]) this.removeAllWatches(oldClientData);
                     // if a different smart value from the browser is assigned to replace old value it is a full value change; also adjust the version to it's new location
 
@@ -226,18 +228,19 @@ namespace sablo.propertyTypes {
 
                     if (previousNewValDynamicTypesHolder) internalState.dynamicPropertyTypesHolder = previousNewValDynamicTypesHolder;
                     internalState.allChanged = true;
-                } else {
-                    // else it's the same value as before or anyway an already initialized value (that is used maybe as and argument or return value to api calls/handlers) that can be used
-                    internalState = newClientData[this.sabloConverters.INTERNAL_IMPL];
-                    if (newClientData !== oldClientData) internalState.allChanged = true; // arg or return value to apis/calls? (see previous if branch)
-
-                }
+                } else internalState = newClientData[this.sabloConverters.INTERNAL_IMPL]; // an already initialized value that is either the same value as before or it is used here as an argument or return value to api calls/handlers
             }
 
             if (newClientData) {
-                if (internalState.isChanged()) {
+                let calculatedPushToServerOfWholeProp: typesRegistry.PushToServerEnum; 
+                if (propertyContext.isInsideModel) {
+                    internalState.calculatedPushToServerOfWholeProp = (typeof propertyContext?.getPushToServerCalculatedValue() != 'undefined' ? propertyContext?.getPushToServerCalculatedValue() : sablo.typesRegistry.PushToServerEnum.reject);
+                    calculatedPushToServerOfWholeProp = internalState.calculatedPushToServerOfWholeProp;
+                } else calculatedPushToServerOfWholeProp = sablo.typesRegistry.PushToServerEnum.allow; // args/return values are always "allow"
+
+                if (!propertyContext?.isInsideModel || internalState.isChanged()) { // so either it has changes or it's used as an arg/return value to a handler/api call
                     const changes = {};
-                    if (internalState.allChanged) {
+                    if (!propertyContext?.isInsideModel || internalState.allChanged) { // fully changed or arg/return value of handler/api call
                         // send all
                         
                         // we can't rely/use the current contentVersion on ng2 impl. - and this means ng1 and server are adjusted as well, because, in case of a change-by-reference in an ng2 service followed
@@ -257,9 +260,10 @@ namespace sablo.propertyTypes {
                         for (let idx = 0; idx < newClientData.length; idx++) {
                             const val = newClientData[idx];
                             
-                            // tell child to send all as well, not just what granular changes it might know it has because this is a full-value-to-server
+                            // even if child value has only partial changes or no changes, do send the full elem. value as we are sending full array value here
+                            // that is, if this conversion is sending model values; otherwise (handler/api call arg/return values) it will always be sent fully anyway
                             // this is a bit of a hack because .allChanged might mean something or not for the "val"'s internal state - depending on what type it is; titanium ng2 code is a bit better here
-                            if (val && val[this.sabloConverters.INTERNAL_IMPL]) val[this.sabloConverters.INTERNAL_IMPL].allChanged = true;
+                            if (val && val[this.sabloConverters.INTERNAL_IMPL] && propertyContext?.isInsideModel) val[this.sabloConverters.INTERNAL_IMPL].allChanged = true;
 
                             const converted = this.sabloConverters.convertFromClientToServer(val, this.getElementType(internalState, idx),
                                 oldClientData ? oldClientData[idx] : undefined, scope, elemPropertyContext);
@@ -278,9 +282,12 @@ namespace sablo.propertyTypes {
                         this.removeAllWatches(newClientData); // in case this was not an actual full new value but an existing array in which elements were added/removed and then it does have watches
                         this.addBackWatches(newClientData, scope);
 
-                        internalState.allChanged = false;
-                        internalState.changedIndexesOldValues = {};
-                        if (internalState.calculatedPushToServerOfWholeProp === sablo.typesRegistry.PushToServerEnum.reject)
+                        if (propertyContext?.isInsideModel) { 
+                            internalState.allChanged = false;
+                            internalState.changedIndexesOldValues = {};
+                        }
+
+                        if (calculatedPushToServerOfWholeProp === sablo.typesRegistry.PushToServerEnum.reject)
                         {
                             // if whole value is reject, don't sent anything
                             const x = {}; // no changes

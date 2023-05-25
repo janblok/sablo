@@ -429,7 +429,81 @@ describe("Test custom_object_property suite", function() {
             expect(realClientValue[iS].isChanged()).toEqual(false);
         });
 
+        it( 'send obj as arg to handler, change a tab by ref', () => {
+            var propertyContextForArg = {
+                getProperty: function() {},
+                getPushToServerCalculatedValue: function() { return pushToServerUtils.allow; },
+                isInsideModel: false
+            };
 
+            // simulate a send to server as argument to a handler for this array (oldVal undefined) - to make sure it doesn't messup it's state if it's also a model prop. (it used getParentPropertyContext above which is for a model prop)
+            const changes = sabloConverters.convertFromClientToServer(realClientValue, pd.getPropertyType(), undefined,
+                $scope, propertyContextForArg);
+            $scope.$digest();
+            
+            expect( changes ).toEqual({ vEr: 0, v: {
+                    relationName: null,
+                    text: "pers_edit_rv",
+                    active: true,
+                    customType: { vEr: 0, v: { christmasTree: true } },
+                    customTypeArray: {
+                        vEr: 0,
+                        v: [{ vEr: 0, v: { christmasTree: true } }, { vEr: 0, v: { tea: "yes" } }]
+                    },
+                    customTypeArrayWithElReject: {
+                        vEr: 0,
+                        v: []
+                    }
+                } });
+    
+            realClientValue.text = 'hi';
+            $scope.$digest();
+            expect(getAndClearNotified()).toEqual(true);
+    
+            const changes2 = sabloConverters.convertFromClientToServer(realClientValue, pd.getPropertyType(), realClientValue, $scope, propertyContext);
+            expect( changes2 ).toEqual( { vEr: 1, u: [ { k: 'text', v: 'hi' } ] } );
+        } );
+    
+        it( 'change obj subprop. by ref but do not send to server (so it still has changes to send for the model property), then send obj as arg to handler, change another subprop; both subprops changed by ref in the model should be then sent to server', () => {
+            var propertyContextForArg = {
+                getProperty: function() {},
+                getPushToServerCalculatedValue: function() { return pushToServerUtils.allow; },
+                isInsideModel: false
+            };
+
+            realClientValue.text = 'hello';
+            $scope.$digest();
+
+            expect(getAndClearNotified()).toEqual(true);
+    
+            // simulate a send to server as argument to a handler for this array (oldVal undefined) - to make sure it doesn't messup it's state if it's also a model prop. (it used getParentPropertyContext above which is for a model prop)
+            const changes = sabloConverters.convertFromClientToServer(realClientValue, pd.getPropertyType(), undefined,
+                $scope, propertyContextForArg);
+            $scope.$digest();
+            
+            expect( changes ).toEqual({ vEr: 0, v: {
+                    relationName: null,
+                    text: "hello",
+                    active: true,
+                    customType: { vEr: 0, v: { christmasTree: true } },
+                    customTypeArray: {
+                        vEr: 0,
+                        v: [{ vEr: 0, v: { christmasTree: true } }, { vEr: 0, v: { tea: "yes" } }]
+                    },
+                    customTypeArrayWithElReject: {
+                        vEr: 0,
+                        v: []
+                    }
+                } });
+    
+            realClientValue.customType.christmasTree = false;
+            $scope.$digest();
+    
+            expect(getAndClearNotified()).toEqual(true);
+    
+            const changes2 = sabloConverters.convertFromClientToServer(realClientValue, pd.getPropertyType(), realClientValue, $scope, propertyContext);
+            expect( changes2 ).toEqual( { vEr: 1, u: [ { k: 'text', v: 'hello' }, { k: 'customType', v: { vEr: 1, u: [ { k: 'christmasTree', v: false } ] } } ] } );
+        } );
 
     });
 

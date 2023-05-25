@@ -174,6 +174,76 @@ describe("Test array_custom_property suite", function() {
 			expect(realClientValue[iS].isChanged()).toEqual(false);
 		});
 		
+        it( 'send array as arg to handler, change an el. by ref', () => {
+            var propertyContextForArg = {
+                getProperty: function() {},
+                getPushToServerCalculatedValue: function() { return pushToServerUtils.allow; },
+                isInsideModel: false
+            };
+
+            // simulate a send to server as argument to a handler for this array (oldVal undefined) - to make sure it doesn't messup it's state if it's also a model prop. (it used getParentPropertyContext above which is for a model prop)
+            const changes = sabloConverters.convertFromClientToServer(realClientValue, arrayType, undefined,
+                $scope, propertyContextForArg);
+            $scope.$digest();
+            
+            expect( changes.vEr ).toBe( 0 );
+            expect( changes.v ).toBeDefined();
+            expect( changes.v.length ).toBe( 4 );
+            expect( changes.v[0] ).toBe( 1 );
+            expect( changes.v[1] ).toBe( 2 );
+            expect( changes.v[2] ).toBe( 3 );
+            expect( changes.v[3] ).toBe( 4 );
+    
+            realClientValue[2] = 55;
+            $scope.$digest();
+            expect(getAndClearNotified()).toEqual(true);
+    
+            const changes2 = sabloConverters.convertFromClientToServer(realClientValue, arrayType, realClientValue, $scope, propertyContext);
+            expect( changes2.vEr ).toBe( 1 );
+            expect( changes2.u.length ).toBe( 1 );
+            expect( changes2.u[0].i ).toBe( '2' );
+            expect( changes2.u[0].v ).toBe( 55 );
+        } );
+    
+        it( 'change array el. by ref but do not send to server (so it still has changes to send for the model property), then send array as arg to handler, change another tab by ref; both tabs changed by ref in the model should be then sent to server', () => {
+            var propertyContextForArg = {
+                getProperty: function() {},
+                getPushToServerCalculatedValue: function() { return pushToServerUtils.allow; },
+                isInsideModel: false
+            };
+
+            realClientValue[1] = 44;
+            $scope.$digest();
+
+            expect(getAndClearNotified()).toEqual(true);
+    
+            // simulate a send to server as argument to a handler for this array (oldVal undefined) - to make sure it doesn't messup it's state if it's also a model prop. (it used getParentPropertyContext above which is for a model prop)
+            const changes = sabloConverters.convertFromClientToServer(realClientValue, arrayType, undefined,
+                $scope, propertyContextForArg);
+            $scope.$digest();
+            
+            expect( changes.vEr ).toBe( 0 );
+            expect( changes.v ).toBeDefined();
+            expect( changes.v.length ).toBe( 4 );
+            expect( changes.v[0] ).toBe( 1 );
+            expect( changes.v[1] ).toBe( 44 );
+            expect( changes.v[2] ).toBe( 3 );
+            expect( changes.v[3] ).toBe( 4 );
+    
+            realClientValue[2] = 55;
+            $scope.$digest();
+    
+            expect(getAndClearNotified()).toEqual(true);
+    
+            const changes2 = sabloConverters.convertFromClientToServer(realClientValue, arrayType, realClientValue, $scope, propertyContext);
+            expect( changes2.vEr ).toBe( 1 );
+            expect( changes2.u.length ).toBe( 2 );
+            expect( changes2.u[1].i ).toBe( '2' );
+            expect( changes2.u[1].v ).toBe( 55 );
+            expect( changes2.u[0].i ).toBe( '1' );
+            expect( changes2.u[0].v ).toBe( 44 );
+        } );
+
 		// a test that sets a whole array value client side and checks that watches and stuff is operational is added in customJSONObjecttype.test.js
 	});
 

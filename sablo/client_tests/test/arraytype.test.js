@@ -244,6 +244,42 @@ describe("Test array_custom_property suite", function() {
             expect( changes2.u[0].v ).toBe( 44 );
         } );
 
+        it( 'send arr from model (with push to server reject) as arg to handler', () => {
+            const propertyContextForArg = {
+                getProperty: function() {},
+                getPushToServerCalculatedValue: function() { return pushToServerUtils.allow; },
+                isInsideModel: false
+            };
+            const propertyContextForModel = {
+                getProperty: function() {},
+                getPushToServerCalculatedValue: function() { return pushToServerUtils.reject; },
+                isInsideModel: true
+            };
+    
+            const val = sabloConverters.convertFromServerToClient({ v: ['test'], vEr: 1 },
+                   arrayType , undefined, undefined, undefined, $scope, propertyContextForModel);
+    
+            val[iS].setChangeNotifier(function() { changeNotified = true });
+    
+            // simulate a send to server as argument to a handler, which should work even though it is a model value with push to server reject
+            const changes = sabloConverters.convertFromClientToServer(val, arrayType, undefined, $scope,
+                propertyContextForArg);
+            
+            expect(changes.vEr).toBe(0);
+            expect(changes.v).toBeDefined();
+            expect(changes.v[0]).toBe('test');
+    
+            val[0] = 'test4';
+            $scope.$digest();
+    
+            expect(getAndClearNotified()).toBe(false);
+            
+            // inside the model it is push to server reject
+            const changes2 = sabloConverters.convertFromClientToServer(val, arrayType, val, $scope,
+                propertyContextForModel);
+            expect( changes2.n ).toBeTrue();
+        } );
+
 		// a test that sets a whole array value client side and checks that watches and stuff is operational is added in customJSONObjecttype.test.js
 	});
 

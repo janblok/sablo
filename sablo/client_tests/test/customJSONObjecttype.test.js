@@ -6,6 +6,9 @@ describe("Test custom_object_property suite", function() {
     var typesRegistry;
     var pushToServerUtils;
 
+    var untypedObjectWithREJECTOnSubpropType;
+    var untypedObjectWithREJECTOnSubpropContext;
+
     var propertyContext;
     var pd;
 
@@ -176,7 +179,10 @@ describe("Test custom_object_property suite", function() {
                         octWithCustomTypeAllow: {
                             t: ["JSON_obj", "comp1.octWithCustomType"],
                             s: 2
-                        }
+                        },
+                        untypedObjectREJECT: {
+                            t: ["JSON_obj", 'comp1.mytype'],
+                            s: 0 }
                     },
                     ftd: {
                         JSON_obj: {
@@ -223,6 +229,13 @@ describe("Test custom_object_property suite", function() {
                 getPushToServerCalculatedValue: function() { return pd.getPropertyPushToServer(); }, // property context says "reject" push to server on whole array
                 isInsideModel: true
             };
+
+            untypedObjectWithREJECTOnSubpropType = compSpec.getPropertyType('untypedObjectREJECT');
+            untypedObjectWithREJECTOnSubpropContext = {
+                getProperty: function() { },
+                getPushToServerCalculatedValue: function() { return compSpec.getPropertyPushToServer('untypedObjectREJECT'); },
+                isInsideModel: true
+            }
 
             realClientValue = sabloConverters.convertFromServerToClient(serverValue, pd.getPropertyType(), undefined,
                 undefined, undefined,
@@ -505,6 +518,37 @@ describe("Test custom_object_property suite", function() {
             expect( changes2 ).toEqual( { vEr: 1, u: [ { k: 'text', v: 'hello' }, { k: 'customType', v: { vEr: 1, u: [ { k: 'christmasTree', v: false } ] } } ] } );
         } );
 
+        it( 'send obj from model (with push to server reject) as arg to handler', () => {
+            const propertyContextForArg = {
+                getProperty: function() {},
+                getPushToServerCalculatedValue: function() { return pushToServerUtils.allow; },
+                isInsideModel: false
+            };
+    
+            const val = sabloConverters.convertFromServerToClient({ v: { sa007: 'test' }, vEr: 1 },
+                   untypedObjectWithREJECTOnSubpropType , undefined, undefined, undefined, $scope, untypedObjectWithREJECTOnSubpropContext);
+            val[iS].setChangeNotifier(function() { changeNotified = true });
+    
+            // simulate a send to server as argument to a handler, which should work even though it is a model value with push to server reject
+            const changes = sabloConverters.convertFromClientToServer(val, untypedObjectWithREJECTOnSubpropType, undefined, $scope,
+                propertyContextForArg);
+            
+            expect(changes.vEr).toBe(0);
+            expect(changes.v).toBeDefined();
+            expect(changes.v.sa007).toBe('test');
+    
+            val.sa007 = 'test4';
+            $scope.$digest();
+    
+            expect(getAndClearNotified()).toBe(false);
+            
+            // inside the model it is push to server reject
+            const changes2 = sabloConverters.convertFromClientToServer(val, untypedObjectWithREJECTOnSubpropType, val, $scope,
+                untypedObjectWithREJECTOnSubpropContext);
+            expect( changes2.n ).toBeTrue();
+        } );
+
     });
+
 
 });

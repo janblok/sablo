@@ -686,7 +686,7 @@ public class WebObjectSpecification extends PropertyDescription
 				JSONObject typeJSON = jsonObject.getJSONObject(typeName);
 				PropertyDescription pd = new PropertyDescriptionBuilder().withName(specName != null ? (specName + "." + typeName) : typeName).withType(
 					type).withProperties(
-						typeJSON.has("model") ? parseProperties("model", typeJSON, foundTypes, specName)
+						typeJSON.has("model") && typeJSON.get("model") instanceof JSONObject ? parseProperties("model", typeJSON, foundTypes, specName)
 							: parseProperties(typeName, jsonObject, foundTypes, specName))
 					.build();
 				type.setCustomJSONDefinition(pd);

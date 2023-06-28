@@ -1172,6 +1172,13 @@ public class BaseWindow implements IWindow
 				topContainer = topContainer.getParent();
 			}
 
+			if (topContainer == null)
+			{
+				log.warn("Trying to write a api call for component " + component.getName() + " but it was already removed from its parent",
+					new RuntimeException());
+				return;
+			}
+
 			w.key(API_KEY_FORM_NAME).value(topContainer.getName());
 			w.key(API_KEY_COMPONENT_NAME).value(component.getName());
 			w.key(API_KEY_FUNCTION_NAME).value(apiFunction.getName());

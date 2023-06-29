@@ -521,12 +521,14 @@ public class BaseWindow implements IWindow
 		try
 		{
 			boolean hasContentToSend = false;
+			boolean containsModelChanges = false;
 			JSONStringer w = new DebugFriendlyJSONStringer();
 			w.object();
 
 			if (dataWriter != null)
 			{
-				hasContentToSend = dataWriter.writeJSONContent(w, "msg", converter) || hasContentToSend;
+				containsModelChanges = dataWriter.writeJSONContent(w, "msg", converter);
+				hasContentToSend = containsModelChanges || hasContentToSend;
 			}
 
 			if (serviceCalls.size() > 0)
@@ -544,12 +546,13 @@ public class BaseWindow implements IWindow
 			{
 				Iterator<ComponentCall> it = componentApiCalls.iterator();
 				boolean callObjectStarted = false;
+				boolean asyncAPIs = true;
 				while (it.hasNext())
 				{
-					ComponentCall delayedCall = it.next();
-					if (!delayedCall.delayUntilFormLoads || isFormResolved(delayedCall.formContainer))
+					ComponentCall apiCall = it.next();
+					if (!apiCall.async) asyncAPIs = false;
+					if (!apiCall.delayUntilFormLoads || isFormResolved(apiCall.formContainer))
 					{
-						// so it is either async (so not 'delayUntilFormLoads') in which case it must execute anyway or it is 'delayUntilFormLoads' and the form is loaded/resolved so it can get executed on client
 						hasContentToSend = true;
 						it.remove();
 
@@ -560,13 +563,21 @@ public class BaseWindow implements IWindow
 						}
 
 						w.object();
-						delayedCall.writeToJSON(w);
+						apiCall.writeToJSON(w);
 						w.endObject();
 					}
 				}
 				if (callObjectStarted)
 				{
 					w.endArray();
+				}
+				if (!containsModelChanges && callObjectStarted && asyncAPIs)
+				{
+					// if we execute some async api and model is not already sent, we have to send it before execution, like we do for sync api
+					w.key("msg");
+					w.object();
+					writeAllComponentsChanges(w, "forms", ChangesToJSONConverter.INSTANCE);
+					w.endObject();
 				}
 			}
 
@@ -838,15 +849,15 @@ public class BaseWindow implements IWindow
 	public ComponentCall createComponentCall(WebComponent component, WebObjectFunctionDefinition apiFunction, Object[] arguments,
 		Map<String, JSONString> callContributions)
 	{
-		return createComponentCall(component, apiFunction, arguments, callContributions, false, null);
+		return createComponentCall(component, apiFunction, arguments, callContributions, false, null, false);
 	}
 
 	private ComponentCall createComponentCall(WebComponent component, WebObjectFunctionDefinition apiFunction, Object[] arguments,
 		Map<String, JSONString> callContributions,
-		boolean delayUntilFormLoads, Container formContainer)
+		boolean delayUntilFormLoads, Container formContainer, boolean async)
 	{
 		return new ComponentCall(component, apiFunction, processVarArgsIfNeeded(arguments, apiFunction.getParameters()), callContributions, delayUntilFormLoads,
-			formContainer);
+			formContainer, async);
 	}
 
 	private Object[] processVarArgsIfNeeded(Object[] arguments, IFunctionParameters parameters)
@@ -957,7 +968,7 @@ public class BaseWindow implements IWindow
 		if (delayedCall || isAsyncApiCall(apiFunction))
 		{
 			ComponentCall call = createComponentCall(receiver, apiFunction, arguments, callContributions, delayedCall,
-				delayedCall ? getFormContainer(receiver) : null);
+				delayedCall ? getFormContainer(receiver) : null, isAsyncApiCall(apiFunction));
 			addDelayedOrAsyncComponentCall(apiFunction, call);
 		}
 		else if (isAsyncNowApiCall(apiFunction))
@@ -1148,10 +1159,11 @@ public class BaseWindow implements IWindow
 		private final WebObjectFunctionDefinition apiFunction;
 		private final Map<String, JSONString> callContributions;
 		private final boolean delayUntilFormLoads;
+		private final boolean async;
 		private final Container formContainer;
 
 		public ComponentCall(WebComponent component, WebObjectFunctionDefinition apiFunction, Object[] arguments, Map<String, JSONString> callContributions,
-			boolean delayUntilFormLoads, Container formContainer)
+			boolean delayUntilFormLoads, Container formContainer, boolean async)
 		{
 			this.component = component;
 			this.apiFunction = apiFunction;
@@ -1159,6 +1171,7 @@ public class BaseWindow implements IWindow
 			this.callContributions = callContributions;
 			this.delayUntilFormLoads = delayUntilFormLoads;
 			this.formContainer = formContainer; // this is only relevant if delayUntilFormLoads == true
+			this.async = async;
 		}
 
 		/**

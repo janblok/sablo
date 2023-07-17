@@ -2,13 +2,12 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Sablo core library
 Bundle-SymbolicName: sablo;singleton:=true
-Bundle-Version: 2022.3.5.3747_LTS
+Bundle-Version: 2023.3.2.3844
 Export-Package: org.sablo,
  org.sablo.eventthread,
  org.sablo.filter,
  org.sablo.services.client,
  org.sablo.services.server,
- org.sablo.services.template,
  org.sablo.specification,
  org.sablo.specification.property,
  org.sablo.specification.property.types,
@@ -17,10 +16,7 @@ Export-Package: org.sablo,
  org.sablo.websocket,
  org.sablo.websocket.impl,
  org.sablo.websocket.utils
-Require-Bundle: org.junit,
- org.apache.commons.io,
- slf4j.api
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ClassPath: .
 Bundle-Vendor: Servoy
 Bundle-ActivationPolicy: lazy
@@ -28,8 +24,23 @@ Import-Package: javax.servlet;version="[4.0.0,5.0.0)",
  javax.servlet.http;version="[4.0.0,5.0.0)",
  javax.websocket;version="1.1.0",
  javax.websocket.server;version="1.1.0",
- org.json
+ org.apache.commons.io;version="2.8.0",
+ org.json,
+ org.slf4j;version="2.0.6"
 Automatic-Module-Name: sablo
 
 Name: /sablo/sabloService.spec
 Web-Service: True
+
+Name: /sablo/js/typesRegistry.spec
+Web-Service: True
+
+Name: /sablo/types/customJSONObject.spec
+Web-Service: True
+
+Name: /sablo/types/array.spec
+Web-Service: True
+
+Name: /sablo/types/objectType.spec
+Web-Service: True
+

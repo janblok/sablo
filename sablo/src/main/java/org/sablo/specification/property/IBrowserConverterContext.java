@@ -20,6 +20,7 @@ import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 
 /**
  * Context for data converters to/from browser.
+ *
  * @author gboros
  */
 public interface IBrowserConverterContext
@@ -28,14 +29,16 @@ public interface IBrowserConverterContext
 	BaseWebObject getWebObject();
 
 	/**
-	 * .spec file can define "pushToServer" setting for each property. But for nested properties we want that setting to be used by all
-	 * children of that property. So if the root property is defined as 'reject' then all nested properties will be reject as well.
+	 * This will give the actual computed push to server level for the property based on it's parent properties chain. (if it's a nested prop)
 	 *
-	 * We cannot store this in the PropertyDescriptions directly cause the same custom/nested type can be used in multiple properties in the spec,
-	 * sometimes with pushToServer reject for example and sometimes with pushToServer shallow for example.
+	 * We cannot store this in the PropertyDescription objects only and use it from there because the same custom/nested type (so PropertyDescription)
+	 * can be used in multiple subtrees in properties in the spec file, sometimes with pushToServer 'reject' and sometimes with pushToServer 'shallow'
+	 * for example somewhere in parents. So the same PropertyDescription's sub-properties can sometimes be 'reject' sometimes 'shallow' etc.
 	 *
-	 * @return one of the PushToServerEnum values as specified in the spec file (for root property).
+	 * @see PushToServerEnum#combineWithParent(PushToServerEnum) for details on how nested pushToServer levels are computed.
 	 */
-	PushToServerEnum getPushToServerValue();
+	PushToServerEnum getComputedPushToServerValue();
+
+	IBrowserConverterContext newInstanceWithPushToServer(PushToServerEnum npts);
 
 }

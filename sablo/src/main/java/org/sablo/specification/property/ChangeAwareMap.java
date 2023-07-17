@@ -95,7 +95,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	}
 
 	/**
-	 * Gets the current changes (in immutable mode). PLEASE MAKE SURE TO call {@link Changes#doneHandling()} once you are done handling the changes and will not longer use the returned reference.<br/><br/>
+	 * Gets the current changes (in immutable mode). PLEASE MAKE SURE TO call {@link Changes#doneHandling()} once you are done handling the changes and will no longer use the returned reference.<br/><br/>
 	 * The idea is that if change aware map receives new updates while the changes are in immutable mode (so before doneHandling is called which means someone is still reading/iterating on them in toJSON probably),
 	 * the changes object used by the map will switch to another reference to keep what this method returns immutable; but in order to not recreate changes all the time, once {@link Changes#doneHandling()} will
 	 * be called, changes object will exit "immutable mode" and will be cleared/prepared for reuse.
@@ -132,8 +132,6 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 
 	public static interface IChangeSetter
 	{
-		public void markMustSendTypeToClient();
-
 		public void markElementChangedByRef(String key);
 
 		public void markAllChanged();
@@ -144,7 +142,6 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		private final Set<String> keysWithUpdates = new HashSet<String>();
 		private final Set<String> keysChangedByRef = new HashSet<String>();
 		private boolean allChanged;
-		private boolean mustSendTypeToClient;
 
 		private boolean immutableMode = false;
 
@@ -156,6 +153,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 
 		public void doneHandling()
 		{
+			// careful, this will/should get called on the old changes obj, if immutable mode resulted in a new changes object being created
 			immutableMode = false;
 			clearChanges();
 		}
@@ -163,7 +161,6 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		private void clearChanges()
 		{
 			allChanged = false;
-			mustSendTypeToClient = false;
 			keysWithUpdates.clear();
 			keysChangedByRef.clear();
 		}
@@ -176,11 +173,6 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		public Set<String> getKeysChangedByRef()
 		{
 			return keysChangedByRef;
-		}
-
-		public boolean mustSendTypeToClient()
-		{
-			return mustSendTypeToClient;
 		}
 
 		public boolean mustSendAll()
@@ -199,23 +191,13 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 			}
 		}
 
-		public void markMustSendTypeToClient()
-		{
-			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
-
-			boolean oldMustSendTypeToClient = changes.mustSendTypeToClient;
-			changes.mustSendTypeToClient = true;
-			if (changeMonitor != null && changes.keysWithUpdates.size() == 0 && changes.keysChangedByRef.size() == 0 && !changes.allChanged &&
-				!oldMustSendTypeToClient) changeMonitor.valueChanged();
-		}
-
 		private void markElementContentsUpdated(String key)
 		{
 			changeInstanceIfCurrentlyImmutable(); // this can change the "changes" ref. that is why below we always use changes. instead of directly the properties
 
 			// add it only if it is not already changed by ref - in which case it will be sent wholly anyway
 			if (changeMonitor != null && !changes.keysChangedByRef.contains(key) && changes.keysWithUpdates.add(key) && changes.keysChangedByRef.size() == 0 &&
-				!changes.allChanged && !changes.mustSendTypeToClient) changeMonitor.valueChanged();
+				!changes.allChanged) changeMonitor.valueChanged();
 		}
 
 		public void markElementChangedByRef(String key)
@@ -224,7 +206,7 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 
 			if (changes.keysChangedByRef.add(key))
 			{
-				if (changeMonitor != null && changes.keysWithUpdates.size() == 0 && !changes.allChanged && !changes.mustSendTypeToClient)
+				if (changeMonitor != null && changes.keysWithUpdates.size() == 0 && !changes.allChanged)
 					changeMonitor.valueChanged();
 				else changes.keysWithUpdates.remove(key); // if it was in 'keysWithUpdates' already it did change content previously but now it changed completely by ref; don't send it twice to client in changes
 			}
@@ -236,13 +218,13 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 
 			boolean alreadyCh = changes.allChanged;
 			changes.allChanged = true;
-			if (changeMonitor != null && !alreadyCh && changes.keysWithUpdates.size() == 0 && changes.keysChangedByRef.size() == 0 &&
-				!changes.mustSendTypeToClient) changeMonitor.valueChanged();
+			if (changeMonitor != null && !alreadyCh && changes.keysWithUpdates.size() == 0 && changes.keysChangedByRef.size() == 0)
+				changeMonitor.valueChanged();
 		}
 
 		public boolean isChanged()
 		{
-			return (allChanged || mustSendTypeToClient || keysWithUpdates.size() > 0 || keysChangedByRef.size() > 0);
+			return (allChanged || keysWithUpdates.size() > 0 || keysChangedByRef.size() > 0);
 		}
 
 	}
@@ -388,6 +370,8 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 	@Override
 	public void detach()
 	{
+		changeMonitor = null;
+
 		Map<String, WT> wrappedBaseList = getWrappedBaseMap();
 		for (java.util.Map.Entry<String, WT> e : wrappedBaseList.entrySet())
 		{
@@ -401,7 +385,6 @@ public class ChangeAwareMap<ET, WT> extends AbstractMap<String, ET> implements I
 		}
 
 		webObjectContext = null;
-		changeMonitor = null;
 	}
 
 	// TODO currently here we use the wrapped value for ISmartPropertyValue, but BaseWebObject uses the unwrapped value; I think the BaseWebObject

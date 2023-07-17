@@ -24,7 +24,6 @@ import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.util.ValueReference;
-import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 
 /**
@@ -80,8 +79,7 @@ public class FontPropertyType extends DefaultPropertyType<Font> implements IClas
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter w, String key, Font font, PropertyDescription pd, DataConversion clientConversion,
-		IBrowserConverterContext dataConverterContext) throws JSONException
+	public JSONWriter toJSON(JSONWriter w, String key, Font font, PropertyDescription pd, IBrowserConverterContext dataConverterContext) throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(w, key);
 		w.object();

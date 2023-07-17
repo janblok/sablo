@@ -28,11 +28,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.sablo.specification.Package.DuplicateEntityException;
 import org.sablo.specification.Package.IPackageReader;
-import org.sablo.specification.property.types.TypesRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +49,8 @@ class WebSpecReader
 	private final Set<String> packagesWithGloballyDefinedTypes = new HashSet<>(); // packageNames of packages that have globally defined types
 	private final IDefaultComponentPropertiesProvider defaultComponentPropertiesProvider;
 
+	private final ClientSideTypeCache clientSideTypeCache;
+
 	private final List<IPackageReader> activePackageReaders;
 
 	private final String attributeName;
@@ -70,6 +69,8 @@ class WebSpecReader
 		this.attributeName = attributeName;
 		this.specReloadSubject = specReloadSubject;
 		this.defaultComponentPropertiesProvider = defaultComponentPropertiesProvider;
+		this.clientSideTypeCache = new ClientSideTypeCache();
+
 		load();
 	}
 
@@ -84,6 +85,7 @@ class WebSpecReader
 		{
 			lastLoadTimestamp = System.currentTimeMillis();
 
+			clientSideTypeCache.clear();
 			cachedComponentOrServiceDescriptions.clear();
 			cachedLayoutDescriptions.clear();
 			allWebObjectSpecifications.clear();
@@ -97,7 +99,6 @@ class WebSpecReader
 			}
 			try
 			{
-				readGloballyDefinedTypes(packages);
 				cacheWebObjectSpecs(packages, null);
 			}
 			finally
@@ -198,18 +199,10 @@ class WebSpecReader
 				}
 				try
 				{
-					if (readGloballyDefinedTypes(packages))
+					if (cacheWebObjectSpecs(packages, removedOrReloadedSpecs)) // cache web objects
 					{
-						load(); // reload all because added packages have global types
+						load(); // reload all again because a package project replaced a zip project and it had global types
 						shouldStillFireReloadListeners = false;
-					}
-					else
-					{
-						if (cacheWebObjectSpecs(packages, removedOrReloadedSpecs)) // cache web objects
-						{
-							load(); // reload all again because a package project replaced a zip project and it had global types
-							shouldStillFireReloadListeners = false;
-						}
 					}
 				}
 				finally
@@ -249,52 +242,11 @@ class WebSpecReader
 			for (String specName : removedWebObjectPackageSpecs.getSpecifications().keySet())
 		{
 			allWebObjectSpecifications.remove(specName);
+			clientSideTypeCache.clear(specName);
 			if (removedOrReloadedSpecs != null) removedOrReloadedSpecs.add(specName);
 		}
 
 		return false;
-	}
-
-	protected synchronized boolean readGloballyDefinedTypes(List<Package> packages)
-	{
-		boolean globalTypesFound = false;
-		try
-		{
-			JSONObject typeContainer = new JSONObject();
-			JSONObject allGlobalTypesFromAllPackages = new JSONObject();
-			typeContainer.put(WebObjectSpecification.TYPES_KEY, allGlobalTypesFromAllPackages);
-
-			for (Package p : packages)
-			{
-				try
-				{
-					if (p.appendGlobalTypesJSON(allGlobalTypesFromAllPackages))
-					{
-						globalTypesFound = true;
-						packagesWithGloballyDefinedTypes.add(p.getPackageName());
-					}
-				}
-				catch (Exception e)
-				{
-					log.error("Cannot read globally defined types from package: " + p.getName(), e); //$NON-NLS-1$
-				}
-			}
-
-			try
-			{
-				TypesRegistry.addTypes(WebObjectSpecification.getTypes(typeContainer).values());
-			}
-			catch (Exception e)
-			{
-				log.error("Cannot parse flattened global types - from all web component packages.", e);
-			}
-		}
-		catch (JSONException e)
-		{
-			// should never happen
-			log.error("Error Creating a simple JSON object hierarchy while reading globally defined types...");
-		}
-		return globalTypesFound;
 	}
 
 	private boolean cacheWebObjectSpecs(List<Package> packages, List<String> removedOrReloadedSpecs)
@@ -370,48 +322,57 @@ class WebSpecReader
 		list.add(p.getReader());
 
 		// cache component or service specs if available
-		PackageSpecification<WebObjectSpecification> webComponentPackageSpecification = p.getWebObjectDescriptions(attributeName,
-			defaultComponentPropertiesProvider);
-		if (webComponentPackageSpecification.getSpecifications().size() > 0 &&
-			!cachedComponentOrServiceDescriptions.containsKey(webComponentPackageSpecification.getPackageName()))
+		if (!cachedComponentOrServiceDescriptions.containsKey(p.getPackageName()))
 		{
-			cachedComponentOrServiceDescriptions.put(webComponentPackageSpecification.getPackageName(), webComponentPackageSpecification);
-			Map<String, WebObjectSpecification> webComponentDescriptions = webComponentPackageSpecification.getSpecifications();
-			for (WebObjectSpecification desc : webComponentDescriptions.values())
+			PackageSpecification<WebObjectSpecification> webObjectPackageSpecification = p.getWebObjectDescriptions(attributeName,
+				defaultComponentPropertiesProvider);
+			if (webObjectPackageSpecification.getSpecifications().size() > 0)
 			{
-				WebObjectSpecification old = allWebObjectSpecifications.put(desc.getName(), desc); // TODO should we check against allLayoutSpecifications as well?
-				if (old != null)
+				cachedComponentOrServiceDescriptions.put(webObjectPackageSpecification.getPackageName(), webObjectPackageSpecification);
+				Map<String, WebObjectSpecification> webComponentDescriptions = webObjectPackageSpecification.getSpecifications();
+				for (WebObjectSpecification desc : webComponentDescriptions.values())
 				{
-					String s = "Duplicate web object definition found; name: " + old.getName() + ". One is in package '" + old.getPackageName() +
-						"' and another in package '" +
-						desc.getPackageName() + "'.";
-					log.error(s);
-					p.getReader().reportError(desc.getSpecURL().toString(), new DuplicateEntityException(s));
+					WebObjectSpecification old = allWebObjectSpecifications.put(desc.getName(), desc); // TODO should we check against allLayoutSpecifications as well?
+					if (old != null)
+					{
+						String s = "Duplicate web object definition found; name: " + old.getName() + ". One is in package '" + old.getPackageName() +
+							"' and another in package '" +
+							desc.getPackageName() + "'.";
+						log.error(s);
+						p.getReader().reportError(desc.getSpecURL().toString(), new DuplicateEntityException(s));
+					}
 				}
 			}
 		}
 
 		// cache layout specs if available
-		PackageSpecification<WebLayoutSpecification> layoutPackageSpecification = p.getLayoutDescriptions();
-		if (layoutPackageSpecification.getSpecifications().size() > 0 &&
-			!cachedLayoutDescriptions.containsKey(layoutPackageSpecification.getPackageName()))
+		if (!cachedLayoutDescriptions.containsKey(p.getPackageName()))
 		{
-			cachedLayoutDescriptions.put(layoutPackageSpecification.getPackageName(), layoutPackageSpecification);
-			Map<String, WebLayoutSpecification> layoutDescriptions = layoutPackageSpecification.getSpecifications();
-			for (WebLayoutSpecification desc : layoutDescriptions.values())
+			PackageSpecification<WebLayoutSpecification> layoutPackageSpecification = p.getLayoutDescriptions();
+			if (layoutPackageSpecification.getSpecifications().size() > 0)
 			{
-				WebObjectSpecification old = allLayoutSpecifications.put(desc.getName(), desc); // TODO should we check against allWebObjectSpecifications as well?
-				if (old != null)
+				cachedLayoutDescriptions.put(layoutPackageSpecification.getPackageName(), layoutPackageSpecification);
+				Map<String, WebLayoutSpecification> layoutDescriptions = layoutPackageSpecification.getSpecifications();
+				for (WebLayoutSpecification desc : layoutDescriptions.values())
 				{
-					String s = "Duplicate layout definition found; name: " + old.getName() + ". One is in package '" + old.getPackageName() +
-						"' and one in package '" + desc.getPackageName() + "'.";
-					log.error(s);
-					p.getReader().reportError(desc.getSpecURL().toString(), new DuplicateEntityException(s));
+					WebObjectSpecification old = allLayoutSpecifications.put(desc.getName(), desc); // TODO should we check against allWebObjectSpecifications as well?
+					if (old != null)
+					{
+						String s = "Duplicate layout definition found; name: " + old.getName() + ". One is in package '" + old.getPackageName() +
+							"' and one in package '" + desc.getPackageName() + "'.";
+						log.error(s);
+						p.getReader().reportError(desc.getSpecURL().toString(), new DuplicateEntityException(s));
+					}
 				}
 			}
 		}
 
 		return false;
+	}
+
+	public ClientSideTypeCache getClientSideTypeCache()
+	{
+		return clientSideTypeCache; // TODO do we need to create a copy similar to what getSpecProviderState() does?
 	}
 
 	/**
@@ -426,6 +387,5 @@ class WebSpecReader
 		}
 		return specProviderState;
 	}
-
 
 }

@@ -1,51 +1,68 @@
 /// <reference path="../../../../typings/angularjs/angular.d.ts" />
 /// <reference path="../../../../typings/sablo/sablo.d.ts" />
 /// <reference path="../../../../typings/jquery/jquery.d.ts" />
+/// <reference path="websocket.ts" />
 
 namespace sablo_app { export class Model{}}
 
 angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabloConstants", {
 	modelChangeNotifier: "$modelChangeNotifier"
-}).factory('$sabloApplication', function($rootScope: angular.IRootScopeService, $window: angular.IWindowService, $timeout: angular.ITimeoutService, $q: angular.IQService, $log: sablo.ILogService, $webSocket: sablo.IWebSocket, $sabloConverters: sablo.ISabloConverters, $sabloUtils: sablo.ISabloUtils, $sabloConstants: sablo.SabloConstants, webStorage) {
+}).factory('$sabloApplication', function($rootScope: angular.IRootScopeService, $window: angular.IWindowService, $timeout: angular.ITimeoutService,
+		$q: angular.IQService, $log: sablo.ILogService, $webSocket: sablo.IWebSocket, $sabloConverters: sablo.ISabloConverters,
+		$sabloUtils: sablo.ISabloUtils, $sabloConstants: sablo.SabloConstants, webStorage,
+		$typesRegistry: sablo.ITypesRegistry) {
 
 	// close the connection to the server when application is unloaded
-	$window.addEventListener('unload', function(event) {
+	$window.addEventListener('beforeunload', function(event) {
         sessionStorage.removeItem('svy_session_lock');
-		$webSocket.disconnect();
+		//$webSocket.disconnect();
 	});
     
     if (sessionStorage.getItem('svy_session_lock')) {
         webStorage.session.remove('windownr');
         webStorage.session.remove('clientnr');
-        console.warn('Found a lock in session storage. The storage was cleared.');
+        $log.warn('Found a lock in session storage. The storage was cleared.');
     }
 
     sessionStorage.setItem('svy_session_lock', '1');
 
+    var inLogCall = false;
 	var oldError = $window.console.error;
 	var oldLog = $window.console.log;
 	$window.console.log =  function(msg) {
 		try
 		{
 			oldLog.apply($window.console, arguments);
-			callService('consoleLogger', 'info', { message: msg }, true)
+			if (!inLogCall) {
+                inLogCall= true;
+                callService('consoleLogger', 'info', { message: msg }, true)
+		    }	
 		}
 		catch(e)
 		{
 			oldError.apply($window.console, [e]);
 		}
+		finally {
+            inLogCall = false;
+        }
 	}
 	
 	$window.console.error =  function(msg) {
 		try
 		{
 			oldError.apply($window.console, arguments);
-			callService('consoleLogger', 'error', { message: msg }, true)
+            if (!inLogCall) {
+                inLogCall= true;
+                callService('consoleLogger', 'error', { message: msg }, true)
+            }   
 		}
 		catch(e)
 		{
 			oldError.apply($window.console, [e]);
 		}
+        finally {
+            inLogCall = false;
+        }
 	}
 	
 	var oldWarn = $window.console.warn;
@@ -53,12 +70,18 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		try
 		{
 			oldWarn.apply($window.console, arguments);
-			callService('consoleLogger', 'warn', { message: msg }, true)
+            if (!inLogCall) {
+                inLogCall= true;
+                callService('consoleLogger', 'warn', { message: msg }, true)
+            }   
 		}
 		catch(e)
 		{
 			oldError.apply($window.console, [e]);
 		}
+        finally {
+            inLogCall = false;
+        }
 	}
 	
 	var oldInfo = $window.console.info;
@@ -66,12 +89,18 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		try
 		{
 			oldInfo.apply($window.console, arguments);
-			callService('consoleLogger', 'info', { message: msg }, true)
+            if (!inLogCall) {
+                inLogCall= true;
+	       		callService('consoleLogger', 'info', { message: msg }, true)
+            }   
 		}
 		catch(e)
 		{
 			oldError.apply($window.console, [e]);
 		}
+        finally {
+            inLogCall = false;
+        }
 	}
 	
 	var oldDebug = $window.console.debug;
@@ -79,12 +108,18 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		try
 		{
 			oldDebug.apply($window.console, arguments);
-			callService('consoleLogger', 'debug', { message: msg }, true)
+            if (!inLogCall) {
+                inLogCall= true;
+    			callService('consoleLogger', 'debug', { message: msg }, true)
+            }   
 		}
 		catch(e)
 		{
 			oldError.apply($window.console, [e]);
 		}
+        finally {
+            inLogCall = false;
+        }
 	}
 	
 	$window.onerror = function(message, source, lineno, colno, error) {
@@ -96,13 +131,13 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 	// (3 way binding)
 	var currentFormUrl = null;
 	var formStates: { [s: string]: sablo.FormState; } = {};
-	var formStatesConversionInfo = {};
+	var formStatesDynamicClientSideTypes = {};
 
 	var locale = null;
 
 	var deferredFormStates = {};
 	var deferredFormStatesWithData = {};
-	var getChangeNotifierGenerator = function(formName: string, beanName: string) {
+	var getChangeNotifierGenerator = function(formName: string, beanName: string): sablo.PropertyChangeNotifierGeneratorFunction {
 		return function(property: string) {
 			return function() {
 				// will be called by the custom property when it needs to send changes server size
@@ -142,45 +177,70 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		return getFormStateImpl(name, true);
 	}
 
-	var getComponentChanges = function(now, prev, beanConversionInfo, parentSize, property) {
-		var changes = {}
-		if (property) {
-			if (beanConversionInfo && beanConversionInfo[property]) changes[property] = $sabloConverters.convertFromClientToServer(now, beanConversionInfo[property], prev);
-			else changes[property] = $sabloUtils.convertClientObject(now)
-		} else {
-			// first build up a list of all the properties both have.
-			var fulllist = $sabloUtils.getCombinedPropertyNames(now, prev);
-			var prop;
+	var getComponentPropertyChange = function(now: any, prev: any, typeOfProperty: sablo.IType<any>, propertyName: string,
+			scope: angular.IScope, propertyContext: sablo.IPropertyContext, changeNotifierGenerator: sablo.PropertyChangeNotifierGeneratorFunction) {
+		const changes = {};
+		if (!propertyName) throw new Error('propertyName should not be null here!');
+		changes[propertyName] = $sabloConverters.convertFromClientToServer(now, typeOfProperty, prev, scope, propertyContext);
 
-			for (prop in fulllist) {
-				var changed;
-				if (prev && now) {
-					changed = $sabloUtils.isChanged(now[prop], prev[prop], beanConversionInfo ? beanConversionInfo[prop] : undefined)
-				} else {
-					changed = true; // true if just one of them is undefined; both cannot be undefined at this point if we are already iterating on combined property names
-				}
+        // set/update change notifier just in case a new full value was set into a smart property type that needs a changeNotifier for that specific property
+		setChangeNotifierIfSmartProperty(now, propertyName, changeNotifierGenerator);
+		
+		return changes;
+	}
 
-				if (changed) {
-					changes[prop] = now[prop];
-				}
+	function getAllChanges(now: object, prev: object, dynamicTypes: object, scope: angular.IScope, propertyContextCreator: sablo.IPropertyContextCreator) {
+		const changes = {}
+		// first build up a list of all the properties both have.
+		const fulllist = $sabloUtils.getCombinedPropertyNames(now, prev);
+
+		for (const prop in fulllist) {
+			let changed: boolean;
+			if (prev && now) {
+				changed = $sabloUtils.isChanged(now[prop], prev[prop], dynamicTypes?.[prop])
+			} else {
+				changed = true; // true if just one of them is undefined; both cannot be undefined at this point if we are already iterating on combined property names
 			}
-			for (prop in changes) {
-				if (beanConversionInfo && beanConversionInfo[prop]) changes[prop] = $sabloConverters.convertFromClientToServer(changes[prop], beanConversionInfo[prop], prev ? prev[prop] : undefined);
-				else changes[prop] = $sabloUtils.convertClientObject(changes[prop])
+
+			if (changed) {
+				changes[prop] = now[prop];
 			}
+		}
+		for (const prop in changes) {
+			changes[prop] = $sabloConverters.convertFromClientToServer(changes[prop], dynamicTypes?.[prop], prev ? prev[prop] : undefined, scope, propertyContextCreator.withPushToServerFor(prop));
 		}
 		return changes;
 	};
 
-	var sendChanges = function(now, prev, formname, beanname, property) {
-		var beanConversionInfo = $sabloUtils.getInDepthProperty(formStatesConversionInfo, formname, beanname);
+	var sendChanges = function(now, prev, formname, beanname, propertyName) {
+		var dynamicTypes = $sabloUtils.getInDepthProperty(formStatesDynamicClientSideTypes, formname, beanname);
+		
+		const formState = formStates[formname];
+		const formScope = formState.getScope();
+		const componentModel = formState.model[beanname];
+		const componentSpec = $typesRegistry.getComponentSpecification($sabloUtils.getInDepthProperty(formStates, formname, "componentSpecNames", beanname));
+		const propertyContextCreator = new sablo.typesRegistry.RootPropertyContextCreator(
+				(propertyName: string) => { return componentModel ? componentModel[propertyName] : undefined },
+				componentSpec);
 
-		var changes = getComponentChanges(now, prev, beanConversionInfo, formStates[formname].properties.designSize, property);
+		var changes: any;
+		var propertyType: sablo.IType<any>;
+		if (angular.isDefined(propertyName)) {
+			// a component property; get it's type (either static or dynamic)
+			propertyType = dynamicTypes[propertyName]; // try dynamic types for non-viewport props.
+			if (!propertyType) { // try static types for props.
+				if (componentSpec) propertyType = componentSpec.getPropertyType(propertyName);
+			}
+
+			changes = getComponentPropertyChange(now, prev, propertyType, propertyName, formScope, propertyContextCreator.withPushToServerFor(propertyName),
+			             getChangeNotifierGenerator(formname, beanname));
+		} else changes = getAllChanges(now, prev, dynamicTypes, formScope, propertyContextCreator); // probably for a form's own properties
+		
 		if (Object.getOwnPropertyNames(changes).length > 0) {
-			// if this is a simple property change without any special conversions then then push the old value.
-			if (angular.isDefined(property) && !(beanConversionInfo && beanConversionInfo[property])) {
+			// if this is a simple property change without any special client side type - then push the old value as well
+			if (angular.isDefined(propertyName) && !propertyType) {
 				var oldvalues = {};
-				oldvalues[property] = $sabloUtils.convertClientObject(prev)
+				oldvalues[propertyName] = $sabloConverters.convertFromClientToServer(prev, undefined, undefined, formScope, propertyContextCreator.withPushToServerFor(propertyName)); // just for any default conversions
 				callService('formService', 'dataPush', { formname: formname, beanname: beanname, changes: changes, oldvalues: oldvalues }, true)
 			}
 			else {
@@ -189,39 +249,46 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 
 		}
 	};
+	
+	const setChangeNotifierIfSmartProperty = function(propertyValue: any, propertyName: string, changeNotifierGenerator: sablo.PropertyChangeNotifierGeneratorFunction) {
+        if (propertyValue && propertyValue[$sabloConverters.INTERNAL_IMPL] && propertyValue[$sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
+            // setChangeNotifier can be called now after the new client side type is applied (changeNotifierGenerator(key) will probably use the values in model and that has to point to the new value if reference was changed)
+            // as setChangeNotifier on smart property types might end up calling the change notifier right away to announce it already has changes (because for example
+            // the convertFromServerToClient on that property type above might have triggered some listener to the component that uses it which then requested
+            // another thing from the property type and it then already has changes...) // TODO should we decouple this scenario? if we are still processing server to client changes when change notifier is called we could trigger the change notifier later/async for sending changes back to server...
+            let changeNotfier = changeNotifierGenerator(propertyName);
+            propertyValue[$sabloConverters.INTERNAL_IMPL].setChangeNotifier(changeNotfier);
+            
+            // we check for changes anyway in case a property type doesn't do it itself as described in the comment above
+            if (propertyValue[$sabloConverters.INTERNAL_IMPL].isChanged && propertyValue[$sabloConverters.INTERNAL_IMPL].isChanged()) changeNotfier();
+        }
+    }
 
-	var applyBeanData = function(beanModel, beanData, containerSize, changeNotifierGenerator, beanConversionInfo, newConversionInfo, componentScope) {
+	var applyBeanData = function(beanModel: any, beanData: any, containerSize: any, changeNotifierGenerator: sablo.PropertyChangeNotifierGeneratorFunction,
+			componentSpecName: string /*to access static client side types of comp*/, dynamicPropertyTypesHolder: object /*some types decide at runtime the type needed on client - for example dataprovider type could send date, and we keep that info here*/,
+			componentScope: angular.IScope) {
 
-		if (newConversionInfo) { // then means beanConversionInfo should also be defined - we assume that
-			// beanConversionInfo will be granularly updated in the loop below
-			// (to not drop other property conversion info when only one property is being applied granularly to the bean)
-			beanData = $sabloConverters.convertFromServerToClient(beanData, newConversionInfo, beanModel, componentScope, function(propertyName: string) { return beanModel ? beanModel[propertyName] : undefined });
-		}
+		const componentSpec:sablo.IWebObjectSpecification = $typesRegistry.getComponentSpecification(componentSpecName); // get static client side types for this component - if it has any 
+		const propertyContextCreator = new sablo.typesRegistry.RootPropertyContextCreator(
+				(propertyName: string) => ( beanModel ? beanModel[propertyName] : undefined ),
+				componentSpec);
 
-		// apply the new values and conversion info
+		// apply the new values and client side type conversions
 		for (var key in beanData) {
 			let oldModelValueForKey = beanModel[key];
-			beanModel[key] = beanData[key];
+			let propertyType = componentSpec?.getPropertyType(key); // get static client side type if any
+			let oldTypeForKey = propertyType ? propertyType : dynamicPropertyTypesHolder[key];
+			
+			beanModel[key] = $sabloConverters.convertFromServerToClient(beanData[key], propertyType, oldModelValueForKey,
+					dynamicPropertyTypesHolder, key, componentScope, propertyContextCreator.withPushToServerFor(key));
+			
+			if (!propertyType) propertyType = dynamicPropertyTypesHolder[key]; // get any new dynamic client side type - if needed
 
-			// remember conversion info for when it will be sent back to server - it might need special conversion as well
-			if (newConversionInfo && newConversionInfo[key]) {
-				let oldConversionInfoForKey = beanConversionInfo[key];
-				beanConversionInfo[key] = newConversionInfo[key];
-				
-				// if the value changed and it wants to be in control of it's changes, or if the conversion info for this value changed (thus possibly preparing an old value for being change-aware without changing the value reference)
-				if ((oldModelValueForKey !== beanData[key] || oldConversionInfoForKey !== newConversionInfo[key])
-						&& beanData[key] && beanData[key][$sabloConverters.INTERNAL_IMPL] && beanData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier) {
-					// setChangeNotifier can be called now after the new conversion info and value are set (changeNotifierGenerator(key) will probably use the values in model and that has to point to the new value if reference was changed)
-					// as setChangeNotifier on smart property types might end up calling the change notifier right away to announce it already has changes (because for example
-					// the convertFromServerToClient on that property type above might have triggered some listener to the component that uses it which then requested
-					// another thing from the property type and it then already has changes...) // TODO should we decouple this scenario? if we are still processing server to client changes when change notifier is called we could trigger the change notifier later/async for sending changes back to server...
-					let changeNotfier = changeNotifierGenerator(key);
-					beanData[key][$sabloConverters.INTERNAL_IMPL].setChangeNotifier(changeNotfier);
-					
-					// we check for changes anyway in case a property type doesn't do it itself as described in the comment above
-					if (beanData[key][$sabloConverters.INTERNAL_IMPL].isChanged && beanData[key][$sabloConverters.INTERNAL_IMPL].isChanged()) changeNotfier();
-				}
-			} else if (beanConversionInfo && angular.isDefined(beanConversionInfo[key])) delete beanConversionInfo[key]; // this prop. no longer has conversion info!
+			if (propertyType) {
+				// if the value changed and it wants to be in control of it's changes, or if the client side type for this value changed (thus possibly preparing an old value for being change-aware without changing the value reference)
+				if (oldModelValueForKey !== beanModel[key] || oldTypeForKey !== propertyType)
+				    setChangeNotifierIfSmartProperty(beanModel[key], key, changeNotifierGenerator);
+			}
 		}
 		
 		// if the model had a change notifier call it now after everything is set.
@@ -239,8 +306,17 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		if (state && state.model) {
 			for (var componentName in state.model) {
 				if (componentName !== '') {
-					$sabloConverters.updateAngularScope(state.model[componentName],
-						$sabloUtils.getInDepthProperty(formStatesConversionInfo, formName, componentName), formScope);
+					const componentSpecName = state.componentSpecNames[componentName];
+					const staticPropertyTypes = $typesRegistry.getComponentSpecification(componentSpecName); 
+					const dynamicPropertyTypes = $sabloUtils.getInDepthProperty(formStatesDynamicClientSideTypes, formName, componentName);
+					const componentModel = state.model[componentName];
+					
+					for (let propertyName in componentModel) {
+						let typeOfProp = staticPropertyTypes?.getPropertyType(propertyName);
+						if (!typeOfProp) typeOfProp =  dynamicPropertyTypes[propertyName];
+						
+						if (typeOfProp) typeOfProp.updateAngularScope(componentModel[propertyName], formScope); 
+					}
 				}
 			}
 		} else if (formScope) {
@@ -255,7 +331,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 	}
 
 	var currentServiceCallCallbacks = []
-	var currentServiceCallDone;
+	var currentServiceCallDone: boolean;
 	var currentServiceCallWaiting = 0
 	var currentServiceCallTimeouts;
 	function addToCurrentServiceCall(func) {
@@ -288,7 +364,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		return $q.reject(arg);
 	}
 
-	function waitForServiceCallbacks(promise, times) {
+	function waitForServiceCallbacks(promise, times): angular.IPromise<any> {
 		if (currentServiceCallWaiting > 0) {
 			// Already waiting
 			return promise
@@ -297,14 +373,11 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		currentServiceCallDone = false
 		currentServiceCallWaiting = times.length
 		currentServiceCallTimeouts = times.map(function(t) { return setTimeout(callServiceCallbacksWhenDone, t) });
-		return Object.defineProperty(promise.then(markServiceCallDone, markServiceCallFailed), "requestInfo", {
-			set(value) {
-				promise.requestInfo = value;
-			}
-		});
+
+		return $webSocket.wrapPromiseToPropagateCustomRequestInfoInternal(promise, promise.then(markServiceCallDone, markServiceCallFailed));
 	}
 
-	function callService(serviceName:string, methodName:string, argsObject, async?:boolean) {
+	function callService(serviceName:string, methodName:string, argsObject, async?:boolean): angular.IPromise<any> {
 		var promise = getSession().callService(serviceName, methodName, argsObject, async)
 		return async ? promise : waitForServiceCallbacks(promise, [100, 200, 500, 1000, 3000, 5000])
 	}
@@ -318,7 +391,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 	}
 	
     var getSessionId = function() {
-   	 console.log("depricated api usage, use getClientNr()")
+   	 console.log("deprecated api usage, use getClientNr()")
    	 return getClientnr();
    	}
    	
@@ -351,7 +424,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 		return typeof (formStates[name]) !== 'undefined' && !formStates[name].initializing && formStates[name].resolved;
 	}
 	
-	return <sablo.ISabloApplication>{
+	return <sablo.ISabloApplication> {
 		connect: function(context, queryArgs, websocketUri) {
 			wsSessionArgs = {
 				context: context,
@@ -360,26 +433,23 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 			};
 			wsSession = $webSocket.connect(wsSessionArgs.context, [getClientnr(), getWindowName(), getWindownr()], wsSessionArgs.queryArgs, wsSessionArgs.websocketUri);
 
-			wsSession.onMessageObject(function(msg, conversionInfo, scopesToDigest) {
+			wsSession.onMessageObject(function(msg, scopesToDigest) {
 				// data got back from the server
 				for (var formname in msg.forms) {
 					var formState = formStates[formname];
 					if (typeof (formState) == 'undefined') {
 						// if the form is not there yet, wait for the form state.
-						getFormState(formname).then(getFormMessageHandler(formname, msg, conversionInfo),
+						getFormState(formname).then(getFormMessageHandler(formname, msg),
 							function(err) { $log.error("Error getting form state when trying to handle msg. from server: " + err); });
 					} else {
 						// if the form is there apply it directly so that it is there when the form is recreated
-						getFormMessageHandler(formname, msg, conversionInfo)(formState);
+						getFormMessageHandler(formname, msg)(formState);
 						if (formState.getScope) {
 							var s = formState.getScope();
 							if (s) scopesToDigest.putItem(s);
 						}
 					}
 				}
-
-				if (conversionInfo && conversionInfo.call) msg.call = $sabloConverters.convertFromServerToClient(msg.call, conversionInfo.call, undefined, undefined, undefined);
-				
 				
 				if (msg.clientnr) {
 					webStorage.session.set("clientnr", msg.clientnr);
@@ -393,53 +463,71 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 				}
 				
 				if (msg.call) {
-					// {"call":{"form":"product","element":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}, // optionally "viewIndex":1 
-					// "{ svy_types : {product: {datatextfield1: {0: "Date"}}} }
+                    // this is a component API call; execute it
+					// {"call":{"form":"product","element":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}, // optionally "viewIndex":1 }
 					var call = msg.call;
 
 					if ($log.debugEnabled) $log.debug("sbl * Received API call from server: '" + call.api + "' to form " + call.form + ", component " + (call.propertyPath ? call.propertyPath : call.bean));
 
-					function getAPICallFunctions(formState) {
-						var funcThis;
+					function getAPICallFunctionsAndComponentSpec(formState): { funcs: (...any) => any, componentSpec: sablo.IWebObjectSpecification } {
+						let retVal;
 						if (call.viewIndex != undefined) {
 							// I think this viewIndex' is never used; it was probably intended for components with multiple rows targeted by the same component if it want to allow calling API on non-selected rows, but it is not used
-							funcThis = formState.api[call.bean][call.viewIndex];
+							retVal = { funcs: formState.api[call.bean][call.viewIndex],
+							           componentSpec: $typesRegistry.getComponentSpecification(formState.componentSpecNames[call.bean]) };
 						}
 						else if (call.propertyPath != undefined) {
 							// handle nested components; the property path is an array of string or int keys going
 							// through the form's model starting with the root bean name, then it's properties (that could be nested)
 							// then maybe nested child properties and so on 
-							var obj = formState.model;
-							var pn;
+							let obj = formState.model;
+							let pn;
 							for (pn in call.propertyPath) obj = obj[call.propertyPath[pn]];
-							funcThis = obj.api;
+							retVal = { funcs: obj.api,
+							           componentSpec: obj.componentDirectiveName };
 						}
 						else {
-							funcThis = formState.api[call.bean];
+							retVal = { funcs: formState.api[call.bean],
+							           componentSpec: $typesRegistry.getComponentSpecification(formState.componentSpecNames[call.bean]) };
 						}
-						return funcThis;
+						return retVal;
 					}
 
-					function executeAPICall(apiCallFunctions) {
-						var func = apiCallFunctions ? apiCallFunctions[call.api] : null;
-						var returnValue;
+					function executeAPICall(apiFunctionsAndComponentSpec: { funcs: (...any) => any, componentSpec: sablo.IWebObjectSpecification }): any {
+						var func = apiFunctionsAndComponentSpec.funcs ? apiFunctionsAndComponentSpec.funcs[call.api] : null;
+						var returnValue: any;
 						if (!func) {
 							$log.warn("sbl * Bean " + (call.propertyPath ? call.propertyPath : call.bean) + " on form " + call.form + " did not provide the called api: " + call.api)
 							returnValue = null;
 						}
 						else {
 							if ($log.debugEnabled) $log.debug("sbl * Api call '" + call.api + "' to form " + call.form + ", component " + (call.propertyPath ? call.propertyPath : call.bean) + " will be called now.");
-							returnValue = func.apply(apiCallFunctions, call.args);
+							
+							// convert args
+							(<any[]>call.args)?.forEach((val: any, i: number) =>  
+								call.args[i] = $sabloConverters.convertFromServerToClient(val,
+									apiFunctionsAndComponentSpec.componentSpec?.getApiFunction?.(call.api)?.getArgumentType(i),
+									undefined, undefined, undefined, undefined, $sabloUtils.PROPERTY_CONTEXT_FOR_INCOMMING_ARGS_AND_RETURN_VALUES)); // api args do not keep dynamic types, should not add watches or be relative to a property context; at least this is how it is now
+							
+							// call API and make sure return value is also converted - if the API returns a value or a promise
+							returnValue = $q.when(func.apply(apiFunctionsAndComponentSpec.funcs, call.args)).then(function(ret) {
+								return $sabloConverters.convertFromClientToServer(ret, apiFunctionsAndComponentSpec.componentSpec?.getApiFunction?.(call.api)?.returnType,
+								            undefined, undefined, $sabloUtils.PROPERTY_CONTEXT_FOR_OUTGOING_ARGS_AND_RETURN_VALUES);
+							}, function(reason) {
+								// error
+								$log.error("sbl * Error (follows below) in in executing component Api call '" + call.api + "' to form " + call.form + ", component " + (call.propertyPath ? call.propertyPath : call.bean));
+								$log.error(reason);
+							});
 						}
 						return returnValue;
 					};
 
 					function executeAPICallInTimeout(formState, count, timeout) {
 						return $timeout(function() {
-							var apiFunctions = getAPICallFunctions(formState);
+							let apiFunctionsAndComponentSpec = getAPICallFunctionsAndComponentSpec(formState);
 							if ($log.debugEnabled) $log.debug("sbl * Remaining wait cycles upon execution of API: '" + call.api + "' of form " + call.form + ", component " + (call.propertyPath ? call.propertyPath : call.bean) + ": " + count);
-							if ((apiFunctions && apiFunctions[call.api]) || count < 1) {
-								return executeAPICall(apiFunctions);
+							if ((apiFunctionsAndComponentSpec.funcs && apiFunctionsAndComponentSpec.funcs[call.api]) || count < 1) {
+								return executeAPICall(apiFunctionsAndComponentSpec);
 							} else {
 								return executeAPICallInTimeout(formState, count - 1, timeout)
 							}
@@ -469,9 +557,9 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 
 						return getFormStateWithData(call.form).then(
 							function(formState) {
-								var apiFunctions = getAPICallFunctions(formState);
-								if (apiFunctions && apiFunctions[call.api]) {
-									return executeAPICall(apiFunctions);
+								var apiFunctionsAndComponentSpec = getAPICallFunctionsAndComponentSpec(formState);
+								if (apiFunctionsAndComponentSpec.funcs && apiFunctionsAndComponentSpec.funcs[call.api]) {
+									return executeAPICall(apiFunctionsAndComponentSpec);
 								} else {
 									if ($log.debugEnabled) $log.debug("sbl * Waiting for API to be contributed before execution: '" + call.api + "' of form " + call.form + ", component " + (call.propertyPath ? call.propertyPath : call.bean));
 									return executeAPICallInTimeout(formState, 10, 20);
@@ -504,29 +592,29 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 				}
 			});
 
-			function getFormMessageHandler(formname, msg, conversionInfo) {
-				return function(formState) {
+			function getFormMessageHandler(formname, msg) {
+				return function(formState: sablo.FormState) {
 					var formModel = formState.model;
 					var newFormData = msg.forms[formname];
 					var newFormProperties = newFormData['']; // form properties
-					var newFormConversionInfo = (conversionInfo && conversionInfo.forms && conversionInfo.forms[formname]) ? conversionInfo.forms[formname] : undefined;
 
 					if (newFormProperties) {
-						if (newFormConversionInfo && newFormConversionInfo['']) newFormProperties = $sabloConverters.convertFromServerToClient(newFormProperties, newFormConversionInfo[''], formModel[''], formState.getScope(), function(propertyName: string) { return formModel[''] ? formModel[''][propertyName] : formModel[''] });
+						// currently what server side sends for the form itself doesn't need client side conversions 
 						if (!formModel['']) formModel[''] = {};
-						for (var p in newFormProperties) {
+						for (const p in newFormProperties) {
 							formModel[''][p] = newFormProperties[p];
 						}
 					}
 
-					var watchesRemoved = formState.removeWatches ? formState.removeWatches(newFormData) : false;
+					const watchesRemoved = formState.removeWatches ? formState.removeWatches(newFormData) : false;
 					try {
-						for (var beanname in newFormData) {
+						for (const beanname in newFormData) {
 							// copy over the changes, skip for form properties (beanname empty)
 							if (beanname != '') {
-								var newBeanConversionInfo = newFormConversionInfo ? newFormConversionInfo[beanname] : undefined;
-								var beanConversionInfo = newBeanConversionInfo ? $sabloUtils.getOrCreateInDepthProperty(formStatesConversionInfo, formname, beanname) : $sabloUtils.getInDepthProperty(formStatesConversionInfo, formname, beanname);
-								applyBeanData(formModel[beanname], newFormData[beanname], formState.properties.designSize, getChangeNotifierGenerator(formname, beanname), beanConversionInfo, newBeanConversionInfo, formState.getScope ? formState.getScope() : undefined);
+								const beanDynamicTypesHolder = $sabloUtils.getOrCreateInDepthProperty(formStatesDynamicClientSideTypes, formname, beanname);
+								applyBeanData(formModel[beanname], newFormData[beanname], formState.properties.designSize,
+										getChangeNotifierGenerator(formname, beanname), formState.componentSpecNames[beanname], beanDynamicTypesHolder,
+										formState.getScope ? formState.getScope() : undefined);
 							}
 						}
 					}
@@ -553,7 +641,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 
 		// used by custom property component[] to implement nested component logic
 		applyBeanData: applyBeanData,
-		getComponentChanges: getComponentChanges,
+		getComponentPropertyChange: getComponentPropertyChange,
+		getAllChanges: getAllChanges,
 		getChangeNotifierGenerator: getChangeNotifierGenerator,
 
 		getFormState: getFormState,
@@ -565,7 +654,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 			return formStates[name];
 		},
 
-		getFormStatesConversionInfo: function() { return formStatesConversionInfo; },
+		getFormStatesDynamicClientSideTypes: function() { return formStatesDynamicClientSideTypes; },
 
 		hasFormState: function(name) {
 			return typeof (formStates[name]) !== 'undefined';
@@ -577,7 +666,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 
 		clearFormState: function(formName) {
 			delete formStates[formName];
-			delete formStatesConversionInfo[formName];
+			delete formStatesDynamicClientSideTypes[formName];
 		},
 		
 		clearSabloInfo:function (){
@@ -585,7 +674,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 	        webStorage.session.remove('clientnr');
 		},
 
-		initFormState: function(formName, beanDatas, formProperties, formScope, resolve) {
+		initFormState: function(formName, beanDatas, componentSpecNames: { [componentName: string]: string }, formProperties, formScope, resolve) {
 			var state = formStates[formName];
 			// if the form is already initialized or if the beanDatas are not given, return that
 			if (!state && beanDatas) {
@@ -593,7 +682,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 				var api = {}
 
 				// init all the objects for the beans.
-				state = formStates[formName] = { model: model, api: api, properties: formProperties, initializing: true };
+				state = formStates[formName] = { model: model, api: api, properties: formProperties, initializing: true, componentSpecNames: componentSpecNames };
 				for (var beanName in beanDatas) {
 					model[beanName] = new sablo_app.Model();
 					api[beanName] = {};
@@ -619,7 +708,13 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 			}
 			delete formState.resolving;
 			formState.resolved = true;
-			if (!formState.initializing) formState.addWatches(); // so it already got initial data a while ago - restore watches then
+			if (!formState.initializing) {
+				formState.addWatches(); // so it already got initial data a while ago - restore watches then
+				if (deferredFormStatesWithData[formName]) {
+					if (typeof (formState) !== 'undefined') deferredFormStatesWithData[formName].resolve(formState);
+					delete deferredFormStatesWithData[formName];
+				}
+			}
 			if (deferredFormStates[formName]) {
 				if (typeof (formState) !== 'undefined') deferredFormStates[formName].resolve(formState);
 				delete deferredFormStates[formName];
@@ -656,11 +751,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 				// it is possible that the form was unresolved meanwhile; so get it nicely just in case we have to wait for it to be resolved again TODO should we force load it again using formResolver.prepareUnresolvedFormForUse(...)? (we used that at API calls but those are blocking on server)
 				getFormState(formName).then(function(formState) {
 					if ($log.debugEnabled) $log.debug('sbl * Applying initial data: ' + formName);
-					initialFormData = initialFormData[0]; // ret value is an one item array; the item contains both data and conversion info
+					initialFormData = initialFormData[0]; // ret value is an one item array
 					if (initialFormData) {
-						var conversionInfo = initialFormData[$sabloConverters.TYPES_KEY];
-						if (conversionInfo) delete initialFormData[$sabloConverters.TYPES_KEY];
-
 						// if the formState is on the server but not here anymore, skip it. 
 						// this can happen with a refresh on the browser.
 						if (typeof (formState) == 'undefined') return;
@@ -668,7 +760,7 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 						var formModel = formState.model;
 						var initialFormProperties = initialFormData['']; // form properties
 						if (initialFormProperties) {
-							if (conversionInfo && conversionInfo['']) initialFormProperties = $sabloConverters.convertFromServerToClient(initialFormProperties, conversionInfo[''], formModel[''], formState.getScope(), function(propertyName: string) { return formModel[''] ? formModel[''][propertyName] : formModel[''] });
+							// currently what server side sends for properties of the form itself doesn't need client side conversions/types
 							if (!formModel['']) formModel[''] = {};
 							for (var p in initialFormProperties) {
 								formModel[''][p] = initialFormProperties[p];
@@ -678,9 +770,8 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 						for (var beanname in initialFormData) {
 							// copy over the initialData, skip for form properties (beanname empty) as they were already dealt with
 							if (beanname != '') {
-								var initialBeanConversionInfo = conversionInfo ? conversionInfo[beanname] : undefined;
-								var beanConversionInfo = initialBeanConversionInfo ? $sabloUtils.getOrCreateInDepthProperty(formStatesConversionInfo, formName, beanname) : $sabloUtils.getInDepthProperty(formStatesConversionInfo, formName, beanname);
-								applyBeanData(formModel[beanname], initialFormData[beanname], formState.properties.designSize, getChangeNotifierGenerator(formName, beanname), beanConversionInfo, initialBeanConversionInfo, formState.getScope());
+								var beanDynamicTypesHolder = $sabloUtils.getOrCreateInDepthProperty(formStatesDynamicClientSideTypes, formName, beanname);
+								applyBeanData(formModel[beanname], initialFormData[beanname], formState.properties.designSize, getChangeNotifierGenerator(formName, beanname), formState.componentSpecNames[beanname], beanDynamicTypesHolder, formState.getScope());
 							}
 						}
 					}
@@ -720,29 +811,40 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 
 		getExecutor: function(formName) {
 			return {
-				on: function(beanName, eventName, property, args, rowId) {
-					var onFunction = function(formState) {
+				on: function(beanName, eventName, property/* this arg seems to never be used */, args, rowId) {
+					var onFunction = function(formState, requestInfo) {
 						// this is onaction, onfocuslost which is really configured in the html so it really 
 						// is something that goes to the server
-						var newargs = $sabloUtils.getEventArgs(args, eventName);
+						const componentSpec = $typesRegistry.getComponentSpecification($sabloUtils.getInDepthProperty(formState, "componentSpecNames", beanName));
+						const handlerSpec = componentSpec?.getHandler(eventName);
+						var newargs = $sabloUtils.getEventArgs(args, eventName, handlerSpec);
 						var data = {}
-						if (property) {
-							data[property] = formState.model[beanName][property];
+						if (property) { // TODO remove this arg completely
+							throw new Error("sbl * unexpected legacy arg 'property' on getExecutor().on()...");
 						}
 						var cmd = { formname: formName, beanname: beanName, event: eventName, args: newargs, changes: data }
 						if (rowId) cmd['rowId'] = rowId
-						return callService('formService', 'executeEvent', cmd, false)
+						
+						let promise = callService('formService', 'executeEvent', cmd, false);
+						if (requestInfo) (promise as any).requestInfo = requestInfo; // this arg is only set if it has to wait for a form state below
+
+						return $webSocket.wrapPromiseToPropagateCustomRequestInfoInternal(promise, promise.then((retVal) => {
+							return $sabloConverters.convertFromServerToClient(retVal, handlerSpec?.returnType,
+							         undefined, undefined, undefined, undefined, $sabloUtils.PROPERTY_CONTEXT_FOR_INCOMMING_ARGS_AND_RETURN_VALUES);
+						}));
 					};
-					if(hasFormStateWithData(formName)) {
-						return onFunction(formStates[formName]);
-					}
-					else {
-						return getFormStateWithData(formName).then(function(formState) {
-								return onFunction(formState);
-							},
-							function(err) {
-								$log.error("Error getting form state: " + err);
-							});
+					if (hasFormStateWithData(formName)) {
+						return onFunction(formStates[formName], undefined);
+					} else {
+                        const requestInfoKeeper: { requestInfo?: any } = {};
+                        return $webSocket.wrapPromiseToPropagateCustomRequestInfoInternal(requestInfoKeeper,
+                            getFormStateWithData(formName).then(function(formState) {
+                                    return onFunction(formState, requestInfoKeeper.requestInfo);
+                                },
+                                function(err) {
+                                    $log.error("Error getting form state: " + err);
+                                })
+                        );
 					}
 				}
 			}
@@ -1086,14 +1188,15 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 			}
 
 		};
-	}]).run(function($sabloConverters: sablo.ISabloConverters) {
+	}]).run(function($sabloConverters: sablo.ISabloConverters, $typesRegistry: sablo.ITypesRegistry) {
 		// configure Date type but don't overwrite it when there is already a registered object.
-		$sabloConverters.registerCustomPropertyHandler('Date', {
-			fromServerToClient: function(serverJSONValue, currentClientValue, scope, propertyContext) {
+		$typesRegistry.registerGlobalType('Date', {
+			
+	        fromServerToClient(serverJSONValue: any, _currentClientValue: Date, _componentScope: angular.IScope, _propertyContext: sablo.IPropertyContext): Date {
 				return typeof (serverJSONValue) === "number" ? new Date(serverJSONValue) : serverJSONValue;
-			},
-
-			fromClientToServer: function(newClientData, oldClientData) {
+	        },
+	        
+	        fromClientToServer(newClientData: any, _oldClientData: Date, _scope: angular.IScope, _propertyContext: sablo.IPropertyContext): any {
 				if (newClientData === 0) return newClientData;
 				if (!newClientData) return null;
 
@@ -1102,11 +1205,13 @@ angular.module('sabloApp', ['webSocketModule', 'webStorageModule']).value("$sabl
 				if (typeof newClientData === 'number') return r;
 				if (isNaN(r.getTime())) throw new Error("Invalid date/time value: " + newClientData);
 				return r.getTime();
-			},
-
-			updateAngularScope: function(clientValue, componentScope) {
+	        },
+	        
+	        updateAngularScope(_clientValue: Date, _componentScope: angular.IScope): void {
 				// nothing to do here
-			}
-		}, false);
+	        }
+	        
+		}, true);
+
 		// other small types can be added here
 	});

@@ -32,7 +32,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.sablo.specification.Package.IPackageReader;
 import org.sablo.specification.property.CustomJSONArrayType;
-import org.sablo.specification.property.CustomPropertyTypeResolver;
+import org.sablo.specification.property.CustomJSONObjectType;
 import org.sablo.specification.property.CustomVariableArgsType;
 import org.sablo.specification.property.ICustomType;
 import org.sablo.specification.property.IPropertyType;
@@ -97,16 +97,64 @@ public class WebObjectSpecification extends PropertyDescription
 		}
 
 		/**
-		 * If the given value 'newLevel' is more 'restrictive' then current it will return the 'newLevel'; otherwise it will just return this.
-		 * @param newLevel the newLevel to check for.
+		 * .spec file can define "pushToServer" setting for each property. But for nested properties (can be multiple levels so that for example
+		 * a custom object type can be in two completely different places with parents having different pushToServer levels) we want that setting to be
+		 * enforced on all children of that property.
 		 *
-		 * Useful for example in nested properties where parent is for example 'deep' and child could be 'shallow' or 'restrict' (TODO do we want this in the future?).
+		 * So if the root property is defined as 'reject' then all nested properties will be reject as well.
+		 * Children can only restrict parent's push to server level; if child doesn't specify a push to server it will inherit it from parent.
+		 * If no push to server is specified on any of the parents and child the default will be "reject".
 		 *
-		 * @return the most restrictive setting of the two.
+		 * For example ("rest" means rest of available combinations that are not explicitly specified in the table below, * means whatever value, set or not).
+		 * Parent pushToServer is of course the computed value that takes into acount already all the parents of parent:
+		 *
+		 * <pre>
+		 * PARENT      CHILD       RESULT ON CHILD
+		 * ----------------------------------------
+		 * unset       unset       reject (default)           this actually can't happen in this method as parent is the 'this' object
+		 * unset       The_Rest    same as CHILD              this actually can't happen in this method as parent is the 'this' object
+		 *
+		 * reject      *           reject
+		 *
+		 * *           reject      reject
+		 *
+		 * allow       unset       allow
+		 * allow       The_Rest    same as CHILD
+		 *
+		 * shallow     unset       shallow
+		 * shallow     The_Rest    same as CHILD
+		 *
+		 * deep        unset       deep                                  "deep" is for random untyped JSON object values only (so "object" type); but if we get this called here
+		 *                                                               it means that smart types (custom object/array) are marked as deep in spec; being smart types,
+		 *                                                               they won't add deep angulat watches directly on themselves, only on their dumb child values maybe; so
+		 *                                                               propagate the deep value to children anyway, even though it will not actually generate deep angulat
+		 *                                                               watches for smart nested structures (which would behave similar to 'shallow' then except for dumb leafes)
+		 * deep        The_Rest    same as CHILD
+		 * </pre>
+		 *
+		 * Note: parent can NEVER be unset (null) in the table above. If a root property doesn't have a pushToServer values set in .spec file it is then considered 'reject' by default.
+		 *
+		 * We cannot store this in the PropertyDescription objects only and use it from there because the same custom/nested type (so PropertyDescription)
+		 * can be used in multiple subtrees in properties in the spec file, sometimes with pushToServer 'reject' and sometimes with pushToServer 'shallow'
+		 * for example somewhere in parents. So the same PropertyDescription's sub-properties can sometimes be 'reject' sometimes 'shallow' etc.
+		 *
+		 * @return the computed PushToServerEnum value for child sub-property, where this obj. is a parent computed pushToServer and "childDeclaredPushToServer" param is child declared pushToServer (as specified in the spec file).
 		 */
-		public PushToServerEnum restrictIfNeeded(PushToServerEnum newLevel)
+		public PushToServerEnum combineWithChild(PushToServerEnum childDeclaredPushToServer)
 		{
-			return (this.compareTo(newLevel) > 0 ? newLevel : this);
+			PushToServerEnum computed;
+
+			if (this == reject || childDeclaredPushToServer == reject) computed = reject;
+			else
+			{
+				if (childDeclaredPushToServer == null) computed = this;
+				else computed = childDeclaredPushToServer;
+
+				if (this == deep) log.info(
+					"One of your web component/service .spec files declares a parent property (that has child properties in spec, so an custom array, custom object...) as \"pushToServer\": \"deep\"; this will work but these smart types will not generate angular deep watches but will watch all child properties on each level like they do if shallow is used as well - in order to send granular updates; only dumb child values will actually be deep watched. \"deep\" is meant to be used with \"object\" type where there is just some random JSON content in it, nested or not...");
+			}
+
+			return computed;
 		}
 
 	}
@@ -120,10 +168,15 @@ public class WebObjectSpecification extends PropertyDescription
 	private final String categoryName;
 	private final String icon;
 	private final String packageName;
+
+	/** One can define in his solution a bunch of styling variants (collections of css classes) for a component; some standard class collection variants can be made based on styling category of component
+	    (label/button/input/etc) */
+	private final String styleVariantCategory;
+
 	private final JSONArray keywords;
 	private final NG2Config ng2Config;
 
-	private Map<String, IPropertyType< ? >> foundTypes;
+	private Map<String, ICustomType< ? >> foundTypes;
 
 	/**
 	 * Different then name only for services, not components/layouts.
@@ -150,14 +203,18 @@ public class WebObjectSpecification extends PropertyDescription
 	 * @param packageType one of {@link IPackageReader#WEB_SERVICE}, {@link IPackageReader#WEB_COMPONENT} and {@link IPackageReader#WEB_LAYOUT}.
 	 */
 
-	protected WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
+	protected WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String styleVariantCategory,
+		String icon, String preview,
 		String definition, JSONArray libs, JSONArray keywords, JSONObject ng2Config)
 	{
-		this(name, packageName, packageType, displayName, categoryName, icon, preview, definition, libs, null, null, null, keywords, ng2Config);
+		this(name, packageName, packageType, displayName, categoryName, styleVariantCategory, icon, preview, definition, libs, null, null, null, keywords,
+			ng2Config);
 	}
 
 
-	WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String icon, String preview,
+	WebObjectSpecification(String name, String packageName, String packageType, String displayName, String categoryName, String styleVariantCategory,
+		String icon,
+		String preview,
 		String definition, JSONArray libs, Object configObject, Map<String, PropertyDescription> properties, String deprecated, JSONArray keywords,
 		JSONObject ng2Config)
 	{
@@ -166,6 +223,7 @@ public class WebObjectSpecification extends PropertyDescription
 		this.packageName = packageName;
 		this.displayName = displayName;
 		this.categoryName = categoryName;
+		this.styleVariantCategory = styleVariantCategory;
 		this.icon = icon;
 		this.preview = preview;
 		this.definition = definition;
@@ -310,7 +368,7 @@ public class WebObjectSpecification extends PropertyDescription
 		return libraries;
 	}
 
-	private static ParsedProperty parsePropertyString(final String propertyString, Map<String, IPropertyType< ? >> foundTypes, String specName)
+	private static ParsedProperty parsePropertyString(final String propertyString, Map<String, ? extends IPropertyType< ? >> foundTypes, String specName)
 	{
 		String property = propertyString.replaceAll("\\s", "");
 		boolean isArray = false;
@@ -347,12 +405,12 @@ public class WebObjectSpecification extends PropertyDescription
 	/**
 	 * @return the types parsed from the "types" attribute.
 	 */
-	public Map<String, IPropertyType< ? >> getDeclaredCustomObjectTypes()
+	public Map<String, ICustomType< ? >> getDeclaredCustomObjectTypes()
 	{
 		return foundTypes;
 	}
 
-	public static Map<String, IPropertyType< ? >> getTypes(JSONObject typesContainer) throws JSONException
+	public static Map<String, ICustomType< ? >> getTypes(JSONObject typesContainer) throws JSONException
 	{
 		return WebObjectSpecification.parseTypes(typesContainer);
 	}
@@ -363,7 +421,7 @@ public class WebObjectSpecification extends PropertyDescription
 		JSONObject json = new JSONObject(specfileContent);
 
 		// first types, can be used in properties
-		Map<String, IPropertyType< ? >> types = WebObjectSpecification.parseTypes(json);
+		Map<String, ICustomType< ? >> types = WebObjectSpecification.parseTypes(json);
 
 		// properties
 		Map<String, PropertyDescription> properties = new HashMap<>();
@@ -376,6 +434,7 @@ public class WebObjectSpecification extends PropertyDescription
 		WebObjectSpecification spec = new WebObjectSpecificationBuilder().withPackageName(packageName).withPackageType(
 			reader != null ? reader.getPackageType() : null).withDisplayName(json.optString("displayName", null)).withCategoryName(
 				json.optString("categoryName", null))
+			.withStyleVariantCategory(json.optString("styleVariantCategory", null))
 			.withIcon(json.optString("icon", null)).withPreview(json.optString("preview", null)).withDefinition(
 				json.optString("definition", null))
 			.withLibraries(json.optJSONArray("libraries")).withProperties(properties).withName(
@@ -600,9 +659,9 @@ public class WebObjectSpecification extends PropertyDescription
 	 *
 	 * @throws JSONException
 	 */
-	static Map<String, IPropertyType< ? >> parseTypes(JSONObject json) throws JSONException
+	static Map<String, ICustomType< ? >> parseTypes(JSONObject json) throws JSONException
 	{
-		Map<String, IPropertyType< ? >> foundTypes = new HashMap<>();
+		Map<String, ICustomType< ? >> foundTypes = new HashMap<>();
 		String specName = json.optString("name", null);
 		if (json.has(TYPES_KEY))
 		{
@@ -612,7 +671,9 @@ public class WebObjectSpecification extends PropertyDescription
 			while (types.hasNext())
 			{
 				String name = types.next();
-				ICustomType< ? > wct = CustomPropertyTypeResolver.getInstance().resolveCustomPropertyType(specName != null ? (specName + "." + name) : name);
+				String typeName = specName != null ? (specName + "." + name) : name;
+				ICustomType< ? > wct = (CustomJSONObjectType< ? , ? >)TypesRegistry.createNewType(CustomJSONObjectType.TYPE_NAME, typeName);
+				wct.setCustomJSONDefinition(new PropertyDescriptionBuilder().withName(typeName).withType(wct).build());
 				foundTypes.put(name, wct);
 			}
 
@@ -621,7 +682,7 @@ public class WebObjectSpecification extends PropertyDescription
 			while (types.hasNext())
 			{
 				String typeName = types.next();
-				ICustomType< ? > type = (ICustomType< ? >)foundTypes.get(typeName);
+				ICustomType< ? > type = foundTypes.get(typeName);
 				JSONObject typeJSON = jsonObject.getJSONObject(typeName);
 				PropertyDescription pd = new PropertyDescriptionBuilder().withName(specName != null ? (specName + "." + typeName) : typeName).withType(
 					type).withProperties(
@@ -677,12 +738,12 @@ public class WebObjectSpecification extends PropertyDescription
 
 		public StandardTypeConfigSettings()
 		{
-			this(null, null, false, PushToServerEnum.reject, null, null, null);
+			this(null, null, false, null, null, null, null);
 		}
 
 	}
 
-	protected static Map<String, PropertyDescription> parseProperties(String propKey, JSONObject json, Map<String, IPropertyType< ? >> foundTypes,
+	protected static Map<String, PropertyDescription> parseProperties(String propKey, JSONObject json, Map<String, ? extends IPropertyType< ? >> foundTypes,
 		String specName) throws JSONException
 	{
 		Map<String, PropertyDescription> pds = new HashMap<>();
@@ -737,10 +798,9 @@ public class WebObjectSpecification extends PropertyDescription
 						}
 						else
 						{
+							// use nothing/defaults
 							elementConfig = new JSONObject();
-							// for the standard configuration settings in this case - inherit them where it's possible from array (currently that is only pushToServer to make it easier to declare arrays with pushToServer); TODO should we just use defaults always here?
-							elementStandardConfigurationSettings = new StandardTypeConfigSettings(null, null, false, standardConfigurationSettings.pushToServer,
-								null, null, null);
+							elementStandardConfigurationSettings = new StandardTypeConfigSettings();
 						}
 
 						PropertyDescription elementDescription = new PropertyDescriptionBuilder().withName(ARRAY_ELEMENT_PD_NAME).withType(type).withConfig(
@@ -781,7 +841,7 @@ public class WebObjectSpecification extends PropertyDescription
 		Object defaultValue = null;
 		Object initialValue = null;
 		boolean hasDefault = false;
-		PushToServerEnum pushToServer = PushToServerEnum.reject;
+		PushToServerEnum pushToServer = null;
 		JSONObject tags = null;
 		List<Object> values = null;
 		String deprecated = configObject.optString("deprecated", null);
@@ -790,7 +850,8 @@ public class WebObjectSpecification extends PropertyDescription
 		initialValue = configObject.opt("initialValue");
 		hasDefault = configObject.has("default");
 
-		pushToServer = PushToServerEnum.fromString(configObject.optString(PUSH_TO_SERVER_KEY, pushToServer.name()));
+		String pushToServerString = configObject.optString(PUSH_TO_SERVER_KEY, null);
+		if (pushToServerString != null) pushToServer = PushToServerEnum.fromString(pushToServerString);
 		tags = configObject.optJSONObject("tags");
 
 		JSONArray valuesArray = configObject.optJSONArray("values");
@@ -901,4 +962,11 @@ public class WebObjectSpecification extends PropertyDescription
 	{
 		return ng2Config;
 	}
+
+
+	public String getStyleVariantCategory()
+	{
+		return styleVariantCategory;
+	}
+
 }

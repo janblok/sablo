@@ -16,13 +16,14 @@
 
 package org.sablo.websocket.utils;
 
+import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.Callable;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -36,12 +37,16 @@ import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IPropertyConverterForBrowser;
+import org.sablo.specification.property.IPropertyConverterForBrowserWithDynamicClientType;
 import org.sablo.specification.property.IPropertyType;
+import org.sablo.specification.property.IPropertyWithClientSideConversions;
 import org.sablo.specification.property.ISupportsGranularUpdates;
+import org.sablo.specification.property.ISupportsGranularUpdatesWithDynamicClientType;
 import org.sablo.specification.property.IWrapperType;
+import org.sablo.specification.property.types.ObjectPropertyType;
 import org.sablo.specification.property.types.TypesRegistry;
+import org.sablo.util.DebugFriendlyJSONStringer;
 import org.sablo.util.ValueReference;
-import org.sablo.websocket.IToJSONWriter;
 import org.sablo.websocket.TypedData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,104 +61,53 @@ import org.slf4j.LoggerFactory;
 public class JSONUtils
 {
 
-	public static final String TYPES_KEY = "svy_types";
+	public static final String CONVERSION_CL_SIDE_TYPE_KEY = "_T";
+	public static final String VALUE_KEY = "_V";
+
 	private static final Logger log = LoggerFactory.getLogger(JSONUtils.class.getCanonicalName());
+	private static ObjectPropertyType objectPropertyType;
 
-	@SuppressWarnings("unchecked")
-	public static void writeConversions(JSONWriter object, Map<String, Object> map) throws JSONException
-	{
-		for (Entry<String, Object> entry : map.entrySet())
-		{
-			if (entry.getValue() instanceof Map)
-			{
-				writeConversions(object.key(entry.getKey()).object(), (Map<String, Object>)entry.getValue());
-				object.endObject();
-			}
-			else
-			{
-				object.key(entry.getKey()).value(entry.getValue());
-			}
-		}
-	}
 
-	public static JSONWriter writeDataWithConversions(JSONWriter writer, Map<String, ? > data, PropertyDescription dataTypes, BrowserConverterContext context)
+	public static JSONWriter writeDataAsFullToJSON(JSONWriter writer, Map<String, ? > data, PropertyDescription dataTypes, BrowserConverterContext context)
 		throws JSONException
 	{
-		return writeDataWithConversions(FullValueToJSONConverter.INSTANCE, writer, data, dataTypes, context);
-	}
-
-	public static <ContextT> JSONWriter writeDataWithConversions(IToJSONConverter<ContextT> converter, JSONWriter writer, Map<String, ? > data,
-		PropertyDescription dataTypes, ContextT contextObject) throws JSONException
-	{
-		DataConversion dataConversion = new DataConversion();
-		writeData(converter, writer, data, dataTypes, dataConversion, contextObject);
-		writeClientConversions(writer, dataConversion);
-
+		writeData(FullValueToJSONConverter.INSTANCE, writer, data, dataTypes, context);
 		return writer;
 	}
 
-	public static <ContextT> DataConversion writeData(IToJSONConverter<ContextT> converter, JSONWriter writer, Map<String, ? > data,
-		PropertyDescription dataTypes, DataConversion dataConversion, ContextT contextObject) throws JSONException
+	public static <ContextT> void writeData(IToJSONConverter<ContextT> converter, JSONWriter writer, Map<String, ? > data, PropertyDescription dataTypes,
+		ContextT contextObject) throws JSONException
 	{
 		for (Entry<String, ? > entry : data.entrySet())
 		{
-			dataConversion.pushNode(entry.getKey());
-			converter.toJSONValue(writer, entry.getKey(), entry.getValue(), dataTypes != null ? dataTypes.getProperty(entry.getKey()) : null, dataConversion,
-				contextObject);
-			dataConversion.popNode();
-		}
-		return dataConversion;
-	}
-
-	public static void writeClientConversions(JSONWriter writer, DataConversion dataConversion) throws JSONException
-	{
-		if (dataConversion != null && dataConversion.getConversions().size() > 0)
-		{
-			writer.key(TYPES_KEY).object();
-			writeConversions(writer, dataConversion.getConversions());
-			writer.endObject();
+			converter.toJSONValue(writer, entry.getKey(), entry.getValue(), dataTypes != null ? dataTypes.getProperty(entry.getKey()) : null, contextObject);
 		}
 	}
 
-	public static String writeDataWithConversions(Map<String, ? > data, PropertyDescription dataTypes, BrowserConverterContext context) throws JSONException
+	public static String writeDataAsFullToJSON(Map<String, ? > data, PropertyDescription dataTypes, BrowserConverterContext context) throws JSONException
 	{
-		return writeDataWithConversions(FullValueToJSONConverter.INSTANCE, data, dataTypes, context);
+		return writeData(FullValueToJSONConverter.INSTANCE, data, dataTypes, context);
 	}
 
-	public static String writeChangesWithConversions(Map<String, ? > data, PropertyDescription dataTypes, BrowserConverterContext context) throws JSONException
+	public static String writeChanges(Map<String, ? > data, PropertyDescription dataTypes, BrowserConverterContext context) throws JSONException
 	{
-		return writeDataWithConversions(ChangesToJSONConverter.INSTANCE, data, dataTypes, context);
+		return writeData(ChangesToJSONConverter.INSTANCE, data, dataTypes, context);
 	}
 
-	public static <ContextT> String writeDataWithConversions(IToJSONConverter<ContextT> converter, Map<String, ? > data, PropertyDescription dataTypes,
-		ContextT contextObject) throws JSONException
-	{
-		JSONWriter writer = new JSONStringer().object();
-		writeDataWithConversions(converter, writer, data, dataTypes, contextObject);
-		return writer.endObject().toString();
-	}
-
-	public static <ContextT> String writeComponentChanges(WebComponent component, ChangesToJSONConverter converter, DataConversion dataConversion)
+	public static <ContextT> String writeData(IToJSONConverter<ContextT> converter, Map<String, ? > data, PropertyDescription dataTypes, ContextT contextObject)
 		throws JSONException
 	{
 		JSONWriter writer = new JSONStringer().object();
-		if (component.writeOwnChanges(writer, "comp", component.getName(), converter, dataConversion)) writer.endObject();
+		writeData(converter, writer, data, dataTypes, contextObject);
 		return writer.endObject().toString();
 	}
 
-//
-//	/**
-//	 * Writes the given object as design-time JSON into the JSONWriter.
-//	 * @param writer the JSONWriter.
-//	 * @param value the value to be written to the writer.
-//	 * @return the writer object to continue writing JSON.
-//	 * @throws JSONException
-//	 * @throws IllegalArgumentException if the given object could not be written to JSON for some reason.
-//	 */
-//	public static JSONWriter toDesignJSONValue(JSONWriter writer, Object value, PropertyDescription valueType) throws JSONException, IllegalArgumentException
-//	{
-//		return toJSONValue(writer, value, valueType, null, ConversionLocation.DESIGN);
-//	}
+	public static <ContextT> String writeComponentChanges(WebComponent component, ChangesToJSONConverter converter) throws JSONException
+	{
+		JSONWriter writer = new JSONStringer().object();
+		if (component.writeOwnChanges(writer, "comp", component.getName(), converter)) writer.endObject();
+		return writer.endObject().toString();
+	}
 
 	/**
 	 * Shortcut for using {@link FullValueToJSONConverter} directly.
@@ -162,10 +116,10 @@ public class JSONUtils
 	 * is useful for cases when you don't want the value written at all in resulting JSON in which case you don't write neither key or value. If
 	 * key is null and you want to write the converted value write only the converted value to the writer, ignore the key.
 	 */
-	public static JSONWriter toBrowserJSONFullValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion clientConversion,
+	public static JSONWriter toBrowserJSONFullValue(JSONWriter writer, String key, Object value, PropertyDescription valueType,
 		IBrowserConverterContext context) throws JSONException, IllegalArgumentException
 	{
-		return JSONUtils.FullValueToJSONConverter.INSTANCE.toJSONValue(writer, key, value, valueType, clientConversion, context);
+		return JSONUtils.FullValueToJSONConverter.INSTANCE.toJSONValue(writer, key, value, valueType, context);
 	}
 
 	/**
@@ -176,9 +130,9 @@ public class JSONUtils
 	 * key is null and you want to write the converted value write only the converted value to the writer, ignore the key.
 	 */
 	public static JSONWriter changesToBrowserJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType,
-		DataConversion clientConversion, IBrowserConverterContext context) throws JSONException, IllegalArgumentException
+		IBrowserConverterContext context) throws JSONException, IllegalArgumentException
 	{
-		return JSONUtils.ChangesToJSONConverter.INSTANCE.toJSONValue(writer, key, value, valueType, clientConversion, context);
+		return JSONUtils.ChangesToJSONConverter.INSTANCE.toJSONValue(writer, key, value, valueType, context);
 	}
 
 	public static JSONWriter addKeyIfPresent(JSONWriter writer, String key) throws JSONException
@@ -197,117 +151,107 @@ public class JSONUtils
 	 * key is null and you want to write the converted value write only the converted value to the writer, ignore the key.
 	 * @param value the value to be written to the writer.
 	 * @param valueType the types of the value; can be null in which case a 'best-effort' to JSON conversion will take place.
-	 * @param clientConversion the object where the type (like Date) of the conversion that should happen on the client.
 	 * @return true if the given value could be written using default logic and false otherwise.
 	 * @throws IllegalArgumentException if the given object could not be written to JSON for some reason.
 	 */
-	public static <ContextObject> boolean defaultToJSONValue(IToJSONConverter<ContextObject> toJSONConverter, JSONWriter w, String key, Object value,
-		PropertyDescription valueType, DataConversion clientConversion, ContextObject contextObject) throws JSONException, IllegalArgumentException
+	public static <ContextObject> void defaultToJSONValue(IToJSONConverter<ContextObject> toJSONConverter, JSONWriter w, String key, Object value,
+		PropertyDescription valueType, ContextObject contextObject) throws JSONException, IllegalArgumentException
 	{
-		// there is no clear conversion; see if we find a primitive/default or Class based conversion
-		Object converted = value;
-
-		if (converted == null || converted == JSONObject.NULL)
+		if (objectPropertyType == null)
 		{
-			addKeyIfPresent(w, key);
-			w = w.value(null); // null is allowed
-		}
-		else if (converted instanceof JSONArray || converted instanceof JSONObject || converted instanceof JSONString)
-		{
-			addKeyIfPresent(w, key);
-			w = w.value(converted);
-		}
-		else if (converted instanceof List)
-		{
-			List< ? > lst = (List< ? >)converted;
-			addKeyIfPresent(w, key);
-			w.array();
-			for (int i = 0; i < lst.size(); i++)
-			{
-				if (clientConversion != null) clientConversion.pushNode(String.valueOf(i));
-				toJSONConverter.toJSONValue(w, null, lst.get(i), getArrayElementType(valueType, i), clientConversion, contextObject);
-				if (clientConversion != null) clientConversion.popNode();
-			}
-			w.endArray();
-		}
-		else if (converted instanceof Object[])
-		{
-			Object[] array = (Object[])converted;
-			addKeyIfPresent(w, key);
-			w.array();
-			for (int i = 0; i < array.length; i++)
-			{
-				if (clientConversion != null) clientConversion.pushNode(String.valueOf(i));
-				toJSONConverter.toJSONValue(w, null, array[i], getArrayElementType(valueType, i), clientConversion, contextObject);
-				if (clientConversion != null) clientConversion.popNode();
-			}
-			w.endArray();
-		}
-		else if (converted instanceof Map)
-		{
-			addKeyIfPresent(w, key);
-			w = w.object();
-			Map<String, ? > map = (Map<String, ? >)converted;
-			for (Entry<String, ? > entry : map.entrySet())
-			{
-				if (clientConversion != null) clientConversion.pushNode(entry.getKey());
-				toJSONConverter.toJSONValue(w, entry.getKey(), entry.getValue(), valueType != null ? valueType.getProperty(entry.getKey()) : null,
-					clientConversion, contextObject);
-				if (clientConversion != null) clientConversion.popNode();
-			}
-			w = w.endObject();
-		}
-		else if (converted instanceof JSONWritable)
-		{
-			TypedData<Map<String, Object>> dm = ((JSONWritable)converted).toMap();
-			toJSONConverter.toJSONValue(w, key, dm.content, dm.contentType, clientConversion, contextObject);
-		}
-		// best-effort to still find a way to write data and convert if needed follows
-		else if (converted instanceof Integer || converted instanceof Long)
-		{
-			addKeyIfPresent(w, key);
-			w = w.value(((Number)converted).longValue());
-		}
-		else if (converted instanceof Boolean)
-		{
-			addKeyIfPresent(w, key);
-			w = w.value(((Boolean)converted).booleanValue());
-		}
-		else if (converted instanceof Number)
-		{
-			addKeyIfPresent(w, key);
-			double convertedDouble = ((Number)converted).doubleValue();
-			if (Double.isNaN(convertedDouble) || Double.isInfinite(convertedDouble))
-			{
-				w = w.value(null);
-			}
-			else
-			{
-				w = w.value(convertedDouble);
-			}
-		}
-		else if (converted instanceof String)
-		{
-			addKeyIfPresent(w, key);
-			w = w.value(converted);
-		}
-		else if (converted instanceof CharSequence)
-		{
-			addKeyIfPresent(w, key);
-			w = w.value(converted.toString());
-		}
-		else if (converted instanceof Date)
-		{
-			addKeyIfPresent(w, key);
-			if (clientConversion != null) clientConversion.convert("Date");
-			w = w.value(((Date)converted).getTime());
-		}
-		else
-		{
-			return false;
+			objectPropertyType = (ObjectPropertyType)TypesRegistry.getType(ObjectPropertyType.TYPE_NAME); // this will throw an exception if not found
 		}
 
-		return true;
+		objectPropertyType.toJSONValueImpl(toJSONConverter, w, key, value, valueType, contextObject);
+	}
+
+	public static <ContextObject> IJSONStringWithClientSideType getDefaultConvertedValueWithClientType(IToJSONConverter<ContextObject> toJSONConverter,
+		Object value, PropertyDescription valueType, ContextObject context)
+	{
+		if (objectPropertyType == null)
+		{
+			objectPropertyType = (ObjectPropertyType)TypesRegistry.getType(ObjectPropertyType.TYPE_NAME); // this will throw an exception if not found
+		}
+
+		return objectPropertyType.getJSONAndClientSideType(toJSONConverter, value, valueType, context);
+	}
+
+	public static Object defaultFromJSON(Object newJSONValue, Object previousSabloValue, PropertyDescription propertyDescription,
+		IBrowserConverterContext context,
+		ValueReference<Boolean> returnValueAdjustedIncommingValue)
+	{
+		if (objectPropertyType == null)
+		{
+			objectPropertyType = (ObjectPropertyType)TypesRegistry.getType(ObjectPropertyType.TYPE_NAME); // this will throw an exception if not found
+		}
+
+		return objectPropertyType.fromJSON(newJSONValue, previousSabloValue, propertyDescription, context, returnValueAdjustedIncommingValue);
+	}
+
+	/**
+	 * This method handles sending typed default values to client; it will generate instead of a value an object with two keys:
+	 * { _T: "typeName", v: ... } that will be handled correctly by the appropriate default conversion code client-side (if found in a value with unknown client conversion type).<br/><br/>
+	 *
+	 * This is not that nice but helps remove a lot of code where types were kept in parallel to the written values. But now as all static needed client side types are sent separately to each window
+	 * when a container is shown in that window - the only thing that still needed to send client side conversion types when writing the values are default conversions and dynamic types (types that send
+	 * determine their client side type at runtime) => the need for this hackish method.
+	 *
+	 * @param w the json writer used to send content to browser.
+	 * @param key the key that this value should be written to - if any value will be written.
+	 * @param typeOfValue could be anything that a {@link IPropertyWithClientSideConversions#writeClientSideTypeName(JSONWriter, String, PropertyDescription)} returns. Usually just a client side type name.
+	 * @param valueWriter the callable that writes the actual value to w.
+	 */
+	public static void writeConvertedValueWithClientType(JSONWriter w, String key, JSONString typeOfValue, Callable<Void> valueWriter) throws JSONException
+	{
+		addKeyIfPresent(w, key);
+		w.object();
+		w.key(CONVERSION_CL_SIDE_TYPE_KEY);
+		w.value(typeOfValue).key(VALUE_KEY);
+		try
+		{
+			valueWriter.call();
+		}
+		catch (Exception e)
+		{
+			if (e instanceof JSONException) throw (JSONException)e;
+			else log.error("Error while trying to write default converted value with type: " + typeOfValue + " and key: " + key, e);
+
+		}
+		w.endObject();
+	}
+
+	public static void writeConvertedValueWithClientType(JSONWriter w, String key, EmbeddableJSONWriter typeOfValue, Callable<Void> valueWriter)
+		throws JSONException
+	{
+		if (typeOfValue.isEmpty())
+		{
+			// it doesn't actually want to write a client side type although it appeared to have one
+			addKeyIfPresent(w, key);
+			try
+			{
+				valueWriter.call();
+			}
+			catch (Exception e)
+			{
+				if (e instanceof JSONException) throw (JSONException)e;
+				else log.error("Error while trying to write default converted value with type: " + typeOfValue + " and key: " + key, e);
+
+			}
+		}
+		else writeConvertedValueWithClientType(w, key, (JSONString)typeOfValue, valueWriter);
+	}
+
+	public static EmbeddableJSONWriter getClientSideTypeJSONString(PropertyDescription pd)
+	{
+		if (!(pd.getType() instanceof IPropertyWithClientSideConversions)) return null;
+
+		return getClientSideTypeJSONString((IPropertyWithClientSideConversions< ? >)pd.getType(), pd);
+	}
+
+	public static EmbeddableJSONWriter getClientSideTypeJSONString(IPropertyWithClientSideConversions< ? > type, PropertyDescription pd)
+	{
+		EmbeddableJSONWriter ejw = new EmbeddableJSONWriter(true);
+		return type.writeClientSideTypeName(ejw, null, pd) ? ejw : null;
 	}
 
 	public static Object fromJSONUnwrapped(Object previousComponentValue, Object newJSONValue, PropertyDescription pd,
@@ -339,22 +283,11 @@ public class JSONUtils
 				return ((IPropertyConverterForBrowser)type).fromJSON(newValue, oldValue, pd, dataConversionContext, returnValueAdjustedIncommingValue);
 			}
 		}
+		else return defaultFromJSON(newValue, oldValue, pd, dataConversionContext, returnValueAdjustedIncommingValue);
+
 		return newValue;
 	}
 
-	protected static PropertyDescription getArrayElementType(PropertyDescription valueType, int i)
-	{
-		PropertyDescription elValueType = null;
-		if (valueType != null)
-		{
-			elValueType = valueType.getProperty(String.valueOf(i));
-		}
-		return elValueType;
-	}
-
-	/**
-	 * Returns String.valueOf(value); but catches also any exception thrown and turns it into an error message.
-	 */
 	public static String safeToString(Object value)
 	{
 		try
@@ -416,8 +349,21 @@ public class JSONUtils
 		 * @param context an object representing a state that the conversions of this type might need.
 		 * @return the JSON writer for easily continuing the write process in the caller.
 		 */
-		JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion clientConversion, ContextType context)
+		JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, ContextType context)
 			throws JSONException, IllegalArgumentException;
+
+		/**
+		 * Should do the same as {@link #toJSONValue(JSONWriter, String, Object, PropertyDescription, Object)} above but instead of directly
+		 * writing the value (which for {@link IPropertyConverterForBrowserWithDynamicClientType} or {@link ISupportsGranularUpdatesWithDynamicClientType} might mean also writing the type in the value,
+		 * and for static client side types would mean not writing the type as it is assumed that it is known on client)
+		 * it will try to return the actual value and the client side type of that value (if any and taking into account "returnOnlyDynamicTypes" param).<br/><br/>
+		 *
+		 * Use {@link #toJSONValue(JSONWriter, String, Object, PropertyDescription, Object)} instead when possible; it does less string concatenations.
+		 *
+		 * @param returnOnlyDynamicTypes if true, only types for IPropertyConverterForBrowserWithDynamicClientType will be returned; static IPropertyWithClientSideConversions values are just written without returning the type; this is only useful for when sending component property values - where client already knows the IPropertyWithClientSideConversions client-side
+		 */
+		IJSONStringWithClientSideType getConvertedValueWithClientType(Object value, PropertyDescription valueType,
+			ContextType context, boolean returnOnlyDynamicTypes);
 
 	}
 
@@ -427,59 +373,160 @@ public class JSONUtils
 		public static final FullValueToJSONConverter INSTANCE = new FullValueToJSONConverter();
 
 		@Override
-		public JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion browserConversionMarkers,
-			IBrowserConverterContext context) throws JSONException, IllegalArgumentException
+		public JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, IBrowserConverterContext context)
+			throws JSONException, IllegalArgumentException
+		{
+			ValueReference<Boolean> typeDeterminedBasedOnClassOfValue = new ValueReference<Boolean>(Boolean.FALSE);
+			IPropertyConverterForBrowser convertingTypeToUse = findConvertingTypeToBrowser(value, valueType, typeDeterminedBasedOnClassOfValue);
+			if (convertingTypeToUse != null)
+			{
+				try
+				{
+					if (typeDeterminedBasedOnClassOfValue.value.booleanValue() && convertingTypeToUse instanceof IPropertyWithClientSideConversions)
+					{
+						// so the IPropertyType that will be used when writing toJSON was initially unknown and then determined based on the java class of 'value' to be a IPropertyWithClientSideConversions...
+						// (for example if it's a Date)
+						// this is a similar scenario to writing a dynamic type (it was dynamically determined), even though the type is not a IPropertyConverterForBrowserWithDynamicClientType itself but just IPropertyWithClientSideConversions.
+						// so because the code that calls this toJSON and the one that will use this value on client do not know it's type based on .spec
+						// the client side type needs to be sent here as well
+						JSONUtils.writeConvertedValueWithClientType(writer, key,
+							JSONUtils.getClientSideTypeJSONString((IPropertyWithClientSideConversions< ? >)convertingTypeToUse, valueType),
+							() -> {
+								convertingTypeToUse.toJSON(writer, null, value, valueType, context);
+								return null;
+							});
+					}
+					else
+					{
+						// usual scenario where PropertyDescription gives type or the determined type has no client side implementation
+						return convertingTypeToUse.toJSON(writer, key, value, valueType, context);
+					}
+					// here if convertingTypeToUse is also IPropertyConverterForBrowserWithDynamicClientType then it would write itself the type to JSON - if needed
+				}
+				catch (Exception ex)
+				{
+					log.error("Error while converting value (toJSON): " + safeToString(value) + " of key: " + key + " to type: " + convertingTypeToUse +
+						" current json: " + writer.toString(), ex);
+					return writer;
+				}
+			}
+			else defaultToJSONValue(this, writer, key, value, valueType, context);
+
+			return writer;
+		}
+
+		protected IPropertyConverterForBrowser< ? > findConvertingTypeToBrowser(Object value, PropertyDescription valueType,
+			ValueReference<Boolean> typeDeterminedBasedOnClassOfValue)
 		{
 			if (value != null && valueType != null)
 			{
 				IPropertyType< ? > type = valueType.getType();
-				if (type instanceof IPropertyConverterForBrowser)
+
+				if (type instanceof ObjectPropertyType)
 				{
-					// good, we now know that it needs special conversion
-					try
-					{
-						return ((IPropertyConverterForBrowser)type).toJSON(writer, key, value, valueType, browserConversionMarkers, context);
-					}
-					catch (Exception ex)
-					{
-						log.error("Error while converting value: " + safeToString(value) + " of key: " + key + " to type: " + type + " current json: " +
-							writer.toString(), ex);
-						return writer;
-					}
+					// for 'object' defined in .spec, which does implement IPropertyConverterForBrowser
+					// but it is just a default conversion actually, we will give precedence to
+					// any IClassPropertyType implementations
+					IPropertyConverterForBrowser< ? > classType = findClassPropertyType(value, typeDeterminedBasedOnClassOfValue);
+					if (classType != null) return classType;
+					// else go to next if and return the ObjectPropertyType
 				}
-				else if (type instanceof IWrapperType< ? , ? >)
+
+				if (type instanceof IPropertyConverterForBrowser) // this includes IWrapperType
 				{
-					// good, we now know that it needs special conversion
-					try
-					{
-						return ((IWrapperType)type).toJSON(writer, key, value, valueType, browserConversionMarkers, context);
-					}
-					catch (Exception ex)
-					{
-						log.error("Error while converting value: " + safeToString(value) + " of key: " + key + " to type: " + type + " current json: " +
-							writer.toString(), ex);
-						return writer;
-					}
+					return (IPropertyConverterForBrowser< ? >)type;
 				}
 			}
 
+			return findClassPropertyType(value, typeDeterminedBasedOnClassOfValue);
+		}
+
+		private IPropertyConverterForBrowser< ? > findClassPropertyType(Object value, ValueReference<Boolean> typeDeterminedBasedOnClassOfValue)
+		{
 			// best-effort to still find a way to write data and convert if needed follows
-			IClassPropertyType<Object> classType = (IClassPropertyType<Object>)(value == null ? null : TypesRegistry.getType(value.getClass()));
+			IClassPropertyType< ? > classType = value == null ? null : TypesRegistry.getType(value.getClass());
 			if (classType != null)
 			{
-				return classType.toJSON(writer, key, value, valueType, browserConversionMarkers, context);
-			}
+				if (typeDeterminedBasedOnClassOfValue != null) typeDeterminedBasedOnClassOfValue.value = Boolean.TRUE;
+				return classType;
+			} // else we have no usable converting type; caller should use default conversion
 
-			if (!defaultToJSONValue(this, writer, key, value, valueType, browserConversionMarkers, context))
+			return null;
+		}
+
+		/**
+		 * This method returns a IJSONStringWithClientSideType that contains the output of writing a property's value to client side and separately the client side type for that value (if any).<br/>
+		 * This is meant to be called by {@link IPropertyConverterForBrowserWithDynamicClientType} properties when computing the value and the type they actually have based on another type (that here are
+		 * represented by "valueType" arg.<br/><br/>
+		 *
+		 * For example a data driven type can decide at runtime if it's data is a number (no client side conversion) or a date ('date' client side conversion).<br/><br/>
+		 *
+		 * <ul>
+		 * <li>if "valueType"'s type is itself a {@link IPropertyConverterForBrowserWithDynamicClientType} it will just ask it for what it needs;</li>
+		 * <li>if "valueType"'s type is just of a{@link IPropertyWithClientSideConversions} type it will just use {@link FullValueToJSONConverter#toJSONValue(JSONWriter, String, Object, PropertyDescription, IBrowserConverterContext)}} to get the content and will get the type from {@link IPropertyWithClientSideConversions#writeClientSideTypeName(JSONWriter, String, PropertyDescription)};</li>
+		 * <li>otherwise, it will just write the value to JSON using {@link FullValueToJSONConverter#toJSONValue(JSONWriter, String, Object, PropertyDescription, IBrowserConverterContext)}} and have a null client side type.
+		 *
+		 * @param value the value of a property
+		 * @param valueType the property description of that property.
+		 * @param context context
+		 * @param returnOnlyDynamicTypes if true, only types for IPropertyConverterForBrowserWithDynamicClientType will be returned; static IPropertyWithClientSideConversions values are just written without returning the type; this is only useful for when sending component property values - where client already knows the IPropertyWithClientSideConversions client-side
+		 *
+		 * @return a IJSONStringWithClientSideType representing the value (that can be embedded in a larger JSON) and the client side conversion type (if any).
+		 */
+		@Override
+		public IJSONStringWithClientSideType getConvertedValueWithClientType(Object value, PropertyDescription valueType, IBrowserConverterContext context,
+			boolean returnOnlyDynamicTypes)
+		{
+			ValueReference<Boolean> typeDeterminedBasedOnClassOfValue = new ValueReference<Boolean>(Boolean.FALSE);
+			IPropertyType< ? > type = (IPropertyType< ? >)findConvertingTypeToBrowser(value, valueType, typeDeterminedBasedOnClassOfValue);
+
+			if (type instanceof IPropertyConverterForBrowserWithDynamicClientType)
 			{
-				// addKeyIfPresent(w, key);
-				// w = w.value(new JSONObject("{}"));
-				// write nothing here, neither key nor value as we know not how to do the conversion...
-				log.error("unsupported value type:" + valueType + " for value: " + safeToString(value) + " current json: " + writer.toString(),
-					new IllegalArgumentException("unsupported value type for value: " + safeToString(value)));
+				EmbeddableJSONWriter ejw = new EmbeddableJSONWriter(true); // that 'true' is a workaround for allowing directly a value instead of object or array
+				JSONString clientSideConversionType;
+				try
+				{
+					clientSideConversionType = ((IPropertyConverterForBrowserWithDynamicClientType)type).toJSONWithDynamicClientSideType(ejw, value, valueType,
+						context);
+					return ejw.isEmpty() ? null : new JSONStringWithClientSideType(ejw.toJSONString(), clientSideConversionType);
+				}
+				catch (Exception ex)
+				{
+					log.error("Error while converting value (with dynamic type) (toJSON with type): " + safeToString(value) + " to type: " + type +
+						" current json: " + ejw.toString(), ex);
+					return null;
+				}
 			}
+			else if (type instanceof IPropertyConverterForBrowser)
+			{
+				JSONString clientSideConversionType;
+				EmbeddableJSONWriter ejw = new EmbeddableJSONWriter(true); // that 'true' is a workaround for allowing directly a value instead of object or array
+				try
+				{
+					((IPropertyConverterForBrowser)type).toJSON(ejw, null, value, valueType, context);
+					// in the condition below, typeDeterminedBasedOnClassOfValue.value.booleanValue() can be assimilated to a dynamic type scenario as the type was determined based on java class of value, it was not known initially
+					if ((!returnOnlyDynamicTypes || typeDeterminedBasedOnClassOfValue.value.booleanValue()) &&
+						type instanceof IPropertyWithClientSideConversions)
+					{
+						clientSideConversionType = JSONUtils.getClientSideTypeJSONString((IPropertyWithClientSideConversions)type,
+							valueType != null && valueType.getType() == type ? valueType : null);
+					}
+					else clientSideConversionType = null;
 
-			return writer;
+					return ejw.isEmpty() ? null : new JSONStringWithClientSideType(ejw.toJSONString(), clientSideConversionType);
+				}
+				catch (Exception ex)
+				{
+					log.error("Error while converting value (toJSON with type): " + safeToString(value) + " to type: " + type +
+						" current json: " + ejw.toString(), ex);
+					return null;
+				}
+			}
+			else
+			{
+				// default conversion
+				return getDefaultConvertedValueWithClientType(this, value, valueType, context);
+			}
 		}
 
 	}
@@ -490,8 +537,8 @@ public class JSONUtils
 		public static final ChangesToJSONConverter INSTANCE = new ChangesToJSONConverter();
 
 		@Override
-		public JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, DataConversion browserConversionMarkers,
-			IBrowserConverterContext context) throws JSONException, IllegalArgumentException
+		public JSONWriter toJSONValue(JSONWriter writer, String key, Object value, PropertyDescription valueType, IBrowserConverterContext context)
+			throws JSONException, IllegalArgumentException
 		{
 			if (value != null && valueType != null)
 			{
@@ -501,29 +548,85 @@ public class JSONUtils
 					// good, we now know that it can send changes only
 					try
 					{
-						return ((ISupportsGranularUpdates)type).changesToJSON(writer, key, value, valueType, browserConversionMarkers, context);
+						return ((ISupportsGranularUpdates)type).changesToJSON(writer, key, value, valueType, context);
+						// if type is ISupportsGranularUpdatesWithDynamicClientType it would write the dynamic type to JSON as well if needed
 					}
 					catch (Exception ex)
 					{
-						log.error("Error while writing changes for value: " + safeToString(value) + " to type: " + type + " current json: " + writer.toString(),
-							ex);
+						log.error("Error while writing changes for value (changesToJSON): " + safeToString(value) + " to type: " + type + " current json: " +
+							writer.toString(), ex);
 						return writer;
 					}
 				}
 			}
 
 			// for most values that don't support granular updates use full value to JSON
-			super.toJSONValue(writer, key, value, valueType, browserConversionMarkers, context);
+			super.toJSONValue(writer, key, value, valueType, context);
 
 			return writer;
 		}
+
+		@Override
+		public IJSONStringWithClientSideType getConvertedValueWithClientType(Object value, PropertyDescription valueType, IBrowserConverterContext context,
+			boolean returnOnlyDynamicTypes)
+		{
+			ValueReference<Boolean> typeDeterminedBasedOnClassOfValue = new ValueReference<Boolean>(Boolean.FALSE);
+			IPropertyType< ? > type = (IPropertyType< ? >)findConvertingTypeToBrowser(value, valueType, typeDeterminedBasedOnClassOfValue);
+
+			if (type instanceof ISupportsGranularUpdatesWithDynamicClientType)
+			{
+				EmbeddableJSONWriter ejw = new EmbeddableJSONWriter(true); // that 'true' is a workaround for allowing directly a value instead of object or array
+				JSONString clientSideConversionType;
+				try
+				{
+					clientSideConversionType = ((ISupportsGranularUpdatesWithDynamicClientType)type).changesToJSONWithDynamicClientSideType(ejw,
+						value, valueType, context);
+					return ejw.isEmpty() ? null : new JSONStringWithClientSideType(ejw.toJSONString(), clientSideConversionType);
+				}
+				catch (Exception ex)
+				{
+					log.error("Error while writing changes for (changes with dynamic client side type) value (changesToJSON with type): " +
+						safeToString(value) + " to type: " + type + " current json: " + ejw.toString(), ex);
+					return null;
+				}
+			}
+			else if (type instanceof ISupportsGranularUpdates)
+			{
+				// good, we now know that it can send changes only
+				JSONString clientSideConversionType;
+				EmbeddableJSONWriter ejw = new EmbeddableJSONWriter(true); // that 'true' is a workaround for allowing directly a value instead of object or array
+				try
+				{
+					((ISupportsGranularUpdates)type).changesToJSON(ejw, null, value, valueType, context);
+					// in the condition below, typeDeterminedBasedOnClassOfValue.value.booleanValue() can be assimilated to a dynamic type scenario as the type was determined based on java class of value, it was not known initially
+					if ((!returnOnlyDynamicTypes || typeDeterminedBasedOnClassOfValue.value.booleanValue()) &&
+						type instanceof IPropertyWithClientSideConversions)
+					{
+						clientSideConversionType = JSONUtils.getClientSideTypeJSONString(valueType);
+					}
+					else clientSideConversionType = null;
+
+					return ejw.isEmpty() ? null : new JSONStringWithClientSideType(ejw.toJSONString(), clientSideConversionType);
+				}
+				catch (Exception ex)
+				{
+					log.error(
+						"Error while writing changes for value (changesToJSON with type): " + safeToString(value) + " to type: " + type + " current json: " +
+							ejw.toString(),
+						ex);
+					return null;
+				}
+			}
+			else return super.getConvertedValueWithClientType(value, valueType, context, returnOnlyDynamicTypes);
+		}
+
 	}
 
 	/**
 	 * A JSONStringer that is able to be appended to another JSONWriter directly - without re-parsing the value into a JSONObject for example.
 	 * @author acostescu
 	 */
-	public static class EmbeddableJSONWriter extends JSONStringer implements JSONString
+	public static class EmbeddableJSONWriter extends DebugFriendlyJSONStringer implements JSONString
 	{
 
 		public EmbeddableJSONWriter()
@@ -550,33 +653,75 @@ public class JSONUtils
 			return writer.toString();
 		}
 
+		/**
+		 * Returns true if nothing was written to this EmbeddableJSONWriter. False if something was.
+		 */
+		public boolean isEmpty()
+		{
+			// writer should always be StringWriter here because this class extends JSONStringer that gives the writer; but check anyway
+			if (writer instanceof StringWriter)
+				return ((StringWriter)writer).getBuffer().length() == 0;
+			else
+			{
+				String str = writer.toString();
+				return str == null || str.length() == 0;
+			}
+		}
+
 	}
 
 	/**
 	 * Interface for easy grouping of typed content to be written to JSON.
+	 *
 	 * @author acostescu
 	 */
-	public static interface IJSONStringWithConversions extends JSONString
+	public static interface IJSONStringWithClientSideType extends JSONString
 	{
 
-		DataConversion getDataConversions();
+		JSONString getClientSideType();
 
+	}
+
+	public static class JSONStringWrapper implements JSONString
+	{
+		public String wrappedString;
+
+		public JSONStringWrapper()
+		{
+		}
+
+		public JSONStringWrapper(String wrappedString)
+		{
+			this.wrappedString = wrappedString;
+		}
+
+		@Override
+		public String toJSONString()
+		{
+			return wrappedString != null ? wrappedString : "null";
+		}
 	}
 
 	/**
 	 * Class for easy grouping of typed content to be written to JSON.
 	 * @author acostescu
 	 */
-	public static class JSONStringWithConversions implements IJSONStringWithConversions
+	public static class JSONStringWithClientSideType implements IJSONStringWithClientSideType
 	{
 
 		protected final String jsonString;
-		protected final DataConversion dataConversions;
+		protected final JSONString clientSideType;
 
-		public JSONStringWithConversions(String jsonString, DataConversion dataConversions)
+		public JSONStringWithClientSideType(String jsonString)
 		{
 			this.jsonString = jsonString;
-			this.dataConversions = dataConversions;
+			clientSideType = null;
+		}
+
+		public JSONStringWithClientSideType(String jsonString, JSONString clientSideType)
+		{
+			this.jsonString = jsonString;
+			this.clientSideType = clientSideType;
 		}
 
 		@Override
@@ -586,9 +731,9 @@ public class JSONUtils
 		}
 
 		@Override
-		public DataConversion getDataConversions()
+		public JSONString getClientSideType()
 		{
-			return dataConversions;
+			return clientSideType;
 		}
 
 		@Override
@@ -596,7 +741,7 @@ public class JSONUtils
 		{
 			final int prime = 31;
 			int result = 1;
-			result = prime * result + ((dataConversions == null) ? 0 : dataConversions.hashCode());
+			result = prime * result + ((clientSideType == null) ? 0 : clientSideType.hashCode());
 			result = prime * result + ((jsonString == null) ? 0 : jsonString.hashCode());
 			return result;
 		}
@@ -607,12 +752,12 @@ public class JSONUtils
 			if (this == obj) return true;
 			if (obj == null) return false;
 			if (getClass() != obj.getClass()) return false;
-			JSONStringWithConversions other = (JSONStringWithConversions)obj;
-			if (dataConversions == null)
+			JSONStringWithClientSideType other = (JSONStringWithClientSideType)obj;
+			if (clientSideType == null)
 			{
-				if (other.dataConversions != null) return false;
+				if (other.clientSideType != null) return false;
 			}
-			else if (!dataConversions.equals(other.dataConversions)) return false;
+			else if (!clientSideType.equals(other.clientSideType)) return false;
 			if (jsonString == null)
 			{
 				if (other.jsonString != null) return false;
@@ -627,15 +772,6 @@ public class JSONUtils
 			return "JSONString:" + toJSONString();
 		}
 
-	}
-
-	public static <X> IJSONStringWithConversions writeToJSONString(IToJSONWriter<X> toJSONWriter, IToJSONConverter<X> converter) throws JSONException
-	{
-		EmbeddableJSONWriter rowData = new EmbeddableJSONWriter();
-		DataConversion clientConversionInfo = new DataConversion();
-
-		toJSONWriter.writeJSONContent(rowData, null, converter, clientConversionInfo);
-		return new JSONStringWithConversions(rowData.toJSONString(), clientConversionInfo);
 	}
 
 	// THESE METHODS FOR JSON comparison are copy pasted from servoy_shared's Utils to avoid a dependency; if you alter them please update code in both places!

@@ -23,6 +23,7 @@ import java.util.Map;
 import org.json.JSONObject;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.sablo.specification.property.IPropertyType;
+import org.sablo.specification.property.IPropertyWithClientSideConversions;
 
 /**
  * @author lvostinar
@@ -53,13 +54,25 @@ abstract class AbstractPropertyDescriptionBuilder<B extends AbstractPropertyDesc
 		return getThis();
 	}
 
-	public B withProperties(Map<String, PropertyDescription> propertiesList)
+	/**
+	 * The resulting PropertyDescription will have the given properties as sub-properties.<br/><br/>
+	 *
+	 * <b><i>Note</i></b>: PropertyDescriptions with child properties (created with this method, so probably with irrelevant type on themselves) should NOT be written toJSON using the main/parent/this property value - as that will
+	 * probably mean the default object conversion will be used even for sub-properties (which could be in fact typed); that will write them correctly (as far as default object conversion goes) but the subproperty
+	 * types, if they are also {@link IPropertyWithClientSideConversions}, will be included in the sent value, even if the client might know them already. (if child properties are the properties of a web component or service for example then
+	 * they are already available client-side). Still if you do choose to write toJSON such a parent PD's value (using default conversion) please make sure to call the fromServerToClient conversion on that value on the client,
+	 * otherwise you will probably encounter unexpected structure (with types as default object conversion does it) inside that value on the client.
+	 *
+	 * @param subPropertiesList
+	 * @return
+	 */
+	public B withProperties(Map<String, PropertyDescription> subPropertiesList)
 	{
 		if (properties == null)
 		{
 			properties = new HashMap<>();
 		}
-		properties.putAll(propertiesList);
+		properties.putAll(subPropertiesList);
 		return getThis();
 	}
 

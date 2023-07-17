@@ -15,6 +15,7 @@
 	        "typesReject": "mytype[]",
 	        "simpleArrayReject": { "type": "int[]" },
 	        "simpleArrayAllow": { "type": "int[]", "pushToServer": "allow" },
+	        "simpleArrayElReject": { "type": "int[]", "pushToServer": "allow", "elementConfig": {"pushToServer": "reject" }},
 	        "nochangeint1" : "int",
 	        "nochangeint2" : { "type": "int" },
 	        "nochangeint3" : { "type": "int", "pushToServer": "reject" },
@@ -30,7 +31,9 @@
 		"foreground": "color",
 		"size": "dimension",
 		"mnemonic": "string",
-		"subtypearray": "mysubtype[]"
+		"subtypearray": "mysubtype[]",
+		"rejectedString": { "type" : "string", "pushToServer": "reject" },
+		"subtypeArrayWithElReject": { "type" : "string", "elementConfig": {"pushToServer": "reject" }}
 	  },
 	  "mysubtype": {
 		"caption": "string",

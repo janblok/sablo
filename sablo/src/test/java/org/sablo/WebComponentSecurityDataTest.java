@@ -30,7 +30,6 @@ import org.junit.After;
 import org.junit.Test;
 import org.sablo.specification.Package.IPackageReader;
 import org.sablo.specification.WebComponentSpecProvider;
-import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
 
 /**
@@ -265,8 +264,7 @@ public class WebComponentSecurityDataTest
 	private static JSONObject writeComponentProperties(WebComponent wc) throws Exception
 	{
 		JSONWriter writer = new JSONStringer().object();
-		DataConversion conversions = new DataConversion();
-		wc.writeComponentProperties(writer, FullValueToJSONConverter.INSTANCE, "props", conversions);
+		wc.writeComponentProperties(writer, FullValueToJSONConverter.INSTANCE, "props");
 		JSONObject json = new JSONObject(writer.endObject().toString());
 		return json.getJSONObject("props");
 	}

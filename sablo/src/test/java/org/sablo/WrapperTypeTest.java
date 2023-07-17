@@ -39,7 +39,6 @@ import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.specification.property.types.TypesRegistry;
 import org.sablo.util.ValueReference;
 import org.sablo.websocket.TypedData;
-import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 
 /**
@@ -111,8 +110,8 @@ public class WrapperTypeTest
 		}
 
 		@Override
-		public JSONWriter toJSON(JSONWriter writer, String key, MyWrapper object, PropertyDescription pd, DataConversion clientConversion,
-			IBrowserConverterContext dataConverterContext) throws JSONException
+		public JSONWriter toJSON(JSONWriter writer, String key, MyWrapper object, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
+			throws JSONException
 		{
 			JSONUtils.addKeyIfPresent(writer, key);
 			writer.object();
@@ -179,7 +178,7 @@ public class WrapperTypeTest
 		TypedData<Map<String, Object>> properties = component.getProperties();
 		data.put("msg", properties.content);
 
-		String msg = JSONUtils.writeDataWithConversions(data,
+		String msg = JSONUtils.writeDataAsFullToJSON(data,
 			AggregatedPropertyType.newAggregatedPropertyBuilder().withProperty("msg", properties.contentType).build(), null);
 		assertTrue(new JSONObject("{\"msg\":{\"somepropp\":{\"string\":\"test\",\"counter\":1},\"name\":\"test\"}}")
 			.similar(new JSONObject(msg)));

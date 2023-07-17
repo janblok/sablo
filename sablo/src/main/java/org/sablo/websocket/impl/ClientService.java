@@ -21,7 +21,7 @@ import org.json.JSONException;
 import org.json.JSONStringer;
 import org.json.JSONWriter;
 import org.sablo.BaseWebObject;
-import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.IFunctionParameters;
 import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
@@ -32,7 +32,6 @@ import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.IClientService;
 import org.sablo.websocket.IToJSONWriter;
 import org.sablo.websocket.TypedDataWithChangeInfo;
-import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
@@ -74,8 +73,7 @@ public class ClientService extends BaseWebObject implements IClientService
 		{
 
 			@Override
-			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
-				DataConversion clientDataConversions) throws JSONException
+			public boolean writeJSONContent(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException
 			{
 				TypedDataWithChangeInfo serviceChanges = getAndClearChanges();
 				if (serviceChanges.content != null && serviceChanges.content.size() > 0)
@@ -83,12 +81,10 @@ public class ClientService extends BaseWebObject implements IClientService
 					JSONUtils.addKeyIfPresent(w, keyInParent);
 
 					w.object().key("services").object().key(getScriptingName()).object();
-					clientDataConversions.pushNode("services").pushNode(getScriptingName());
 
 					// converter is always ChangesToJSONConverter here and will get passed one; so if some property changed completely, use the FullValueToJSONConverter given as separate arg.
-					writeProperties(converter, FullValueToJSONConverter.INSTANCE, w, serviceChanges, clientDataConversions);
+					writeProperties(converter, FullValueToJSONConverter.INSTANCE, w, serviceChanges);
 
-					clientDataConversions.popNode().popNode();
 					w.endObject().endObject().endObject();
 
 					return true;
@@ -99,9 +95,9 @@ public class ClientService extends BaseWebObject implements IClientService
 
 			@Override
 			public boolean checkForAndWriteAnyUnexpectedRemainingChanges(JSONStringer w, String keyInParent,
-				IToJSONConverter<IBrowserConverterContext> converter, DataConversion clientDataConversions)
+				IToJSONConverter<IBrowserConverterContext> converter)
 			{
-				return writeJSONContent(w, keyInParent, converter, clientDataConversions);
+				return writeJSONContent(w, keyInParent, converter);
 			}
 		}, apiFunction != null ? apiFunction.getBlockEventProcessing() : true);
 
@@ -137,21 +133,11 @@ public class ClientService extends BaseWebObject implements IClientService
 		CurrentWindow.get().executeAsyncNowServiceCall(this, functionName, arguments, getParameterTypes(functionName));
 	}
 
-	protected PropertyDescription getParameterTypes(String functionName)
+	protected IFunctionParameters getParameterTypes(String functionName)
 	{
-		// we have a list of properties available; create a suitable wrapper PropertyDescription that has the
-		// param indexes as child PropertyDescriptions
 		WebObjectFunctionDefinition apiFunc = specification.getApiFunction(functionName);
-		if (apiFunc != null)
-		{
-			return BaseWebObject.getParameterTypes(apiFunc);
-		}
-		apiFunc = specification.getInternalApiFunction(functionName);
-		if (apiFunc != null)
-		{
-			return BaseWebObject.getParameterTypes(apiFunc);
-		}
-		return null;
+		if (apiFunc == null) apiFunc = specification.getInternalApiFunction(functionName);
+		return apiFunc != null ? apiFunc.getParameters() : null;
 	}
 
 	/**
@@ -201,11 +187,11 @@ public class ClientService extends BaseWebObject implements IClientService
 
 	public static WebObjectSpecification getServiceDefinitionFromScriptingName(String scriptingName)
 	{
-		WebObjectSpecification serviceDefinition = WebServiceSpecProvider.getSpecProviderState().getWebComponentSpecification(scriptingName);
+		WebObjectSpecification serviceDefinition = WebServiceSpecProvider.getSpecProviderState().getWebObjectSpecification(scriptingName);
 		if (serviceDefinition == null)
 		{
 			// just search in all available services - which one has that scripting name
-			WebObjectSpecification[] allServiceSpecs = WebServiceSpecProvider.getSpecProviderState().getAllWebComponentSpecifications();
+			WebObjectSpecification[] allServiceSpecs = WebServiceSpecProvider.getSpecProviderState().getAllWebObjectSpecifications();
 			if (allServiceSpecs != null)
 			{
 				for (WebObjectSpecification ss : allServiceSpecs)
@@ -219,6 +205,12 @@ public class ClientService extends BaseWebObject implements IClientService
 			}
 		}
 		return serviceDefinition;
+	}
+
+	@Override
+	public String toString()
+	{
+		return "Client service: " + getName(); //$NON-NLS-1$
 	}
 
 }

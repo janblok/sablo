@@ -17,6 +17,7 @@
 package org.sablo.websocket;
 
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,6 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import javax.servlet.http.HttpSession;
 import javax.websocket.CloseReason;
 
+import org.sablo.eventthread.IEventDispatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,13 +61,13 @@ public class WebsocketSessionManager
 		}
 	});
 
-	private static volatile boolean stop = false;
+	private static volatile boolean pingEndpointsThreadShouldStop = false;
 	private final static Thread pingEndpointsThread = new Thread(new Runnable()
 	{
 		@Override
 		public void run()
 		{
-			while (!stop)
+			while (!pingEndpointsThreadShouldStop)
 			{
 				for (IWebsocketSession session : wsSessions.values())
 				{
@@ -252,7 +254,15 @@ public class WebsocketSessionManager
 		AtomicInteger counter = (AtomicInteger)httpSession.getAttribute(attribute);
 		if (counter == null)
 		{
-			counter = new AtomicInteger();
+			counter = new AtomicInteger()
+			{
+				private void writeObject(ObjectOutputStream out) throws IOException
+				{
+					// if this is serialized also set the counter to 0, because clients can't be serialized or transfered over
+					set(0);
+					out.defaultWriteObject();
+				}
+			};
 			httpSession.setAttribute(attribute, counter);
 		}
 		return counter;
@@ -270,7 +280,7 @@ public class WebsocketSessionManager
 
 	public static void destroy()
 	{
-		stop = true;
+		pingEndpointsThreadShouldStop = true;
 		closeAllSessions();
 		pingEndpointsThread.interrupt();
 		expiredThreadPool.shutdown();
@@ -333,6 +343,12 @@ public class WebsocketSessionManager
 						try
 						{
 							Thread.currentThread().setName("Sablo Session closer: " + session.getSessionKey()); //$NON-NLS-1$
+							if (!checkForWindowActivity)
+							{
+								// this is a force close, look if we can interrupt the event thread.
+								IEventDispatcher eventDispatcher = session.getEventDispatcher(false);
+								if (eventDispatcher != null) eventDispatcher.interruptEventThread();
+							}
 							session.sessionExpired();
 							Thread.currentThread().setName("Sablo Session closer"); //$NON-NLS-1$
 						}

@@ -128,16 +128,14 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 		}
 	}
 
-	public static void reload()
-	{
-		synchronized (WebComponentSpecProvider.class)
-		{
-			instance.reader.load();
-		}
-	}
-
 	private WebComponentSpecProvider(WebSpecReader reader)
 	{
 		super(reader);
+	}
+
+	public ClientSideTypeCache getClientSideTypeCache()
+	{
+		return reader.getClientSideTypeCache();
+
 	}
 }

@@ -18,9 +18,9 @@ package org.sablo.services.client;
 
 import java.io.IOException;
 
+import org.sablo.specification.FunctionParameters;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.PropertyDescriptionBuilder;
-import org.sablo.specification.property.types.AggregatedPropertyType;
 import org.sablo.specification.property.types.BooleanPropertyType;
 import org.sablo.specification.property.types.IntPropertyType;
 import org.sablo.websocket.CurrentWindow;
@@ -36,6 +36,9 @@ public class SabloService
 {
 	public static final String SABLO_SERVICE = "$sabloService";
 
+	private static final PropertyDescription defidPD = new PropertyDescriptionBuilder().withName("defid").withType(IntPropertyType.INSTANCE).build();
+	private static final PropertyDescription successPD = new PropertyDescriptionBuilder().withName("success").withType(BooleanPropertyType.INSTANCE).build();
+
 	private final IClientService clientService;
 
 	public SabloService(IClientService clientService)
@@ -43,9 +46,6 @@ public class SabloService
 		this.clientService = clientService;
 	}
 
-	/**
-	 * @param currentFormUrl
-	 */
 	public void setCurrentFormUrl(String currentFormUrl)
 	{
 		clientService.executeAsyncServiceCall("setCurrentFormUrl", new Object[] { currentFormUrl });
@@ -58,16 +58,16 @@ public class SabloService
 
 	public void resolveDeferedEvent(int defid, boolean success, Object argument, PropertyDescription argumentPD)
 	{
-		PropertyDescription pd = null;
+		FunctionParameters paramTypes = null;
 		if (argumentPD != null)
 		{
-			PropertyDescriptionBuilder pdBuilder = AggregatedPropertyType.newAggregatedPropertyBuilder();
-			pdBuilder.withProperty("0", new PropertyDescriptionBuilder().withName("defid").withType(IntPropertyType.INSTANCE).build());
-			pdBuilder.withProperty("1", argumentPD);
-			pdBuilder.withProperty("2", new PropertyDescriptionBuilder().withName("success").withType(BooleanPropertyType.INSTANCE).build());
-			pd = pdBuilder.build();
+			paramTypes = new FunctionParameters(3);
+			paramTypes.add(defidPD);
+			paramTypes.add(argumentPD);
+			paramTypes.add(successPD);
 		}
 		CurrentWindow.get().executeAsyncServiceCall(clientService, "resolveDeferedEvent",
-			new Object[] { Integer.valueOf(defid), argument, Boolean.valueOf(success) }, pd);
+			new Object[] { Integer.valueOf(defid), argument, Boolean.valueOf(success) }, paramTypes);
 	}
+
 }

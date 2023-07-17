@@ -23,7 +23,9 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionActivationListener;
 import javax.servlet.http.HttpSessionContext;
+import javax.servlet.http.HttpSessionEvent;
 
 /**
  * Separate out the default session with another session based on a list of paths.
@@ -95,7 +97,7 @@ public class SeparateSessionFilter implements Filter
 		return paths.stream().anyMatch(requestPath::startsWith);
 	}
 
-	private static class SeparateSessionData implements Serializable
+	private static class SeparateSessionData implements Serializable, HttpSessionActivationListener
 	{
 		private boolean separatePresent = false;
 		private boolean nonseparatePresent = false;
@@ -136,6 +138,15 @@ public class SeparateSessionFilter implements Filter
 				nonseparateAttributeNames.clear();
 				return !separatePresent;
 			}
+		}
+
+		@Override
+		public void sessionWillPassivate(HttpSessionEvent se)
+		{
+			// if this happens we need to set the timout interval back to the default, else the next time the session will never be cleared.
+			Integer interval = getDefaultMaxInactiveInterval();
+			if (interval != null)
+				se.getSession().setMaxInactiveInterval(interval.intValue());
 		}
 
 		Integer getDefaultMaxInactiveInterval()

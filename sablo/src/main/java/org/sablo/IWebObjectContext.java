@@ -4,7 +4,7 @@ import java.beans.PropertyChangeListener;
 
 /**
  * Interface to be passed on to various methods of smarter property types in order to give access to slightly modified context.<br/><br/>
- * 
+ *
  * For example in case of a nested property you might want access to properties in the same custom object type, not just to root
  * properties in the BaseWebObject.
  *
@@ -22,6 +22,11 @@ public interface IWebObjectContext extends IPropertyDescriptionProvider
 
 	BaseWebObject getUnderlyingWebObject();
 
+	/**
+	 * this will return the parent context if it had one, but it can also just fall back to the {@link #getUnderlyingWebObject()} call
+	 * So this will not return null but can in the end return itself if this context is the WebFormComponent itself.
+	 * @return
+	 */
 	IWebObjectContext getParentContext();
 
 	/**

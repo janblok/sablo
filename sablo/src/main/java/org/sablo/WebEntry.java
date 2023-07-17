@@ -33,10 +33,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.sablo.services.template.ModifiablePropertiesGenerator;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebServiceSpecProvider;
-import org.sablo.util.HTTPUtils;
 import org.sablo.websocket.GetHttpSessionConfigurator;
 import org.sablo.websocket.IWebsocketSessionFactory;
 import org.sablo.websocket.WebsocketSessionManager;
@@ -128,26 +126,6 @@ public abstract class WebEntry implements Filter, IContributionFilter, IContribu
 			{
 				if (getLogger().isDebugEnabled()) getLogger().debug("Setting 60 seconds timeout on the HttpSession: " + httpSession);
 				httpSession.setMaxInactiveInterval(60);
-			}
-
-			String uri = request.getRequestURI();
-			if (uri.endsWith("spec/" + ModifiablePropertiesGenerator.PUSH_TO_SERVER_BINDINGS_LIST + ".js"))
-			{
-				long lastSpecLoadTime = Math.max(WebComponentSpecProvider.getLastLoadTimestamp(), WebServiceSpecProvider.getLastLoadTimestamp());
-				if (HTTPUtils.checkAndSetUnmodified(request, response, lastSpecLoadTime)) return;
-
-				HTTPUtils.setNoCacheHeaders(response);
-
-				response.setContentType("text/javascript");
-				response.setCharacterEncoding("UTF-8");
-				PrintWriter w = servletResponse.getWriter();
-				ModifiablePropertiesGenerator.start(w);
-				ModifiablePropertiesGenerator.appendAll(w, WebComponentSpecProvider.getSpecProviderState().getAllWebComponentSpecifications(), "components");
-				ModifiablePropertiesGenerator.appendAll(w, WebServiceSpecProvider.getSpecProviderState().getAllWebComponentSpecifications(), "services");
-				ModifiablePropertiesGenerator.finish(w);
-				w.flush();
-
-				return;
 			}
 
 			URL indexPageResource = getIndexPageResource(request);

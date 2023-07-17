@@ -110,7 +110,15 @@ public class Event
 				finally
 				{
 					executed = true;
-					afterExecute();
+					try
+					{
+						afterExecute();
+					}
+					catch (Exception e)
+					{
+						log.error("Exception in after execute", e);
+						exception = exception != null ? exception : e;
+					}
 				}
 			}
 		});

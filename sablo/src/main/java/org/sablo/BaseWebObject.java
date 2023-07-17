@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -36,15 +35,16 @@ import java.util.concurrent.ConcurrentMap;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONString;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.PropertyDescription.PDAndComputedPushToServer;
 import org.sablo.specification.PropertyDescriptionBuilder;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.sablo.specification.property.BrowserConverterContext;
-import org.sablo.specification.property.CustomJSONArrayType;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
 import org.sablo.specification.property.IGranularProtectionChecker;
@@ -60,8 +60,8 @@ import org.sablo.specification.property.types.VisiblePropertyType;
 import org.sablo.util.ValueReference;
 import org.sablo.websocket.TypedData;
 import org.sablo.websocket.TypedDataWithChangeInfo;
-import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
+import org.sablo.websocket.utils.JSONUtils.EmbeddableJSONWriter;
 import org.sablo.websocket.utils.JSONUtils.FullValueToJSONConverter;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 import org.slf4j.Logger;
@@ -90,9 +90,9 @@ public abstract class BaseWebObject implements IWebObjectContext
 	protected final Map<String, Object> properties = new HashMap<>();
 
 	/**
-	 * default model properties that are not send to the browser.
+	 * default model properties that are not send to the browser or template (design) values that were sent to browser as template values but have not (yet) changed at runtime
 	 */
-	protected final Map<String, Object> defaultPropertiesUnwrapped = new HashMap<>();
+	protected final Map<String, Object> defaultAndTemplatePropertiesUnwrapped = new HashMap<>();
 
 	/**
 	 * the event handlers
@@ -124,7 +124,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 		this.specification = specification;
 		changes = new Changes();
 
-		if (specification == null) throw new IllegalStateException("Cannot work without specification");
+		if (specification == null) throw new IllegalStateException("Cannot work without a specification for: " + name);
 	}
 
 	/**
@@ -313,12 +313,12 @@ public abstract class BaseWebObject implements IWebObjectContext
 	 * @return
 	 * @throws Exception
 	 */
-	public final Object executeEvent(String eventType, Object[] args) throws Exception
+	public final JSONString executeEvent(String eventType, Object[] args) throws Exception
 	{
 		WebObjectFunctionDefinition handler = getSpecification().getHandler(eventType);
 		try
 		{
-			checkProtection(eventType);
+			checkForProtectedPropertiesThatMightBlockUpdatesOn(eventType);
 		}
 		catch (IllegalChangeFromClientException e)
 		{
@@ -329,7 +329,11 @@ public abstract class BaseWebObject implements IWebObjectContext
 		if (handler != null && handler.isPrivate()) throw new IllegalAccessException(
 			"Event " + eventType + " is called from the client, but it is a private event of " + this + " with spec " + specification);
 
-		return doExecuteEvent(eventType, args);
+		EmbeddableJSONWriter ejw = new EmbeddableJSONWriter(true);
+
+		FullValueToJSONConverter.INSTANCE.toJSONValue(ejw, null, doExecuteEvent(eventType, args), handler != null ? handler.getReturnType() : null,
+			new BrowserConverterContext(this, PushToServerEnum.reject));
+		return ejw;
 	}
 
 	protected void checkIfFunctionAccessIsAllowedDisregardingProtection(WebObjectFunctionDefinition functionDef, IllegalChangeFromClientException e)
@@ -341,10 +345,9 @@ public abstract class BaseWebObject implements IWebObjectContext
 			if (allowAccess != null)
 			{
 				List<String> allowAccessProperties = Arrays.asList(allowAccess.split(","));
-				Iterator<String> iterator = allowAccessProperties.iterator();
-				while (iterator.hasNext())
+				for (String element : allowAccessProperties)
 				{
-					if (iterator.next().equals(e.getBlockedByProperty()))
+					if (element.equals(e.getBlockedByProperty()))
 					{
 						rethrow = false;
 						break;
@@ -366,7 +369,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 			log.warn("Unknown event '" + eventType + "' for component " + this);
 			return null;
 		}
-		return handler.executeEvent(args);
+		return handler.executeEvent(args); // FIXME here we know it's comming from client json?/sablo/java and returning to client json; see SVY-18096
 	}
 
 	public final boolean isVisible()
@@ -442,7 +445,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 	 *
 	 * @throws IllegalChangeFromClientException when property is protected
 	 */
-	protected void checkProtection(String property)
+	protected void checkForProtectedPropertiesThatMightBlockUpdatesOn(String property)
 	{
 		for (PropertyDescription prop : specification.getProperties().values())
 		{
@@ -480,63 +483,42 @@ public abstract class BaseWebObject implements IWebObjectContext
 	}
 
 	/**
-	 * Check if the property is protected, i.e. it cannot be set from the client.
+	 * Check if the property is protected from browser updates by push-to-server or by the fact that it is a "protecting" prop. itself, i.e. it cannot be set from the client.
 	 *
-	 * @param propName
+	 * @param propName can be a simple property name string or a nested property name with '.' and '[]'.
 	 * @throws IllegalChangeFromClientException when property is protected
 	 */
-	protected void checkForProtectedProperty(String propName)
+	protected void checkThatPushToServerAllowsUpdatesOn(String propName)
 	{
 		List<PropertyDescription> propertyPath = specification.getPropertyPath(propName);
+		PushToServerEnum computedPushToServer = null;
 		for (int i = 0; i < propertyPath.size(); i++)
 		{
 			PropertyDescription property = propertyPath.get(i);
-			boolean isLastInPath = i == propertyPath.size() - 1;
-			if (property != null)
-			{
-				if (property.getType().isProtecting())
-				{
-					// property is protected, i.e. it cannot be set from the client
-					throw new IllegalChangeFromClientException(null,
-						"Property '" + property + "' is a 'protecting' property itself so it can never be changed from client.", getName(), propName);
-				}
 
-				if (isLastInPath)
-				{
-					if (PushToServerEnum.allow.compareTo(property.getPushToServer()) > 0 && (!(property.getType() instanceof IPushToServerSpecialType) ||
-						!((IPushToServerSpecialType)property.getType()).shouldAlwaysAllowIncommingJSON()))
-					{
-						// pushToServer not set to allowed on the prop. itself (isLastInPath), it should not be changed from the client
-						throw new IllegalChangeFromClientException(null,
-							"Property '" + propName + "' has 'pushToServer' set to 'reject' so it cannot be changed from client.", getName(), propName);
-					}
-				}
-				else
-				{
-					// TODO hmm isn't elementConfig already checked with code above? (as it should affect pushToServer of the PropertyDescription of elements when we really will do pushToServer at more then root property level)
-					if (property.getConfig() instanceof JSONObject)
-					{
-						JSONObject config = (JSONObject)property.getConfig();
-						if (config.has(CustomJSONArrayType.ELEMENT_CONFIG_KEY))
-						{
-							config = config.getJSONObject(CustomJSONArrayType.ELEMENT_CONFIG_KEY);
-						}
-						if (config.has(WebObjectSpecification.PUSH_TO_SERVER_KEY))
-						{
-							PushToServerEnum configPushToServer = PushToServerEnum.fromString(config.optString(WebObjectSpecification.PUSH_TO_SERVER_KEY));
-							if (PushToServerEnum.allow.compareTo(configPushToServer) > 0)
-							{
-								throw new IllegalChangeFromClientException(null, "Property '" + propName +
-									"' has 'pushToServer' set to 'reject' (on an array element config in it's property path) so it cannot be changed from client.",
-									getName(), propName);
-							}
-						}
-					}
-				}
+			if (i == 0) computedPushToServer = property.getPushToServer();
+			else computedPushToServer = computedPushToServer.combineWithChild(property.getPushToServerAsDeclaredInSpecFile());
+
+			if (property.getType().isProtecting())
+			{
+				// property is protected, i.e. it cannot be set from the client
+				throw new IllegalChangeFromClientException(null,
+					"Property '" + propertyPath.stream().limit(i + 1).map(pd -> pd.getName()).reduce(specification.getName(), (a, b) -> a + '.' + b) +
+						"' is a 'protecting' property itself so it can never be changed from client.",
+					getName(), propName);
 			}
 
-			// ok
+			if (PushToServerEnum.allow.compareTo(computedPushToServer) > 0 && (!(property.getType() instanceof IPushToServerSpecialType) ||
+				!((IPushToServerSpecialType)property.getType()).shouldAlwaysAllowIncommingJSON()))
+			{
+				// computed pushToServer not at least 'allow' on the prop. itself and parents; it should not be changed from the client
+				throw new IllegalChangeFromClientException(null,
+					"Property '" + propertyPath.stream().limit(i + 1).map(pd -> pd.getName()).reduce(specification.getName(), (a, b) -> a + '.' + b) +
+						"' has computed 'pushToServer' set to 'reject' so it cannot be changed from client.",
+					getName(), propName);
+			}
 		}
+		// if propertyPath.size() == 0, so properties that are sent from browser but are not in spec will be converted to null later anyway in BaseWebObject.convertValueFromJSON() because PD is null
 	}
 
 	/**
@@ -602,11 +584,11 @@ public abstract class BaseWebObject implements IWebObjectContext
 	{
 		Object oldWrappedValue = getRawPropertyValue(propertyName);
 
-		defaultPropertiesUnwrapped.put(propertyName, propertyValue);
+		defaultAndTemplatePropertiesUnwrapped.put(propertyName, propertyValue);
 
 		Object newWrappedValue = getRawPropertyValue(propertyName);
 		Object newUnwrappedV = unwrapValue(propertyName, newWrappedValue); // a default value wrap/unwrap might result in a different value
-		if (newUnwrappedV != propertyValue) defaultPropertiesUnwrapped.put(propertyName, newUnwrappedV);
+		if (newUnwrappedV != propertyValue) defaultAndTemplatePropertiesUnwrapped.put(propertyName, newUnwrappedV);
 
 		if (oldWrappedValue != newWrappedValue) onPropertyChange(propertyName, oldWrappedValue, newWrappedValue);
 	}
@@ -711,8 +693,8 @@ public abstract class BaseWebObject implements IWebObjectContext
 		}
 		if (oldValue == null && !properties.containsKey(firstProperty))
 		{
-			Object defaultProperty = defaultPropertiesUnwrapped.get(firstProperty);
-			if (defaultProperty == null && !defaultPropertiesUnwrapped.containsKey(firstProperty))
+			Object defaultProperty = defaultAndTemplatePropertiesUnwrapped.get(firstProperty);
+			if (defaultProperty == null && !defaultAndTemplatePropertiesUnwrapped.containsKey(firstProperty))
 			{
 				// default value based on spec
 				PropertyDescription propertyDesc = specification.getProperty(firstProperty);
@@ -788,11 +770,11 @@ public abstract class BaseWebObject implements IWebObjectContext
 	 *
 	 * @throws IllegalChangeFromClientException when modification is denied.
 	 */
-	public final void checkPropertyProtection(String propertyName)
+	public final void checkThatPropertyAllowsUpdateFromClient(String propertyName)
 	{
-		checkProtection(propertyName);
+		checkForProtectedPropertiesThatMightBlockUpdatesOn(propertyName);
 
-		checkForProtectedProperty(propertyName);
+		checkThatPushToServerAllowsUpdatesOn(propertyName);
 	}
 
 	/**
@@ -807,7 +789,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 	{
 		try
 		{
-			checkPropertyProtection(propertyName);
+			checkThatPropertyAllowsUpdateFromClient(propertyName);
 		}
 		catch (IllegalChangeFromClientException e)
 		{
@@ -824,29 +806,32 @@ public abstract class BaseWebObject implements IWebObjectContext
 		PropertyDescription pd = getPropertyDescription(propertyName);
 		if (pd != null)
 		{
-			Object allowEditTag = pd.getTag(WebObjectSpecification.ALLOW_ACCESS);
-			// allowEditTag is either a String or an array of Strings representing 'blocked by' property name(s) that should not block the given property (the spec makes specific exceptions in the property itself for the other props. that should not block it)
-			if (allowEditTag instanceof JSONArray)
+			if (propertyValue != null && pd.getType() instanceof IGranularProtectionChecker)
 			{
-				Iterator<Object> iterator = ((JSONArray)allowEditTag).iterator();
-				while (iterator.hasNext())
+				rethrow = !((IGranularProtectionChecker<Object>)pd.getType()).allowPush(propertyValue, getProperty(propertyName), e);
+			}
+			else
+			{
+				Object allowEditTag = pd.getTag(WebObjectSpecification.ALLOW_ACCESS);
+				// allowEditTag is either a String or an array of Strings representing 'blocked by' property name(s) that should not block the given property (the spec makes specific exceptions in the property itself for the other props. that should not block it)
+				if (allowEditTag instanceof JSONArray)
 				{
-					if (iterator.next().equals(e.getBlockedByProperty()))
+					for (Object element : ((JSONArray)allowEditTag))
 					{
-						rethrow = false;
-						break;
+						if (element.equals(e.getBlockedByProperty()))
+						{
+							rethrow = false;
+							break;
+						}
 					}
 				}
-			}
-			else if (allowEditTag instanceof String && allowEditTag.equals(e.getBlockedByProperty()))
-			{
-				rethrow = false;
+				else if (allowEditTag instanceof String && allowEditTag.equals(e.getBlockedByProperty()))
+				{
+					rethrow = false;
+				}
 			}
 		}
-		if (rethrow && propertyValue != null && pd.getType() instanceof IGranularProtectionChecker)
-		{
-			rethrow = !((IGranularProtectionChecker<Object>)pd.getType()).allowPush(propertyValue, getProperty(propertyName));
-		}
+
 		if (rethrow)
 		{
 			e.setData(propertyValue);
@@ -899,10 +884,10 @@ public abstract class BaseWebObject implements IWebObjectContext
 			}
 
 			// in case the 'smart' value completely changed by ref., no use keeping it in default values as it is too smart and it might want to notify changes later, although it wouldn't make sense cause the value is different now
-			Object defaultSmartValue = defaultPropertiesUnwrapped.get(complexPropertyRoot);
+			Object defaultSmartValue = defaultAndTemplatePropertiesUnwrapped.get(complexPropertyRoot);
 			if (defaultSmartValue instanceof ISmartPropertyValue && defaultSmartValue != newWrappedValue)
 			{
-				defaultPropertiesUnwrapped.remove(complexPropertyRoot);
+				defaultAndTemplatePropertiesUnwrapped.remove(complexPropertyRoot);
 				((ISmartPropertyValue)defaultSmartValue).detach();
 			}
 
@@ -916,12 +901,12 @@ public abstract class BaseWebObject implements IWebObjectContext
 					{
 						markPropertyContentsUpdated(complexPropertyRoot);
 
-						if (defaultPropertiesUnwrapped.containsKey(complexPropertyRoot))
+						if (defaultAndTemplatePropertiesUnwrapped.containsKey(complexPropertyRoot))
 						{
 							// something changed in this 'smart' property - so it no longer represents the default value; remove
 							// it from default values (as the value reference is the same but the content changed) and put it in properties map
 							properties.put(complexPropertyRoot, newWrappedValue);
-							defaultPropertiesUnwrapped.remove(complexPropertyRoot);
+							defaultAndTemplatePropertiesUnwrapped.remove(complexPropertyRoot);
 						}
 					}
 				}, this);
@@ -967,8 +952,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 		changes.clearChanges();
 	}
 
-	protected boolean writeComponentProperties(JSONWriter w, IToJSONConverter<IBrowserConverterContext> converter, String nodeName,
-		DataConversion clientDataConversions) throws JSONException
+	protected boolean writeComponentProperties(JSONWriter w, IToJSONConverter<IBrowserConverterContext> converter, String nodeName) throws JSONException
 	{
 		TypedData<Map<String, Object>> typedProperties = getProperties();
 		if (typedProperties.content.isEmpty())
@@ -977,7 +961,6 @@ public abstract class BaseWebObject implements IWebObjectContext
 		}
 
 		w.key(nodeName).object();
-		clientDataConversions.pushNode(nodeName);
 
 		// only write properties that are visible, always write visibility properties
 		Map<String, Object> data = new HashMap<>();
@@ -997,8 +980,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 		}
 
 		// here converter is always a full-value-to-json type (full value or initial value, so not changes); so don't give a second parameter as this should be used in any case (we don't want to send changes)
-		writeProperties(converter, null, w, new TypedData<Map<String, Object>>(data, typedProperties.contentType), clientDataConversions);
-		clientDataConversions.popNode();
+		writeProperties(converter, null, w, new TypedData<Map<String, Object>>(data, typedProperties.contentType));
 		w.endObject();
 
 		return true;
@@ -1040,23 +1022,23 @@ public abstract class BaseWebObject implements IWebObjectContext
 	{
 		if (newJSONValue == JSONObject.NULL) newJSONValue = null;
 
-		PropertyDescription propertyDesc = specification.getProperty(propertyName);
-		Object value = propertyDesc != null ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDesc,
-			new BrowserConverterContext(this, propertyDesc.getPushToServer()), returnValueAdjustedIncommingValue) : null;
+		PDAndComputedPushToServer propertyDescAndPushToServer = specification.computePushToServerForPropertyPathAndGetPD(propertyName);
+		Object value = (propertyDescAndPushToServer.pd != null) ? JSONUtils.fromJSON(previousComponentValue, newJSONValue, propertyDescAndPushToServer.pd,
+			new BrowserConverterContext(this, propertyDescAndPushToServer.pushToServer), returnValueAdjustedIncommingValue) : null;
 		return value;
 	}
 
 	/**
 	 * Use the returned set only for reading, not modifying.
 	 */
-	public Set<String> getAllPropertyNames(boolean includeDefaultValueKeys)
+	public Set<String> getAllPropertyNames(boolean includeDefaultAndTemplateValueKeys)
 	{
 		Set<String> allValKeys;
-		if (includeDefaultValueKeys)
+		if (includeDefaultAndTemplateValueKeys)
 		{
 			allValKeys = new HashSet<String>();
 			allValKeys.addAll(properties.keySet());
-			allValKeys.addAll(defaultPropertiesUnwrapped.keySet());
+			allValKeys.addAll(defaultAndTemplatePropertiesUnwrapped.keySet());
 		}
 		else allValKeys = properties.keySet();
 
@@ -1102,8 +1084,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 		}
 	}
 
-	public boolean writeOwnChanges(JSONWriter w, String keyInParent, String nodeName, IToJSONConverter<IBrowserConverterContext> converter,
-		DataConversion clientDataConversions) throws JSONException
+	public boolean writeOwnChanges(JSONWriter w, String keyInParent, String nodeName, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException
 	{
 		TypedDataWithChangeInfo changesToWrite = changes.getAndClearChanges();
 		if (changesToWrite.content.isEmpty())
@@ -1117,10 +1098,8 @@ public abstract class BaseWebObject implements IWebObjectContext
 		}
 
 		w.key(nodeName).object();
-		clientDataConversions.pushNode(nodeName);
 		// converter here is always ChangesToJSONConverter except for some unit tests
-		writeProperties(converter, FullValueToJSONConverter.INSTANCE, w, changesToWrite, clientDataConversions);
-		clientDataConversions.popNode();
+		writeProperties(converter, FullValueToJSONConverter.INSTANCE, w, changesToWrite);
 		w.endObject();
 
 		return true;
@@ -1130,8 +1109,8 @@ public abstract class BaseWebObject implements IWebObjectContext
 	 * @param converterForSendingFullValue can be null, if only the main converter should be used.
 	 */
 	public void writeProperties(IToJSONConverter<IBrowserConverterContext> mainConverter,
-		IToJSONConverter<IBrowserConverterContext> converterForSendingFullValue, JSONWriter w, TypedData<Map<String, Object>> propertiesToWrite,
-		DataConversion clientDataConversions) throws IllegalArgumentException, JSONException
+		IToJSONConverter<IBrowserConverterContext> converterForSendingFullValue, JSONWriter w, TypedData<Map<String, Object>> propertiesToWrite)
+		throws IllegalArgumentException, JSONException
 	{
 		changes.setShouldNotReceiveChanges(true);
 		TypedDataWithChangeInfo propertiesToWriteWithChangeInfo = (propertiesToWrite instanceof TypedDataWithChangeInfo)
@@ -1139,7 +1118,6 @@ public abstract class BaseWebObject implements IWebObjectContext
 
 		for (Entry<String, Object> entry : propertiesToWrite.content.entrySet())
 		{
-			clientDataConversions.pushNode(entry.getKey());
 			PropertyDescription pd = propertiesToWrite.contentType != null ? propertiesToWrite.contentType.getProperty(entry.getKey()) : null;
 
 			BrowserConverterContext context;
@@ -1150,15 +1128,14 @@ public abstract class BaseWebObject implements IWebObjectContext
 				propertiesToWriteWithChangeInfo.hasFullyChanged(entry.getKey()))
 			{
 				// the property val needs to be sent whole - use the right converter for that
-				converterForSendingFullValue.toJSONValue(w, entry.getKey(), entry.getValue(), pd, clientDataConversions, context);
+				converterForSendingFullValue.toJSONValue(w, entry.getKey(), entry.getValue(), pd, context);
 			}
 			else
 			{
 				// use 'main' converter (which can be a full value converter or only changes converter depending on caller wants)
-				mainConverter.toJSONValue(w, entry.getKey(), entry.getValue(), pd, clientDataConversions, context);
+				mainConverter.toJSONValue(w, entry.getKey(), entry.getValue(), pd, context);
 			}
 
-			clientDataConversions.popNode();
 		}
 		changes.setShouldNotReceiveChanges(false);
 	}
@@ -1180,22 +1157,6 @@ public abstract class BaseWebObject implements IWebObjectContext
 		}
 	}
 
-	public static PropertyDescription getParameterTypes(WebObjectFunctionDefinition apiFunc)
-	{
-		PropertyDescription parameterTypes = null;
-		final List<PropertyDescription> types = apiFunc.getParameters();
-		if (types.size() > 0)
-		{
-			Map<String, PropertyDescription> propertiesList = new HashMap<String, PropertyDescription>();
-			for (int i = 0; i < types.size(); i++)
-			{
-				propertiesList.put(String.valueOf(i), types.get(i));
-			}
-			parameterTypes = new PropertyDescriptionBuilder().withType(AggregatedPropertyType.INSTANCE).withProperties(propertiesList).build();
-		}
-		return parameterTypes;
-	}
-
 	public PropertyDescription getPropertyDescription(String propertyName)
 	{
 		return specification.getProperty(propertyName);
@@ -1210,7 +1171,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 	@Override
 	public IWebObjectContext getParentContext()
 	{
-		return null;
+		return this;
 	}
 
 	@Override
@@ -1249,7 +1210,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 		propertiesInitialized = true;
 
 		SortedSet<String> availableInitialKeys = new TreeSet<>();
-		availableInitialKeys.addAll(defaultPropertiesUnwrapped.keySet());
+		availableInitialKeys.addAll(defaultAndTemplatePropertiesUnwrapped.keySet());
 		availableInitialKeys.addAll(properties.keySet());
 
 		// notify and attach initial values
@@ -1257,6 +1218,12 @@ public abstract class BaseWebObject implements IWebObjectContext
 		{
 			onPropertyChange(propName, null, getRawPropertyValue(propName));
 		}
+	}
+
+	@Override
+	public String toString()
+	{
+		return getName() + "(" + (getSpecification() != null ? getSpecification().getDisplayName() : null) + " - " + getClass().getCanonicalName() + ")";
 	}
 
 }

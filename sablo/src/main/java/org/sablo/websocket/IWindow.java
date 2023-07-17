@@ -23,10 +23,9 @@ import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.Container;
 import org.sablo.WebComponent;
-import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.IFunctionParameters;
 import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.property.IBrowserConverterContext;
-import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
@@ -49,7 +48,6 @@ public interface IWindow
 
 	/**
 	 * Get the websocket endpoint for this window.
-	 * @return
 	 */
 	IWebsocketEndpoint getEndpoint();
 
@@ -57,9 +55,6 @@ public interface IWindow
 
 	String getCurrentFormUrl();
 
-	/**
-	 * @param currentFormUrl the currentFormUrl to set
-	 */
 	void setCurrentFormUrl(String currentFormUrl);
 
 	/**
@@ -97,7 +92,7 @@ public interface IWindow
 	 * @param arguments the arguments to be passed to the service's function call.
 	 * @param argumentTypes the types of arguments passed; can be null (the types are used for correct 'to JSON' conversion for websocket traffic).
 	 */
-	void executeAsyncServiceCall(IClientService clientService, String functionName, Object[] arguments, PropertyDescription argumentTypes);
+	void executeAsyncServiceCall(IClientService clientService, String functionName, Object[] arguments, IFunctionParameters argumentTypes);
 
 	/**
 	 * Execute a (client/browser) async-now method; such methods are to be executed right away but do not wait for a return value.
@@ -107,7 +102,7 @@ public interface IWindow
 	 * @param arguments the arguments to be passed to the service's function call.
 	 * @param argumentTypes the types of arguments passed; can be null (the types are used for correct 'to JSON' conversion for websocket traffic).
 	 */
-	void executeAsyncNowServiceCall(IClientService clientService, String functionName, Object[] arguments, PropertyDescription argumentTypes);
+	void executeAsyncNowServiceCall(IClientService clientService, String functionName, Object[] arguments, IFunctionParameters argumentTypes);
 
 	/**
 	 * Execute a (client/browser) service call asynchronously and returns the resulting value.
@@ -130,7 +125,7 @@ public interface IWindow
 	 * @param apiFunction the function to invoke
 	 * @param arguments
 	 */
-	public Object invokeApi(WebComponent receiver, WebObjectFunctionDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes);
+	public Object invokeApi(WebComponent receiver, WebObjectFunctionDefinition apiFunction, Object[] arguments);
 
 	/**
 	 * It there an active session to the browser?
@@ -142,8 +137,7 @@ public interface IWindow
 	 * Writes as JSON changes from all components of all registered Containers.
 	 * @param keyInParent a key (can be null in which case it should be ignored) that must be appended to 'w' initially if this method call writes content to it. If the method returns false, nothing should be written to the writer...
 	 */
-	boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
-		DataConversion clientDataConversions) throws JSONException;
+	boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException;
 
 	/**
 	 * Close the browser session.
@@ -161,18 +155,23 @@ public interface IWindow
 	 */
 	public long getLastPingTime();
 
-
 	void dispose();
-
 
 	void sendChanges() throws IOException;
 
 	/**
-	 * @param clientToServerCallReturnValue any value that can be written directly via {@link JSONUtils#defaultToJSONValue(IToJSONConverter, JSONWriter, String, Object, PropertyDescription, DataConversion, Object)}.
+	 * When client side calls an API from client to server and expects an result (through a defer/promise), we want to send that result together with
+	 * any other changes that that API call generated server side and that need to be sent. So that they arrive in the same request to the client.<br/><br/>
+	 *
+	 * Some (client side) components need this result to arrive in the same message in order to ignore some incomming changes from server (if they were the ones
+	 * that requested them for example).
+	 *
+	 * But do register the result here to be sent later - when all changes that happened as a result of this request are sent.
 	 */
 	void setClientToServerCallReturnValueForChanges(ClientToServerCallReturnValue clientToServerCallReturnValue);
 
 	void onOpen(Map<String, List<String>> requestParams);
 
 	int getNextMessageNumber();
+
 }

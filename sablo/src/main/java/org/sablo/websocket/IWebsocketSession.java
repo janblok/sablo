@@ -24,6 +24,7 @@ import java.util.Map;
 import org.json.JSONObject;
 import org.sablo.eventthread.IEventDispatcher;
 import org.sablo.services.client.SabloService;
+import org.sablo.services.client.TypesRegistryService;
 import org.sablo.websocket.impl.ClientService;
 
 /**
@@ -42,10 +43,20 @@ public interface IWebsocketSession
 
 	/**
 	 * Returns the event dispatcher, that should be a separate thread that processes all the events.
+	 * created one if there is no event dispatcher.
 	 *
 	 * @return
 	 */
 	IEventDispatcher getEventDispatcher();
+
+	/**
+	 * Returns the event dispatcher, that should be a separate thread that processes all the events.
+	 *
+	 * @param create Boolean to create one or not if there isn't a dispatcher yet.
+	 *
+	 * @return
+	 */
+	IEventDispatcher getEventDispatcher(boolean create);
 
 	/**
 	 * Can it still be used?
@@ -123,6 +134,8 @@ public interface IWebsocketSession
 	boolean checkForWindowActivity();
 
 	SabloService getSabloService();
+
+	TypesRegistryService getTypesRegistryService();
 
 	Locale getLocale();
 

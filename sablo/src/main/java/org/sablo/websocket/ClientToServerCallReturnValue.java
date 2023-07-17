@@ -16,9 +16,11 @@
 
 package org.sablo.websocket;
 
+import org.json.JSONString;
+import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.specification.property.BrowserConverterContext;
-import org.sablo.specification.property.IBrowserConverterContext;
+import org.sablo.websocket.utils.JSONUtils;
+import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
 /**
  * @author acostescu
@@ -27,19 +29,19 @@ public class ClientToServerCallReturnValue
 {
 
 	public final Object retValOrErrorMessage;
-	public final PropertyDescription returnType;
-	public IBrowserConverterContext converterContextForReturnValue;
 	public final boolean success;
 	public Object cmsgid;
 
-	public ClientToServerCallReturnValue(Object retValOrErrorMessage, PropertyDescription returnType, BrowserConverterContext converterContextForReturnValue,
-		boolean success)
+	/**
+	 * @param retValOrErrorMessage the value to return to client in case of success == true; or the error string if success = false; return value can be any
+	 *        value that can be written directly via {@link JSONUtils#defaultToJSONValue(IToJSONConverter, JSONWriter, String, Object, PropertyDescription, DataConversion, Object)},
+	 *        so if it needs any special toJSON conversion, that should have already be done (and result turned into a {@link JSONString}).
+	 */
+	public ClientToServerCallReturnValue(Object retValOrErrorMessage, boolean success, Object cmsgid)
 	{
 		this.retValOrErrorMessage = retValOrErrorMessage;
-		this.returnType = returnType;
-		this.converterContextForReturnValue = converterContextForReturnValue;
 		this.success = success;
+		this.cmsgid = cmsgid;
 	}
-
 
 }

@@ -22,8 +22,8 @@ import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IClassPropertyType;
+import org.sablo.specification.property.IPropertyWithClientSideConversions;
 import org.sablo.util.ValueReference;
-import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 
 /**
@@ -33,8 +33,10 @@ import org.sablo.websocket.utils.JSONUtils;
  * @author jcompagner
  *
  */
-public class DatePropertyType extends DefaultPropertyType<Date> implements IClassPropertyType<Date>
+public class DatePropertyType extends DefaultPropertyType<Date> implements IClassPropertyType<Date>, IPropertyWithClientSideConversions<Date>
 {
+
+	public static final String CLIENT_SIDE_TYPE_NAME = "Date";
 
 	public static final DatePropertyType INSTANCE = new DatePropertyType();
 	public static final String TYPE_NAME = "date";
@@ -64,12 +66,19 @@ public class DatePropertyType extends DefaultPropertyType<Date> implements IClas
 	}
 
 	@Override
-	public JSONWriter toJSON(JSONWriter writer, String key, Date value, PropertyDescription pd, DataConversion clientConversion,
-		IBrowserConverterContext dataConverterContext) throws JSONException
+	public JSONWriter toJSON(JSONWriter writer, String key, Date value, PropertyDescription pd, IBrowserConverterContext dataConverterContext)
+		throws JSONException
 	{
-		if (clientConversion != null) clientConversion.convert("Date");
 		JSONUtils.addKeyIfPresent(writer, key);
 		return writer.value(value.getTime());
+	}
+
+	@Override
+	public boolean writeClientSideTypeName(JSONWriter w, String keyToAddTo, PropertyDescription pd)
+	{
+		JSONUtils.addKeyIfPresent(w, keyToAddTo);
+		w.value(CLIENT_SIDE_TYPE_NAME);
+		return true;
 	}
 
 }

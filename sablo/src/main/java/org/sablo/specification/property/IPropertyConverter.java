@@ -20,7 +20,6 @@ import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.util.ValueReference;
-import org.sablo.websocket.utils.DataConversion;
 
 /**
  * A property type that needs special (JSON) conversion (for example for web-socket traffic).<br/>
@@ -59,13 +58,11 @@ public interface IPropertyConverter<JT, ContextT>
 	 * key is null and you want to write the converted value write only the converted value to the writer, ignore the key.
 	 * @param sabloValue the value to convert to JSON.
 	 * @param propertyDescription the description of the property that is being converted.
-	 * @param clientConversion can be use to mark needed client/browser side conversion types.
-	 * updates and have their own JSON protocol (for example object and array types are implemented to support this).
 	 * @param dataConverterContext runtime context; it can be null in rare cases.
 	 * @return the writer for cascaded usage.
 	 * @throws JSONException if a JSON exception happens.
 	 */
-	JSONWriter toJSON(JSONWriter writer, String key, JT sabloValue, PropertyDescription propertyDescription, DataConversion clientConversion,
-		ContextT dataConverterContext) throws JSONException;
+	JSONWriter toJSON(JSONWriter writer, String key, JT sabloValue, PropertyDescription propertyDescription, ContextT dataConverterContext)
+		throws JSONException;
 
 }

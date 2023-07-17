@@ -25,7 +25,6 @@ import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.specification.property.IWrapperType;
 import org.sablo.specification.property.IWrappingContext;
 import org.sablo.util.ValueReference;
-import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils;
 
 /**
@@ -75,7 +74,7 @@ public class EnabledPropertyType extends DefaultPropertyType<Boolean> implements
 
 	@Override
 	public JSONWriter toJSON(JSONWriter writer, String key, EnabledSabloValue sabloValue, PropertyDescription propertyDescription,
-		DataConversion clientConversion, IBrowserConverterContext dataConverterContext) throws JSONException
+		IBrowserConverterContext dataConverterContext) throws JSONException
 	{
 		JSONUtils.addKeyIfPresent(writer, key);
 		return sabloValue.toJSON(writer);

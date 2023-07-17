@@ -23,7 +23,7 @@ import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.Container;
 import org.sablo.WebComponent;
-import org.sablo.specification.PropertyDescription;
+import org.sablo.specification.IFunctionParameters;
 import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.websocket.ClientToServerCallReturnValue;
@@ -32,7 +32,6 @@ import org.sablo.websocket.IToJSONWriter;
 import org.sablo.websocket.IWebsocketEndpoint;
 import org.sablo.websocket.IWebsocketSession;
 import org.sablo.websocket.IWindow;
-import org.sablo.websocket.utils.DataConversion;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
 /**
@@ -136,7 +135,10 @@ public class WebsocketSessionWindows implements IWindow
 	@Override
 	public void unregisterContainer(Container container)
 	{
-		// ignore
+		for (IWindow window : session.getWindows())
+		{
+			window.unregisterContainer(container);
+		}
 	}
 
 	@Override
@@ -155,7 +157,7 @@ public class WebsocketSessionWindows implements IWindow
 	}
 
 	@Override
-	public void executeAsyncServiceCall(IClientService clientService, String functionName, Object[] arguments, PropertyDescription argumentTypes)
+	public void executeAsyncServiceCall(IClientService clientService, String functionName, Object[] arguments, IFunctionParameters argumentTypes)
 	{
 		for (IWindow window : session.getWindows())
 		{
@@ -164,7 +166,7 @@ public class WebsocketSessionWindows implements IWindow
 	}
 
 	@Override
-	public void executeAsyncNowServiceCall(IClientService clientService, String functionName, Object[] arguments, PropertyDescription argumentTypes)
+	public void executeAsyncNowServiceCall(IClientService clientService, String functionName, Object[] arguments, IFunctionParameters argumentTypes)
 	{
 		for (IWindow window : session.getWindows())
 		{
@@ -187,13 +189,13 @@ public class WebsocketSessionWindows implements IWindow
 	}
 
 	@Override
-	public Object invokeApi(WebComponent receiver, WebObjectFunctionDefinition apiFunction, Object[] arguments, PropertyDescription argumentTypes)
+	public Object invokeApi(WebComponent receiver, WebObjectFunctionDefinition apiFunction, Object[] arguments)
 	{
 		Object retValue = null;
 		for (IWindow window : session.getWindows())
 		{
-			if (retValue == null) retValue = window.invokeApi(receiver, apiFunction, arguments, argumentTypes);
-			else window.invokeApi(receiver, apiFunction, arguments, argumentTypes);
+			if (retValue == null) retValue = window.invokeApi(receiver, apiFunction, arguments);
+			else window.invokeApi(receiver, apiFunction, arguments);
 		}
 		return retValue;
 	}
@@ -205,8 +207,7 @@ public class WebsocketSessionWindows implements IWindow
 	}
 
 	@Override
-	public boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
-		DataConversion clientDataConversions) throws JSONException
+	public boolean writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException
 	{
 		return false;
 	}

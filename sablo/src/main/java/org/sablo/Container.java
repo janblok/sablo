@@ -26,8 +26,7 @@ import org.json.JSONWriter;
 import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.property.IBrowserConverterContext;
 import org.sablo.websocket.CurrentWindow;
-import org.sablo.websocket.utils.DataConversion;
-import org.sablo.websocket.utils.JSONUtils;
+import org.sablo.websocket.IWindow;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
 /**
@@ -38,6 +37,8 @@ public abstract class Container extends WebComponent
 {
 	private Map<String, WebComponent> components = new HashMap<>();
 	protected boolean changed;
+
+	private IWindow alreadyRegisteredToWindow;
 
 	public Container(String name, WebObjectSpecification spec)
 	{
@@ -103,38 +104,45 @@ public abstract class Container extends WebComponent
 	public void dispose()
 	{
 		super.dispose();
+		if (alreadyRegisteredToWindow != null) alreadyRegisteredToWindow.unregisterContainer(this);
 		clearComponents();
 	}
 
-	public void writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter,
-		DataConversion clientDataConversions) throws JSONException
+	public void writeAllComponentsChanges(JSONWriter w, String keyInParent, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException
 	{
 		// converter here is always ChangesToJSONConverter except for some unit tests
 		changed = false; // do this first just in case one of the writeOwnChanges below triggers another change to set the flag again (which should not happen normally but it will get logged as a warning by code in BaseWebObject if it does)
-		boolean contentHasBeenWritten = this.writeOwnChanges(w, keyInParent, "", converter, clientDataConversions);
+		boolean contentHasBeenWritten = this.writeOwnChanges(w, keyInParent, "", converter);
 		for (WebComponent wc : getComponents())
 		{
-			contentHasBeenWritten = wc.writeOwnChanges(w, contentHasBeenWritten ? null : keyInParent, wc.getName(), converter, clientDataConversions) ||
-				contentHasBeenWritten;
+			contentHasBeenWritten = wc.writeOwnChanges(w, contentHasBeenWritten ? null : keyInParent, wc.getName(), converter) || contentHasBeenWritten;
 		}
 		if (contentHasBeenWritten) w.endObject();
 	}
 
 	public boolean writeAllComponentsProperties(JSONWriter w, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException
 	{
-		// FIXME if this container was previously registered to another window, unregister it from there as well
-		// if (this.getParentOfType(window) != CurrentWindow.get()) ... // problem is now that containers are not required to have parents so can we really rely on parent hierarchy?
-		CurrentWindow.get().registerContainer(this);
-
-		changed = false; // do this first just in case one of the writeComponentProperties below triggers another change to set the flag again (which should not happen normally but if it does we should not loose that change by just clearing the changed flag afterwards)
-		DataConversion clientDataConversions = new DataConversion();
-		boolean contentHasBeenWritten = writeComponentProperties(w, converter, "", clientDataConversions);
-		for (WebComponent wc : getComponents())
+		IWindow currentWindow = CurrentWindow.get();
+		if (alreadyRegisteredToWindow != currentWindow)
 		{
-			contentHasBeenWritten = wc.writeComponentProperties(w, converter, wc.getName(), clientDataConversions) || contentHasBeenWritten;
+			if (alreadyRegisteredToWindow != null) alreadyRegisteredToWindow.unregisterContainer(this);
+			alreadyRegisteredToWindow = currentWindow;
+			currentWindow.registerContainer(this); // keeps this in a weak hashmap
 		}
 
-		JSONUtils.writeClientConversions(w, clientDataConversions);
+		changed = false; // do this first just in case one of the writeComponentProperties below triggers another change to set the flag again (which should not happen normally but if it does we should not loose that change by just clearing the changed flag afterwards)
+		boolean contentHasBeenWritten = writeComponentProperties(w, converter, "");
+		for (WebComponent wc : getComponents())
+		{
+			contentHasBeenWritten = wc.writeComponentProperties(w, converter, wc.getName()) || contentHasBeenWritten;
+		}
+
 		return contentHasBeenWritten;
 	}
+
+	public void clearRegisteredToWindow()
+	{
+		alreadyRegisteredToWindow = null;
+	}
+
 }

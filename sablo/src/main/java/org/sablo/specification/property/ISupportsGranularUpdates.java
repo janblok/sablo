@@ -19,7 +19,6 @@ package org.sablo.specification.property;
 import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.PropertyDescription;
-import org.sablo.websocket.utils.DataConversion;
 
 /**
  * A property type that is able to send back an forth granular updates.
@@ -45,11 +44,10 @@ public interface ISupportsGranularUpdates<JT> extends IPropertyConverterForBrows
 	 * key is null and you want to write the converted value write only the converted value to the writer, ignore the key.
 	 * @param object the value to convert to JSON.
 	 * @param propertyDescription the description of this property.
-	 * @param clientConversion can be use to mark needed client/browser side conversion types.
 	 * @return the writer for cascaded usage.
 	 * @throws JSONException if a JSON exception happens.
 	 */
-	JSONWriter changesToJSON(JSONWriter writer, String key, JT sabloValue, PropertyDescription propertyDescription, DataConversion clientConversion,
+	JSONWriter changesToJSON(JSONWriter writer, String key, JT sabloValue, PropertyDescription propertyDescription,
 		IBrowserConverterContext dataConverterContext) throws JSONException;
 
 }

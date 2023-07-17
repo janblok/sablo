@@ -16,14 +16,16 @@
 
 package org.sablo.specification.property;
 
+import org.sablo.IllegalChangeFromClientException;
+
 /**
- * This interaface is for property types to implemenet that wants to allow property pushes even if the system says
- * that the push is not allowed because of enable of visibilty protection.
+ * This interface is for property types to implement, types that want to allow property pushes even if the system says
+ * that the push is not allowed because of enable of visibility protection.
  *
  * @author jcompagner
  * @since 8.4
  */
 public interface IGranularProtectionChecker<T>
 {
-	boolean allowPush(Object data, T currentValue);
+	boolean allowPush(Object data, T currentValue, IllegalChangeFromClientException e);
 }

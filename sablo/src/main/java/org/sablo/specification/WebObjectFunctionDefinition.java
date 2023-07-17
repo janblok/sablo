@@ -16,10 +16,6 @@
 
 package org.sablo.specification;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.json.JSONObject;
 
 /**
@@ -30,9 +26,11 @@ import org.json.JSONObject;
 @SuppressWarnings("nls")
 public class WebObjectFunctionDefinition
 {
+	// TODO we could split this class into a callable API function class and an event handler function class - so that it is clear what is used in either case
+	// for example 'delayUntilFormLoads' is only for API functions while 'ignoreNGBlockDuplicateEvents' is only useful for handlers...
 
 	private final String name;
-	private final List<PropertyDescription> parameters = new ArrayList<>();
+	private final FunctionParameters parameters = new FunctionParameters();
 	private PropertyDescription returnType;
 	private JSONObject customConfigOptions;
 	private String documentation;
@@ -64,9 +62,9 @@ public class WebObjectFunctionDefinition
 		parameters.add(parameter);
 	}
 
-	public List<PropertyDescription> getParameters()
+	public IFunctionParameters getParameters()
 	{
-		return Collections.unmodifiableList(parameters);
+		return parameters;
 	}
 
 	public void setReturnType(PropertyDescription returnType)
@@ -220,25 +218,16 @@ public class WebObjectFunctionDefinition
 		this.preDataServiceCall = preDataServiceCall;
 	}
 
-	/**
-	 * @return the applyFirst
-	 */
 	public boolean isPreDataServiceCall()
 	{
 		return preDataServiceCall;
 	}
 
-	/**
-	 * @param boolean1
-	 */
 	public void setPrivate(boolean priv)
 	{
 		this.priv = priv;
 	}
 
-	/**
-	 * @return the priv
-	 */
 	public boolean isPrivate()
 	{
 		return priv;

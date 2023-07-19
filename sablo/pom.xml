@@ -1,37 +1,37 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<prerequisites>
-		<maven>3.6.0</maven>
-	</prerequisites>
-	<groupId>org.sablo</groupId>
-	<version>2023.9.0.3900_rc</version>
-	<artifactId>sablo</artifactId>
-	<packaging>eclipse-plugin</packaging>
-	<name>Sablo Core</name>
-	<organization>
-		<name>Servoy</name>
-		<url>servoy.com</url>
-	</organization>
-	<pluginRepositories>
-		<pluginRepository>
-			<id>tycho-snapshots</id>
-			<url>https://repo.eclipse.org/content/repositories/tycho-snapshots/</url>
-		</pluginRepository>
-	</pluginRepositories>
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <prerequisites>
+        <maven>3.6.0</maven>
+    </prerequisites>
+    <groupId>org.sablo</groupId>
+    <version>2023.9.0.3900_rc</version>
+    <artifactId>sablo</artifactId>
+    <packaging>eclipse-plugin</packaging>
+    <name>Sablo Core</name>
+    <organization>
+        <name>Servoy</name>
+        <url>servoy.com</url>
+    </organization>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>tycho-snapshots</id>
+            <url>https://repo.eclipse.org/content/repositories/tycho-snapshots/</url>
+        </pluginRepository>
+    </pluginRepositories>
 
-	<url>http://maven.apache.org</url>
-	
-	<!-- IF updating dependecies, version or new jar, also update the pom_only_dep,xml -->
-	<properties>
-		<tycho.version>2.7.5</tycho.version>
-		<maven.compiler.source>17</maven.compiler.source>
-		<maven.compiler.target>17</maven.compiler.target>
-		<log4j-version>2.20.0</log4j-version>
-		<jenkins.javascript_tests.reportsDirectory>target/protractor-reports</jenkins.javascript_tests.reportsDirectory>
-		<test.script>test</test.script>
-	</properties>
+    <url>http://maven.apache.org</url>
+    
+    <!-- IF updating dependecies, version or new jar, also update the pom_only_dep,xml -->
+    <properties>
+        <tycho.version>2.7.5</tycho.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <log4j-version>2.20.0</log4j-version>
+        <jenkins.javascript_tests.reportsDirectory>target/protractor-reports</jenkins.javascript_tests.reportsDirectory>
+        <test.script>test</test.script>
+    </properties>
 
     <repositories>
         <repository>

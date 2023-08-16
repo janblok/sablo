@@ -181,6 +181,12 @@ public class FormServiceHandler implements IEventDispatchAwareServerService
 			JSONObject oldvalues = obj.optJSONObject("oldvalues");
 
 			WebComponent webComponent = beanName.length() > 0 ? form.getComponent(beanName) : (WebComponent)form;
+			if (webComponent == null)
+			{
+				log.warn("dataPush for unknown component '" + beanName + "' of form " + formName);
+				return;
+			}
+
 			Iterator<String> keys = changes.keys();
 			while (keys.hasNext())
 			{

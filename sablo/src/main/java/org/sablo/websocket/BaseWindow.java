@@ -1187,7 +1187,9 @@ public class BaseWindow implements IWindow
 
 			if (topContainer == null)
 			{
-				log.warn("Trying to write a api call for component " + component.getName() + " but it was already removed from its parent",
+				log.warn(
+					"Trying to write a api call " + apiFunction.getName() + "  for component " + component.getName() +
+						" but it was already removed from its parent",
 					new RuntimeException());
 				return;
 			}

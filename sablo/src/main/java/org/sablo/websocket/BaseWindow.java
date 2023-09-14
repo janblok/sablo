@@ -571,7 +571,7 @@ public class BaseWindow implements IWindow
 				{
 					w.endArray();
 				}
-				if (!containsModelChanges && callObjectStarted && asyncAPIs)
+				if (!containsModelChanges && callObjectStarted && asyncAPIs && !w.toString().contains("\"msg\":"))
 				{
 					// if we execute some async api and model is not already sent, we have to send it before execution, like we do for sync api
 					w.key("msg");

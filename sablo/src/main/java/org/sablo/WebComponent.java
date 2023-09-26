@@ -163,7 +163,13 @@ public class WebComponent extends BaseWebObject
 	 */
 	public Object invokeApi(WebObjectFunctionDefinition apiFunction, Object[] args)
 	{
-		return CurrentWindow.get().invokeApi(this, apiFunction, args);
+		if (isVisible()) return CurrentWindow.get().invokeApi(this, apiFunction, args);
+		else
+		{
+			log.atWarn().setMessage("Calling an api {} on a none visible component {} of parent {}").addArgument(apiFunction.getName()).addArgument(getName()) //$NON-NLS-1$
+				.addArgument(getParent().getName()).log();
+			return null;
+		}
 	}
 
 	@Override

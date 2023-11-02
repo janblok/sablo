@@ -41,6 +41,7 @@ import org.sablo.WebComponent;
 import org.sablo.specification.IFunctionParameters;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.PropertyDescriptionBuilder;
+import org.sablo.specification.WebObjectApiFunctionDefinition;
 import org.sablo.specification.WebObjectFunctionDefinition;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
 import org.sablo.specification.property.BrowserConverterContext;
@@ -747,7 +748,7 @@ public class BaseWindow implements IWindow
 	}
 
 	@Override
-	public Object executeServiceCall(IClientService clientService, String functionName, Object[] arguments, WebObjectFunctionDefinition apiFunction,
+	public Object executeServiceCall(IClientService clientService, String functionName, Object[] arguments, WebObjectApiFunctionDefinition apiFunction,
 		IToJSONWriter<IBrowserConverterContext> pendingChangesWriter, boolean blockEventProcessing) throws IOException
 	{
 		IFunctionParameters argumentTypes = (apiFunction != null ? apiFunction.getParameters() : null);
@@ -841,9 +842,9 @@ public class BaseWindow implements IWindow
 
 	private ServiceCall createServiceCall(IClientService clientService, String functionName, Object[] arguments, IFunctionParameters argumentTypes)
 	{
-		WebObjectFunctionDefinition handler = clientService.getSpecification().getApiFunction(functionName);
+		WebObjectApiFunctionDefinition api = clientService.getSpecification().getApiFunction(functionName);
 		return new ServiceCall(clientService, functionName, processVarArgsIfNeeded(arguments, argumentTypes), argumentTypes,
-			(handler != null && handler.isPreDataServiceCall()));
+			(api != null && api.isPreDataServiceCall()));
 	}
 
 	public ComponentCall createComponentCall(WebComponent component, WebObjectFunctionDefinition apiFunction, Object[] arguments,
@@ -954,12 +955,12 @@ public class BaseWindow implements IWindow
 	}
 
 	@Override
-	public Object invokeApi(WebComponent receiver, WebObjectFunctionDefinition apiFunction, Object[] arguments)
+	public Object invokeApi(WebComponent receiver, WebObjectApiFunctionDefinition apiFunction, Object[] arguments)
 	{
 		return invokeApi(receiver, apiFunction, arguments, null);
 	}
 
-	protected Object invokeApi(final WebComponent receiver, final WebObjectFunctionDefinition apiFunction, final Object[] arguments,
+	protected Object invokeApi(final WebComponent receiver, final WebObjectApiFunctionDefinition apiFunction, final Object[] arguments,
 		final Map<String, JSONString> callContributions)
 	{
 		// {"call":{"form":"product","bean":"datatextfield1","api":"requestFocus","args":[arg1, arg2]}}
@@ -1051,7 +1052,7 @@ public class BaseWindow implements IWindow
 		return null;
 	}
 
-	protected void addDelayedOrAsyncComponentCall(final WebObjectFunctionDefinition apiFunction, ComponentCall call)
+	protected void addDelayedOrAsyncComponentCall(final WebObjectApiFunctionDefinition apiFunction, ComponentCall call)
 	{
 		if (apiFunction.shouldDiscardPreviouslyQueuedSimilarCalls())
 		{
@@ -1091,17 +1092,17 @@ public class BaseWindow implements IWindow
 		return true;
 	}
 
-	protected static boolean isDelayedApiCall(WebObjectFunctionDefinition apiFunction)
+	protected static boolean isDelayedApiCall(WebObjectApiFunctionDefinition apiFunction)
 	{
 		return apiFunction.getReturnType() == null && apiFunction.shouldDelayUntilFormLoads();
 	}
 
-	protected static boolean isAsyncApiCall(WebObjectFunctionDefinition apiFunction)
+	protected static boolean isAsyncApiCall(WebObjectApiFunctionDefinition apiFunction)
 	{
 		return apiFunction.getReturnType() == null && apiFunction.isAsync();
 	}
 
-	protected static boolean isAsyncNowApiCall(WebObjectFunctionDefinition apiFunction)
+	protected static boolean isAsyncNowApiCall(WebObjectApiFunctionDefinition apiFunction)
 	{
 		return apiFunction.getReturnType() == null && apiFunction.isAsyncNow();
 	}

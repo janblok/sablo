@@ -193,9 +193,9 @@ public class WebObjectSpecification extends PropertyDescription
 
 	}
 
-	private final Map<String, WebObjectFunctionDefinition> handlers = new HashMap<>(); // second String is always a "function" for now, but in the future it will probably contain more (to specify sent args/types...)
-	private final Map<String, WebObjectFunctionDefinition> apis = new HashMap<>();
-	private final Map<String, WebObjectFunctionDefinition> internalApis = new HashMap<>();
+	private final Map<String, WebObjectHandlerFunctionDefinition> handlers = new HashMap<>(); // second String is always a "function" for now, but in the future it will probably contain more (to specify sent args/types...)
+	private final Map<String, WebObjectApiFunctionDefinition> apis = new HashMap<>();
+	private final Map<String, WebObjectApiFunctionDefinition> internalApis = new HashMap<>();
 	private final String definition;
 	private final JSONArray libraries;
 	private final String displayName;
@@ -295,17 +295,17 @@ public class WebObjectSpecification extends PropertyDescription
 	}
 
 
-	protected final void addApiFunction(WebObjectFunctionDefinition apiFunction)
+	protected final void addApiFunction(WebObjectApiFunctionDefinition apiFunction)
 	{
 		apis.put(apiFunction.getName(), apiFunction);
 	}
 
-	protected final void addInternalApiFunction(WebObjectFunctionDefinition apiFunction)
+	protected final void addInternalApiFunction(WebObjectApiFunctionDefinition apiFunction)
 	{
 		internalApis.put(apiFunction.getName(), apiFunction);
 	}
 
-	protected final void addHandler(WebObjectFunctionDefinition propertyDescription)
+	protected final void addHandler(WebObjectHandlerFunctionDefinition propertyDescription)
 	{
 		handlers.put(propertyDescription.getName(), propertyDescription);
 	}
@@ -313,7 +313,7 @@ public class WebObjectSpecification extends PropertyDescription
 	/**
 	 * @param hndlrs
 	 */
-	protected final void putAllHandlers(Map<String, WebObjectFunctionDefinition> hndlrs)
+	protected final void putAllHandlers(Map<String, WebObjectHandlerFunctionDefinition> hndlrs)
 	{
 		handlers.putAll(hndlrs);
 	}
@@ -321,32 +321,32 @@ public class WebObjectSpecification extends PropertyDescription
 	/**
 	 * You are not allowed to modify this map!
 	 */
-	public Map<String, WebObjectFunctionDefinition> getHandlers()
+	public Map<String, WebObjectHandlerFunctionDefinition> getHandlers()
 	{
 		return Collections.unmodifiableMap(handlers);
 	}
 
-	public WebObjectFunctionDefinition getHandler(String handlerName)
+	public WebObjectHandlerFunctionDefinition getHandler(String handlerName)
 	{
 		return handlers.get(handlerName);
 	}
 
-	public WebObjectFunctionDefinition getApiFunction(String apiFunctionName)
+	public WebObjectApiFunctionDefinition getApiFunction(String apiFunctionName)
 	{
 		return apis.get(apiFunctionName);
 	}
 
-	public WebObjectFunctionDefinition getInternalApiFunction(String apiFunctionName)
+	public WebObjectApiFunctionDefinition getInternalApiFunction(String apiFunctionName)
 	{
 		return internalApis.get(apiFunctionName);
 	}
 
-	public Map<String, WebObjectFunctionDefinition> getApiFunctions()
+	public Map<String, WebObjectApiFunctionDefinition> getApiFunctions()
 	{
 		return Collections.unmodifiableMap(apis);
 	}
 
-	public Map<String, WebObjectFunctionDefinition> getInternalApiFunctions()
+	public Map<String, WebObjectApiFunctionDefinition> getInternalApiFunctions()
 	{
 		return Collections.unmodifiableMap(internalApis);
 	}
@@ -518,7 +518,9 @@ public class WebObjectSpecification extends PropertyDescription
 			Iterator<String> itk = api.keys();
 			while (itk.hasNext())
 			{
-				WebObjectFunctionDefinition def = parseFunctionDefinition(spec, api, itk.next());
+				String func = itk.next();
+				WebObjectHandlerFunctionDefinition def = new WebObjectHandlerFunctionDefinition(func);
+				parseFunctionDefinition(def, spec, api, func);
 				spec.addHandler(def);
 			}
 		}
@@ -530,7 +532,9 @@ public class WebObjectSpecification extends PropertyDescription
 			Iterator<String> itk = api.keys();
 			while (itk.hasNext())
 			{
-				WebObjectFunctionDefinition def = parseFunctionDefinition(spec, api, itk.next());
+				String func = itk.next();
+				WebObjectApiFunctionDefinition def = new WebObjectApiFunctionDefinition(func);
+				parseFunctionDefinition(def, spec, api, func);
 				spec.addApiFunction(def);
 			}
 		}
@@ -541,7 +545,9 @@ public class WebObjectSpecification extends PropertyDescription
 			Iterator<String> itk = api.keys();
 			while (itk.hasNext())
 			{
-				WebObjectFunctionDefinition def = parseFunctionDefinition(spec, api, itk.next());
+				String func = itk.next();
+				WebObjectApiFunctionDefinition def = new WebObjectApiFunctionDefinition(func);
+				parseFunctionDefinition(def, spec, api, func);
 				spec.addInternalApiFunction(def);
 			}
 		}
@@ -550,9 +556,9 @@ public class WebObjectSpecification extends PropertyDescription
 		return spec;
 	}
 
-	private static WebObjectFunctionDefinition parseFunctionDefinition(WebObjectSpecification spec, JSONObject api, String func) throws JSONException
+	private static WebObjectFunctionDefinition parseFunctionDefinition(WebObjectFunctionDefinition def, WebObjectSpecification spec, JSONObject api,
+		String func) throws JSONException
 	{
-		WebObjectFunctionDefinition def = new WebObjectFunctionDefinition(func);
 		if (api.get(func) instanceof JSONObject)
 		{
 			JSONObject jsonDef = api.getJSONObject(func);
@@ -610,23 +616,23 @@ public class WebObjectSpecification extends PropertyDescription
 				}
 				else if ("blockEventProcessing".equals(key))
 				{
-					def.setBlockEventProcessing(jsonDef.getBoolean("blockEventProcessing"));
+					((WebObjectApiFunctionDefinition)def).setBlockEventProcessing(jsonDef.getBoolean("blockEventProcessing"));
 				}
 				else if ("delayUntilFormLoad".equals(key) || "delayUntilFormLoads".equals(key)) // first one is deprecated but still usable
 				{
-					def.setDelayUntilFormLoads(jsonDef.getBoolean(key));
+					((WebObjectApiFunctionDefinition)def).setDelayUntilFormLoads(jsonDef.getBoolean(key));
 				}
 				else if ("async".equals(key))
 				{
-					def.setAsync(jsonDef.getBoolean("async"));
+					((WebObjectApiFunctionDefinition)def).setAsync(jsonDef.getBoolean("async"));
 				}
 				else if ("async-now".equals(key))
 				{
-					def.setAsyncNow(jsonDef.getBoolean("async-now"));
+					((WebObjectApiFunctionDefinition)def).setAsyncNow(jsonDef.getBoolean("async-now"));
 				}
 				else if ("globalExclusive".equals(key) || "discardPreviouslyQueuedSimilarCalls".equals(key)) // first one is deprecated but still usable
 				{
-					def.setDiscardPreviouslyQueuedSimilarCalls(jsonDef.getBoolean(key));
+					((WebObjectApiFunctionDefinition)def).setDiscardPreviouslyQueuedSimilarCalls(jsonDef.getBoolean(key));
 				}
 //				else if ("waitsForUserAction".equals(key))
 //				{
@@ -655,7 +661,7 @@ public class WebObjectSpecification extends PropertyDescription
 				}
 				else if ("ignoreNGBlockDuplicateEvents".equals(key))
 				{
-					def.setIgnoreNGBlockDuplicateEvents(jsonDef.getBoolean(key));
+					((WebObjectHandlerFunctionDefinition)def).setIgnoreNGBlockDuplicateEvents(jsonDef.getBoolean(key));
 				}
 				else
 				{

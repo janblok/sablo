@@ -17,7 +17,7 @@
 package org.sablo;
 
 import org.sablo.specification.WebComponentSpecProvider;
-import org.sablo.specification.WebObjectFunctionDefinition;
+import org.sablo.specification.WebObjectApiFunctionDefinition;
 import org.sablo.specification.WebObjectSpecification;
 import org.sablo.websocket.CurrentWindow;
 
@@ -144,7 +144,7 @@ public class WebComponent extends BaseWebObject
 	 */
 	public Object invokeApi(String apiFunctionName, Object[] args)
 	{
-		WebObjectFunctionDefinition apiFunction = specification.getApiFunction(apiFunctionName);
+		WebObjectApiFunctionDefinition apiFunction = specification.getApiFunction(apiFunctionName);
 		if (apiFunction != null)
 		{
 			return invokeApi(apiFunction, args);
@@ -161,7 +161,7 @@ public class WebComponent extends BaseWebObject
 	 *            the args
 	 * @return the value if any
 	 */
-	public Object invokeApi(WebObjectFunctionDefinition apiFunction, Object[] args)
+	public Object invokeApi(WebObjectApiFunctionDefinition apiFunction, Object[] args)
 	{
 		if (isVisible()) return CurrentWindow.get().invokeApi(this, apiFunction, args);
 		else

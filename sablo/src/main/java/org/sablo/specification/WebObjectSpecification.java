@@ -616,23 +616,23 @@ public class WebObjectSpecification extends PropertyDescription
 				}
 				else if ("blockEventProcessing".equals(key))
 				{
-					((WebObjectApiFunctionDefinition)def).setBlockEventProcessing(jsonDef.getBoolean("blockEventProcessing"));
+					castToApiFunction(def, key).setBlockEventProcessing(jsonDef.getBoolean("blockEventProcessing"));
 				}
 				else if ("delayUntilFormLoad".equals(key) || "delayUntilFormLoads".equals(key)) // first one is deprecated but still usable
 				{
-					((WebObjectApiFunctionDefinition)def).setDelayUntilFormLoads(jsonDef.getBoolean(key));
+					castToApiFunction(def, key).setDelayUntilFormLoads(jsonDef.getBoolean(key));
 				}
 				else if ("async".equals(key))
 				{
-					((WebObjectApiFunctionDefinition)def).setAsync(jsonDef.getBoolean("async"));
+					castToApiFunction(def, key).setAsync(jsonDef.getBoolean("async"));
 				}
 				else if ("async-now".equals(key))
 				{
-					((WebObjectApiFunctionDefinition)def).setAsyncNow(jsonDef.getBoolean("async-now"));
+					castToApiFunction(def, key).setAsyncNow(jsonDef.getBoolean("async-now"));
 				}
 				else if ("globalExclusive".equals(key) || "discardPreviouslyQueuedSimilarCalls".equals(key)) // first one is deprecated but still usable
 				{
-					((WebObjectApiFunctionDefinition)def).setDiscardPreviouslyQueuedSimilarCalls(jsonDef.getBoolean(key));
+					castToApiFunction(def, key).setDiscardPreviouslyQueuedSimilarCalls(jsonDef.getBoolean(key));
 				}
 //				else if ("waitsForUserAction".equals(key))
 //				{
@@ -661,7 +661,7 @@ public class WebObjectSpecification extends PropertyDescription
 				}
 				else if ("ignoreNGBlockDuplicateEvents".equals(key))
 				{
-					((WebObjectHandlerFunctionDefinition)def).setIgnoreNGBlockDuplicateEvents(jsonDef.getBoolean(key));
+					castToHandlerFunction(def, key).setIgnoreNGBlockDuplicateEvents(jsonDef.getBoolean(key));
 				}
 				else
 				{
@@ -675,6 +675,20 @@ public class WebObjectSpecification extends PropertyDescription
 			new PropertyDescriptionBuilder().withName(func).withType(TypesRegistry.getType(FunctionPropertyType.TYPE_NAME)).withConfig(api.get(func))
 				.withDeprecated(def.getDeprecated()).build());
 		return def;
+	}
+
+	private static WebObjectHandlerFunctionDefinition castToHandlerFunction(WebObjectFunctionDefinition def, String property)
+	{
+		if (def instanceof WebObjectHandlerFunctionDefinition handler) return handler;
+		log.error("Property {} can't be set on FunctionDefinition {} which is not a handler", property, def);
+		return new WebObjectHandlerFunctionDefinition("empty");
+	}
+
+	private static WebObjectApiFunctionDefinition castToApiFunction(WebObjectFunctionDefinition def, String property)
+	{
+		if (def instanceof WebObjectApiFunctionDefinition api) return api;
+		log.error("Property {} can't be set on FunctionDefinition {} which is not a api", property, def);
+		return new WebObjectApiFunctionDefinition("empty");
 	}
 
 	private static IPropertyType< ? > resolveArrayType(ParsedProperty pp)

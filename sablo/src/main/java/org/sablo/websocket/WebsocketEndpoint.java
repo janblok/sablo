@@ -175,8 +175,11 @@ public abstract class WebsocketEndpoint implements IWebsocketEndpoint
 						if (session != null && session.isOpen())
 						{
 							wsSession.onOpen(session.getRequestParameterMap());
-							wsSession.getHttpSession().getId();
-							logInfo = wsSession.getLogInformation();
+							if (wsSession.getHttpSession() != null)
+							{
+								wsSession.getHttpSession().getId();
+								logInfo = wsSession.getLogInformation();
+							}
 						}
 					}
 				}

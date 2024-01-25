@@ -181,4 +181,9 @@ public interface IWebsocketSession
 	void setHttpSession(HttpSession httpSession);
 
 	HttpSession getHttpSession();
+
+	/**
+	 * generates a string that returns the log information that is used when the websocket logs or throws exceptions
+	 */
+	public String getLogInformation();
 }

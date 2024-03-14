@@ -233,6 +233,13 @@ public class WebObjectSpecification extends PropertyDescription
 
 	private String replacement = null;
 
+	private SourceOfCodeExtractedDocs sourceOfCodeExtractedDocs = SourceOfCodeExtractedDocs.NOT_YET_PARSED;
+
+	public static enum SourceOfCodeExtractedDocs
+	{
+		NOT_YET_PARSED, DEDICATED_DOC_SCRIPT_FILE, NG1_CLIENT_AND_SERVER_SIDE_SCRIPT, TITANIUM_CLIENT_AND_SERVER_SIDE_SCRIPT
+	}
+
 	/**
 	 * @param packageType one of {@link IPackageReader#WEB_SERVICE}, {@link IPackageReader#WEB_COMPONENT} and {@link IPackageReader#WEB_LAYOUT}.
 	 */
@@ -1021,6 +1028,19 @@ public class WebObjectSpecification extends PropertyDescription
 	public String getStyleVariantCategory()
 	{
 		return styleVariantCategory;
+	}
+
+
+	public boolean areDocsAlreadyExtractedFromCode(boolean titaniumIsUsed)
+	{
+		return sourceOfCodeExtractedDocs == SourceOfCodeExtractedDocs.DEDICATED_DOC_SCRIPT_FILE || // dedicated docs file always leads; if it's present then it's what we use
+			(titaniumIsUsed ? sourceOfCodeExtractedDocs == SourceOfCodeExtractedDocs.TITANIUM_CLIENT_AND_SERVER_SIDE_SCRIPT
+				: sourceOfCodeExtractedDocs == SourceOfCodeExtractedDocs.NG1_CLIENT_AND_SERVER_SIDE_SCRIPT);
+	}
+
+	public void setDocsWereExtractedFromCode(SourceOfCodeExtractedDocs sourceOfCodeExtractedDocs)
+	{
+		this.sourceOfCodeExtractedDocs = sourceOfCodeExtractedDocs;
 	}
 
 }

@@ -32,6 +32,8 @@ public class ConsoleLoggerServiceHandler implements IServerService
 
 	private final IWebsocketSession session;
 
+	private String msg = null;
+
 	public ConsoleLoggerServiceHandler(IWebsocketSession session)
 	{
 		this.session = session;
@@ -51,7 +53,14 @@ public class ConsoleLoggerServiceHandler implements IServerService
 
 			case "warn" :
 			{
-				log.warn(message);
+				if (msg == null || !msg.equals(message))
+				{
+					if (message.contains("WARNING: sanitizing HTML stripped some content, see https://g.co/ng/security#xss")) //$NON-NLS-1$
+					{
+						msg = message;
+					}
+					log.warn(message);
+				}
 				break;
 			}
 

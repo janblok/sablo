@@ -79,7 +79,7 @@ public abstract class BaseWebObject implements IWebObjectContext
 	private static final TypedDataWithChangeInfo EMPTY_PROPERTIES_WITH_CHANGE_INFO = new TypedDataWithChangeInfo(Collections.<String, Object> emptyMap(), null,
 		null);
 
-	private static final Logger log = LoggerFactory.getLogger(BaseWebObject.class.getCanonicalName());
+	protected static final Logger log = LoggerFactory.getLogger(BaseWebObject.class.getCanonicalName());
 
 
 	protected final WebObjectSpecification specification;

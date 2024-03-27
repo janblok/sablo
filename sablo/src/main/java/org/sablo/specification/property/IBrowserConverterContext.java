@@ -29,11 +29,16 @@ public interface IBrowserConverterContext
 	BaseWebObject getWebObject();
 
 	/**
-	 * This will give the actual computed push to server level for the property based on it's parent properties chain. (if it's a nested prop)
+	 * This will give the actual computed push to server level for the property based on it's parent properties chain. (if it's a nested prop)<br/><br/>
 	 *
-	 * We cannot store this in the PropertyDescription objects only and use it from there because the same custom/nested type (so PropertyDescription)
-	 * can be used in multiple subtrees in properties in the spec file, sometimes with pushToServer 'reject' and sometimes with pushToServer 'shallow'
-	 * for example somewhere in parents. So the same PropertyDescription's sub-properties can sometimes be 'reject' sometimes 'shallow' etc.
+	 * <b>IMPORTANT:</b><br/><br/>
+	 *
+	 * We cannot store this in the PropertyDescription objects only (when parsing the spec file) and use it from there because the same custom/nested
+	 * type (so PropertyDescription) can be used in multiple subtrees in properties in the spec file, sometimes with pushToServer 'reject' and sometimes
+	 * with pushToServer 'shallow' for example somewhere in parents. So the same PropertyDescription's sub-properties can sometimes be 'reject',
+	 * sometimes 'shallow' etc. (If we would want to do this - store it directly in PDs, we must take care to clone those nested custom object/array PDs
+	 * and have a different PropertyDescription for them in each different place they are used in; and also client-side sent PDs (type and pushToServer info)
+	 * then would need to work correctly with this as well...)
 	 *
 	 * @see PushToServerEnum#combineWithParent(PushToServerEnum) for details on how nested pushToServer levels are computed.
 	 */

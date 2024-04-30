@@ -22,7 +22,7 @@ import java.security.SecureRandom;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.GCMParameterSpec;
 
 import org.json.JSONException;
 import org.json.JSONWriter;
@@ -47,7 +47,7 @@ public class SecureStringPropertyType extends DefaultPropertyType<String> implem
 	private static final String CRYPT_METHOD = "AES/GCM/NoPadding";
 
 	private final SecretKey secretString;
-	private final IvParameterSpec ivString;
+	private final GCMParameterSpec gcmParameterSpec;
 
 	public static final SecureStringPropertyType INSTANCE = new SecureStringPropertyType();
 	public static final String TYPE_NAME = "securestring";
@@ -70,7 +70,7 @@ public class SecureStringPropertyType extends DefaultPropertyType<String> implem
 
 		byte[] iv = new byte[16];
 		new SecureRandom().nextBytes(iv);
-		ivString = new IvParameterSpec(iv);
+		gcmParameterSpec = new GCMParameterSpec(128, iv);
 	}
 
 	public String getName()
@@ -102,9 +102,9 @@ public class SecureStringPropertyType extends DefaultPropertyType<String> implem
 		try
 		{
 			Cipher cipher = Cipher.getInstance(CRYPT_METHOD);
-			cipher.init(Cipher.ENCRYPT_MODE, secretString, ivString);
+			cipher.init(Cipher.ENCRYPT_MODE, secretString, gcmParameterSpec);
 			byte[] bytes = cipher.doFinal(value.getBytes());
-			return new String(bytes);
+			return java.util.Base64.getEncoder().encodeToString(bytes);
 		}
 		catch (Exception e)
 		{
@@ -119,8 +119,8 @@ public class SecureStringPropertyType extends DefaultPropertyType<String> implem
 		try
 		{
 			Cipher cipher = Cipher.getInstance(CRYPT_METHOD);
-			cipher.init(Cipher.DECRYPT_MODE, secretString, ivString);
-			return new String(cipher.doFinal(value.getBytes()));
+			cipher.init(Cipher.DECRYPT_MODE, secretString, gcmParameterSpec);
+			return new String(cipher.doFinal(java.util.Base64.getDecoder().decode(value)));
 		}
 		catch (Exception e)
 		{

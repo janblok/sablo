@@ -44,7 +44,7 @@ public class SecureStringPropertyType extends DefaultPropertyType<String> implem
 {
 	private static final Logger log = LoggerFactory.getLogger(SecureStringPropertyType.class.getCanonicalName());
 
-	private static final String CRYPT_METHOD = "AES/CBC/PKCS5Padding";
+	private static final String CRYPT_METHOD = "AES/GCM/NoPadding";
 
 	private final SecretKey secretString;
 	private final IvParameterSpec ivString;

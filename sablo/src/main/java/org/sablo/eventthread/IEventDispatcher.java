@@ -16,6 +16,7 @@
 
 package org.sablo.eventthread;
 
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeoutException;
 
@@ -32,6 +33,88 @@ import org.sablo.websocket.IWebsocketSession;
  */
 public interface IEventDispatcher extends Runnable
 {
+	/**
+	 * An empty implementation that does nothing.
+	 */
+	public static final IEventDispatcher EMPTY = new IEventDispatcher()
+	{
+
+		@Override
+		public void run()
+		{
+		}
+
+		@Override
+		public void suspend(Object suspendID) throws CancellationException, TimeoutException
+		{
+		}
+
+		@Override
+		public void suspend(Object suspendID, int minEventLevelToDispatch, long timeout) throws CancellationException, TimeoutException
+		{
+		}
+
+		@Override
+		public void resume(Object suspendID)
+		{
+		}
+
+		@Override
+		public void postEvent(Runnable event, int eventLevel)
+		{
+		}
+
+		@Override
+		public void postEvent(Runnable event)
+		{
+		}
+
+		@Override
+		public boolean isEventDispatchThread()
+		{
+			return true;
+		}
+
+		@Override
+		public String interruptEventThread()
+		{
+			return null;
+		}
+
+		@Override
+		public void destroy()
+		{
+		}
+
+		@Override
+		public void cancelSuspend(Integer suspendID, String cancelReason)
+		{
+		}
+
+		@Override
+		public void addEvent(Runnable event, int eventLevel)
+		{
+		}
+
+		@Override
+		public void addEvent(Runnable event)
+		{
+		}
+
+		@Override
+		public void addImmediateEvent(Runnable event)
+		{
+			// TODO Auto-generated method stub
+
+		}
+
+		@Override
+		public List<Runnable> getExecuteImmediateRunnablesAndClearList()
+		{
+			// TODO Auto-generated method stub
+			return null;
+		}
+	};
 
 	public final static int EVENT_LEVEL_DEFAULT = 0;
 
@@ -55,7 +138,9 @@ public interface IEventDispatcher extends Runnable
 	boolean isEventDispatchThread();
 
 	/**
-	 * Adds an event to be handled by the event dispatch thread.
+	 * Adds an event to be handled by the event dispatch thread. If we are currently running on the dispatch thread
+	 * and the event level allows it, the given runnable might execute right away.
+	 *
 	 * The event level is considered to be {@link #EVENT_LEVEL_DEFAULT} (0).
 	 *
 	 * @param event the event to be handled on the event dispatch thread.
@@ -63,7 +148,9 @@ public interface IEventDispatcher extends Runnable
 	void addEvent(Runnable event);
 
 	/**
-	 * Adds an event to be handled by the event dispatch thread.
+	 * Adds an event to be handled by the event dispatch thread. If we are currently running on the dispatch thread
+	 * and the event level allows it, the given runnable might execute right away.<br/><br/>
+	 *
 	 * The eventLevel is only relevant when using {@link #suspend(Object, int)}.
 	 *
 	 * @param event the event to be handled on the event dispatch thread.
@@ -72,7 +159,8 @@ public interface IEventDispatcher extends Runnable
 	void addEvent(Runnable event, int eventLevel);
 
 	/**
-	 * Adds an event event queue.
+	 * Adds an event event queue. It will always execute later, and only when the event level allows it to.<br/><br/>
+	 *
 	 * The event level is considered to be {@link #EVENT_LEVEL_DEFAULT} (0).
 	 *
 	 * @param event the event to be handled on the event dispatch thread.
@@ -80,7 +168,17 @@ public interface IEventDispatcher extends Runnable
 	void postEvent(Runnable event);
 
 	/**
-	 * Works in tandem with {@link #resume(Object)}.
+	 * Adds an event event queue. It will always execute later, and only when the event level allow it to.<br/><br/>
+	 *
+	 * See {@link #suspend(Object, int, long)} description, especially the one of it's minEventLevelToDispatch parameter.
+	 *
+	 * @param event the event to be handled on the event dispatch thread.
+	 */
+	void postEvent(Runnable event, int eventLevel);
+
+	/**
+	 * Works in tandem with {@link #resume(Object)}.<br/><br/>
+	 *
 	 * When suspend is called, the current event will stop executing and other events will continue being dispatched until {@link #resume(Object)} is called
 	 * using the same "suspendID" parameter.
 	 *
@@ -132,4 +230,11 @@ public interface IEventDispatcher extends Runnable
 	 * interrupts the event dispatch thread, and gives back the current stack that was interrupted
 	 */
 	public String interruptEventThread();
+
+	/**
+	 * @return
+	 */
+	List<Runnable> getExecuteImmediateRunnablesAndClearList();
+
+	void addImmediateEvent(Runnable event);
 }

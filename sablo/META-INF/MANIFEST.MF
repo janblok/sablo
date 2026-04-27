@@ -2,28 +2,28 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Sablo core library
 Bundle-SymbolicName: sablo;singleton:=true
-Bundle-Version: 2024.9.0.4000_rc
-Export-Package: org.sablo,
- org.sablo.eventthread,
- org.sablo.filter,
- org.sablo.services.client,
- org.sablo.services.server,
- org.sablo.specification,
- org.sablo.specification.property,
- org.sablo.specification.property.types,
- org.sablo.util,
- org.sablo.security,
- org.sablo.websocket,
- org.sablo.websocket.impl,
- org.sablo.websocket.utils
-Bundle-RequiredExecutionEnvironment: JavaSE-17
+Bundle-Version: 2026.6.0.qualifier
+Export-Package: org.sablo;version="2026.6.0",
+ org.sablo.eventthread;version="2026.6.0",
+ org.sablo.filter;version="2026.6.0",
+ org.sablo.security;version="2026.6.0",
+ org.sablo.services.client;version="2026.6.0",
+ org.sablo.services.server;version="2026.6.0",
+ org.sablo.specification;version="2026.6.0",
+ org.sablo.specification.property;version="2026.6.0",
+ org.sablo.specification.property.types;version="2026.6.0",
+ org.sablo.util;version="2026.6.0",
+ org.sablo.websocket;version="2026.6.0",
+ org.sablo.websocket.impl;version="2026.6.0",
+ org.sablo.websocket.utils;version="2026.6.0"
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Bundle-ClassPath: .
 Bundle-Vendor: Servoy
 Bundle-ActivationPolicy: lazy
-Import-Package: javax.servlet;version="[4.0.0,5.0.0)",
- javax.servlet.http;version="[4.0.0,5.0.0)",
- javax.websocket;version="1.1.0",
- javax.websocket.server;version="1.1.0",
+Import-Package: jakarta.servlet;version="[6.1.0,8.0.0)",
+ jakarta.servlet.http;version="[6.1.0,8.0.0)",
+ jakarta.websocket;version="[2.2.0,4.0.0)",
+ jakarta.websocket.server;version="[2.2.0,4.0.0)",
  org.apache.commons.io;version="2.8.0",
  org.json,
  org.slf4j;version="2.0.9",

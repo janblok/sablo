@@ -24,7 +24,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 
+import org.sablo.util.ValueReference;
 import org.sablo.websocket.IWebsocketSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +62,7 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 	}
 
 	private final ConcurrentMap<Object, String> suspendedEvents = new ConcurrentHashMap<Object, String>();
+
 	/**
 	 * When this is a value in {@link #suspendedEvents} above it's a normal suspend mode. When the value in {@link #suspendedEvents} is another String
 	 * then the suspend will be cancelled with that String as a reason.
@@ -68,6 +71,8 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 
 	private final List<Event> events = new ArrayList<Event>();
 	private final LinkedList<Event> stack = new LinkedList<Event>();
+
+	private final List<Runnable> immediateRunnables = new ArrayList<Runnable>();
 
 	private volatile boolean exit = false;
 
@@ -87,7 +92,7 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		scriptThread = Thread.currentThread();
 		while (!exit)
 		{
-			dispatch(EVENT_LEVEL_DEFAULT, NO_TIMEOUT);
+			dispatch(EVENT_LEVEL_DEFAULT, NO_TIMEOUT, true, null);
 		}
 
 		synchronized (events)
@@ -100,8 +105,15 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		}
 	}
 
-	private void dispatch(int minEventLevelToDispatch, long endMillis)
+	/**
+	 * @param shouldWaitIfNoEventFoundToDispatch if true, this call will wait for an event to be added if none was found that can be executed (matching the criteria)
+	 * @param eventFilter filters events that can be used; if it returns true, then that event can be used, otherwise it will not be used; this argument can be null
+	 *
+	 * @return true if an event was executed as a result of this call; false otherwise
+	 */
+	private boolean dispatch(int minEventLevelToDispatch, long endMillis, boolean shouldWaitIfNoEventFoundToDispatch, Predicate<Event> eventFilter)
 	{
+		boolean wasExecuted = false;
 		currentMinEventLevel = minEventLevelToDispatch;
 
 		int i;
@@ -111,37 +123,58 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 			synchronized (events)
 			{
 				long remainingMillis = 123456; // dummy value just to compile
+
+				// find the next event that can be executed, or wait for one that can be executed to be added
 				while (!exit && event == null && (endMillis == NO_TIMEOUT || (remainingMillis = endMillis - System.currentTimeMillis()) > 0))
 				{
 					i = 0;
+					// find the next event that could be executed according to minEventLevelToDispatch
 					while (event == null && i < events.size())
 					{
 						event = events.get(i);
-						if (event.getEventLevel() < minEventLevelToDispatch) event = null;
-						else events.remove(i);
+
+						if (event.getEventLevel() < minEventLevelToDispatch || (eventFilter != null && !eventFilter.test(event))) event = null; // disqualified
+						else events.remove(i); // it will be used
 
 						i++;
 					}
+
+					// if there is no such event, wait for one to be added
 					if (event == null)
 					{
-						events.wait(endMillis == NO_TIMEOUT ? 0 : remainingMillis);
+						if (shouldWaitIfNoEventFoundToDispatch)
+						{
+							try
+							{
+								events.wait(endMillis == NO_TIMEOUT ? 0 : remainingMillis);
+							}
+							catch (InterruptedException e)
+							{
+								// Server shutdown
+								log.debug("Interrupted while waiting for events", e); //$NON-NLS-1$
+								break;
+							}
+						}
+						else break; // exit the while loop; "shouldWaitIfNoEventFoundToDispatch" says we should give up when not found
 					}
 				}
 			}
 
+			// if one was found, execute it
 			if (event != null)
 			{
 				stack.add(event);
 				event.execute();
 				if (stack.getLast() != event)
 				{
-					throw new Exception("State not expected");
+					throw new Exception("State not expected"); //$NON-NLS-1$
 				}
 				stack.remove(event);
 				synchronized (events)
 				{
 					events.notifyAll();
 				}
+				wasExecuted = true;
 			}
 		}
 		catch (Throwable t)
@@ -152,10 +185,11 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 			}
 			catch (Throwable t2)
 			{
-				log.error("[dispatch()] handleException raised a new error or runtime exception. Initial one was: ", t);
-				log.error("[dispatch()] handleException raised this new error or runtime exception: ", t2);
+				log.error("[dispatch()] handleException raised a new error or runtime exception. Initial one was: ", t); //$NON-NLS-1$
+				log.error("[dispatch()] handleException raised this new error or runtime exception: ", t2); //$NON-NLS-1$
 			}
 		}
+		return wasExecuted;
 	}
 
 	protected void handleException(Event event, Throwable t)
@@ -195,7 +229,7 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		postEvent(event, IEventDispatcher.EVENT_LEVEL_DEFAULT);
 	}
 
-	private void postEvent(Runnable event, int eventLevel)
+	public void postEvent(Runnable event, int eventLevel)
 	{
 		synchronized (events)
 		{
@@ -203,6 +237,7 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 			{
 				events.add(createEvent(event, eventLevel));
 				events.notifyAll();
+
 				// non-blocking
 //				while (!(event.isExecuted() || event.isSuspended() || event.isExecutingInBackground()))
 //				{
@@ -231,7 +266,17 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 
 	protected Event createEvent(Runnable event, int eventLevel)
 	{
-		return new Event(session, event, eventLevel);
+		return new Event(session, event, eventLevel, getCurrentEventIfOnEventThread());
+	}
+
+	protected Event getCurrentEventIfOnEventThread()
+	{
+		// so the current event that is being executed right now in current (event) thread
+		// wants to add a new event; do remember which Events were spawned by another Event running on the event thread
+		// (the idea is that if application.updateUI() gets called, other events coming from the client, or from
+		// database updates from other clients, that are already in the list should not execute - because then
+		// they would execute before the ones spawned by the current running event, if new ones were always added last)
+		return isEventDispatchThread() ? stack.getLast() : null;
 	}
 
 	public void suspend(Object suspendID) throws CancellationException, TimeoutException
@@ -242,10 +287,9 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 	@Override
 	public void suspend(Object suspendID, int minEventLevelToDispatch, long timeout) throws CancellationException, TimeoutException
 	{
-		// TODO should this one be called in the execute event thread, should an check be done??
 		if (!isEventDispatchThread())
 		{
-			log.error("suspend called in another thread then the script thread: " + Thread.currentThread(), new RuntimeException());
+			log.error("suspend called in another thread then the script thread: " + Thread.currentThread(), new RuntimeException()); //$NON-NLS-1$
 			return;
 		}
 		long endMillis = (timeout != NO_TIMEOUT ? System.currentTimeMillis() + timeout : NO_TIMEOUT);
@@ -259,33 +303,57 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 				events.notifyAll();
 			}
 
-			// if we were already dispatching in a higher currentMinEventLevel, use that one instead of "minEventLevelToDispatch"
-			int dispatchEventLevel = Math.max(minEventLevelToDispatch, currentMinEventLevel);
+			final ValueReference<String> suspendedEventsValue = new ValueReference<>(null);
 
-			String suspendedEventsValue;
-			int oldMinEventLevel = currentMinEventLevel;
-			try
-			{
-				while ((suspendedEventsValue = suspendedEvents.get(suspendID)) == SUSPENDED_NOT_CANCELED && !exit &&
-					(timeout == NO_TIMEOUT || endMillis - System.currentTimeMillis() > 0)) // this condition assumes NO_TIMEOUT <= 0 which is true
-				{
-					dispatch(dispatchEventLevel, endMillis);
-				}
-			}
-			finally
-			{
-				currentMinEventLevel = oldMinEventLevel;
-			}
+			newEventLoop((anEventWasExecutedInLastDispatchCall) -> {
+				// the returned value means "should stop dispatching"
+				return (suspendedEventsValue.value = suspendedEvents.get(suspendID)) != SUSPENDED_NOT_CANCELED;
+			}, minEventLevelToDispatch, timeout, endMillis, true, null);
 
 			event.willResume();
 
-			if (suspendedEventsValue != null && !exit)
+			if (suspendedEventsValue.value != null && !exit)
 			{
 				suspendedEvents.remove(suspendID);
-				if (suspendedEventsValue != SUSPENDED_NOT_CANCELED)
-					throw new CancellationException("Suspended event cancelled. Reason: " + suspendedEventsValue);
-				else throw new TimeoutException("Suspended event timed out (" + suspendID + "). It was not resumed in " + timeout + " milliseconds.");
+				if (suspendedEventsValue.value != SUSPENDED_NOT_CANCELED)
+					throw new CancellationException("Suspended event cancelled. Reason: " + suspendedEventsValue.value); //$NON-NLS-1$
+				else throw new TimeoutException("Suspended event timed out (" + suspendID + "). It was not resumed in " + timeout + " milliseconds."); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			}
+		}
+	}
+
+	public void runEventsAddedByCurrentEventStack()
+	{
+		// create a new event loop that processes all pending events that were triggered by currently executing events in the events stack
+		newEventLoop((anEventWasExecutedInLastDispatchCall) -> {
+			// the returned value means "should stop dispatching"
+			return !anEventWasExecutedInLastDispatchCall.booleanValue();
+		}, currentMinEventLevel, NO_TIMEOUT, NO_TIMEOUT, false,
+			eventToFilter -> stack.stream().anyMatch((runningStackEvent -> (runningStackEvent == eventToFilter.getTriggeringEvent()))));
+	}
+
+	/**
+	 * @param shouldStopDispatching it will receive a boolean that means "event was executed in last dispatch attempt".
+	 */
+	private void newEventLoop(Predicate<Boolean> shouldStopDispatching, int minEventLevelToDispatch, long timeout, long endMillis,
+		boolean shouldWaitIfNoEventFoundToDispatch, Predicate<Event> eventFilter)
+	{
+		// if we were already dispatching in a higher currentMinEventLevel, use that one instead of "minEventLevelToDispatch"
+		int dispatchEventLevel = Math.max(minEventLevelToDispatch, currentMinEventLevel);
+
+		int oldMinEventLevel = currentMinEventLevel;
+		try
+		{
+			boolean anEventWasExecutedInLastDispatchCall = true;
+			while ((shouldStopDispatching == null || !shouldStopDispatching.test(Boolean.valueOf(anEventWasExecutedInLastDispatchCall))) && !exit &&
+				(timeout == NO_TIMEOUT || endMillis - System.currentTimeMillis() > 0)) // this condition assumes NO_TIMEOUT <= 0 which is true
+			{
+				anEventWasExecutedInLastDispatchCall = dispatch(dispatchEventLevel, endMillis, shouldWaitIfNoEventFoundToDispatch, eventFilter);
+			}
+		}
+		finally
+		{
+			currentMinEventLevel = oldMinEventLevel;
 		}
 	}
 
@@ -319,7 +387,7 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 		synchronized (events)
 		{
 			// add a nop event so that the dispatcher is triggered.
-			events.add(new Event(session, null, EVENT_LEVEL_DEFAULT));
+			events.add(new Event(session, null, EVENT_LEVEL_DEFAULT, null));
 			events.notifyAll();
 		}
 	}
@@ -347,6 +415,19 @@ public class EventDispatcher implements Runnable, IEventDispatcher
 			return sb.toString();
 		}
 		return "";
+	}
+
+	@Override
+	public void addImmediateEvent(Runnable event)
+	{
+		immediateRunnables.add(event);
+	}
+
+	public List<Runnable> getExecuteImmediateRunnablesAndClearList()
+	{
+		List<Runnable> retValue = new ArrayList<Runnable>(immediateRunnables);
+		immediateRunnables.clear();
+		return retValue;
 	}
 
 }

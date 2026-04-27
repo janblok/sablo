@@ -32,12 +32,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
-import javax.servlet.http.HttpSession;
-import javax.websocket.CloseReason;
-
 import org.sablo.eventthread.IEventDispatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import jakarta.servlet.http.HttpSession;
+import jakarta.websocket.CloseReason;
 
 /**
  * Websocket user session management
@@ -216,6 +216,11 @@ public class WebsocketSessionManager
 								AtomicInteger counter = getCounter(httpSession, HTTP_SESSION_COUNTER);
 								if (counter.decrementAndGet() == 0)
 								{
+									HttpSessionDisposeListener listener = (HttpSessionDisposeListener)httpSession
+										.getAttribute(HttpSessionDisposeListener.DISPOSE_LISTENER_KEY);
+									if (listener != null) listener.goingToBeDisposed();
+									else log.warn("No HttpSessionDisposeListener found on http session " + httpSession.getId() +
+										" when last websocket session disposed");
 									httpSession.invalidate();
 								}
 							}

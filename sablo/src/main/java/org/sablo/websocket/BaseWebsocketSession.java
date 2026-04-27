@@ -29,8 +29,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import javax.servlet.http.HttpSession;
-
 import org.json.JSONObject;
 import org.sablo.IChangeListener;
 import org.sablo.eventthread.EventDispatcher;
@@ -46,6 +44,8 @@ import org.sablo.websocket.impl.ClientService;
 import org.sablo.websocket.utils.ObjectReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import jakarta.servlet.http.HttpSession;
 
 
 /**
@@ -81,6 +81,8 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	private int windowCounter;
 	private HttpSession httpSession;
 
+	private SabloService sabloService;
+	private TypesRegistryService typesRegistryService;
 
 	public BaseWebsocketSession(WebsocketSessionKey sessionKey)
 	{
@@ -287,6 +289,13 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 						thread.start();
 						if (SHUTDOWNLOGGER.isDebugEnabled()) SHUTDOWNLOGGER.debug("Executor created for client: " + getSessionKey()); //$NON-NLS-1$
 					}
+					else
+					{
+						SHUTDOWNLOGGER.warn(
+							"Could not create a executor because the client was already shutdown? " + getSessionKey() + " returning an empty imp", //$NON-NLS-1$//$NON-NLS-2$
+							new RuntimeException());
+						return IEventDispatcher.EMPTY;
+					}
 				}
 			}
 		}
@@ -361,7 +370,8 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 				{
 					if (SHUTDOWNLOGGER.isDebugEnabled()) SHUTDOWNLOGGER.debug("Executor destroyed in dispose for client: " + getSessionKey()); //$NON-NLS-1$
 					executor.destroy();
-					executor = null;
+					// set it to empty so that no new executor is suddenly created when the current one is still executing something.
+					executor = IEventDispatcher.EMPTY;
 				}
 			}
 		}
@@ -447,13 +457,15 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 	@Override
 	public SabloService getSabloService()
 	{
-		return new SabloService(getClientService(SabloService.SABLO_SERVICE));
+		if (sabloService == null) sabloService = new SabloService(getClientService(SabloService.SABLO_SERVICE));
+		return sabloService;
 	}
 
 	@Override
 	public TypesRegistryService getTypesRegistryService()
 	{
-		return new TypesRegistryService(getClientService(TypesRegistryService.TYPES_REGISTRY_SERVICE));
+		if (typesRegistryService == null) typesRegistryService = new TypesRegistryService(getClientService(TypesRegistryService.TYPES_REGISTRY_SERVICE));
+		return typesRegistryService;
 	}
 
 	@Override
@@ -464,7 +476,7 @@ public abstract class BaseWebsocketSession implements IWebsocketSession, IChange
 
 	protected IClientService createClientService(String name)
 	{
-		return new ClientService(name, WebServiceSpecProvider.getSpecProviderState().getWebObjectSpecification(name));
+		return new ClientService(name, WebServiceSpecProvider.getSpecProviderState().getWebObjectSpecification(name), this);
 	}
 
 	public void startHandlingEvent()

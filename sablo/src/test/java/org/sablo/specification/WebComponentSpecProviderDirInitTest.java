@@ -20,44 +20,48 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Map;
 
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.sablo.specification.Package.IPackageReader;
+import org.sablo.specification.property.ICustomType;
 
-public class WebComponentSpecProviderDirInitTest
-{
+public class WebComponentSpecProviderDirInitTest {
 	private static final File COMPONENTS_DIR =
 		new File("C:\\Users\\jblok\\git\\pivoy\\frontend\\packages\\@servoy\\bootstrapcomponents");
 
 	@Before
-	public void setUp()
-	{
+	public void setUp() {
 		WebComponentSpecProvider.disposeInstance();
 	}
 
 	@After
-	public void tearDown()
-	{
+	public void tearDown() {
 		WebComponentSpecProvider.disposeInstance();
 	}
 
 	@Test
-	public void shouldLoadSpecsFromDirectoryReader()
-	{
-		Assume.assumeTrue("Expected package directory is missing: " + COMPONENTS_DIR,
-				COMPONENTS_DIR.isDirectory());
-
+	public void shouldLoadSpecsFromDirectoryReader() {
 		IPackageReader[] packageReaders = new IPackageReader[] { new Package.DirPackageReader(COMPONENTS_DIR) };
 		WebComponentSpecProvider.init(packageReaders, null);
+
 		SpecProviderState state = WebComponentSpecProvider.getSpecProviderState();
 		assertThat(WebComponentSpecProvider.isLoaded()).isTrue();
 		assertThat(state.getPackageNames()).contains("bootstrapcomponents");
+
 		Collection<String> bootstrapcomponents = state.getWebObjectsInPackage("bootstrapcomponents");
 		assertThat(bootstrapcomponents).isNotEmpty();
 		assertThat(bootstrapcomponents.size()).isEqualTo(25);
-		assertThat(state.getWebObjectSpecification("bootstrapcomponents-button")).isNotNull();
+
+		WebObjectSpecification buttonSpecification = state.getWebObjectSpecification("bootstrapcomponents-button");
+		assertThat(buttonSpecification).isNotNull();
+
+		WebObjectSpecification accordionSpecification = state.getWebObjectSpecification("bootstrapcomponents-accordion");
+		assertThat(accordionSpecification).isNotNull();
+		Map<String, ICustomType<?>> customJSONProperties = accordionSpecification.getDeclaredCustomObjectTypes();
+		assertThat(customJSONProperties).isNotNull();
+		assertThat(customJSONProperties.keySet()).contains("tab");
 	}
 }

@@ -16,10 +16,12 @@
 
 package org.sablo.specification;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.File;
+import java.util.Collection;
 
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,12 +52,12 @@ public class WebComponentSpecProviderDirInitTest
 
 		IPackageReader[] packageReaders = new IPackageReader[] { new Package.DirPackageReader(COMPONENTS_DIR) };
 		WebComponentSpecProvider.init(packageReaders, null);
-
 		SpecProviderState state = WebComponentSpecProvider.getSpecProviderState();
-		Assert.assertTrue(WebComponentSpecProvider.isLoaded());
-		Assert.assertTrue(state.getPackageNames().contains("bootstrapcomponents"));
-		Assert.assertFalse(state.getWebObjectsInPackage("bootstrapcomponents").isEmpty());
-		Assert.assertNotNull(state.getWebObjectSpecification("bootstrapcomponents-button"));
+		assertThat(WebComponentSpecProvider.isLoaded()).isTrue();
+		assertThat(state.getPackageNames()).contains("bootstrapcomponents");
+		Collection<String> bootstrapcomponents = state.getWebObjectsInPackage("bootstrapcomponents");
+		assertThat(bootstrapcomponents).isNotEmpty();
+		assertThat(bootstrapcomponents.size()).isEqualTo(25);
+		assertThat(state.getWebObjectSpecification("bootstrapcomponents-button")).isNotNull();
 	}
 }
-

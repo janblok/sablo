@@ -43,8 +43,6 @@ import org.sablo.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.servlet.http.HttpServletRequest;
-
 /**
  * Take an index page, enhance it with required libs/csses and replace variables
  * @author jblok
@@ -69,7 +67,6 @@ public class IndexPageEnhancer
 	/**
 	 * Enhance the provided index.html
 	 * @param resource url to index.html
-	 * @param request servlet request
 	 * @param cssContributions possible css contributions
 	 * @param jsContributions possible js contributions
 	 * @param variableSubstitution replace variables
@@ -77,7 +74,7 @@ public class IndexPageEnhancer
 	 * @throws IOException
 	 */
 	@SuppressWarnings("unchecked")
-	public static void enhance(URL resource, HttpServletRequest request, Collection<String> cssContributions, Collection<String> jsContributions,
+	public static void enhance(URL resource, Collection<String> cssContributions, Collection<String> jsContributions,
 		Collection<String> extraMetaData, Map<String, Object> variableSubstitution, Writer writer, IContributionFilter contributionFilter,
 		IContributionEntryFilter contributionEntryFilter, String contentSecurityPolicyNonce) throws IOException
 	{
@@ -129,8 +126,6 @@ public class IndexPageEnhancer
 	/**
 	 * Gets all JS and CSS contributions.
 	 * @param exportedPackages
-	 * @param set2
-	 * @param set
 	 * @param supportGrouping Boolean; if TRUE returns the contributions which support grouping,
 	 * 								   if FALSE returns the contributions which do not support grouping
 	 * 								   if NULL returns all contributions

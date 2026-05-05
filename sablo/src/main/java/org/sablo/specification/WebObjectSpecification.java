@@ -40,7 +40,7 @@ import org.sablo.specification.property.types.BooleanPropertyType;
 import org.sablo.specification.property.types.FunctionPropertyType;
 import org.sablo.specification.property.types.ObjectPropertyType;
 import org.sablo.specification.property.types.TypesRegistry;
-import org.sablo.websocket.impl.ClientService;
+import org.sablo.util.ScriptUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -279,7 +279,7 @@ public class WebObjectSpecification extends PropertyDescription
 		String scriptingN = name;
 		if (scriptingN != null && IPackageReader.WEB_SERVICE.equals(packageType))
 		{
-			scriptingN = ClientService.convertToJSName(scriptingN);
+			scriptingN = ScriptUtils.convertToJSName(scriptingN);
 		} // else other types (components/layouts don't get their scope on client in the same way and work directly with "name")
 		return scriptingN;
 	}

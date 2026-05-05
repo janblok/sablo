@@ -16,19 +16,13 @@
 
 package org.sablo.specification;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
-import java.util.jar.Manifest;
 
 import org.sablo.specification.Package.IPackageReader;
-import org.sablo.specification.Package.JarServletContextReader;
 import org.sablo.websocket.utils.JSONUtils.EmbeddableJSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import jakarta.servlet.ServletContext;
 
 /**
  * Class responsible for loading the service spec files.
@@ -77,53 +71,6 @@ public class WebServiceSpecProvider extends BaseSpecProvider
 	public static void disposeInstance()
 	{
 		instance = null;
-	}
-
-	public static WebServiceSpecProvider init(ServletContext servletContext, String[] webComponentBundleNames)
-	{
-		if (instance == null)
-		{
-			synchronized (WebServiceSpecProvider.class)
-			{
-				if (instance == null)
-				{
-					List<IPackageReader> readers = new ArrayList<IPackageReader>();
-					for (String location : webComponentBundleNames)
-					{
-						try
-						{
-							readers.add(new Package.WarURLPackageReader(servletContext, location));
-						}
-						catch (Exception e)
-						{
-							log.error("Exception during init", e);
-						}
-					}
-
-					// scan all jars for services
-					for (String resourcePath : servletContext.getResourcePaths("/WEB-INF/lib"))
-					{
-						if (resourcePath.toLowerCase().endsWith(".jar") || resourcePath.toLowerCase().endsWith(".zip"))
-						{
-							try
-							{
-								IPackageReader reader = new JarServletContextReader(servletContext, resourcePath);
-								Manifest mf = reader.getManifest();
-								if (mf != null && IPackageReader.WEB_SERVICE.equals(Package.getPackageType(mf))) readers.add(reader);
-							}
-							catch (Exception e)
-							{
-								log.error("Exception during init", e);
-							}
-						}
-					}
-
-					instance = new WebServiceSpecProvider(
-						new WebSpecReader(readers.toArray(new IPackageReader[readers.size()]), IPackageReader.WEB_SERVICE, specReloadSubject, null));
-				}
-			}
-		}
-		return instance;
 	}
 
 	/**

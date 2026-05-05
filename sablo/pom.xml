@@ -18,20 +18,12 @@
     
     <!-- IF updating dependecies, version or new jar, also update the pom_only_dep,xml -->
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <log4j-version>2.22.1</log4j-version>
         <jenkins.javascript_tests.reportsDirectory>target/protractor-reports</jenkins.javascript_tests.reportsDirectory>
         <test.script>test</test.script>
     </properties>
-
-    <repositories>
-        <repository>
-            <id>developer_repo</id>
-            <name>developer_repo</name>
-            <url>https://developer.servoy.com/mvn_repository/</url>
-        </repository>
-    </repositories>
 
     <build>
         <testSourceDirectory>src/test/java</testSourceDirectory>
@@ -97,57 +89,7 @@
                             </execution>
                         </executions>
                     </plugin>
-                    <plugin>
-                        <groupId>com.github.eirslett</groupId>
-                        <artifactId>frontend-maven-plugin</artifactId>
-                        <version>1.15.4</version>
-                        <executions>
-
-                            <!-- 1. Install node and npm locally -->
-                            <execution>
-                                <id>install node and npm</id>
-                                <goals>
-                                    <goal>install-node-and-npm</goal>
-                                </goals>
-                                <configuration>
-                                    <nodeVersion>v24.11.1</nodeVersion>
-                                </configuration>
-                            </execution>
-
-                            <!-- 2. Install karma and karma plugins -->
-                            <execution>
-                                <id>npm install</id>
-                                <goals>
-                                    <goal>npm</goal>
-                                </goals>
-                            </execution>
-
-                            <!-- 3. npm run build -->
-                            <execution>
-                                <id>npm run build</id>
-                                <goals>
-                                    <goal>npm</goal>
-                                </goals>
-                                <configuration>
-                                    <arguments>run build</arguments>
-                                </configuration>
-                            </execution>
-
-                            <!-- 4. Run karma tests -->
-                            <execution>
-                                <id>javascript_tests</id>
-                                <goals>
-                                    <goal>npm</goal>
-                                </goals>
-                                <configuration>
-                                    <skipTests>${maven.test.skip}</skipTests>
-                                    <arguments>run ${test.script}</arguments>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                </plugins>
+                 </plugins>
             </build>
         </profile>
     </profiles>
@@ -166,21 +108,9 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>jakarta.servlet</groupId>
-            <artifactId>jakarta.servlet-api</artifactId>
-            <version>4.0.4</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>jakarta.websocket</groupId>
-            <artifactId>jakarta.websocket-api</artifactId>
-            <version>1.1.2</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.11.0</version>
+            <version>2.14.0</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -229,7 +159,7 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>3.26.3</version>
+            <version>3.27.7</version>
             <scope>test</scope>
         </dependency>
         <dependency>

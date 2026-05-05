@@ -19,7 +19,6 @@ package org.sablo;
 import org.sablo.specification.WebComponentSpecProvider;
 import org.sablo.specification.WebObjectApiFunctionDefinition;
 import org.sablo.specification.WebObjectSpecification;
-import org.sablo.websocket.CurrentWindow;
 
 /**
  * Server side representation of an angular webcomponent in the browser. It is
@@ -163,13 +162,14 @@ public class WebComponent extends BaseWebObject
 	 */
 	public Object invokeApi(WebObjectApiFunctionDefinition apiFunction, Object[] args)
 	{
-		if (isVisible()) return CurrentWindow.get().invokeApi(this, apiFunction, args);
-		else
-		{
-			log.atWarn().setMessage("Calling an api {} on a none visible component {} of parent {}").addArgument(apiFunction.getName()).addArgument(getName()) //$NON-NLS-1$
-				.addArgument(getParent().getName()).log();
+
+//		if (isVisible()) return CurrentWindow.get().invokeApi(this, apiFunction, args);
+//		else
+//		{
+//			log.atWarn().setMessage("Calling an api {} on a none visible component {} of parent {}").addArgument(apiFunction.getName()).addArgument(getName()) //$NON-NLS-1$
+//				.addArgument(getParent().getName()).log();
 			return null;
-		}
+//		}
 	}
 
 	@Override

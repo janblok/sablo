@@ -16,17 +16,11 @@
 
 package org.sablo.specification;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
-import java.util.jar.Manifest;
 
 import org.sablo.specification.Package.IPackageReader;
-import org.sablo.specification.Package.JarServletContextReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import jakarta.servlet.ServletContext;
 
 /**
  * Class responsible for loading a set of web component packages and specs.
@@ -57,47 +51,6 @@ public class WebComponentSpecProvider extends BaseSpecProvider
 	public static synchronized void init(IPackageReader[] locations, IDefaultComponentPropertiesProvider defaultComponentPropertiesProvider)
 	{
 		instance = new WebComponentSpecProvider(new WebSpecReader(locations, "Web-Component", specReloadSubject, defaultComponentPropertiesProvider));
-	}
-
-	public static WebComponentSpecProvider init(ServletContext servletContext, String[] webComponentBundleNames,
-		IDefaultComponentPropertiesProvider defaultComponentPropertiesProvider)
-	{
-		if (instance == null)
-		{
-			synchronized (WebComponentSpecProvider.class)
-			{
-				if (instance == null)
-				{
-					try
-					{
-						List<IPackageReader> readers = new ArrayList<IPackageReader>();
-						for (String location : webComponentBundleNames)
-						{
-							readers.add(new Package.WarURLPackageReader(servletContext, location));
-						}
-
-						// scan all jars for components
-						for (String resourcePath : servletContext.getResourcePaths("/WEB-INF/lib"))
-						{
-							if (resourcePath.toLowerCase().endsWith(".jar") || resourcePath.toLowerCase().endsWith(".zip"))
-							{
-								IPackageReader reader = new JarServletContextReader(servletContext, resourcePath);
-								Manifest mf = reader.getManifest();
-								if (mf != null && Package.IPackageReader.WEB_COMPONENT.equals(Package.getPackageType(mf))) readers.add(reader);
-							}
-						}
-
-						instance = new WebComponentSpecProvider(new WebSpecReader(readers.toArray(new IPackageReader[readers.size()]), "Web-Component",
-							specReloadSubject, defaultComponentPropertiesProvider));
-					}
-					catch (Exception e)
-					{
-						log.error("Exception during init", e);
-					}
-				}
-			}
-		}
-		return instance;
 	}
 
 	/**

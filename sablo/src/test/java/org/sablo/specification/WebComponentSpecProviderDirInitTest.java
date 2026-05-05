@@ -30,7 +30,7 @@ import org.sablo.specification.property.ICustomType;
 
 public class WebComponentSpecProviderDirInitTest {
 	private static final File COMPONENTS_DIR =
-		new File("C:\\Users\\jblok\\git\\pivoy\\frontend\\packages\\@servoy\\bootstrapcomponents");
+		new File("C:\\Users\\blokj\\git\\pivoy\\frontend\\packages\\@servoy\\bootstrapcomponents");
 
 	@Before
 	public void setUp() {

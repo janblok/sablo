@@ -23,10 +23,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Point;
+import java.awt.*;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -40,28 +37,18 @@ import java.util.concurrent.TimeoutException;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.sablo.services.server.FormServiceHandler;
 import org.sablo.specification.Package.IPackageReader;
 import org.sablo.specification.PropertyDescription;
 import org.sablo.specification.PropertyDescriptionBuilder;
 import org.sablo.specification.WebComponentSpecProvider;
-import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.WebObjectSpecification.PushToServerEnum;
-import org.sablo.specification.WebObjectSpecificationBuilder;
 import org.sablo.specification.property.BrowserConverterContext;
 import org.sablo.specification.property.ChangeAwareList;
 import org.sablo.specification.property.IPropertyType;
 import org.sablo.specification.property.IPropertyWithAttachDependencies;
-import org.sablo.specification.property.types.DimensionPropertyType;
-import org.sablo.specification.property.types.VisiblePropertyType;
-import org.sablo.util.TestBaseWebsocketSession;
-import org.sablo.websocket.BaseWindow;
-import org.sablo.websocket.CurrentWindow;
 import org.sablo.websocket.TypedData;
-import org.sablo.websocket.WebsocketSessionKey;
 import org.sablo.websocket.utils.JSONUtils;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -357,146 +344,6 @@ public class WebComponentTest
 		assertEquals("myname3", ((Map< ? , ? >)array3.get(2)).get("name"));
 		assertEquals(Color.red, ((Map< ? , ? >)array3.get(1)).get("foreground"));
 		assertNull(((Map< ? , ? >)array3.get(2)).get("foreground"));
-	}
-
-	@Test
-	public void setColorPropertyWithOldValue()
-	{
-		Map<String, PropertyDescription> properties = new HashMap<>();
-		properties.put("size", new PropertyDescriptionBuilder().withName("size").withType(DimensionPropertyType.INSTANCE).build());
-		properties.put("visible", new PropertyDescriptionBuilder().withName("visible").withType(VisiblePropertyType.INSTANCE).build());
-
-		WebObjectSpecification formSpec = new WebObjectSpecificationBuilder().withName("form_spec").withPackageType(
-			IPackageReader.WEB_COMPONENT).withProperties(properties).build();
-
-		final Container form = new Container("form", formSpec)
-		{
-		};
-
-		final WebComponent testcomponent = new WebComponent("mycomponent", "test");
-		testcomponent.setProperty("background", Color.BLACK);
-		form.add(testcomponent);
-
-		CurrentWindow.runForWindow(new BaseWindow(new TestBaseWebsocketSession(new WebsocketSessionKey("1", 42)), 99, "test")
-		{
-			@Override
-			public Container getForm(String formName)
-			{
-				return form;
-			}
-		}, () -> {
-			assertEquals(Color.BLACK, testcomponent.getProperty("background"));
-
-			try
-			{
-				JSONObject json = new JSONObject();
-				json.put("formname", "test");
-				json.put("beanname", testcomponent.getName());
-				JSONObject changes = new JSONObject();
-				changes.put("background", "#0000FF");
-				json.put("changes", changes);
-
-				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
-
-				// should be changed.
-				Assert.assertEquals(Color.BLUE, testcomponent.getProperty("background"));
-
-				changes.put("background", "#FF0000");
-				JSONObject oldvalues = new JSONObject();
-				oldvalues.put("background", "#0000FF");
-				json.put("oldvalues", oldvalues);
-
-				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
-
-				// should be changed, old value was really the old value.
-				Assert.assertEquals(Color.RED, testcomponent.getProperty("background"));
-
-				changes.put("background", "#00FF00");
-
-				// should not be changed, still RED
-				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
-				Assert.assertEquals(Color.RED, testcomponent.getProperty("background"));
-			}
-			catch (Exception e)
-			{
-				throw new RuntimeException(e);
-			}
-
-		});
-	}
-
-	@Test
-	public void setIntPropertyWithOldValue()
-	{
-		Map<String, PropertyDescription> properties = new HashMap<>();
-		properties.put("size", new PropertyDescriptionBuilder().withName("size").withType(DimensionPropertyType.INSTANCE).build());
-		properties.put("visible", new PropertyDescriptionBuilder().withName("visible").withType(VisiblePropertyType.INSTANCE).build());
-
-		WebObjectSpecification formSpec = new WebObjectSpecificationBuilder().withName("form_spec").withPackageType(
-			IPackageReader.WEB_COMPONENT).withProperties(properties).build();
-
-		final Container form = new Container("form", formSpec)
-		{
-		};
-
-		final WebComponent testcomponent = new WebComponent("mycomponent", "test");
-		testcomponent.setProperty("changeintallow", Integer.valueOf(1));
-		form.add(testcomponent);
-
-		CurrentWindow.runForWindow(new BaseWindow(new TestBaseWebsocketSession(new WebsocketSessionKey("1", 42)), 99, "test")
-		{
-			@Override
-			public Container getForm(String formName)
-			{
-				return form;
-			}
-		}, () -> {
-			assertEquals(Integer.valueOf(1), testcomponent.getProperty("changeintallow"));
-
-			try
-			{
-				JSONObject json = new JSONObject();
-				json.put("formname", "test");
-				json.put("beanname", testcomponent.getName());
-				JSONObject changes = new JSONObject();
-				changes.put("changeintallow", Integer.valueOf(2));
-				json.put("changes", changes);
-
-				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
-
-				// should be changed.
-				Assert.assertEquals(Integer.valueOf(2), testcomponent.getProperty("changeintallow"));
-
-				changes.put("changeintallow", Integer.valueOf(3));
-				JSONObject oldvalues = new JSONObject();
-				oldvalues.put("changeintallow", Integer.valueOf(2));
-				json.put("oldvalues", oldvalues);
-
-				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
-
-				// should be changed, old value was really the old value.
-				Assert.assertEquals(Integer.valueOf(3), testcomponent.getProperty("changeintallow"));
-
-				changes.put("changeintallow", Integer.valueOf(4));
-
-				// should not be changed, still 3
-				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
-				Assert.assertEquals(Integer.valueOf(3), testcomponent.getProperty("changeintallow"));
-
-				changes.put("changeintallow", new Double(4));
-				oldvalues.put("changeintallow", new Double(3));
-
-				FormServiceHandler.INSTANCE.executeMethod("dataPush", json);
-
-				// should be changed, old value was really the old value.
-				Assert.assertEquals(Integer.valueOf(4), testcomponent.getProperty("changeintallow"));
-			}
-			catch (Exception e)
-			{
-				throw new RuntimeException(e);
-			}
-
-		});
 	}
 
 	@Test(expected = IllegalChangeFromClientException.class)

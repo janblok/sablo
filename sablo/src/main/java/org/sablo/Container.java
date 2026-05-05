@@ -25,8 +25,6 @@ import org.json.JSONException;
 import org.json.JSONWriter;
 import org.sablo.specification.WebObjectSpecification;
 import org.sablo.specification.property.IBrowserConverterContext;
-import org.sablo.websocket.CurrentWindow;
-import org.sablo.websocket.IWindow;
 import org.sablo.websocket.utils.JSONUtils.IToJSONConverter;
 
 /**
@@ -38,7 +36,6 @@ public abstract class Container extends WebComponent
 	private Map<String, WebComponent> components = new HashMap<>();
 	protected boolean changed;
 
-	private IWindow alreadyRegisteredToWindow;
 
 	public Container(String name, WebObjectSpecification spec)
 	{
@@ -110,7 +107,7 @@ public abstract class Container extends WebComponent
 	public void dispose()
 	{
 		super.dispose();
-		if (alreadyRegisteredToWindow != null) alreadyRegisteredToWindow.unregisterContainer(this);
+//		if (alreadyRegisteredToWindow != null) alreadyRegisteredToWindow.unregisterContainer(this);
 		clearComponents();
 	}
 
@@ -124,31 +121,6 @@ public abstract class Container extends WebComponent
 			contentHasBeenWritten = wc.writeOwnChanges(w, contentHasBeenWritten ? null : keyInParent, wc.getName(), converter) || contentHasBeenWritten;
 		}
 		if (contentHasBeenWritten) w.endObject();
-	}
-
-	public boolean writeAllComponentsProperties(JSONWriter w, IToJSONConverter<IBrowserConverterContext> converter) throws JSONException
-	{
-		IWindow currentWindow = CurrentWindow.get();
-		if (alreadyRegisteredToWindow != currentWindow)
-		{
-			if (alreadyRegisteredToWindow != null) alreadyRegisteredToWindow.unregisterContainer(this);
-			alreadyRegisteredToWindow = currentWindow;
-			currentWindow.registerContainer(this); // keeps this in a weak hashmap
-		}
-
-		changed = false; // do this first just in case one of the writeComponentProperties below triggers another change to set the flag again (which should not happen normally but if it does we should not loose that change by just clearing the changed flag afterwards)
-		boolean contentHasBeenWritten = writeComponentProperties(w, converter, "");
-		for (WebComponent wc : getComponents())
-		{
-			contentHasBeenWritten = wc.writeComponentProperties(w, converter, wc.getName()) || contentHasBeenWritten;
-		}
-
-		return contentHasBeenWritten;
-	}
-
-	public void clearRegisteredToWindow()
-	{
-		alreadyRegisteredToWindow = null;
 	}
 
 }
